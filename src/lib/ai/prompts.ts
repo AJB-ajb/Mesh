@@ -3,7 +3,29 @@
  * Conversation prompts for profile extraction
  */
 
-import type { ConversationState, ConversationTurn, ProfileData } from '../voice/types';
+// Voice onboarding types
+export type ConversationState =
+  | "greeting"
+  | "skills"
+  | "experience"
+  | "availability"
+  | "interests"
+  | "collaboration"
+  | "complete";
+
+export interface ConversationTurn {
+  role: "user" | "assistant";
+  text: string;
+}
+
+export interface ProfileData {
+  skills?: string[];
+  experience_years?: number;
+  role?: string;
+  interests?: string[];
+  availability_hours?: number | string;
+  collaboration_style?: string;
+}
 
 export const SYSTEM_PROMPT = `You are a friendly onboarding assistant for MeshIt, a platform that matches developers with projects.
 
@@ -48,11 +70,13 @@ export function buildExtractionPrompt(
   userText: string,
   currentState: ConversationState,
   history: ConversationTurn[],
-  extractedData: Partial<ProfileData>
+  extractedData: Partial<ProfileData>,
 ): string {
   const conversationHistory = history
-    .map((turn) => `${turn.role === 'user' ? 'User' : 'Assistant'}: ${turn.text}`)
-    .join('\n');
+    .map(
+      (turn) => `${turn.role === "user" ? "User" : "Assistant"}: ${turn.text}`,
+    )
+    .join("\n");
 
   return `${SYSTEM_PROMPT}
 
@@ -116,7 +140,9 @@ You MUST respond with valid JSON only, no other text:
 Keep it concise (1-2 sentences max).`;
 }
 
-export function buildCompletionPrompt(extractedData: Partial<ProfileData>): string {
+export function buildCompletionPrompt(
+  extractedData: Partial<ProfileData>,
+): string {
   return `${SYSTEM_PROMPT}
 
 The user has completed onboarding. Generate a warm, encouraging completion message.

@@ -132,139 +132,142 @@ interface PersonaWithModelProps {
   children: React.ReactNode;
 }
 
-const PersonaWithModel = memo(
-  ({ rive, source, children }: PersonaWithModelProps) => {
-    const theme = useTheme(source.dynamicColor);
-    const viewModel = useViewModel(rive, { useDefault: true });
-    const viewModelInstance = useViewModelInstance(viewModel, {
-      rive,
-      useDefault: true,
-    });
-    const viewModelInstanceColor = useViewModelInstanceColor(
-      "color",
-      viewModelInstance
-    );
+const PersonaWithModel = memo(function PersonaWithModel({
+  rive,
+  source,
+  children,
+}: PersonaWithModelProps) {
+  const theme = useTheme(source.dynamicColor);
+  const viewModel = useViewModel(rive, { useDefault: true });
+  const viewModelInstance = useViewModelInstance(viewModel, {
+    rive,
+    useDefault: true,
+  });
+  const viewModelInstanceColor = useViewModelInstanceColor(
+    "color",
+    viewModelInstance,
+  );
 
-    useEffect(() => {
-      if (!(viewModelInstanceColor && source.dynamicColor)) {
-        return;
-      }
+  useEffect(() => {
+    if (!(viewModelInstanceColor && source.dynamicColor)) {
+      return;
+    }
 
-      const [r, g, b] = theme === "dark" ? [255, 255, 255] : [0, 0, 0];
-      viewModelInstanceColor.setRgb(r, g, b);
-    }, [viewModelInstanceColor, theme, source.dynamicColor]);
+    const [r, g, b] = theme === "dark" ? [255, 255, 255] : [0, 0, 0];
+    viewModelInstanceColor.setRgb(r, g, b);
+  }, [viewModelInstanceColor, theme, source.dynamicColor]);
 
-    return children;
-  }
-);
+  return children;
+});
+PersonaWithModel.displayName = "PersonaWithModel";
 
 interface PersonaWithoutModelProps {
   children: ReactNode;
 }
 
-const PersonaWithoutModel = memo(
-  ({ children }: PersonaWithoutModelProps) => children
-);
+const PersonaWithoutModel = memo(function PersonaWithoutModel({
+  children,
+}: PersonaWithoutModelProps) {
+  return children;
+});
+PersonaWithoutModel.displayName = "PersonaWithoutModel";
 
-export const Persona: FC<PersonaProps> = memo(
-  ({
-    variant = "obsidian",
-    state = "idle",
+export const Persona: FC<PersonaProps> = memo(function Persona({
+  variant = "obsidian",
+  state = "idle",
+  onLoad,
+  onLoadError,
+  onReady,
+  onPause,
+  onPlay,
+  onStop,
+  className,
+}) {
+  const source = sources[variant];
+
+  if (!source) {
+    throw new Error(`Invalid variant: ${variant}`);
+  }
+
+  // Stabilize callbacks to prevent useRive from reinitializing
+  const callbacksRef = useRef({
     onLoad,
     onLoadError,
     onReady,
     onPause,
     onPlay,
     onStop,
-    className,
-  }) => {
-    const source = sources[variant];
+  });
+  callbacksRef.current = {
+    onLoad,
+    onLoadError,
+    onReady,
+    onPause,
+    onPlay,
+    onStop,
+  };
 
-    if (!source) {
-      throw new Error(`Invalid variant: ${variant}`);
+  const stableCallbacks = useMemo(
+    () => ({
+      onLoad: ((loadedRive) =>
+        callbacksRef.current.onLoad?.(loadedRive)) as RiveParameters["onLoad"],
+      onLoadError: ((err) =>
+        callbacksRef.current.onLoadError?.(
+          err,
+        )) as RiveParameters["onLoadError"],
+      onReady: () => callbacksRef.current.onReady?.(),
+      onPause: ((event) =>
+        callbacksRef.current.onPause?.(event)) as RiveParameters["onPause"],
+      onPlay: ((event) =>
+        callbacksRef.current.onPlay?.(event)) as RiveParameters["onPlay"],
+      onStop: ((event) =>
+        callbacksRef.current.onStop?.(event)) as RiveParameters["onStop"],
+    }),
+    [],
+  );
+
+  const { rive, RiveComponent } = useRive({
+    src: source.source,
+    stateMachines: stateMachine,
+    autoplay: true,
+    onLoad: stableCallbacks.onLoad,
+    onLoadError: stableCallbacks.onLoadError,
+    onRiveReady: stableCallbacks.onReady,
+    onPause: stableCallbacks.onPause,
+    onPlay: stableCallbacks.onPlay,
+    onStop: stableCallbacks.onStop,
+  });
+
+  const listeningInput = useStateMachineInput(rive, stateMachine, "listening");
+  const thinkingInput = useStateMachineInput(rive, stateMachine, "thinking");
+  const speakingInput = useStateMachineInput(rive, stateMachine, "speaking");
+  const asleepInput = useStateMachineInput(rive, stateMachine, "asleep");
+
+  useEffect(() => {
+    if (listeningInput) {
+      // eslint-disable-next-line react-hooks/immutability
+      listeningInput.value = state === "listening";
     }
+    if (thinkingInput) {
+      // eslint-disable-next-line react-hooks/immutability
+      thinkingInput.value = state === "thinking";
+    }
+    if (speakingInput) {
+      // eslint-disable-next-line react-hooks/immutability
+      speakingInput.value = state === "speaking";
+    }
+    if (asleepInput) {
+      // eslint-disable-next-line react-hooks/immutability
+      asleepInput.value = state === "asleep";
+    }
+  }, [state, listeningInput, thinkingInput, speakingInput, asleepInput]);
 
-    // Stabilize callbacks to prevent useRive from reinitializing
-    const callbacksRef = useRef({
-      onLoad,
-      onLoadError,
-      onReady,
-      onPause,
-      onPlay,
-      onStop,
-    });
-    callbacksRef.current = {
-      onLoad,
-      onLoadError,
-      onReady,
-      onPause,
-      onPlay,
-      onStop,
-    };
+  const Component = source.hasModel ? PersonaWithModel : PersonaWithoutModel;
 
-    const stableCallbacks = useMemo(
-      () => ({
-        onLoad: ((loadedRive) =>
-          callbacksRef.current.onLoad?.(
-            loadedRive
-          )) as RiveParameters["onLoad"],
-        onLoadError: ((err) =>
-          callbacksRef.current.onLoadError?.(
-            err
-          )) as RiveParameters["onLoadError"],
-        onReady: () => callbacksRef.current.onReady?.(),
-        onPause: ((event) =>
-          callbacksRef.current.onPause?.(event)) as RiveParameters["onPause"],
-        onPlay: ((event) =>
-          callbacksRef.current.onPlay?.(event)) as RiveParameters["onPlay"],
-        onStop: ((event) =>
-          callbacksRef.current.onStop?.(event)) as RiveParameters["onStop"],
-      }),
-      []
-    );
-
-    const { rive, RiveComponent } = useRive({
-      src: source.source,
-      stateMachines: stateMachine,
-      autoplay: true,
-      onLoad: stableCallbacks.onLoad,
-      onLoadError: stableCallbacks.onLoadError,
-      onRiveReady: stableCallbacks.onReady,
-      onPause: stableCallbacks.onPause,
-      onPlay: stableCallbacks.onPlay,
-      onStop: stableCallbacks.onStop,
-    });
-
-    const listeningInput = useStateMachineInput(
-      rive,
-      stateMachine,
-      "listening"
-    );
-    const thinkingInput = useStateMachineInput(rive, stateMachine, "thinking");
-    const speakingInput = useStateMachineInput(rive, stateMachine, "speaking");
-    const asleepInput = useStateMachineInput(rive, stateMachine, "asleep");
-
-    useEffect(() => {
-      if (listeningInput) {
-        listeningInput.value = state === "listening";
-      }
-      if (thinkingInput) {
-        thinkingInput.value = state === "thinking";
-      }
-      if (speakingInput) {
-        speakingInput.value = state === "speaking";
-      }
-      if (asleepInput) {
-        asleepInput.value = state === "asleep";
-      }
-    }, [state, listeningInput, thinkingInput, speakingInput, asleepInput]);
-
-    const Component = source.hasModel ? PersonaWithModel : PersonaWithoutModel;
-
-    return (
-      <Component rive={rive} source={source}>
-        <RiveComponent className={cn("size-16 shrink-0", className)} />
-      </Component>
-    );
-  }
-);
+  return (
+    <Component rive={rive} source={source}>
+      <RiveComponent className={cn("size-16 shrink-0", className)} />
+    </Component>
+  );
+});
+Persona.displayName = "Persona";

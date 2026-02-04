@@ -17,14 +17,14 @@ export interface ProfileToProjectMatch {
 /**
  * Finds projects matching a user's profile
  * Uses the match_projects_to_user database function with pgvector similarity
- * 
+ *
  * @param userId The user ID to find matches for
  * @param limit Maximum number of matches to return (default: 10)
  * @returns Array of matching projects with similarity scores
  */
 export async function matchProfileToProjects(
   userId: string,
-  limit: number = 10
+  limit: number = 10,
 ): Promise<ProfileToProjectMatch[]> {
   const supabase = await createClient();
 
@@ -36,7 +36,9 @@ export async function matchProfileToProjects(
     .single();
 
   if (profileError || !profile) {
-    throw new Error(`Profile not found for user ${userId}. Please complete your profile first.`);
+    throw new Error(
+      `Profile not found for user ${userId}. Please complete your profile first.`,
+    );
   }
 
   // If no embedding exists, try to generate one
@@ -47,9 +49,9 @@ export async function matchProfileToProjects(
         profile.bio,
         profile.skills,
         profile.interests,
-        profile.headline
+        profile.headline,
       );
-      
+
       // Save the generated embedding
       await supabase
         .from("profiles")
@@ -59,7 +61,7 @@ export async function matchProfileToProjects(
       // If embedding generation fails, return empty matches with a helpful message
       console.warn("Could not generate profile embedding:", embeddingError);
       throw new Error(
-        "Could not generate profile embedding. Please ensure your profile has a bio, skills, or headline filled in."
+        "Could not generate profile embedding. Please ensure your profile has a bio, skills, or headline filled in.",
       );
     }
   }
@@ -80,7 +82,7 @@ export async function matchProfileToProjects(
   }
 
   // Check for existing match records
-  const projectIds = data.map((row: any) => row.project_id);
+  const projectIds = data.map((row: { project_id: string }) => row.project_id);
   const { data: existingMatches } = await supabase
     .from("matches")
     .select("id, project_id, similarity_score, status, score_breakdown")
@@ -88,11 +90,12 @@ export async function matchProfileToProjects(
     .in("project_id", projectIds);
 
   const matchMap = new Map(
-    existingMatches?.map((m) => [m.project_id, m]) || []
+    existingMatches?.map((m) => [m.project_id, m]) || [],
   );
 
   // Transform results into match objects and compute breakdowns
   const matches: ProfileToProjectMatch[] = await Promise.all(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data.map(async (row: any) => {
       const project: Project = {
         id: row.project_id,
@@ -127,7 +130,7 @@ export async function matchProfileToProjects(
           {
             profile_user_id: userId,
             target_project_id: row.project_id,
-          }
+          },
         );
 
         if (!breakdownError && breakdown) {
@@ -141,7 +144,7 @@ export async function matchProfileToProjects(
         scoreBreakdown,
         matchId: existingMatch?.id,
       };
-    })
+    }),
   );
 
   return matches;
@@ -154,7 +157,7 @@ export async function matchProfileToProjects(
  */
 export async function createMatchRecords(
   userId: string,
-  matches: ProfileToProjectMatch[]
+  matches: ProfileToProjectMatch[],
 ): Promise<void> {
   const supabase = await createClient();
 
@@ -198,7 +201,10 @@ export async function createMatchRecords(
         .is("score_breakdown", null); // Only update if currently null
 
       if (error) {
-        console.warn(`Failed to update breakdown for match ${update.id}:`, error);
+        console.warn(
+          `Failed to update breakdown for match ${update.id}:`,
+          error,
+        );
         // Don't throw - this is not critical
       }
     }

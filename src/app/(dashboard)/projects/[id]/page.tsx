@@ -12,7 +12,6 @@ import {
   Flag,
   MessageSquare,
   Check,
-  X,
   Sparkles,
   Loader2,
   Pencil,
@@ -36,6 +35,7 @@ import { createClient } from "@/lib/supabase/client";
 import { MatchBreakdown } from "@/components/match/match-breakdown";
 import type { ScoreBreakdown, Profile } from "@/lib/supabase/types";
 import { formatScore } from "@/lib/matching/scoring";
+import { getInitials } from "@/lib/format";
 
 type Project = {
   id: string;
@@ -126,16 +126,6 @@ const formatDate = (dateString: string) => {
   return date.toLocaleDateString();
 };
 
-const getInitials = (name: string | null) => {
-  if (!name) return "U";
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-};
-
 export default function ProjectDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -149,8 +139,12 @@ export default function ProjectDetailPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(null);
-  const [matchBreakdown, setMatchBreakdown] = useState<ScoreBreakdown | null>(null);
+  const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(
+    null,
+  );
+  const [matchBreakdown, setMatchBreakdown] = useState<ScoreBreakdown | null>(
+    null,
+  );
   const [isComputingMatch, setIsComputingMatch] = useState(false);
   const [form, setForm] = useState<ProjectFormState>({
     title: "",
@@ -174,8 +168,10 @@ export default function ProjectDetailPage() {
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [coverMessage, setCoverMessage] = useState("");
   const [applications, setApplications] = useState<Application[]>([]);
-  const [isUpdatingApplication, setIsUpdatingApplication] = useState<string | null>(null);
-  
+  const [isUpdatingApplication, setIsUpdatingApplication] = useState<
+    string | null
+  >(null);
+
   // Matched profiles state (for owners)
   const [matchedProfiles, setMatchedProfiles] = useState<MatchedProfile[]>([]);
   const [isLoadingMatches, setIsLoadingMatches] = useState(false);
@@ -204,7 +200,7 @@ export default function ProjectDetailPage() {
             skills,
             user_id
           )
-        `
+        `,
         )
         .eq("id", projectId)
         .single();
@@ -238,15 +234,16 @@ export default function ProjectDetailPage() {
 
       // Check if user has already applied (for non-owners)
       if (user && !ownerCheck) {
-        const { data: applicationData, error: applicationError } = await supabase
-          .from("applications")
-          .select("*")
-          .eq("project_id", projectId)
-          .eq("applicant_id", user.id)
-          .maybeSingle();
+        const { data: applicationData, error: applicationError } =
+          await supabase
+            .from("applications")
+            .select("*")
+            .eq("project_id", projectId)
+            .eq("applicant_id", user.id)
+            .maybeSingle();
 
         // Only handle error if it's not a "not found" error (PGRST116)
-        if (applicationError && applicationError.code !== 'PGRST116') {
+        if (applicationError && applicationError.code !== "PGRST116") {
           console.error("Error fetching application:", applicationError);
         }
 
@@ -271,11 +268,12 @@ export default function ProjectDetailPage() {
 
       // If owner, fetch all applications
       if (ownerCheck) {
-        const { data: applicationsData, error: applicationsError } = await supabase
-          .from("applications")
-          .select("*")
-          .eq("project_id", projectId)
-          .order("created_at", { ascending: false });
+        const { data: applicationsData, error: applicationsError } =
+          await supabase
+            .from("applications")
+            .select("*")
+            .eq("project_id", projectId)
+            .order("created_at", { ascending: false });
 
         if (applicationsError) {
           console.error("Error fetching applications:", applicationsError);
@@ -308,7 +306,10 @@ export default function ProjectDetailPage() {
     fetchProject();
   }, [projectId]);
 
-  const computeMatchBreakdown = async (userId: string, targetProjectId: string) => {
+  const computeMatchBreakdown = async (
+    userId: string,
+    targetProjectId: string,
+  ) => {
     setIsComputingMatch(true);
     const supabase = createClient();
 
@@ -336,7 +337,9 @@ export default function ProjectDetailPage() {
       // Fetch all profiles
       const { data: allProfiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("user_id, full_name, headline, skills, experience_level, availability_hours");
+        .select(
+          "user_id, full_name, headline, skills, experience_level, availability_hours",
+        );
 
       if (profilesError || !allProfiles) {
         console.error("Failed to fetch profiles:", profilesError);
@@ -356,7 +359,7 @@ export default function ProjectDetailPage() {
             {
               profile_user_id: profile.user_id,
               target_project_id: targetProjectId,
-            }
+            },
           );
 
           if (!breakdownError && breakdown) {
@@ -377,7 +380,10 @@ export default function ProjectDetailPage() {
             });
           }
         } catch (err) {
-          console.error(`Failed to compute match for profile ${profile.user_id}:`, err);
+          console.error(
+            `Failed to compute match for profile ${profile.user_id}:`,
+            err,
+          );
         }
       }
 
@@ -462,7 +468,7 @@ export default function ProjectDetailPage() {
           skills,
           user_id
         )
-      `
+      `,
       )
       .eq("id", projectId)
       .single();
@@ -477,7 +483,7 @@ export default function ProjectDetailPage() {
   const handleDelete = async () => {
     if (
       !confirm(
-        "Are you sure you want to delete this project? This action cannot be undone."
+        "Are you sure you want to delete this project? This action cannot be undone.",
       )
     ) {
       return;
@@ -581,7 +587,7 @@ export default function ProjectDetailPage() {
 
   const handleUpdateApplicationStatus = async (
     applicationId: string,
-    newStatus: "accepted" | "rejected"
+    newStatus: "accepted" | "rejected",
   ) => {
     setIsUpdatingApplication(applicationId);
     const supabase = createClient();
@@ -604,8 +610,14 @@ export default function ProjectDetailPage() {
     if (application && project) {
       await supabase.from("notifications").insert({
         user_id: application.applicant_id,
-        type: newStatus === "accepted" ? "application_accepted" : "application_rejected",
-        title: newStatus === "accepted" ? "Application Accepted! 🎉" : "Application Update",
+        type:
+          newStatus === "accepted"
+            ? "application_accepted"
+            : "application_rejected",
+        title:
+          newStatus === "accepted"
+            ? "Application Accepted! 🎉"
+            : "Application Update",
         body:
           newStatus === "accepted"
             ? `Your application to "${project.title}" has been accepted!`
@@ -619,8 +631,8 @@ export default function ProjectDetailPage() {
     // Update local state
     setApplications((prev) =>
       prev.map((app) =>
-        app.id === applicationId ? { ...app, status: newStatus } : app
-      )
+        app.id === applicationId ? { ...app, status: newStatus } : app,
+      ),
     );
     setIsUpdatingApplication(null);
   };
@@ -636,7 +648,7 @@ export default function ProjectDetailPage() {
       .select("id")
       .eq("project_id", projectId)
       .or(
-        `and(participant_1.eq.${currentUserId},participant_2.eq.${applicantId}),and(participant_1.eq.${applicantId},participant_2.eq.${currentUserId})`
+        `and(participant_1.eq.${currentUserId},participant_2.eq.${applicantId}),and(participant_1.eq.${applicantId},participant_2.eq.${currentUserId})`,
       )
       .single();
 
@@ -675,7 +687,7 @@ export default function ProjectDetailPage() {
       .select("id")
       .eq("project_id", projectId)
       .or(
-        `and(participant_1.eq.${currentUserId},participant_2.eq.${project.creator_id}),and(participant_1.eq.${project.creator_id},participant_2.eq.${currentUserId})`
+        `and(participant_1.eq.${currentUserId},participant_2.eq.${project.creator_id}),and(participant_1.eq.${project.creator_id},participant_2.eq.${currentUserId})`,
       )
       .single();
 
@@ -782,17 +794,18 @@ export default function ProjectDetailPage() {
             </Badge>
             {/* Show compatibility score badge for non-owners */}
             {!isOwner && matchBreakdown && (
-              <Badge 
-                variant="default" 
+              <Badge
+                variant="default"
                 className="bg-green-500 hover:bg-green-600 flex items-center gap-1"
               >
                 <Sparkles className="h-4 w-4" />
                 {formatScore(
-                  (matchBreakdown.semantic * 0.4 +
+                  matchBreakdown.semantic * 0.4 +
                     matchBreakdown.skills_overlap * 0.3 +
                     matchBreakdown.experience_match * 0.15 +
-                    matchBreakdown.commitment_match * 0.15)
-                )} match
+                    matchBreakdown.commitment_match * 0.15,
+                )}{" "}
+                match
               </Badge>
             )}
           </div>
@@ -976,7 +989,9 @@ export default function ProjectDetailPage() {
                       <label className="text-sm font-medium">Timeline</label>
                       <select
                         value={form.timeline}
-                        onChange={(e) => handleChange("timeline", e.target.value)}
+                        onChange={(e) =>
+                          handleChange("timeline", e.target.value)
+                        }
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       >
                         <option value="weekend">This weekend</option>
@@ -1004,7 +1019,9 @@ export default function ProjectDetailPage() {
                       <label className="text-sm font-medium">Team Size</label>
                       <select
                         value={form.teamSize}
-                        onChange={(e) => handleChange("teamSize", e.target.value)}
+                        onChange={(e) =>
+                          handleChange("teamSize", e.target.value)
+                        }
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       >
                         <option value="2">2 people</option>
@@ -1029,46 +1046,65 @@ export default function ProjectDetailPage() {
 
                   {/* Applicant Filters */}
                   <div className="border-t pt-4 mt-4">
-                    <h4 className="text-sm font-medium mb-3">Applicant Preferences</h4>
+                    <h4 className="text-sm font-medium mb-3">
+                      Applicant Preferences
+                    </h4>
                     <p className="text-xs text-muted-foreground mb-3">
-                      Applicants outside these preferences will rank lower in your matches.
+                      Applicants outside these preferences will rank lower in
+                      your matches.
                     </p>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Max Distance (km)</label>
+                        <label className="text-sm font-medium">
+                          Max Distance (km)
+                        </label>
                         <Input
                           type="number"
                           min="0"
                           value={form.filterMaxDistance}
-                          onChange={(e) => handleChange("filterMaxDistance", e.target.value)}
+                          onChange={(e) =>
+                            handleChange("filterMaxDistance", e.target.value)
+                          }
                           placeholder="e.g., 500"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Required Languages</label>
+                        <label className="text-sm font-medium">
+                          Required Languages
+                        </label>
                         <Input
                           value={form.filterLanguages}
-                          onChange={(e) => handleChange("filterLanguages", e.target.value)}
+                          onChange={(e) =>
+                            handleChange("filterLanguages", e.target.value)
+                          }
                           placeholder="e.g., en, de"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Min Availability (hrs/week)</label>
+                        <label className="text-sm font-medium">
+                          Min Availability (hrs/week)
+                        </label>
                         <Input
                           type="number"
                           min="0"
                           value={form.filterMinHours}
-                          onChange={(e) => handleChange("filterMinHours", e.target.value)}
+                          onChange={(e) =>
+                            handleChange("filterMinHours", e.target.value)
+                          }
                           placeholder="e.g., 5"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Max Availability (hrs/week)</label>
+                        <label className="text-sm font-medium">
+                          Max Availability (hrs/week)
+                        </label>
                         <Input
                           type="number"
                           min="0"
                           value={form.filterMaxHours}
-                          onChange={(e) => handleChange("filterMaxHours", e.target.value)}
+                          onChange={(e) =>
+                            handleChange("filterMaxHours", e.target.value)
+                          }
                           placeholder="e.g., 20"
                         />
                       </div>
@@ -1109,19 +1145,32 @@ export default function ProjectDetailPage() {
 
           {/* Applications (for project owner) */}
           {isOwner && (
-            <Card className={applications.filter(a => a.status === "pending").length > 0 ? "border-primary/50 shadow-md" : ""}>
+            <Card
+              className={
+                applications.filter((a) => a.status === "pending").length > 0
+                  ? "border-primary/50 shadow-md"
+                  : ""
+              }
+            >
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-full ${applications.filter(a => a.status === "pending").length > 0 ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                    <div
+                      className={`flex h-10 w-10 items-center justify-center rounded-full ${applications.filter((a) => a.status === "pending").length > 0 ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+                    >
                       <Users className="h-5 w-5" />
                     </div>
                     <div>
                       <CardTitle>Applications</CardTitle>
                       <CardDescription>
-                        {applications.filter(a => a.status === "pending").length > 0 ? (
+                        {applications.filter((a) => a.status === "pending")
+                          .length > 0 ? (
                           <span className="text-primary font-medium">
-                            {applications.filter(a => a.status === "pending").length} pending review
+                            {
+                              applications.filter((a) => a.status === "pending")
+                                .length
+                            }{" "}
+                            pending review
                           </span>
                         ) : (
                           `${applications.length} application${applications.length !== 1 ? "s" : ""} received`
@@ -1148,15 +1197,17 @@ export default function ProjectDetailPage() {
                       <div
                         key={application.id}
                         className={`rounded-lg border p-4 transition-colors ${
-                          application.status === "pending" 
-                            ? "border-primary/30 bg-primary/5" 
+                          application.status === "pending"
+                            ? "border-primary/30 bg-primary/5"
                             : "border-border"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex items-start gap-3 flex-1 min-w-0">
                             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-sm font-medium shrink-0">
-                              {getInitials(application.profiles?.full_name || null)}
+                              {getInitials(
+                                application.profiles?.full_name || null,
+                              )}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
@@ -1164,7 +1215,10 @@ export default function ProjectDetailPage() {
                                   {application.profiles?.full_name || "Unknown"}
                                 </h4>
                                 {application.status === "pending" && (
-                                  <Badge variant="secondary" className="text-xs shrink-0">
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs shrink-0"
+                                  >
                                     New
                                   </Badge>
                                 )}
@@ -1196,8 +1250,13 @@ export default function ProjectDetailPage() {
                                         </Badge>
                                       ))}
                                     {application.profiles.skills.length > 5 && (
-                                      <Badge variant="outline" className="text-xs">
-                                        +{application.profiles.skills.length - 5} more
+                                      <Badge
+                                        variant="outline"
+                                        className="text-xs"
+                                      >
+                                        +
+                                        {application.profiles.skills.length - 5}{" "}
+                                        more
                                       </Badge>
                                     )}
                                   </div>
@@ -1208,14 +1267,16 @@ export default function ProjectDetailPage() {
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Action buttons */}
                         <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
                           <div className="flex gap-2">
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleMessageApplicant(application.applicant_id)}
+                              onClick={() =>
+                                handleMessageApplicant(application.applicant_id)
+                              }
                             >
                               <MessageSquare className="h-4 w-4" />
                               Message
@@ -1231,7 +1292,7 @@ export default function ProjectDetailPage() {
                                   onClick={() =>
                                     handleUpdateApplicationStatus(
                                       application.id,
-                                      "accepted"
+                                      "accepted",
                                     )
                                   }
                                   disabled={
@@ -1254,7 +1315,7 @@ export default function ProjectDetailPage() {
                                   onClick={() =>
                                     handleUpdateApplicationStatus(
                                       application.id,
-                                      "rejected"
+                                      "rejected",
                                     )
                                   }
                                   disabled={
@@ -1321,10 +1382,10 @@ export default function ProjectDetailPage() {
                       </p>
                       <p className="text-2xl font-bold text-green-600">
                         {formatScore(
-                          (matchBreakdown.semantic * 0.4 +
+                          matchBreakdown.semantic * 0.4 +
                             matchBreakdown.skills_overlap * 0.3 +
                             matchBreakdown.experience_match * 0.15 +
-                            matchBreakdown.commitment_match * 0.15)
+                            matchBreakdown.commitment_match * 0.15,
                         )}
                       </p>
                     </div>
@@ -1338,7 +1399,8 @@ export default function ProjectDetailPage() {
                       profile={{
                         skills: currentUserProfile.skills,
                         experience_level: currentUserProfile.experience_level,
-                        availability_hours: currentUserProfile.availability_hours,
+                        availability_hours:
+                          currentUserProfile.availability_hours,
                       }}
                     />
                   </>
@@ -1371,7 +1433,8 @@ export default function ProjectDetailPage() {
                 ) : matchedProfiles.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-sm text-muted-foreground">
-                      No matched profiles found yet. Complete profiles will appear here as they match your project.
+                      No matched profiles found yet. Complete profiles will
+                      appear here as they match your project.
                     </p>
                   </div>
                 ) : (
@@ -1391,7 +1454,10 @@ export default function ProjectDetailPage() {
                                 <h4 className="font-medium truncate">
                                   {matchedProfile.full_name || "Anonymous"}
                                 </h4>
-                                <Badge variant="default" className="text-xs shrink-0">
+                                <Badge
+                                  variant="default"
+                                  className="text-xs shrink-0"
+                                >
                                   {formatScore(matchedProfile.overall_score)}
                                 </Badge>
                               </div>
@@ -1400,61 +1466,95 @@ export default function ProjectDetailPage() {
                                   {matchedProfile.headline}
                                 </p>
                               )}
-                              {matchedProfile.skills && matchedProfile.skills.length > 0 && (
-                                <div className="mt-2 flex flex-wrap gap-1">
-                                  {matchedProfile.skills.slice(0, 4).map((skill) => (
-                                    <Badge
-                                      key={skill}
-                                      variant="outline"
-                                      className="text-xs"
-                                    >
-                                      {skill}
-                                    </Badge>
-                                  ))}
-                                  {matchedProfile.skills.length > 4 && (
-                                    <Badge variant="outline" className="text-xs">
-                                      +{matchedProfile.skills.length - 4} more
-                                    </Badge>
-                                  )}
-                                </div>
-                              )}
-                              
+                              {matchedProfile.skills &&
+                                matchedProfile.skills.length > 0 && (
+                                  <div className="mt-2 flex flex-wrap gap-1">
+                                    {matchedProfile.skills
+                                      .slice(0, 4)
+                                      .map((skill) => (
+                                        <Badge
+                                          key={skill}
+                                          variant="outline"
+                                          className="text-xs"
+                                        >
+                                          {skill}
+                                        </Badge>
+                                      ))}
+                                    {matchedProfile.skills.length > 4 && (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-xs"
+                                      >
+                                        +{matchedProfile.skills.length - 4} more
+                                      </Badge>
+                                    )}
+                                  </div>
+                                )}
+
                               {/* Match Breakdown */}
                               <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-muted-foreground">Skills Match:</span>
-                                  <span className="font-medium">{formatScore(matchedProfile.breakdown.skills_overlap)}</span>
+                                  <span className="text-muted-foreground">
+                                    Skills Match:
+                                  </span>
+                                  <span className="font-medium">
+                                    {formatScore(
+                                      matchedProfile.breakdown.skills_overlap,
+                                    )}
+                                  </span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                  <span className="text-muted-foreground">Semantic:</span>
-                                  <span className="font-medium">{formatScore(matchedProfile.breakdown.semantic)}</span>
+                                  <span className="text-muted-foreground">
+                                    Semantic:
+                                  </span>
+                                  <span className="font-medium">
+                                    {formatScore(
+                                      matchedProfile.breakdown.semantic,
+                                    )}
+                                  </span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                  <span className="text-muted-foreground">Experience:</span>
-                                  <span className="font-medium">{formatScore(matchedProfile.breakdown.experience_match)}</span>
+                                  <span className="text-muted-foreground">
+                                    Experience:
+                                  </span>
+                                  <span className="font-medium">
+                                    {formatScore(
+                                      matchedProfile.breakdown.experience_match,
+                                    )}
+                                  </span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                  <span className="text-muted-foreground">Availability:</span>
-                                  <span className="font-medium">{formatScore(matchedProfile.breakdown.commitment_match)}</span>
+                                  <span className="text-muted-foreground">
+                                    Availability:
+                                  </span>
+                                  <span className="font-medium">
+                                    {formatScore(
+                                      matchedProfile.breakdown.commitment_match,
+                                    )}
+                                  </span>
                                 </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Action buttons */}
                         <div className="mt-4 flex gap-2">
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => router.push(`/profile/${matchedProfile.user_id}`)}
+                            onClick={() =>
+                              router.push(`/profile/${matchedProfile.user_id}`)
+                            }
                           >
                             View Profile
                           </Button>
                           <Button
                             size="sm"
                             variant="default"
-                            onClick={() => handleMessageApplicant(matchedProfile.user_id)}
+                            onClick={() =>
+                              handleMessageApplicant(matchedProfile.user_id)
+                            }
                           >
                             <MessageSquare className="h-4 w-4" />
                             Message

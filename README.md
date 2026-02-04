@@ -11,7 +11,6 @@ Mesh helps developers and creators find the perfect collaborators for their proj
 - **Database**: Supabase PostgreSQL + pgvector
 - **Auth**: Supabase Auth (Google, GitHub, LinkedIn, Slack, Discord)
 - **AI/ML**: Gemini 2.0 Flash, OpenAI Embeddings, LangChain.js
-- **Voice**: OpenAI Whisper (STT), ElevenLabs (TTS)
 - **Email**: Resend
 - **Testing**: Vitest (unit), Playwright (E2E)
 - **Hosting**: Vercel
@@ -58,8 +57,7 @@ Copy `.env.example` to `.env.local` and configure the following:
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anonymous key
 - `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (server-side only)
 - `GOOGLE_AI_API_KEY` — Google AI API key (Gemini)
-- `OPENAI_API_KEY` — OpenAI API key (Whisper, Embeddings)
-- `ELEVENLABS_API_KEY` — ElevenLabs API key (TTS)
+- `OPENAI_API_KEY` — OpenAI API key (Embeddings)
 - `RESEND_API_KEY` — Resend API key (email)
 
 **Optional**:
@@ -101,7 +99,6 @@ meshit/
 │   │   ├── email/             # Email templates (Resend)
 │   │   ├── github/            # GitHub integration
 │   │   ├── supabase/          # Supabase client/server
-│   │   ├── voice/             # Voice services (Whisper, ElevenLabs)
 │   │   └── utils.ts           # Utility functions (cn, etc.)
 │   └── test/
 │       └── setup.ts           # Vitest setup

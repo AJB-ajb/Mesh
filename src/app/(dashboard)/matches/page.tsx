@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, Filter, Check, X, MessageSquare, Loader2 } from "lucide-react";
+import { Search, Filter, Check, MessageSquare, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,16 +51,12 @@ export default function MatchesPage() {
   const [error, setError] = useState<string | null>(null);
   const [applyingMatchId, setApplyingMatchId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchMatches();
-  }, []);
-
-  const fetchMatches = async () => {
+  const fetchMatches = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
       const response = await fetch("/api/matches/for-me");
-      
+
       if (!response.ok) {
         if (response.status === 401) {
           router.replace("/login");
@@ -71,21 +67,25 @@ export default function MatchesPage() {
       }
 
       const data = await response.json();
-      
+
       // Handle API-level errors (returned with 200 status)
       if (data.error && (!data.matches || data.matches.length === 0)) {
         setError(data.error);
         setMatches([]);
         return;
       }
-      
+
       setMatches(data.matches || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load matches");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    fetchMatches();
+  }, [fetchMatches]);
 
   const handleApply = async (matchId: string) => {
     try {
@@ -133,7 +133,9 @@ export default function MatchesPage() {
               </div>
               <div className="space-y-2">
                 <h3 className="font-semibold">
-                  {isProfileError ? "Complete Your Profile" : "Unable to Find Matches"}
+                  {isProfileError
+                    ? "Complete Your Profile"
+                    : "Unable to Find Matches"}
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-md">
                   {error}
@@ -213,10 +215,16 @@ export default function MatchesPage() {
                         </span>
                         <span
                           className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            statusColors[match.status as keyof typeof statusColors]
+                            statusColors[
+                              match.status as keyof typeof statusColors
+                            ]
                           }`}
                         >
-                          {statusLabels[match.status as keyof typeof statusLabels]}
+                          {
+                            statusLabels[
+                              match.status as keyof typeof statusLabels
+                            ]
+                          }
                         </span>
                       </div>
                       <p className="text-sm text-muted-foreground">
@@ -242,23 +250,24 @@ export default function MatchesPage() {
                   </p>
 
                   {/* Skills */}
-                  {project.required_skills && project.required_skills.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {project.required_skills.slice(0, 5).map((skill) => (
-                        <span
-                          key={skill}
-                          className="rounded-md border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium"
-                        >
-                          {skill}
-                        </span>
-                      ))}
-                      {project.required_skills.length > 5 && (
-                        <span className="rounded-md border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium">
-                          +{project.required_skills.length - 5}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  {project.required_skills &&
+                    project.required_skills.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {project.required_skills.slice(0, 5).map((skill) => (
+                          <span
+                            key={skill}
+                            className="rounded-md border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                        {project.required_skills.length > 5 && (
+                          <span className="rounded-md border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium">
+                            +{project.required_skills.length - 5}
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                   {/* Actions */}
                   <div className="flex gap-2">

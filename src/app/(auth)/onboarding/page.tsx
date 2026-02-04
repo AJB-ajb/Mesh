@@ -2,7 +2,6 @@
 
 import { Suspense, useEffect, useMemo, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { User } from "@supabase/supabase-js";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -33,12 +32,14 @@ function OnboardingContent() {
     // Only run once on initial mount
     if (hasCheckedUser.current) return;
     hasCheckedUser.current = true;
-    
+
     const checkUser = async () => {
       const supabase = createClient();
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) {
         router.replace("/login");
         return;
@@ -73,14 +74,16 @@ function OnboardingContent() {
       // New user - redirect to onboarding form
       const profileCompleted = user.user_metadata?.profile_completed;
       if (!profileCompleted) {
-        router.replace(`/onboarding/developer${next ? `?next=${encodeURIComponent(next)}` : ""}`);
+        router.replace(
+          `/onboarding/developer${next ? `?next=${encodeURIComponent(next)}` : ""}`,
+        );
         return;
       }
 
       // User has completed profile
       router.replace(next || "/dashboard");
     };
-    
+
     checkUser().catch(() => {
       router.replace("/login");
     });
@@ -107,12 +110,15 @@ function OnboardingContent() {
     // Use push instead of replace for more reliable navigation
     const destination =
       persona === "developer" ? "/onboarding/developer" : "/projects/new";
-    
+
     // If there's a custom next destination and it's not an onboarding route, use it
-    const finalDestination = next && !next.startsWith("/onboarding") 
-      ? (persona === "developer" ? "/onboarding/developer" : next)
-      : destination;
-    
+    const finalDestination =
+      next && !next.startsWith("/onboarding")
+        ? persona === "developer"
+          ? "/onboarding/developer"
+          : next
+        : destination;
+
     router.push(finalDestination);
   };
 
@@ -187,11 +193,13 @@ function OnboardingContent() {
 
 export default function OnboardingPage() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-sm text-muted-foreground">Loading...</p>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      }
+    >
       <OnboardingContent />
     </Suspense>
   );

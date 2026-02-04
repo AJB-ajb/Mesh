@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { createClient } from "@/lib/supabase/server";
 import { getTestDataValue } from "@/lib/environment";
+import { getInitials } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Messages",
@@ -20,20 +21,11 @@ const formatTimeAgo = (dateString: string) => {
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
   if (diffMins < 60) return `${diffMins} min${diffMins !== 1 ? "s" : ""} ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
+  if (diffHours < 24)
+    return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
   if (diffDays === 1) return "Yesterday";
   if (diffDays < 7) return `${diffDays} days ago`;
   return new Date(dateString).toLocaleDateString();
-};
-
-const getInitials = (name: string | null) => {
-  if (!name) return "U";
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
 };
 
 export default async function MessagesPage() {
@@ -118,7 +110,7 @@ export default async function MessagesPage() {
               user_id
             )
           )
-        `
+        `,
         )
         .in("project_id", projectIdsArray)
         .order("created_at", { ascending: false });
@@ -147,9 +139,13 @@ export default async function MessagesPage() {
           const projectId = msg.project_id;
           const senderId = msg.sender_id;
           const senderName =
-            (msg.profiles as any)?.full_name || "Unknown";
-          const project = msg.projects as any;
-          const projectTitle = project?.title || "Unknown Project";
+            ((msg.profiles as unknown as Record<string, unknown>)
+              ?.full_name as string) || "Unknown";
+          const project = msg.projects as unknown as Record<
+            string,
+            unknown
+          > | null;
+          const projectTitle = (project?.title as string) || "Unknown Project";
 
           if (!projectMap.has(projectId)) {
             projectMap.set(projectId, {
@@ -167,10 +163,17 @@ export default async function MessagesPage() {
 
           // Add creator to participants
           if (project?.creator_id) {
-            conv.participants.add(project.creator_id);
+            conv.participants.add(project.creator_id as string);
+            const projectProfiles = project.profiles as Record<
+              string,
+              unknown
+            > | null;
             const creatorName =
-              project.profiles?.full_name || "Unknown";
-            conv.participantNames.set(project.creator_id, creatorName);
+              (projectProfiles?.full_name as string) || "Unknown";
+            conv.participantNames.set(
+              project.creator_id as string,
+              creatorName,
+            );
           }
 
           conv.messages.push({
@@ -187,8 +190,7 @@ export default async function MessagesPage() {
         conversations = Array.from(projectMap.values()).map((conv) => {
           const sortedMessages = conv.messages.sort(
             (a, b) =>
-              new Date(b.createdAt).getTime() -
-              new Date(a.createdAt).getTime()
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
           );
           const lastMsg = sortedMessages[0];
 
@@ -203,23 +205,27 @@ export default async function MessagesPage() {
                 name: conv.participantNames.get(id) || "Unknown",
                 initials: getInitials(conv.participantNames.get(id) ?? null),
               })),
-            lastMessage: lastMsg ? {
-              sender: lastMsg.sender,
-              content: lastMsg.content,
-              time: lastMsg.time,
-            } : {
-              sender: "System",
-              content: "No messages yet",
-              time: "",
-            },
+            lastMessage: lastMsg
+              ? {
+                  sender: lastMsg.sender,
+                  content: lastMsg.content,
+                  time: lastMsg.time,
+                }
+              : {
+                  sender: "System",
+                  content: "No messages yet",
+                  time: "",
+                },
             unread: 0, // TODO: Implement unread count when notifications are added
           };
         });
 
         // Sort conversations by last message time
         conversations.sort((a, b) => {
-          const aTime = projectMap.get(a.projectId)?.messages[0]?.createdAt || "";
-          const bTime = projectMap.get(b.projectId)?.messages[0]?.createdAt || "";
+          const aTime =
+            projectMap.get(a.projectId)?.messages[0]?.createdAt || "";
+          const bTime =
+            projectMap.get(b.projectId)?.messages[0]?.createdAt || "";
           return new Date(bTime).getTime() - new Date(aTime).getTime();
         });
 
@@ -236,7 +242,7 @@ export default async function MessagesPage() {
               .sort(
                 (a, b) =>
                   new Date(a.createdAt).getTime() -
-                  new Date(b.createdAt).getTime()
+                  new Date(b.createdAt).getTime(),
               )
               .map((m) => ({
                 id: m.id,
@@ -320,9 +326,13 @@ export default async function MessagesPage() {
                 {selectedConversation.participants[0]?.initials || "P"}
               </div>
               <div>
-                <h2 className="font-medium">{selectedConversation.projectTitle}</h2>
+                <h2 className="font-medium">
+                  {selectedConversation.projectTitle}
+                </h2>
                 <p className="text-sm text-muted-foreground">
-                  {selectedConversation.participants.map((p) => p.name).join(", ") || "No participants"}
+                  {selectedConversation.participants
+                    .map((p) => p.name)
+                    .join(", ") || "No participants"}
                 </p>
               </div>
             </div>
@@ -343,9 +353,7 @@ export default async function MessagesPage() {
                           : "bg-muted"
                       }`}
                     >
-                      {isCurrentUser
-                        ? "ME"
-                        : getInitials(message.sender)}
+                      {isCurrentUser ? "ME" : getInitials(message.sender)}
                     </div>
                     <div
                       className={`rounded-lg p-3 max-w-[80%] ${
@@ -377,7 +385,8 @@ export default async function MessagesPage() {
                 </Button>
               </form>
               <p className="mt-2 text-xs text-muted-foreground">
-                Message sending will be implemented soon. For extended collaboration, consider moving to Slack or Discord.
+                Message sending will be implemented soon. For extended
+                collaboration, consider moving to Slack or Discord.
               </p>
             </div>
           </>

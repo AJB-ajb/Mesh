@@ -1,116 +1,98 @@
 # Mesh
 
-Project collaboration matching platform for small teams (2-5 people)
+Idea-based social platform for quickly finding people to do things with — projects, activities, and spontaneous plans.
 
 ## Problem
-- Finding collaborators requires high effort (scanning Slack/WhatsApp channels) 
+- Finding people to do things with requires high effort (scanning Slack/WhatsApp channels, messaging friends one by one)
 - Large communities don't scale for individual matching
 - Skill levels and personal compatibility are rarely explicit
 
-- Project first approach
+- Idea first approach
 - Fast setup first approach
 - Natural language interface
 
 ### Key Issues
 - Adoption, fast usability
-- Very low rate of old project, high responsiveness of users
+- High responsiveness — postings should be fresh and active
 
 ## Scope
-- Primary: Small teams (2-5 people)
-- Secondary: Medium teams (5-15 people)
-- Focus on projects; leisure / socializing also supported
+- Primary: Small groups (2-5 people), especially pairs
+- Projects, activities, and social plans are all first-class posting types
 - Don't artificially limit applicability
 
 ### Particular Use Cases
 - Hackathon teammates
 - Course project partners
-- Spontaneous project events
-- Mentor / mentee matching
-- Finding people that want to work on a project among friends
-  - Friends mode: only find project matches among friends 
+- Social activities (concert companion, tennis partner, board game night)
+- Spontaneous plans ("negotiation practice partner, online, today")
+- Sequential friend-asking: order friends by preference, send requests one-by-one until someone accepts
+- Finding someone from a larger group (classmates, community) without a specific person in mind
 
 ## Features
 
-
 ### UX
 - Setup profile page
-  - Enter personal profile via simple text description or transcript from voice (30s to 1min, possibly prompts that the person can answer)
-  - Profiles / Projects can be exported to text / markdown for easy sharing in other platforms
-  - Project has expiration date; can be reactivated
-  
-- Create project page
-  - Fully automated project creation from Slack/WhatsApp paste or voice transcript
-  - auto-create project thumbnail from transcript (Gemini / nano-banana)
-- Filter/find projects page
-  - filter via natural language / voice transcript
-  - approve projects: "I would like to collaborate on this project"
+  - Enter personal profile via simple text description or voice transcript (30s to 1min, possibly prompts the person can answer)
+  - Posting has expiration date; can be reactivated
+
+- Create posting page
+  - Fully automated posting creation from Slack/WhatsApp paste or voice transcript
+  - Auto-create posting thumbnail from transcript (Gemini)
+
+- Browse postings page
+  - Filter via natural language / voice transcript
+  - Express interest: "I'd like to join this"
+
 - Match page:
-  - Go through approvals from other users to have an application mechanic
+  - **Open mode**: Go through interest requests from other users (application mechanic)
+  - **Friend-ask mode**: Select and order friends to ask; send requests one-by-one until one accepts or all decline
 
 - Messaging page:
   - Basic instant messaging
-  - People can share their whatsapp / slack / telegram / discord links via button for direct integration
+  - People can share their WhatsApp / Slack / Telegram / Discord links via button for direct integration
+
 - Notifications:
-  - LangChain for NLP processing
-    - Extracting project information from voice / text
-    - Filling a project with details (e.g. web search for APIs / places / etc.)
-  - For time-critical projects, instant notifications
-  - Daily digest for other projects
+  - For time-critical postings, instant notifications
+  - Daily digest for other postings
     - Possibly AI-generated digest
 
-- Cursor / Antigravity for development
-- n8n for notifications 
-- v0: UI prototyping 
-  - extract screenshots if UI looks good
-- Miro for planning
-
-
-### Verification
-- Connecting with GitHub, LinkedIn for professional verification
-  - possibly AI checking profiles agree
-  - possibly using Playwright
-  
 ### Use Cases
-- Find collaborators for a project
-- Find mentors for a project
-- Find mentees for a project
-- Find friends for a project (more person focus)
+- Find people for a project
+- Find people for a social activity
+- Find a specific person from your friend list for a plan (sequential friend-ask)
+- Find someone suitable from a larger group without a specific person in mind
 
+See [UseCases.md](UseCases.md) for detailed examples and scenarios.
 
 ### Matching
-See [Matching.md](Matching.md) for detailed matching algorithm considerations.
+See [Matching.md](Matching.md) for the matching algorithm.
 
 ### Core
 - Fast posting (paste from Slack/WhatsApp, AI extracts features)
-- Project keywords for similarity matching
+- Posting keywords for similarity matching
 - One-click OAuth login, no setup required
 - Notifications: daily digest + instant for high matches
+- _Cascading invites_: Friend-ask mode for sequential 1:1 requests
 
 ### Future
 - Calendar integration (auto-suggest time slots / auto update availability)
 - Location suggestions
-- Friend-based filtering
-- Rating system (1-5 scale, post-project reviews)
+- Verification (GitHub, LinkedIn for professional postings)
+- Rating system (objective phrasing, no visible aggregate scores, honest feedback for growth)
 - AI-based user interface
-  - navigate, search and filter via natural language
-  - this automatically translates to UI actions
-
-- Extension: Preferential approval
-  - I.e. rate projects, if multiple dates are there, the first one is matched preferentially / "Super-like"
-
-## Rating System
-- No visible aggregate scores
-- Objective phrasing (e.g. "Punctuality: 90% on time")
-- Compatibility scores derived from ratings
-- Goal: honest feedback for growth, not reputation gaming
+  - Navigate, search and filter via natural language
+  - Automatically translates to UI actions
+- Mentor / mentee matching
 
 ## Design Principles
 - Minimal friction
 - No required configuration
 - Strong filters available (location, skill level)
+- We don't need to be perfect, just better than random chance
 
 ## Motivation
 - Collaboration is a core human need
+- 1:1 coordination is common but poorly served by current tools
 - Small teams (2-4) outperform large groups for most tasks
 - Current tools (Slack, WhatsApp) don't scale for matching
 - Pair work is undervalued and underutilized
@@ -126,26 +108,50 @@ See [Matching.md](Matching.md) for detailed matching algorithm considerations.
 ## Tech Stack
 
 ### Core
-- **Next.js 16** (TypeScript, App Router)
-- **React 19**
-- **pnpm** (package manager)
+- **Next.js 16.1.6** (TypeScript, App Router)
+- **React 19.2.3**
+- **pnpm 10.28.1** (package manager)
 - **fnm** (Node.js version manager)
 
-### Database
-- **PostgreSQL** with **Prisma 7**
-- **@prisma/adapter-pg** (connection adapter)
-- **@prisma/extension-accelerate** (connection pooling)
+### Database & Backend
+- **Supabase** (PostgreSQL-based)
+  - `@supabase/supabase-js` - Client library
+  - `@supabase/ssr` - Server-side rendering support
+  - Supabase Auth (OAuth: Google, GitHub, LinkedIn)
+  - Real-time subscriptions
 
-### Authentication
-- **NextAuth.js v5** (Google OAuth)
-- **@auth/prisma-adapter**
+### AI
+- **Google Gemini** (`@google/generative-ai`) - AI text generation
+- **OpenAI** - Embeddings, GPT integration
+
+### UI & Styling
+- **Tailwind CSS 4** - Styling framework
+- **Radix UI** - Accessible component primitives
+  - `@radix-ui/react-alert-dialog`
+  - `@radix-ui/react-avatar`
+  - `@radix-ui/react-slot`
+  - `@radix-ui/react-tabs`
+- **Lucide React** - Icon library
+- **next-themes** - Dark mode support
+- **class-variance-authority** - Component variants
+- **Rive** (`@rive-app/react-webgl2`) - Animations
+
+### PWA
+- **Serwist** (`@serwist/next`) - Service worker management
 
 ### Testing
-- **Playwright** (E2E testing)
-- **Vitest** (unit/integration testing)
+- **Playwright** (`@playwright/test`) - E2E testing
+- **Vitest** - Unit/integration testing
+- **React Testing Library** - Component testing
+
+### Development Tools
+- **TypeScript 5**
+- **ESLint 9** with Next.js config
+- **Vercel CLI** - Deployment tooling
+- **Supabase CLI** - Database management
 
 ### Deployment
-- **Vercel**
+- **Vercel** - Hosting platform
 
 ## Development
 
@@ -155,10 +161,10 @@ See [Matching.md](Matching.md) for detailed matching algorithm considerations.
 ### Key Challenges
 - Matching algorithm design
 
-
 ### Hackathon MVP
 - PWA website
 - Google OAuth
 - Weighted matching
 - Free tier only
+- Friend-ask mode (sequential 1:1 requests)
 - No availability-based matching (only time commitment)

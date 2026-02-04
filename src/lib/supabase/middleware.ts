@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({
+  const response = NextResponse.next({
     request: {
       headers: request.headers,
     },
@@ -14,31 +14,32 @@ export async function updateSession(request: NextRequest) {
 
   if (!url || !anonKey) {
     throw new Error(
-      "Missing Supabase env vars. Set SUPABASE_URL/SUPABASE_ANON_KEY (server) and NEXT_PUBLIC_SUPABASE_URL/NEXT_PUBLIC_SUPABASE_ANON_KEY (client)."
+      "Missing Supabase env vars. Set SUPABASE_URL/SUPABASE_ANON_KEY (server) and NEXT_PUBLIC_SUPABASE_URL/NEXT_PUBLIC_SUPABASE_ANON_KEY (client).",
     );
   }
 
-  const supabase = createServerClient(
-    url,
-    anonKey,
-    {
-      cookies: {
-        get(name) {
-          return request.cookies.get(name)?.value;
-        },
-        set(name, value, options) {
-          response.cookies.set({ name, value, ...options });
-        },
-        remove(name, options) {
-          response.cookies.set({ name, value: "", ...options });
-        },
+  const supabase = createServerClient(url, anonKey, {
+    cookies: {
+      get(name) {
+        return request.cookies.get(name)?.value;
       },
-    }
-  );
+      set(name, value, options) {
+        response.cookies.set({ name, value, ...options });
+      },
+      remove(name, options) {
+        response.cookies.set({ name, value: "", ...options });
+      },
+    },
+  });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  return { response, user };
+    return { response, user };
+  } catch (error) {
+    console.error("Supabase Middleware Auth Error:", error);
+    return { response, user: null };
+  }
 }

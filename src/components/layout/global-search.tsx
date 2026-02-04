@@ -38,7 +38,7 @@ export function GlobalSearch() {
   // Debounced search
   useEffect(() => {
     if (!query.trim()) {
-      setResults([]);
+      queueMicrotask(() => setResults([]));
       return;
     }
 
@@ -65,7 +65,9 @@ export function GlobalSearch() {
         id: p.id,
         type: "project",
         title: p.title,
-        subtitle: p.description?.slice(0, 80) + (p.description?.length > 80 ? "..." : "") || "",
+        subtitle:
+          p.description?.slice(0, 80) +
+            (p.description?.length > 80 ? "..." : "") || "",
         skills: p.required_skills || [],
         status: p.status,
       }));
@@ -86,6 +88,22 @@ export function GlobalSearch() {
     return () => clearTimeout(timeoutId);
   }, [query]);
 
+  // Handle selection
+  const handleSelect = useCallback(
+    (result: SearchResult) => {
+      if (result.type === "project") {
+        router.push(`/projects/${result.id}`);
+      } else {
+        // For profiles, we could navigate to a public profile page
+        // For now, just close the search
+        router.push(`/profile`);
+      }
+      setIsOpen(false);
+      setQuery("");
+    },
+    [router],
+  );
+
   // Keyboard navigation
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -103,21 +121,8 @@ export function GlobalSearch() {
         setQuery("");
       }
     },
-    [results, selectedIndex]
+    [results, selectedIndex, handleSelect],
   );
-
-  // Handle selection
-  const handleSelect = (result: SearchResult) => {
-    if (result.type === "project") {
-      router.push(`/projects/${result.id}`);
-    } else {
-      // For profiles, we could navigate to a public profile page
-      // For now, just close the search
-      router.push(`/profile`);
-    }
-    setIsOpen(false);
-    setQuery("");
-  };
 
   // Global keyboard shortcut (Cmd/Ctrl + K)
   useEffect(() => {
@@ -156,7 +161,7 @@ export function GlobalSearch() {
   useEffect(() => {
     if (resultsRef.current && results.length > 0) {
       const selectedElement = resultsRef.current.querySelector(
-        `[data-index="${selectedIndex}"]`
+        `[data-index="${selectedIndex}"]`,
       );
       selectedElement?.scrollIntoView({ block: "nearest" });
     }
@@ -221,7 +226,7 @@ export function GlobalSearch() {
                     .filter((r) => r.type === "project")
                     .map((result, idx) => {
                       const globalIdx = results.findIndex(
-                        (r) => r.id === result.id && r.type === result.type
+                        (r) => r.id === result.id && r.type === result.type,
                       );
                       return (
                         <button
@@ -230,7 +235,7 @@ export function GlobalSearch() {
                           onClick={() => handleSelect(result)}
                           className={cn(
                             "w-full flex items-start gap-3 px-3 py-3 text-left hover:bg-accent transition-colors",
-                            selectedIndex === globalIdx && "bg-accent"
+                            selectedIndex === globalIdx && "bg-accent",
                           )}
                         >
                           <FolderKanban className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
@@ -287,7 +292,7 @@ export function GlobalSearch() {
                     .filter((r) => r.type === "profile")
                     .map((result) => {
                       const globalIdx = results.findIndex(
-                        (r) => r.id === result.id && r.type === result.type
+                        (r) => r.id === result.id && r.type === result.type,
                       );
                       return (
                         <button
@@ -296,7 +301,7 @@ export function GlobalSearch() {
                           onClick={() => handleSelect(result)}
                           className={cn(
                             "w-full flex items-start gap-3 px-3 py-3 text-left hover:bg-accent transition-colors",
-                            selectedIndex === globalIdx && "bg-accent"
+                            selectedIndex === globalIdx && "bg-accent",
                           )}
                         >
                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium shrink-0">

@@ -26,6 +26,7 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/dashboard";
+  const isLinking = searchParams.get("link") === "true";
 
   if (code) {
     const supabase = await createClient();
@@ -42,13 +43,23 @@ export async function GET(request: Request) {
         );
       }
 
-      // Check if user signed in with GitHub - trigger async profile sync
-      const provider = user.app_metadata?.provider;
-      if (provider === 'github') {
+      // Check if any identity is GitHub - trigger async profile sync
+      const identities = user.identities || [];
+      const hasGithubIdentity = identities.some((identity: { provider: string }) => identity.provider === 'github');
+
+      if (hasGithubIdentity) {
         // Trigger GitHub profile extraction in background (async)
         triggerGitHubSync(origin);
       }
 
+      // If this was an account linking flow, redirect to settings
+      if (isLinking) {
+        return NextResponse.redirect(
+          `${origin}/settings?success=Account%20linked%20successfully`
+        );
+      }
+
+      // Regular sign-in/sign-up flow below
       // Check if user has a profile in the database (existing user)
       const { data: profile } = await supabase
         .from("profiles")
@@ -102,6 +113,14 @@ export async function GET(request: Request) {
 
       // User has completed profile
       return NextResponse.redirect(`${origin}${next}`);
+    } else {
+      // Handle linking errors
+      if (isLinking) {
+        const errorMessage = error.message || "Failed to link account";
+        return NextResponse.redirect(
+          `${origin}/settings?error=${encodeURIComponent(errorMessage)}`
+        );
+      }
     }
   }
 

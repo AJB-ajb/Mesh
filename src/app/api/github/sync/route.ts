@@ -59,19 +59,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if user signed in with GitHub
+    // Check if user has GitHub linked (either primary or linked identity)
     // Supabase stores provider info in multiple places
-    const appProvider = user.app_metadata?.provider;
-    const appProviders = user.app_metadata?.providers || [];
     const identities = user.identities || [];
     const hasGithubIdentity = identities.some((identity: { provider: string }) => identity.provider === 'github');
-    const hasGithubProvider = appProvider === 'github' || appProviders.includes('github') || hasGithubIdentity;
-    
-    if (!hasGithubProvider) {
+
+    if (!hasGithubIdentity) {
       return NextResponse.json(
         {
           error: 'GitHub account not linked',
-          message: 'Please sign in with GitHub to sync your profile',
+          message: 'Please link your GitHub account in Settings to sync your profile',
         },
         { status: 400 }
       );

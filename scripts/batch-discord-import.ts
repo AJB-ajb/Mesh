@@ -4,7 +4,7 @@
  * Paste Discord messages below and run: set -a && source .env && set +a && npx tsx scripts/batch-discord-import.ts
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY!;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -48,17 +48,17 @@ interface ParsedMessage {
 }
 
 async function extractProfile(username: string, content: string) {
-  const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
+  const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: "gpt-4o-mini",
       messages: [
         {
-          role: 'system',
+          role: "system",
           content: `Extract developer profile from Discord message. Return JSON with:
 - full_name (use username if not found)
 - headline (professional title based on skills/context)
@@ -72,11 +72,11 @@ async function extractProfile(username: string, content: string) {
 Be thorough in extracting skills and interests!`,
         },
         {
-          role: 'user',
+          role: "user",
           content: `Username: ${username}\nMessage: ${content}`,
         },
       ],
-      response_format: { type: 'json_object' },
+      response_format: { type: "json_object" },
       temperature: 0.3,
     }),
   });
@@ -85,9 +85,12 @@ Be thorough in extracting skills and interests!`,
   return JSON.parse(aiData.choices[0].message.content);
 }
 
-async function createProfile(username: string, profile: any) {
+async function createProfile(
+  username: string,
+  profile: Record<string, unknown>,
+) {
   // Create email from username
-  const email = `${username.toLowerCase().replace(/[^a-z0-9]/g, '')}_discord@meshit.hackathon`;
+  const email = `${username.toLowerCase().replace(/[^a-z0-9]/g, "")}_discord@meshit.hackathon`;
 
   // Check if user exists
   let userId: string;
@@ -104,7 +107,7 @@ async function createProfile(username: string, profile: any) {
       user_metadata: {
         full_name: profile.full_name || username,
         discord_username: username,
-        imported_from: 'discord_hackathon',
+        imported_from: "discord_hackathon",
         import_date: new Date().toISOString(),
       },
     });
@@ -124,16 +127,16 @@ async function createProfile(username: string, profile: any) {
       ...(profile.interests || []),
     ]
       .filter(Boolean)
-      .join(' ');
+      .join(" ");
 
-    const embResponse = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
+    const embResponse = await fetch("https://api.openai.com/v1/embeddings", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'text-embedding-3-small',
+        model: "text-embedding-3-small",
         input: embText,
       }),
     });
@@ -150,17 +153,19 @@ async function createProfile(username: string, profile: any) {
     bio: profile.bio,
     skills: profile.skills || [],
     interests: profile.interests || [],
-    experience_level: profile.experience_level || 'intermediate',
-    collaboration_style: 'hybrid',
+    experience_level: profile.experience_level || "intermediate",
+    collaboration_style: "hybrid",
     availability_hours: profile.availability_hours || 15,
     github_url: profile.github_url || null,
     portfolio_url: profile.portfolio_url || null,
     project_preferences: {},
-    embedding: embedding ? `[${embedding.join(',')}]` : null,
+    embedding: embedding ? `[${embedding.join(",")}]` : null,
     updated_at: new Date().toISOString(),
   };
 
-  const { error: profileError } = await supabase.from('profiles').upsert(profileData);
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .upsert(profileData);
 
   if (profileError) throw profileError;
 
@@ -168,13 +173,13 @@ async function createProfile(username: string, profile: any) {
 }
 
 async function main() {
-  console.log('\n╔══════════════════════════════════════════════════════════╗');
-  console.log('║  Discord Batch Importer for MeshIt Hackathon           ║');
-  console.log('╚══════════════════════════════════════════════════════════╝\n');
+  console.log("\n╔══════════════════════════════════════════════════════════╗");
+  console.log("║  Discord Batch Importer for MeshIt Hackathon           ║");
+  console.log("╚══════════════════════════════════════════════════════════╝\n");
 
   // Parse messages
   const messages = DISCORD_MESSAGES.trim()
-    .split('\n\n')
+    .split("\n\n")
     .filter((msg) => msg.trim().length > 0)
     .map((msg) => {
       const match = msg.match(/^(.+?)\s*—\s*(.+?):\s*(.+)$/s);
@@ -204,13 +209,16 @@ async function main() {
       console.log(`   🧠 AI extracted: ${profile.skills?.length || 0} skills`);
 
       // Create user and profile in Supabase
-      const { email, profile: savedProfile } = await createProfile(msg.username, profile);
+      const { email, profile: savedProfile } = await createProfile(
+        msg.username,
+        profile,
+      );
 
       console.log(`   ✅ Profile saved!`);
       console.log(`   📧 Email: ${email}`);
       console.log(`   💼 ${savedProfile.headline}`);
-      console.log(`   🛠️  Skills: ${savedProfile.skills.join(', ')}`);
-      console.log(`   🎯 Interests: ${savedProfile.interests.join(', ')}`);
+      console.log(`   🛠️  Skills: ${savedProfile.skills.join(", ")}`);
+      console.log(`   🎯 Interests: ${savedProfile.interests.join(", ")}`);
 
       successCount++;
     } catch (error) {
@@ -219,11 +227,11 @@ async function main() {
     }
   }
 
-  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('\n✨ Batch Import Complete!\n');
+  console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("\n✨ Batch Import Complete!\n");
   console.log(`   ✅ Success: ${successCount} profiles`);
   console.log(`   ❌ Errors: ${errorCount} profiles`);
-  console.log('\n🚀 Users can now be matched on MeshIt!\n');
+  console.log("\n🚀 Users can now be matched on MeshIt!\n");
 }
 
 main().catch(console.error);

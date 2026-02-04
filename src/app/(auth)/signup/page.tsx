@@ -8,12 +8,17 @@ import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
-import { GoogleIcon, GitHubIcon, LinkedInIcon, LoaderIcon } from "@/components/icons/auth-icons";
+import {
+  GoogleIcon,
+  GitHubIcon,
+  LinkedInIcon,
+  LoaderIcon,
+} from "@/components/icons/auth-icons";
 
 type OAuthProvider = "google" | "github" | "linkedin" | null;
 
 export default function SignUpPage() {
-  const router = useRouter();
+  const _router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider>(null);
   const [email, setEmail] = useState("");
@@ -165,7 +170,11 @@ export default function SignUpPage() {
                 disabled={isLoading || isOAuthLoading}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading || isOAuthLoading}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isLoading || isOAuthLoading}
+            >
               {isLoading ? "Creating account..." : "Sign up"}
             </Button>
           </form>
@@ -175,7 +184,9 @@ export default function SignUpPage() {
               <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+              <span className="bg-card px-2 text-muted-foreground">
+                Or continue with
+              </span>
             </div>
           </div>
 

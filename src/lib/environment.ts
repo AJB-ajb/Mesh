@@ -11,7 +11,7 @@
 /**
  * The production URL for the app.
  */
-const PRODUCTION_URL = "mesh-it.vercel.app";
+import { PRODUCTION_URL } from "./constants";
 
 /**
  * Check if the app is running in production.

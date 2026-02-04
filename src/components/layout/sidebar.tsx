@@ -38,19 +38,20 @@ interface SidebarProps {
 
 export function Sidebar({ className }: SidebarProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
-  // Load collapsed state from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('sidebar-collapsed');
-    if (saved) setIsCollapsed(JSON.parse(saved));
-  }, []);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    // Only access localStorage on client side
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("sidebar-collapsed");
+      return saved ? JSON.parse(saved) : false;
+    }
+    return false;
+  });
 
   // Save collapsed state
   const toggleCollapse = () => {
     const newState = !isCollapsed;
     setIsCollapsed(newState);
-    localStorage.setItem('sidebar-collapsed', JSON.stringify(newState));
+    localStorage.setItem("sidebar-collapsed", JSON.stringify(newState));
   };
 
   return (
@@ -74,7 +75,7 @@ export function Sidebar({ className }: SidebarProps) {
       <div
         className={cn(
           "fixed inset-0 z-40 bg-background/80 backdrop-blur-sm transition-opacity duration-300 md:hidden",
-          isMobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+          isMobileOpen ? "opacity-100" : "opacity-0 pointer-events-none",
         )}
         onClick={() => setIsMobileOpen(false)}
         aria-hidden="true"
@@ -89,16 +90,20 @@ export function Sidebar({ className }: SidebarProps) {
           // Desktop: collapsed or expanded
           isCollapsed ? "md:w-16" : "md:w-64",
           // Mobile: slide in/out
-          isMobileOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0",
-          className
+          isMobileOpen
+            ? "translate-x-0 w-64"
+            : "-translate-x-full md:translate-x-0",
+          className,
         )}
       >
         {/* Logo */}
         <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
-          <div className={cn(
-            "transition-opacity duration-200",
-            isCollapsed ? "md:opacity-0 md:w-0" : "opacity-100"
-          )}>
+          <div
+            className={cn(
+              "transition-opacity duration-200",
+              isCollapsed ? "md:opacity-0 md:w-0" : "opacity-100",
+            )}
+          >
             <Logo href="/dashboard" />
           </div>
           {/* Collapse toggle - desktop only */}
@@ -108,28 +113,32 @@ export function Sidebar({ className }: SidebarProps) {
             className="hidden md:flex h-8 w-8 text-muted-foreground hover:text-foreground"
             onClick={toggleCollapse}
           >
-            <ChevronLeft className={cn(
-              "h-4 w-4 transition-transform duration-300",
-              isCollapsed && "rotate-180"
-            )} />
+            <ChevronLeft
+              className={cn(
+                "h-4 w-4 transition-transform duration-300",
+                isCollapsed && "rotate-180",
+              )}
+            />
           </Button>
         </div>
 
         {/* New Project button */}
         <div className="px-3 py-4">
-          <Button 
+          <Button
             className={cn(
               "w-full justify-start gap-2 transition-all duration-200",
-              isCollapsed && "md:justify-center md:px-2"
-            )} 
+              isCollapsed && "md:justify-center md:px-2",
+            )}
             asChild
           >
             <Link href="/projects/new">
               <Plus className="h-4 w-4 flex-shrink-0" />
-              <span className={cn(
-                "transition-opacity duration-200",
-                isCollapsed && "md:hidden"
-              )}>
+              <span
+                className={cn(
+                  "transition-opacity duration-200",
+                  isCollapsed && "md:hidden",
+                )}
+              >
                 New Project
               </span>
             </Link>
@@ -137,7 +146,7 @@ export function Sidebar({ className }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <nav 
+        <nav
           className="flex-1 space-y-1 px-3"
           role="navigation"
           aria-label="Main navigation"
@@ -169,13 +178,13 @@ export function Sidebar({ className }: SidebarProps) {
         </div>
 
         {/* Footer */}
-        <div className={cn(
-          "border-t border-sidebar-border p-4 transition-opacity duration-200",
-          isCollapsed && "md:opacity-0"
-        )}>
-          <p className="text-xs text-muted-foreground">
-            © 2026 MeshIt
-          </p>
+        <div
+          className={cn(
+            "border-t border-sidebar-border p-4 transition-opacity duration-200",
+            isCollapsed && "md:opacity-0",
+          )}
+        >
+          <p className="text-xs text-muted-foreground">© 2026 MeshIt</p>
         </div>
       </aside>
     </>

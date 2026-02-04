@@ -17,6 +17,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { formatScore } from "@/lib/matching/scoring";
 import type { ScoreBreakdown } from "@/lib/supabase/types";
+import { getInitials } from "@/lib/format";
 
 type Project = {
   id: string;
@@ -73,16 +74,6 @@ const formatDate = (dateString: string) => {
   if (diffDays < 7) return `${diffDays} days ago`;
   if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
   return date.toLocaleDateString();
-};
-
-const getInitials = (name: string | null) => {
-  if (!name) return "U";
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
 };
 
 export default function ProjectsPage() {

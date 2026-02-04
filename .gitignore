@@ -75,14 +75,14 @@ venv/
 .codex*
 .cursor*
 .gemini*
-.github*
+.github_copilot*
 .agent/*
 
 # Logs
 *.log
 logs/
 .env*.local
- .claude/
+.claude/
 .pnpm-store/
 
 # Serwist

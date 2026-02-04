@@ -1,7 +1,17 @@
 import { createClient } from '@/lib/supabase/server';
-import { ProfileData } from '@/lib/voice/types';
 
-// Extended profile data for voice extraction (includes all fields from AI extractor)
+// Profile data interface (previously from voice types)
+interface ProfileData {
+  bio?: string;
+  skills?: string[];
+  interests?: string[];
+  experience_years?: number;
+  availability_hours?: number | string;
+  collaboration_style?: string;
+  role?: string;
+}
+
+// Extended profile data for AI extraction (includes all fields from AI extractor)
 interface ExtendedProfileData extends Partial<ProfileData> {
   full_name?: string;
   headline?: string;
@@ -12,7 +22,7 @@ interface ExtendedProfileData extends Partial<ProfileData> {
 }
 
 /**
- * Save voice onboarding profile data to Supabase
+ * Save AI-extracted profile data to Supabase
  * Handles all fields extracted by the AI (same schema as form's AI Extract)
  */
 export async function saveVoiceProfile(userId: string, data: ExtendedProfileData) {

@@ -1,0 +1,21 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "This is a strong match! Your extensive React and TypeScript experience aligns perfectly with the project's technical requirements. With 5 years of full-stack development and 20 hours per week availability, you have the skills and time commitment needed to contribute meaningfully to this project."
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 120,
+    "candidatesTokenCount": 55,
+    "totalTokenCount": 175
+  }
+}

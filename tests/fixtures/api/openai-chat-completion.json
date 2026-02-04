@@ -1,0 +1,25 @@
+{
+  "id": "chatcmpl-mock-12345",
+  "object": "chat.completion",
+  "created": 1704067200,
+  "model": "gpt-4o-mini",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "function_call": {
+          "name": "extract_profile",
+          "arguments": "{\"skills\":[\"React\",\"TypeScript\",\"Node.js\",\"PostgreSQL\",\"Next.js\"],\"experience_level\":\"senior\",\"headline\":\"Full-Stack Developer\",\"interests\":[\"Web Development\",\"AI Applications\",\"Developer Tools\"],\"availability_hours\":20,\"collaboration_style\":\"async\",\"bio\":\"Experienced full-stack developer with a passion for building scalable web applications and modern developer tools.\"}"
+        }
+      },
+      "finish_reason": "function_call"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 150,
+    "completion_tokens": 75,
+    "total_tokens": 225
+  }
+}
