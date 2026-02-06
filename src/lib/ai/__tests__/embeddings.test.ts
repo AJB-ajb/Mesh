@@ -13,6 +13,11 @@ global.fetch = mockFetch;
 describe("embeddings", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.stubEnv("OPENAI_API_KEY", "test-key");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   describe("validateEmbedding", () => {
@@ -47,10 +52,14 @@ describe("embeddings", () => {
   describe("generateEmbedding", () => {
     // Note: Testing API key absence requires module reload which is complex in vitest
     // The module checks for OPENAI_API_KEY at load time and throws at runtime if missing
-    
+
     it("throws error for empty text", async () => {
-      await expect(generateEmbedding("")).rejects.toThrow("Text cannot be empty");
-      await expect(generateEmbedding("   ")).rejects.toThrow("Text cannot be empty");
+      await expect(generateEmbedding("")).rejects.toThrow(
+        "Text cannot be empty",
+      );
+      await expect(generateEmbedding("   ")).rejects.toThrow(
+        "Text cannot be empty",
+      );
     });
 
     it("calls OpenAI API with correct endpoint and method", async () => {
@@ -71,7 +80,7 @@ describe("embeddings", () => {
       expect(options.method).toBe("POST");
       expect(options.headers["Content-Type"]).toBe("application/json");
       expect(options.headers["Authorization"]).toMatch(/^Bearer /);
-      
+
       // Verify the body contains correct model and input
       const body = JSON.parse(options.body);
       expect(body.model).toBe("text-embedding-3-small");
@@ -96,7 +105,7 @@ describe("embeddings", () => {
         expect.any(String),
         expect.objectContaining({
           body: expect.stringContaining('"input":"test text"'),
-        })
+        }),
       );
     });
 
@@ -108,7 +117,9 @@ describe("embeddings", () => {
         json: async () => ({ error: { message: "Invalid API key" } }),
       });
 
-      await expect(generateEmbedding("test")).rejects.toThrow("OpenAI API error: 401");
+      await expect(generateEmbedding("test")).rejects.toThrow(
+        "OpenAI API error: 401",
+      );
     });
 
     it("throws error on invalid response format", async () => {
@@ -118,7 +129,7 @@ describe("embeddings", () => {
       });
 
       await expect(generateEmbedding("test")).rejects.toThrow(
-        "Invalid embedding response from OpenAI API"
+        "Invalid embedding response from OpenAI API",
       );
     });
 
@@ -131,7 +142,7 @@ describe("embeddings", () => {
       });
 
       await expect(generateEmbedding("test")).rejects.toThrow(
-        "Expected embedding dimension 1536, got 768"
+        "Expected embedding dimension 1536, got 768",
       );
     });
   });
@@ -150,7 +161,7 @@ describe("embeddings", () => {
         "I am a developer",
         ["TypeScript", "React"],
         ["open source", "web dev"],
-        "Full Stack Developer"
+        "Full Stack Developer",
       );
 
       const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
@@ -196,12 +207,12 @@ describe("embeddings", () => {
 
     it("throws error when all fields are empty", async () => {
       await expect(
-        generateProfileEmbedding(null, null, null, null)
+        generateProfileEmbedding(null, null, null, null),
       ).rejects.toThrow("Profile must have at least one field");
 
-      await expect(
-        generateProfileEmbedding("", [], [], "")
-      ).rejects.toThrow("Profile must have at least one field");
+      await expect(generateProfileEmbedding("", [], [], "")).rejects.toThrow(
+        "Profile must have at least one field",
+      );
     });
   });
 
@@ -218,13 +229,17 @@ describe("embeddings", () => {
       await generateProjectEmbedding(
         "AI Assistant",
         "Build an AI-powered coding assistant",
-        ["Python", "Machine Learning"]
+        ["Python", "Machine Learning"],
       );
 
       const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(callBody.input).toContain("Title: AI Assistant");
-      expect(callBody.input).toContain("Description: Build an AI-powered coding assistant");
-      expect(callBody.input).toContain("Required Skills: Python, Machine Learning");
+      expect(callBody.input).toContain(
+        "Description: Build an AI-powered coding assistant",
+      );
+      expect(callBody.input).toContain(
+        "Required Skills: Python, Machine Learning",
+      );
     });
 
     it("handles null required skills", async () => {

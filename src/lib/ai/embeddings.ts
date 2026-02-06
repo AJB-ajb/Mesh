@@ -3,14 +3,6 @@
  * Generates 1536-dimensional vectors for semantic similarity search
  */
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-
-if (!OPENAI_API_KEY) {
-  console.warn(
-    "OPENAI_API_KEY not set. Embedding generation will fail."
-  );
-}
-
 const EMBEDDING_MODEL = "text-embedding-3-small";
 const EMBEDDING_DIMENSION = 1536;
 
@@ -20,7 +12,8 @@ const EMBEDDING_DIMENSION = 1536;
  * @returns A 1536-dimensional vector array
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
-  if (!OPENAI_API_KEY) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
     throw new Error("OPENAI_API_KEY environment variable is not set");
   }
 
@@ -33,7 +26,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: EMBEDDING_MODEL,
@@ -45,7 +38,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
       throw new Error(
-        `OpenAI API error: ${response.status} ${response.statusText}. ${JSON.stringify(error)}`
+        `OpenAI API error: ${response.status} ${response.statusText}. ${JSON.stringify(error)}`,
       );
     }
 
@@ -58,7 +51,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 
     if (embedding.length !== EMBEDDING_DIMENSION) {
       throw new Error(
-        `Expected embedding dimension ${EMBEDDING_DIMENSION}, got ${embedding.length}`
+        `Expected embedding dimension ${EMBEDDING_DIMENSION}, got ${embedding.length}`,
       );
     }
 
@@ -79,7 +72,7 @@ export async function generateProfileEmbedding(
   bio: string | null,
   skills: string[] | null,
   interests: string[] | null,
-  headline: string | null
+  headline: string | null,
 ): Promise<number[]> {
   const parts: string[] = [];
 
@@ -102,7 +95,9 @@ export async function generateProfileEmbedding(
   const combinedText = parts.join("\n\n");
 
   if (!combinedText.trim()) {
-    throw new Error("Profile must have at least one field (bio, skills, or interests)");
+    throw new Error(
+      "Profile must have at least one field (bio, skills, or interests)",
+    );
   }
 
   return generateEmbedding(combinedText);
@@ -115,7 +110,7 @@ export async function generateProfileEmbedding(
 export async function generateProjectEmbedding(
   title: string,
   description: string,
-  requiredSkills: string[] | null
+  requiredSkills: string[] | null,
 ): Promise<number[]> {
   const parts: string[] = [];
 

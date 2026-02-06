@@ -3,6 +3,7 @@
 Idea-based social platform for quickly finding people to do things with — projects, activities, and spontaneous plans.
 
 ## Problem
+
 - Finding people to do things with requires high effort (scanning Slack/WhatsApp channels, messaging friends one by one)
 - Large communities don't scale for individual matching
 - Skill levels and personal compatibility are rarely explicit
@@ -12,15 +13,18 @@ Idea-based social platform for quickly finding people to do things with — proj
 - Natural language interface
 
 ### Key Issues
+
 - Adoption, fast usability
 - High responsiveness — postings should be fresh and active
 
 ## Scope
+
 - Primary: Small groups (2-5 people), especially pairs
 - Projects, activities, and social plans are all first-class posting types
 - Don't artificially limit applicability
 
 ### Particular Use Cases
+
 - Hackathon teammates
 - Course project partners
 - Social activities (concert companion, tennis partner, board game night)
@@ -31,6 +35,7 @@ Idea-based social platform for quickly finding people to do things with — proj
 ## Features
 
 ### UX
+
 - Setup profile page
   - Enter personal profile via simple text description or voice transcript (30s to 1min, possibly prompts the person can answer)
   - Posting has expiration date; can be reactivated
@@ -57,6 +62,7 @@ Idea-based social platform for quickly finding people to do things with — proj
     - Possibly AI-generated digest
 
 ### Use Cases
+
 - Find people for a project
 - Find people for a social activity
 - Find a specific person from your friend list for a plan (sequential friend-ask)
@@ -65,9 +71,11 @@ Idea-based social platform for quickly finding people to do things with — proj
 See [UseCases.md](UseCases.md) for detailed examples and scenarios.
 
 ### Matching
+
 See [Matching.md](Matching.md) for the matching algorithm.
 
 ### Core
+
 - Fast posting (paste from Slack/WhatsApp, AI extracts features)
 - Posting keywords for similarity matching
 - One-click OAuth login, no setup required
@@ -75,6 +83,7 @@ See [Matching.md](Matching.md) for the matching algorithm.
 - _Cascading invites_: Friend-ask mode for sequential 1:1 requests
 
 ### Future
+
 - Calendar integration (auto-suggest time slots / auto update availability)
 - Location suggestions
 - Verification (GitHub, LinkedIn for professional postings)
@@ -85,12 +94,14 @@ See [Matching.md](Matching.md) for the matching algorithm.
 - Mentor / mentee matching
 
 ## Design Principles
+
 - Minimal friction
 - No required configuration
 - Strong filters available (location, skill level)
 - We don't need to be perfect, just better than random chance
 
 ## Motivation
+
 - Collaboration is a core human need
 - 1:1 coordination is common but poorly served by current tools
 - Small teams (2-4) outperform large groups for most tasks
@@ -98,9 +109,11 @@ See [Matching.md](Matching.md) for the matching algorithm.
 - Pair work is undervalued and underutilized
 
 ## Competitors
+
 - Meetup.com, Facebook groups: focus on large groups, high friction
 
 ## Monetization
+
 - Free tier (full functionality)
 - Business tier (company usage)
 - Premium: analytics, internal rating access
@@ -108,12 +121,14 @@ See [Matching.md](Matching.md) for the matching algorithm.
 ## Tech Stack
 
 ### Core
+
 - **Next.js 16.1.6** (TypeScript, App Router)
 - **React 19.2.3**
 - **pnpm 10.28.1** (package manager)
 - **fnm** (Node.js version manager)
 
 ### Database & Backend
+
 - **Supabase** (PostgreSQL-based)
   - `@supabase/supabase-js` - Client library
   - `@supabase/ssr` - Server-side rendering support
@@ -121,10 +136,12 @@ See [Matching.md](Matching.md) for the matching algorithm.
   - Real-time subscriptions
 
 ### AI
+
 - **Google Gemini** (`@google/generative-ai`) - AI text generation
 - **OpenAI** - Embeddings, GPT integration
 
 ### UI & Styling
+
 - **Tailwind CSS 4** - Styling framework
 - **Radix UI** - Accessible component primitives
   - `@radix-ui/react-alert-dialog`
@@ -137,34 +154,32 @@ See [Matching.md](Matching.md) for the matching algorithm.
 - **Rive** (`@rive-app/react-webgl2`) - Animations
 
 ### PWA
+
 - **Serwist** (`@serwist/next`) - Service worker management
 
 ### Testing
+
 - **Playwright** (`@playwright/test`) - E2E testing
 - **Vitest** - Unit/integration testing
 - **React Testing Library** - Component testing
 
 ### Development Tools
+
 - **TypeScript 5**
 - **ESLint 9** with Next.js config
 - **Vercel CLI** - Deployment tooling
 - **Supabase CLI** - Database management
 
 ### Deployment
+
 - **Vercel** - Hosting platform
 
 ## Development
 
 ### Approach
+
 - Specification-driven
 
 ### Key Challenges
-- Matching algorithm design
 
-### Hackathon MVP
-- PWA website
-- Google OAuth
-- Weighted matching
-- Free tier only
-- Friend-ask mode (sequential 1:1 requests)
-- No availability-based matching (only time commitment)
+- Matching algorithm design

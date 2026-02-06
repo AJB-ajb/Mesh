@@ -83,6 +83,7 @@ venv/
 logs/
 .env*.local
 .claude/
+.handoffs/
 .pnpm-store/
 
 # Serwist

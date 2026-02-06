@@ -111,9 +111,7 @@ test.describe("Authentication Flow", () => {
       expect(page.url()).toContain("/login");
 
       // Verify login page is displayed
-      await expect(
-        page.locator("text=Sign in, text=Login").first(),
-      ).toBeVisible();
+      await expect(page.locator("text=Sign in").first()).toBeVisible();
     }
   });
 
@@ -176,7 +174,7 @@ test.describe("Authentication Flow", () => {
   test("API returns 401 when not authenticated", async ({ request }) => {
     // Test protected API endpoints
     const protectedEndpoints = [
-      { path: "/api/profile/save", method: "POST" },
+      { path: "/api/extract/profile", method: "POST" },
       { path: "/api/matches/for-me", method: "GET" },
       { path: "/api/github/sync", method: "POST" },
     ];
