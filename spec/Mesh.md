@@ -2,6 +2,12 @@
 
 Idea-based social platform for quickly finding people to do things with — projects, activities, and spontaneous plans.
 
+## Status
+
+<!-- Link epics here as they are created. Check off when fully implemented. -->
+<!-- - [ ] #42 Posting creation flow -->
+<!-- - [ ] #43 Matching algorithm v1 -->
+
 ## Problem
 
 - Finding people to do things with requires high effort (scanning Slack/WhatsApp channels, messaging friends one by one)

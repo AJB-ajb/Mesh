@@ -1,0 +1,59 @@
+name: Story
+description: A user story, feature, bug fix, or task
+labels: []
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options:
+        - Feature
+        - Bug
+        - Chore
+    validations:
+      required: true
+
+  - type: textarea
+    id: story
+    attributes:
+      label: User Story
+      description: Who needs this, what they need, and why
+      placeholder: |
+        As a [user/poster/admin], I want to [action] so that [benefit].
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context & Design Notes
+      description: Relevant spec references, design decisions, or constraints
+      placeholder: |
+        Spec: spec/Mesh.md#features
+        Notes: ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: Concrete, testable conditions for "done"
+      placeholder: |
+        - [ ] User can ...
+        - [ ] Error case: ...
+        - [ ] Works on mobile
+    validations:
+      required: true
+
+  - type: textarea
+    id: technical
+    attributes:
+      label: Technical Notes
+      description: Implementation hints, affected files, API changes (optional — useful for AI agents)
+      placeholder: |
+        Files: src/app/postings/...
+        DB: May need new column on `projects` table
+        API: New endpoint POST /api/postings
+    validations:
+      required: false

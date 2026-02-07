@@ -10,6 +10,7 @@ This document defines how users and postings are matched based on compatibility.
   - Enums need to be extended and predefined, which is inflexible and hard to maintain
 - **Principled categories**: Even if factor evaluation is subjective, we define reference points for consistent values across users
 - **Natural language input**: Most configuration can be done via natural language (transformed to structured values via AI)
+  - Handoff markdown available for fast exchange to other platforms
 - **Hierarchical defaults**: Most configuration can be on the person-level, with posting-level overrides
 - **Gradual scoring**: Extrema values are handled gracefully (e.g., strong in-person preference still matches reasonably with slight remote preference)
 - **Good enough matching**: We cover common cases well; edge cases can be handled manually or by AI. Looking through ten people is acceptable if the top matches are good enough.
@@ -36,7 +37,9 @@ This document defines how users and postings are matched based on compatibility.
 ### Person Dimensions
 
 #### Skill Level
+
 Self-assessed skill level (0-10 scale, slider input):
+
 - Separate per domain
 - Domains are hierarchical (e.g., programming > web development > frontend), extrapolates missing levels if necessary
 - Reference points:
@@ -47,13 +50,17 @@ Self-assessed skill level (0-10 scale, slider input):
   - 9-10: Expert, deep expertise, recognized in field
 
 #### Location Mode
+
 Where collaboration or activity happens:
+
 - **Remote**: Fully online
 - **In-person**: Must be physically present
 - **Either**: No strong preference
 
 #### Availability
+
 Two input systems:
+
 - **Week-based**: Weekly pattern (e.g., "Mondays 6-9pm", "weekends")
 - **Block-based**: Specific dates (e.g., "Jan 15-20", "this Saturday afternoon")
 
@@ -76,6 +83,7 @@ Binary available/unavailable per time slot. The posting specifies when the activ
 - **Person dimension overrides**: Posting-specific overrides of person-level defaults (e.g., skill level requirement, location)
 
 #### Optional Posting Fields
+
 - **Collaboration style**: Intensity (0-10) and preferred activities (pair programming, brainstorming, async review, etc.) — relevant for project-type postings
 - **Estimated time**: How much time the activity or project requires (e.g., "2 hours", "10-20h/week for 4 weeks")
 
@@ -86,6 +94,7 @@ Binary available/unavailable per time slot. The posting specifies when the activ
 ### Two-Stage Matching
 
 #### Stage 1: Hard Filters (Pass/Fail)
+
 - Context identifier (exact match if specified)
 - Category (if filtered)
 - Skill level minimum (if specified)
@@ -93,6 +102,7 @@ Binary available/unavailable per time slot. The posting specifies when the activ
 - Time/date overlap (does the person's availability overlap with the posting's time at all?)
 
 #### Stage 2: Soft Scoring (0-1 Scale)
+
 Remaining dimensions combined via weighted average.
 
 ### Compatibility Formula
@@ -100,6 +110,7 @@ Remaining dimensions combined via weighted average.
 **Weighted average**: `score = Σ(sᵢ × wᵢ) / Σwᵢ`
 
 Where:
+
 - `sᵢ` = score for dimension i (0-1)
 - `wᵢ` = weight for dimension i
 
@@ -109,23 +120,23 @@ With fewer dimensions than a complex project-matching system, a weighted average
 
 User-configurable with defaults:
 
-| Dimension              | Default Weight |
-| ---------------------- | -------------- |
-| Semantic similarity    | 1.0            |
-| Availability overlap   | 1.0            |
-| Skill level            | 0.7            |
-| Location preference    | 0.7            |
+| Dimension            | Default Weight |
+| -------------------- | -------------- |
+| Semantic similarity  | 1.0            |
+| Availability overlap | 1.0            |
+| Skill level          | 0.7            |
+| Location preference  | 0.7            |
 
 Users can adjust weights to reflect their priorities.
 
 ### Per-Dimension Score Formulas
 
-| Dimension              | Score Formula                                           |
-| ---------------------- | ------------------------------------------------------- |
-| Semantic similarity    | pgvector cosine similarity of posting description embeddings |
-| Availability overlap   | Fraction of requested time slots that overlap with candidate's availability |
-| Skill level            | `1 - |levelA - levelB| / 10` (or complementarity score) |
-| Location preference    | 1.0 if compatible, 0.5 if partial match, 0.0 if incompatible |
+| Dimension            | Score Formula                                                               |
+| -------------------- | --------------------------------------------------------------------------- | --------------- | -------------------------------- |
+| Semantic similarity  | pgvector cosine similarity of posting description embeddings                |
+| Availability overlap | Fraction of requested time slots that overlap with candidate's availability |
+| Skill level          | `1 -                                                                        | levelA - levelB | / 10` (or complementarity score) |
+| Location preference  | 1.0 if compatible, 0.5 if partial match, 0.0 if incompatible                |
 
 ---
 
@@ -141,6 +152,7 @@ Users can adjust weights to reflect their priorities.
 ### AI Input Processing
 
 Natural language inputs are transformed to structured values via AI:
+
 - Prompt a model to extract structured values from natural language inputs, given the data model
 - Generate embeddings for semantic fields and store in pgvector
 - Examples: "weekends, 10-20h/week" → structured time and availability data

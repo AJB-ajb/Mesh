@@ -1,0 +1,31 @@
+name: Epic
+description: A larger feature that breaks down into multiple stories
+labels: ["epic"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What this epic delivers and why
+    validations:
+      required: true
+
+  - type: textarea
+    id: spec-ref
+    attributes:
+      label: Spec Reference
+      description: Which spec section(s) this covers
+      placeholder: "spec/Mesh.md#features → Create posting page"
+    validations:
+      required: true
+
+  - type: textarea
+    id: stories
+    attributes:
+      label: Stories
+      description: Checklist of child issues (add links as stories are created)
+      placeholder: |
+        - [ ] #__ Story title
+        - [ ] #__ Story title
+    validations:
+      required: true
