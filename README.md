@@ -1,5 +1,9 @@
 # Mesh
 
+[![CI](https://github.com/AJB-ajb/MeshIt/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AJB-ajb/MeshIt/actions/workflows/ci.yml)
+![Node](https://img.shields.io/badge/node-%3E%3D18.17-brightgreen)
+![pnpm](https://img.shields.io/badge/pnpm-10.x-orange)
+
 > AI-powered project collaboration matching platform
 
 Mesh helps developers and creators find the perfect collaborators for their projects using AI-powered matching based on skills, interests, availability, and collaboration style.
@@ -53,6 +57,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 Copy `.env.example` to `.env.local` and configure the following:
 
 **Required**:
+
 - `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anonymous key
 - `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (server-side only)
@@ -61,6 +66,7 @@ Copy `.env.example` to `.env.local` and configure the following:
 - `RESEND_API_KEY` — Resend API key (email)
 
 **Optional**:
+
 - `NEXT_PUBLIC_POSTHOG_KEY` — PostHog analytics key
 - `NEXT_PUBLIC_POSTHOG_HOST` — PostHog host URL
 - `SENTRY_DSN` — Sentry error tracking DSN
@@ -69,18 +75,18 @@ Copy `.env.example` to `.env.local` and configure the following:
 
 ### Available Scripts
 
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Start development server with Turbopack |
-| `pnpm build` | Build for production |
-| `pnpm start` | Start production server |
-| `pnpm lint` | Run ESLint |
-| `pnpm test` | Run unit tests in watch mode |
-| `pnpm test:run` | Run unit tests once |
-| `pnpm test:coverage` | Run unit tests with coverage report |
-| `pnpm test:e2e` | Run Playwright E2E tests |
-| `pnpm test:e2e:ui` | Run E2E tests with Playwright UI |
-| `pnpm test:e2e:debug` | Run E2E tests in debug mode |
+| Command               | Description                             |
+| --------------------- | --------------------------------------- |
+| `pnpm dev`            | Start development server with Turbopack |
+| `pnpm build`          | Build for production                    |
+| `pnpm start`          | Start production server                 |
+| `pnpm lint`           | Run ESLint                              |
+| `pnpm test`           | Run unit tests in watch mode            |
+| `pnpm test:run`       | Run unit tests once                     |
+| `pnpm test:coverage`  | Run unit tests with coverage report     |
+| `pnpm test:e2e`       | Run Playwright E2E tests                |
+| `pnpm test:e2e:ui`    | Run E2E tests with Playwright UI        |
+| `pnpm test:e2e:debug` | Run E2E tests in debug mode             |
 
 ### Project Structure
 
@@ -123,6 +129,5 @@ Deploy to [Vercel](https://vercel.com) (recommended). See [Vercel Deployment Gui
 - [Epics & Stories](./_bmad-output/planning-artifacts/epics.md)
 
 ## License
-
 
 Private - All rights reserved
