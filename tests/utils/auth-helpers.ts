@@ -16,7 +16,7 @@ import { createUser, type TestUser } from "./factories/user-factory";
  */
 export async function loginAsUser(
   page: Page,
-  userData: Partial<TestUser> = {}
+  userData: Partial<TestUser> = {},
 ): Promise<TestUser> {
   const user = createUser(userData);
 
@@ -37,15 +37,13 @@ export async function loginAsUser(
  */
 export async function setupAuthenticatedUser(
   page: Page,
-  userData: Partial<TestUser> & { persona?: string } = {}
+  userData: Partial<TestUser> & { persona?: string } = {},
 ): Promise<TestUser & { id: string }> {
   const user = createUser(userData);
   const persona = userData.persona ?? "developer";
 
   if (!supabaseAdmin) {
-    throw new Error(
-      "SUPABASE_SERVICE_ROLE_KEY required for setupAuthenticatedUser"
-    );
+    throw new Error("SUPABASE_SECRET_KEY required for setupAuthenticatedUser");
   }
 
   // Create user via admin API (auto-confirms email)
@@ -82,7 +80,7 @@ export async function setupAuthenticatedUser(
 export async function logout(page: Page): Promise<void> {
   await page.goto("/settings");
   const signOutButton = page.locator(
-    'button:has-text("Sign out"), [data-testid="settings-signout-button"]'
+    'button:has-text("Sign out"), [data-testid="settings-signout-button"]',
   );
   if (await signOutButton.isVisible({ timeout: 3000 }).catch(() => false)) {
     await signOutButton.click();
@@ -96,7 +94,7 @@ export async function logout(page: Page): Promise<void> {
  */
 export async function cleanupTestUser(userId: string): Promise<void> {
   if (!supabaseAdmin) {
-    console.warn("No SUPABASE_SERVICE_ROLE_KEY — skipping cleanup");
+    console.warn("No SUPABASE_SECRET_KEY — skipping cleanup");
     return;
   }
 

@@ -2,100 +2,46 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Search,
-  X,
-  FolderKanban,
-  User,
-  Loader2,
-  ArrowRight,
-} from "lucide-react";
+import { Search, X, FolderKanban, Loader2, ArrowRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { createClient } from "@/lib/supabase/client";
-
-type SearchResult = {
-  id: string;
-  type: "project" | "profile";
-  title: string;
-  subtitle: string;
-  skills: string[];
-  status?: string;
-};
+import { useSearch } from "@/lib/hooks/use-search";
+import type { SearchResult } from "@/lib/hooks/use-search";
 
 export function GlobalSearch() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  // Debounced search
+  const { results, isLoading } = useSearch(debouncedQuery);
+
+  // Debounce the query
   useEffect(() => {
     if (!query.trim()) {
-      queueMicrotask(() => setResults([]));
+      queueMicrotask(() => setDebouncedQuery(""));
       return;
     }
-
-    const timeoutId = setTimeout(async () => {
-      setIsLoading(true);
-      const supabase = createClient();
-      const searchTerm = `%${query.toLowerCase()}%`;
-
-      // Search projects
-      const { data: projects } = await supabase
-        .from("projects")
-        .select("id, title, description, required_skills, status")
-        .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
-        .limit(5);
-
-      // Search profiles (by name, headline, and skills)
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, headline, skills")
-        .or(`full_name.ilike.${searchTerm},headline.ilike.${searchTerm}`)
-        .limit(5);
-
-      const projectResults: SearchResult[] = (projects || []).map((p) => ({
-        id: p.id,
-        type: "project",
-        title: p.title,
-        subtitle:
-          p.description?.slice(0, 80) +
-            (p.description?.length > 80 ? "..." : "") || "",
-        skills: p.required_skills || [],
-        status: p.status,
-      }));
-
-      const profileResults: SearchResult[] = (profiles || []).map((p) => ({
-        id: p.user_id,
-        type: "profile",
-        title: p.full_name || "Unknown",
-        subtitle: p.headline || "",
-        skills: p.skills || [],
-      }));
-
-      setResults([...projectResults, ...profileResults]);
-      setSelectedIndex(0);
-      setIsLoading(false);
-    }, 300);
-
+    const timeoutId = setTimeout(() => setDebouncedQuery(query), 300);
     return () => clearTimeout(timeoutId);
   }, [query]);
+
+  // Reset selected index when results change
+  useEffect(() => {
+    queueMicrotask(() => setSelectedIndex(0));
+  }, [results.length]);
 
   // Handle selection
   const handleSelect = useCallback(
     (result: SearchResult) => {
-      if (result.type === "project") {
-        router.push(`/projects/${result.id}`);
+      if (result.type === "posting") {
+        router.push(`/postings/${result.id}`);
       } else {
-        // For profiles, we could navigate to a public profile page
-        // For now, just close the search
         router.push(`/profile`);
       }
       setIsOpen(false);
@@ -175,7 +121,7 @@ export function GlobalSearch() {
         <Input
           ref={inputRef}
           type="search"
-          placeholder="Search projects, profiles... (⌘K)"
+          placeholder="Search postings, profiles... (⌘K)"
           className="pl-9 pr-9 bg-muted/50"
           value={query}
           onChange={(e) => {
@@ -190,7 +136,7 @@ export function GlobalSearch() {
             type="button"
             onClick={() => {
               setQuery("");
-              setResults([]);
+              setDebouncedQuery("");
               inputRef.current?.focus();
             }}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
@@ -216,15 +162,15 @@ export function GlobalSearch() {
             </div>
           ) : results.length > 0 ? (
             <div className="max-h-[400px] overflow-y-auto">
-              {/* Projects Section */}
-              {results.some((r) => r.type === "project") && (
+              {/* Postings Section */}
+              {results.some((r) => r.type === "posting") && (
                 <div>
                   <div className="px-3 py-2 text-xs font-medium text-muted-foreground bg-muted/50">
-                    Projects
+                    Postings
                   </div>
                   {results
-                    .filter((r) => r.type === "project")
-                    .map((result, idx) => {
+                    .filter((r) => r.type === "posting")
+                    .map((result) => {
                       const globalIdx = results.findIndex(
                         (r) => r.id === result.id && r.type === result.type,
                       );

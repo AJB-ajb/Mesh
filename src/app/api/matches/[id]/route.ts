@@ -37,7 +37,7 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
 
   const response: MatchResponse = {
     id: match.id,
-    project: project as unknown as MatchResponse["project"],
+    posting: project as unknown as MatchResponse["posting"],
     profile: profile as unknown as MatchResponse["profile"],
     score: match.similarity_score,
     explanation: match.explanation,

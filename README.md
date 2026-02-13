@@ -1,6 +1,7 @@
 # Mesh
 
 [![CI](https://github.com/AJB-ajb/MeshIt/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AJB-ajb/MeshIt/actions/workflows/ci.yml)
+![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/AJB-ajb/25026facb8b1395138a5ab1a48d9c5f0/raw/meshit-coverage.json)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.17-brightgreen)
 ![pnpm](https://img.shields.io/badge/pnpm-10.x-orange)
 
@@ -59,8 +60,8 @@ Copy `.env.example` to `.env.local` and configure the following:
 **Required**:
 
 - `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anonymous key
-- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (server-side only)
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — Supabase publishable key
+- `SUPABASE_SECRET_KEY` — Supabase secret key (server-side only)
 - `GOOGLE_AI_API_KEY` — Google AI API key (Gemini)
 - `OPENAI_API_KEY` — OpenAI API key (Embeddings)
 - `RESEND_API_KEY` — Resend API key (email)
@@ -112,21 +113,21 @@ meshit/
 │   ├── e2e/                   # Playwright E2E tests
 │   └── fixtures/              # Test fixtures
 ├── public/                    # Static assets
-├── _bmad-output/              # Planning & implementation docs
-├── docs/                      # Project documentation
-└── spec/                      # Specifications
+├── docs/                      # Technical documentation
+└── spec/                      # Product specifications
 ```
 
 ### Deployment
 
-Deploy to [Vercel](https://vercel.com) (recommended). See [Vercel Deployment Guide](./docs/VERCEL_DEPLOYMENT.md) for detailed instructions.
+Deploy to [Vercel](https://vercel.com) (recommended). See [Vercel Deployment Guide](./docs/vercel-deployment.md) for detailed instructions.
 
 ### Documentation
 
-- [Vercel Deployment Guide](./docs/VERCEL_DEPLOYMENT.md)
-- [Architecture](./_bmad-output/planning-artifacts/architecture.md)
-- [PRD](./_bmad-output/planning-artifacts/prd.md)
-- [Epics & Stories](./_bmad-output/planning-artifacts/epics.md)
+- [Architecture Overview](./docs/architecture.md)
+- [Data Model](./docs/data-model.md)
+- [External Services](./docs/services.md)
+- [Vercel Deployment Guide](./docs/vercel-deployment.md)
+- [Product Spec](./spec/mesh.md)
 
 ## License
 

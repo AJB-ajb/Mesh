@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { SWRProvider } from "@/lib/swr/provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "MeshIt - Find Your Perfect Project Match",
+    default: "MeshIt - Find Your Perfect Match",
     template: "%s | MeshIt",
   },
   description:
@@ -44,14 +45,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://meshit.app",
-    title: "MeshIt - Find Your Perfect Project Match",
+    title: "MeshIt - Find Your Perfect Match",
     description:
       "AI-powered matching connects developers with projects that fit their skills and interests.",
     siteName: "MeshIt",
   },
   twitter: {
     card: "summary_large_image",
-    title: "MeshIt - Find Your Perfect Project Match",
+    title: "MeshIt - Find Your Perfect Match",
     description:
       "AI-powered matching connects developers with projects that fit their skills and interests.",
   },
@@ -93,7 +94,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
-        <ThemeProvider>{children}</ThemeProvider>
+        <SWRProvider>
+          <ThemeProvider>{children}</ThemeProvider>
+        </SWRProvider>
       </body>
     </html>
   );

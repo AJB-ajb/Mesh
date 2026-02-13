@@ -26,6 +26,44 @@ export type GitHubSyncStatus = {
   } | null;
 };
 
+// ---------------------------------------------------------------------------
+// New structured types for the redesigned profile form
+// ---------------------------------------------------------------------------
+
+export type SkillLevel = {
+  name: string;
+  level: number;
+};
+
+export type LocationMode = "remote" | "in_person" | "either";
+
+/** day key → array of time-of-day slots that are toggled on */
+export type AvailabilitySlots = Record<string, string[]>;
+
+export const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+
+export const DAY_LABELS: Record<string, string> = {
+  mon: "Mon",
+  tue: "Tue",
+  wed: "Wed",
+  thu: "Thu",
+  fri: "Fri",
+  sat: "Sat",
+  sun: "Sun",
+};
+
+export const TIME_SLOTS = ["morning", "afternoon", "evening"] as const;
+
+export const TIME_SLOT_LABELS: Record<string, string> = {
+  morning: "Morning",
+  afternoon: "Afternoon",
+  evening: "Evening",
+};
+
+// ---------------------------------------------------------------------------
+// Form state
+// ---------------------------------------------------------------------------
+
 export type ProfileFormState = {
   fullName: string;
   headline: string;
@@ -33,24 +71,15 @@ export type ProfileFormState = {
   location: string;
   locationLat: string;
   locationLng: string;
-  experienceLevel: string;
-  collaborationStyle: string;
-  remotePreference: string;
-  availabilityHours: string;
   skills: string;
   interests: string;
   languages: string;
-  projectTypes: string;
-  preferredRoles: string;
-  preferredStack: string;
-  commitmentLevel: string;
-  timelinePreference: string;
   portfolioUrl: string;
   githubUrl: string;
-  filterMaxDistance: string;
-  filterMinHours: string;
-  filterMaxHours: string;
-  filterLanguages: string;
+  // Structured fields
+  skillLevels: SkillLevel[];
+  locationMode: LocationMode;
+  availabilitySlots: AvailabilitySlots;
 };
 
 export const defaultFormState: ProfileFormState = {
@@ -60,24 +89,14 @@ export const defaultFormState: ProfileFormState = {
   location: "",
   locationLat: "",
   locationLng: "",
-  experienceLevel: "intermediate",
-  collaborationStyle: "async",
-  remotePreference: "50",
-  availabilityHours: "",
   skills: "",
   interests: "",
   languages: "",
-  projectTypes: "",
-  preferredRoles: "",
-  preferredStack: "",
-  commitmentLevel: "10",
-  timelinePreference: "1_month",
   portfolioUrl: "",
   githubUrl: "",
-  filterMaxDistance: "",
-  filterMinHours: "",
-  filterMaxHours: "",
-  filterLanguages: "",
+  skillLevels: [],
+  locationMode: "either",
+  availabilitySlots: {},
 };
 
 export const parseList = (value: string) =>
@@ -85,3 +104,72 @@ export const parseList = (value: string) =>
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+
+/** Extracted profile matching the post-redesign DB schema */
+export type ExtractedProfileV2 = {
+  full_name?: string;
+  headline?: string;
+  bio?: string;
+  location?: string;
+  skills?: string[];
+  interests?: string[];
+  languages?: string[];
+  portfolio_url?: string;
+  github_url?: string;
+  skill_levels?: Record<string, number>;
+  location_preference?: number;
+  location_mode?: LocationMode;
+  availability_slots?: Record<string, unknown>;
+};
+
+export type ProfileUpdateResponse = {
+  success: boolean;
+  updatedSourceText: string;
+  extractedProfile: ExtractedProfileV2;
+};
+
+/**
+ * Map extraction results to ProfileFormState.
+ * Only overwrites fields that were actually extracted (non-undefined).
+ */
+export function mapExtractedToFormState(
+  extracted: ExtractedProfileV2,
+  current: ProfileFormState,
+): ProfileFormState {
+  let locationMode = current.locationMode;
+  if (extracted.location_mode != null) {
+    locationMode = extracted.location_mode;
+  } else if (extracted.location_preference != null) {
+    if (extracted.location_preference >= 0.8) locationMode = "remote";
+    else if (extracted.location_preference <= 0.2) locationMode = "in_person";
+    else locationMode = "either";
+  }
+
+  return {
+    ...current,
+    ...(extracted.full_name != null && { fullName: extracted.full_name }),
+    ...(extracted.headline != null && { headline: extracted.headline }),
+    ...(extracted.bio != null && { bio: extracted.bio }),
+    ...(extracted.location != null && { location: extracted.location }),
+    ...(extracted.skills != null && { skills: extracted.skills.join(", ") }),
+    ...(extracted.interests != null && {
+      interests: extracted.interests.join(", "),
+    }),
+    ...(extracted.languages != null && {
+      languages: extracted.languages.join(", "),
+    }),
+    ...(extracted.portfolio_url != null && {
+      portfolioUrl: extracted.portfolio_url,
+    }),
+    ...(extracted.github_url != null && { githubUrl: extracted.github_url }),
+    ...(extracted.skill_levels != null && {
+      skillLevels: Object.entries(extracted.skill_levels).map(
+        ([name, level]) => ({ name, level }),
+      ),
+    }),
+    locationMode,
+    ...(extracted.availability_slots != null && {
+      availabilitySlots: extracted.availability_slots as AvailabilitySlots,
+    }),
+  };
+}

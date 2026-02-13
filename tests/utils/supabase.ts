@@ -15,15 +15,15 @@ function getEnv(key: string): string {
 }
 
 const url = getEnv("NEXT_PUBLIC_SUPABASE_URL");
-const anonKey = getEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const publishableKey = getEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
+const secretKey = process.env.SUPABASE_SECRET_KEY;
 
-/** Admin client with service role — use for seeding and cleanup only */
-export const supabaseAdmin = serviceRoleKey
-  ? createClient(url, serviceRoleKey, { auth: { autoRefreshToken: false } })
+/** Admin client with secret key — use for seeding and cleanup only */
+export const supabaseAdmin = secretKey
+  ? createClient(url, secretKey, { auth: { autoRefreshToken: false } })
   : null;
 
-/** Anon client — use for user-level operations (signup, login) */
-export const supabaseAnon = createClient(url, anonKey, {
+/** Publishable client — use for user-level operations (signup, login) */
+export const supabaseAnon = createClient(url, publishableKey, {
   auth: { autoRefreshToken: false },
 });

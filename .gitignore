@@ -38,6 +38,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -83,12 +84,21 @@ venv/
 logs/
 .env*.local
 .claude/
-.handoffs/
+.prompts/*
+!.prompts/Prompts.md
+.handoffs/*
+!.handoffs/README.md
 .pnpm-store/
+
+# Supabase
+supabase/.temp/
 
 # Serwist
 public/sw*
 public/swe-worker*
+
+# Sentry
+.sentryclirc
 
 # Test artifacts
 test-results/

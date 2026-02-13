@@ -74,25 +74,7 @@ export async function generateProfileEmbedding(
   interests: string[] | null,
   headline: string | null,
 ): Promise<number[]> {
-  const parts: string[] = [];
-
-  if (headline) {
-    parts.push(`Headline: ${headline}`);
-  }
-
-  if (bio) {
-    parts.push(`About: ${bio}`);
-  }
-
-  if (skills && skills.length > 0) {
-    parts.push(`Skills: ${skills.join(", ")}`);
-  }
-
-  if (interests && interests.length > 0) {
-    parts.push(`Interests: ${interests.join(", ")}`);
-  }
-
-  const combinedText = parts.join("\n\n");
+  const combinedText = composeProfileText(bio, skills, interests, headline);
 
   if (!combinedText.trim()) {
     throw new Error(
@@ -104,26 +86,132 @@ export async function generateProfileEmbedding(
 }
 
 /**
- * Generates an embedding for a project
+ * Generates an embedding for a posting
  * Combines title, description, and required skills into a single text representation
  */
-export async function generateProjectEmbedding(
+export async function generatePostingEmbedding(
   title: string,
   description: string,
   requiredSkills: string[] | null,
 ): Promise<number[]> {
+  const combinedText = composePostingText(title, description, requiredSkills);
+  return generateEmbedding(combinedText);
+}
+
+/**
+ * Generates embeddings for multiple texts in a single OpenAI API call.
+ * OpenAI's /v1/embeddings endpoint natively supports array input (up to 2048 items).
+ * Returns embeddings in the same order as the input texts.
+ */
+export async function generateEmbeddingsBatch(
+  texts: string[],
+): Promise<number[][]> {
+  if (texts.length === 0) {
+    return [];
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY environment variable is not set");
+  }
+
+  const trimmedTexts = texts.map((t) => t.trim());
+  const emptyIndex = trimmedTexts.findIndex((t) => t.length === 0);
+  if (emptyIndex !== -1) {
+    throw new Error(`Text at index ${emptyIndex} cannot be empty`);
+  }
+
+  const response = await fetch("https://api.openai.com/v1/embeddings", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: EMBEDDING_MODEL,
+      input: trimmedTexts,
+      dimensions: EMBEDDING_DIMENSION,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(
+      `OpenAI API error: ${response.status} ${response.statusText}. ${JSON.stringify(error)}`,
+    );
+  }
+
+  const data = await response.json();
+
+  if (!data.data || !Array.isArray(data.data)) {
+    throw new Error("Invalid batch embedding response from OpenAI API");
+  }
+
+  // OpenAI returns results with an index field — sort by index to guarantee order
+  const sorted = [...data.data].sort(
+    (a: { index: number }, b: { index: number }) => a.index - b.index,
+  );
+
+  const embeddings: number[][] = sorted.map((item: { embedding: number[] }) => {
+    if (
+      !item.embedding ||
+      !Array.isArray(item.embedding) ||
+      item.embedding.length !== EMBEDDING_DIMENSION
+    ) {
+      throw new Error(
+        `Invalid embedding in batch response (expected ${EMBEDDING_DIMENSION} dimensions)`,
+      );
+    }
+    return item.embedding;
+  });
+
+  if (embeddings.length !== texts.length) {
+    throw new Error(
+      `Expected ${texts.length} embeddings, got ${embeddings.length}`,
+    );
+  }
+
+  return embeddings;
+}
+
+/**
+ * Composes text for a profile embedding from its fields.
+ * Exported so the batch processor can compose texts without generating embeddings.
+ */
+export function composeProfileText(
+  bio: string | null,
+  skills: string[] | null,
+  interests: string[] | null,
+  headline: string | null,
+): string {
+  const parts: string[] = [];
+
+  if (headline) parts.push(`Headline: ${headline}`);
+  if (bio) parts.push(`About: ${bio}`);
+  if (skills && skills.length > 0) parts.push(`Skills: ${skills.join(", ")}`);
+  if (interests && interests.length > 0)
+    parts.push(`Interests: ${interests.join(", ")}`);
+
+  return parts.join("\n\n");
+}
+
+/**
+ * Composes text for a posting embedding from its fields.
+ * Exported so the batch processor can compose texts without generating embeddings.
+ */
+export function composePostingText(
+  title: string,
+  description: string,
+  requiredSkills: string[] | null,
+): string {
   const parts: string[] = [];
 
   parts.push(`Title: ${title}`);
   parts.push(`Description: ${description}`);
-
-  if (requiredSkills && requiredSkills.length > 0) {
+  if (requiredSkills && requiredSkills.length > 0)
     parts.push(`Required Skills: ${requiredSkills.join(", ")}`);
-  }
 
-  const combinedText = parts.join("\n\n");
-
-  return generateEmbedding(combinedText);
+  return parts.join("\n\n");
 }
 
 /**

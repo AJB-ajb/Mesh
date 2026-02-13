@@ -10,15 +10,15 @@ async function triggerGitHubSync(origin: string): Promise<void> {
   try {
     // Fire and forget - don't await
     fetch(`${origin}/api/github/sync`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     }).catch((err) => {
-      console.error('[OAuth Callback] GitHub sync trigger failed:', err);
+      console.error("[OAuth Callback] GitHub sync trigger failed:", err);
     });
   } catch (err) {
-    console.error('[OAuth Callback] Failed to trigger GitHub sync:', err);
+    console.error("[OAuth Callback] Failed to trigger GitHub sync:", err);
   }
 }
 
@@ -39,13 +39,15 @@ export async function GET(request: Request) {
 
       if (!user) {
         return NextResponse.redirect(
-          `${origin}/login?error=Authentication%20failed`
+          `${origin}/login?error=Authentication%20failed`,
         );
       }
 
       // Check if any identity is GitHub - trigger async profile sync
       const identities = user.identities || [];
-      const hasGithubIdentity = identities.some((identity: { provider: string }) => identity.provider === 'github');
+      const hasGithubIdentity = identities.some(
+        (identity: { provider: string }) => identity.provider === "github",
+      );
 
       if (hasGithubIdentity) {
         // Trigger GitHub profile extraction in background (async)
@@ -55,7 +57,7 @@ export async function GET(request: Request) {
       // If this was an account linking flow, redirect to settings
       if (isLinking) {
         return NextResponse.redirect(
-          `${origin}/settings?success=Account%20linked%20successfully`
+          `${origin}/settings?success=Account%20linked%20successfully`,
         );
       }
 
@@ -83,7 +85,7 @@ export async function GET(request: Request) {
 
       // Check if user has projects (existing user)
       const { data: projects } = await supabase
-        .from("projects")
+        .from("postings")
         .select("id")
         .eq("creator_id", user.id)
         .limit(1);
@@ -106,8 +108,9 @@ export async function GET(request: Request) {
       const profileCompleted = user.user_metadata?.profile_completed;
 
       if (!profileCompleted) {
-        // Brand new user - send directly to onboarding form
-        const destination = `/onboarding/developer?next=${encodeURIComponent(next)}`;
+        // Brand new user - send directly to posting creation for fast onboarding
+        // Profile will be auto-created when they submit their first posting
+        const destination = next === "/dashboard" ? "/postings/new" : next;
         return NextResponse.redirect(`${origin}${destination}`);
       }
 
@@ -118,13 +121,11 @@ export async function GET(request: Request) {
       if (isLinking) {
         const errorMessage = error.message || "Failed to link account";
         return NextResponse.redirect(
-          `${origin}/settings?error=${encodeURIComponent(errorMessage)}`
+          `${origin}/settings?error=${encodeURIComponent(errorMessage)}`,
         );
       }
     }
   }
 
-  return NextResponse.redirect(
-    `${origin}/login?error=Authentication%20failed`
-  );
+  return NextResponse.redirect(`${origin}/login?error=Authentication%20failed`);
 }

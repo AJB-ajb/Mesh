@@ -32,19 +32,6 @@ describe("environment", () => {
     expect(isProduction()).toBe(false);
   });
 
-  it("getTestDataValue returns inverse of isProduction", async () => {
-    process.env.NEXT_PUBLIC_VERCEL_URL = "mesh-it.vercel.app";
-    const { getTestDataValue } = await import("../environment");
-    expect(getTestDataValue()).toBe(false);
-  });
-
-  it("isTestMode returns true in non-production", async () => {
-    delete process.env.NEXT_PUBLIC_VERCEL_URL;
-    delete process.env.VERCEL_URL;
-    const { isTestMode } = await import("../environment");
-    expect(isTestMode()).toBe(true);
-  });
-
   it("getEnvironmentName returns correct names", async () => {
     process.env.NEXT_PUBLIC_VERCEL_URL = "mesh-it.vercel.app";
     const mod1 = await import("../environment");

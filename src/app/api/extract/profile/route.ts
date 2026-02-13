@@ -1,87 +1,97 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+import { SchemaType, type Schema } from "@google/generative-ai";
+import { generateStructuredJSON, isGeminiConfigured } from "@/lib/ai/gemini";
 
 /**
- * Profile extraction schema for structured output
+ * Profile extraction schema for Gemini structured output
  */
-const profileSchema = {
-  type: "object",
+const profileSchema: Schema = {
+  type: SchemaType.OBJECT,
   properties: {
     full_name: {
-      type: "string",
+      type: SchemaType.STRING,
       description: "The person's full name",
     },
     headline: {
-      type: "string",
-      description: "A short professional headline (e.g., 'Full-stack Developer' or 'Senior React Engineer')",
+      type: SchemaType.STRING,
+      description:
+        "A short professional headline (e.g., 'Full-stack Developer' or 'Senior React Engineer')",
     },
     bio: {
-      type: "string",
+      type: SchemaType.STRING,
       description: "A brief bio or summary about the person",
     },
     location: {
-      type: "string",
+      type: SchemaType.STRING,
       description: "Location or timezone if mentioned",
     },
     experience_level: {
-      type: "string",
+      type: SchemaType.STRING,
+      format: "enum",
       enum: ["junior", "intermediate", "senior", "lead"],
-      description: "Inferred experience level based on years of experience and skills",
+      description:
+        "Inferred experience level based on years of experience and skills",
     },
     collaboration_style: {
-      type: "string",
+      type: SchemaType.STRING,
+      format: "enum",
       enum: ["async", "sync", "hybrid"],
-      description: "Preferred collaboration style if mentioned, default to 'async'",
+      description:
+        "Preferred collaboration style if mentioned, default to 'async'",
     },
     availability_hours: {
-      type: "number",
+      type: SchemaType.NUMBER,
       description: "Hours per week available for projects",
     },
     skills: {
-      type: "array",
-      items: { type: "string" },
-      description: "List of technical skills, programming languages, frameworks, and tools",
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING },
+      description:
+        "List of technical skills, programming languages, frameworks, and tools",
     },
     interests: {
-      type: "array",
-      items: { type: "string" },
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING },
       description: "Areas of interest (e.g., AI, fintech, gaming, education)",
     },
     portfolio_url: {
-      type: "string",
+      type: SchemaType.STRING,
       description: "Portfolio website URL if mentioned",
     },
     github_url: {
-      type: "string",
+      type: SchemaType.STRING,
       description: "GitHub profile URL if mentioned",
     },
     project_preferences: {
-      type: "object",
+      type: SchemaType.OBJECT,
       properties: {
         project_types: {
-          type: "array",
-          items: { type: "string" },
-          description: "Types of projects interested in (e.g., SaaS, hackathon, open source)",
+          type: SchemaType.ARRAY,
+          items: { type: SchemaType.STRING },
+          description:
+            "Types of projects interested in (e.g., SaaS, hackathon, open source)",
         },
         preferred_roles: {
-          type: "array",
-          items: { type: "string" },
-          description: "Preferred roles (e.g., Frontend, Backend, Full-stack, DevOps)",
+          type: SchemaType.ARRAY,
+          items: { type: SchemaType.STRING },
+          description:
+            "Preferred roles (e.g., Frontend, Backend, Full-stack, DevOps)",
         },
         preferred_stack: {
-          type: "array",
-          items: { type: "string" },
+          type: SchemaType.ARRAY,
+          items: { type: SchemaType.STRING },
           description: "Preferred tech stack",
         },
         commitment_level: {
-          type: "string",
+          type: SchemaType.STRING,
+          format: "enum",
           enum: ["5", "10", "15", "20"],
           description: "Hours per week commitment preference",
         },
         timeline_preference: {
-          type: "string",
+          type: SchemaType.STRING,
+          format: "enum",
           enum: ["weekend", "1_week", "1_month", "ongoing"],
           description: "Preferred project timeline",
         },
@@ -93,14 +103,14 @@ const profileSchema = {
 
 /**
  * POST /api/extract/profile
- * Extracts profile information from unstructured text using OpenAI
+ * Extracts profile information from unstructured text using Gemini
  */
 export async function POST(request: Request) {
   try {
-    if (!OPENAI_API_KEY) {
+    if (!isGeminiConfigured()) {
       return NextResponse.json(
-        { error: "OpenAI API key not configured" },
-        { status: 503 }
+        { error: "Gemini API key not configured" },
+        { status: 503 },
       );
     }
 
@@ -120,24 +130,15 @@ export async function POST(request: Request) {
 
     if (!text || typeof text !== "string" || text.trim().length < 10) {
       return NextResponse.json(
-        { error: "Please provide more text to extract profile information from" },
-        { status: 400 }
+        {
+          error: "Please provide more text to extract profile information from",
+        },
+        { status: 400 },
       );
     }
 
-    // Use OpenAI function calling for structured extraction
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: `You are an expert at extracting developer profile information from unstructured text. 
+    const extractedProfile = await generateStructuredJSON({
+      systemPrompt: `You are an expert at extracting developer profile information from unstructured text.
 Extract as much relevant information as possible from the provided text, which could be:
 - A GitHub profile README
 - A LinkedIn bio
@@ -149,44 +150,10 @@ Be thorough in extracting skills - look for programming languages, frameworks, t
 Infer experience level from context (years of experience, complexity of projects mentioned).
 If information is not explicitly stated, make reasonable inferences based on context.
 Return only the extracted data, do not make up information that cannot be inferred.`,
-          },
-          {
-            role: "user",
-            content: `Extract profile information from this text:\n\n${text}`,
-          },
-        ],
-        functions: [
-          {
-            name: "extract_profile",
-            description: "Extract developer profile information from text",
-            parameters: profileSchema,
-          },
-        ],
-        function_call: { name: "extract_profile" },
-        temperature: 0.3,
-      }),
+      userPrompt: `Extract profile information from this text:\n\n${text}`,
+      schema: profileSchema,
+      temperature: 0.3,
     });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error("OpenAI API error:", errorData);
-      return NextResponse.json(
-        { error: "Failed to process text. Please try again." },
-        { status: 500 }
-      );
-    }
-
-    const data = await response.json();
-    const functionCall = data.choices?.[0]?.message?.function_call;
-
-    if (!functionCall || functionCall.name !== "extract_profile") {
-      return NextResponse.json(
-        { error: "Failed to extract profile information" },
-        { status: 500 }
-      );
-    }
-
-    const extractedProfile = JSON.parse(functionCall.arguments);
 
     return NextResponse.json({
       success: true,
@@ -195,8 +162,11 @@ Return only the extracted data, do not make up information that cannot be inferr
   } catch (error) {
     console.error("Profile extraction error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to extract profile" },
-      { status: 500 }
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to extract profile",
+      },
+      { status: 500 },
     );
   }
 }

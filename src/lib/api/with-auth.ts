@@ -4,6 +4,7 @@
  */
 
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import type { User } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
@@ -45,6 +46,9 @@ export function withAuth(handler: AuthHandler) {
       return await handler(req, { user, supabase, params });
     } catch (error) {
       console.error("Route handler error:", error);
+      Sentry.captureException(error, {
+        extra: { url: req.url, method: req.method },
+      });
       return apiError(
         "INTERNAL",
         error instanceof Error ? error.message : "Internal server error",

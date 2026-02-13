@@ -4,30 +4,20 @@
  * User-edited fields take precedence over GitHub inferred data
  */
 
-import type { Profile, ProfileUpdate } from '../supabase/types';
-import type { GitHubProfileData, GitHubAnalysisOutput } from './types';
-import type { GitHubExtraction } from './types';
-import { getSortedLanguages, calculateActivityLevel } from './extraction';
-
-/**
- * Experience level priority (higher = more senior)
- */
-const EXPERIENCE_PRIORITY: Record<string, number> = {
-  junior: 1,
-  intermediate: 2,
-  senior: 3,
-  lead: 4,
-};
+import type { Profile, ProfileUpdate } from "../supabase/types";
+import type { GitHubProfileData, GitHubAnalysisOutput } from "./types";
+import type { GitHubExtraction } from "./types";
+import { getSortedLanguages, calculateActivityLevel } from "./extraction";
 
 /**
  * Deduplicate and merge arrays (case-insensitive)
  */
 function mergeArrays(
   existing: string[] | null | undefined,
-  incoming: string[] | null | undefined
+  incoming: string[] | null | undefined,
 ): string[] {
   const existingSet = new Set(
-    (existing || []).map((s) => s.toLowerCase().trim())
+    (existing || []).map((s) => s.toLowerCase().trim()),
   );
   const merged = [...(existing || [])];
 
@@ -43,30 +33,16 @@ function mergeArrays(
 }
 
 /**
- * Get higher experience level
- */
-function getHigherExperienceLevel(
-  a: string | null | undefined,
-  b: string | null | undefined
-): string {
-  const priorityA = EXPERIENCE_PRIORITY[a || 'intermediate'] || 2;
-  const priorityB = EXPERIENCE_PRIORITY[b || 'intermediate'] || 2;
-
-  if (priorityA >= priorityB) return a || 'intermediate';
-  return b || 'intermediate';
-}
-
-/**
  * Build GitHubProfileData from extraction and analysis
  */
 export function buildGitHubProfileData(
   extraction: GitHubExtraction,
-  analysis: GitHubAnalysisOutput
+  analysis: GitHubAnalysisOutput,
 ): GitHubProfileData {
   const languages = getSortedLanguages(extraction.languages);
   const totalStars = extraction.repos.reduce(
     (sum, repo) => sum + repo.stargazers_count,
-    0
+    0,
   );
   const activityLevel = calculateActivityLevel(extraction.repos);
 
@@ -107,7 +83,7 @@ export function buildGitHubProfileData(
 
     // Sync metadata
     lastSyncedAt: new Date().toISOString(),
-    syncStatus: 'completed',
+    syncStatus: "completed",
   };
 }
 
@@ -117,7 +93,7 @@ export function buildGitHubProfileData(
  */
 export function mergeWithExistingProfile(
   existingProfile: Profile | null,
-  githubData: GitHubProfileData
+  githubData: GitHubProfileData,
 ): ProfileUpdate {
   // If no existing profile, build from GitHub data
   if (!existingProfile) {
@@ -127,8 +103,6 @@ export function mergeWithExistingProfile(
         ...githubData.inferredSkills.slice(0, 10),
       ],
       interests: githubData.inferredInterests.slice(0, 10),
-      experience_level: githubData.experienceLevel,
-      collaboration_style: githubData.collaborationStyle,
       github_url: githubData.githubUrl,
       bio: githubData.suggestedBio,
     };
@@ -147,19 +121,8 @@ export function mergeWithExistingProfile(
   // Interests: merge with existing
   update.interests = mergeArrays(
     existingProfile.interests,
-    githubData.inferredInterests
+    githubData.inferredInterests,
   );
-
-  // Experience level: use higher of the two
-  update.experience_level = getHigherExperienceLevel(
-    existingProfile.experience_level,
-    githubData.experienceLevel
-  );
-
-  // Collaboration style: only set if not already set
-  if (!existingProfile.collaboration_style) {
-    update.collaboration_style = githubData.collaborationStyle;
-  }
 
   // GitHub URL: always update to latest
   update.github_url = githubData.githubUrl;
@@ -176,11 +139,11 @@ export function mergeWithExistingProfile(
  */
 export function shouldUpdateProfile(
   existingProfile: Profile,
-  githubData: GitHubProfileData
+  githubData: GitHubProfileData,
 ): boolean {
   // Check if there are new skills to add
   const existingSkills = new Set(
-    (existingProfile.skills || []).map((s) => s.toLowerCase())
+    (existingProfile.skills || []).map((s) => s.toLowerCase()),
   );
   const newSkills = [
     ...githubData.primaryLanguages,
@@ -191,21 +154,13 @@ export function shouldUpdateProfile(
 
   // Check if there are new interests
   const existingInterests = new Set(
-    (existingProfile.interests || []).map((s) => s.toLowerCase())
+    (existingProfile.interests || []).map((s) => s.toLowerCase()),
   );
   const newInterests = githubData.inferredInterests.filter(
-    (s) => !existingInterests.has(s.toLowerCase())
+    (s) => !existingInterests.has(s.toLowerCase()),
   );
 
   if (newInterests.length >= 2) return true;
-
-  // Check if experience level would be upgraded
-  const currentPriority =
-    EXPERIENCE_PRIORITY[existingProfile.experience_level || 'intermediate'] || 2;
-  const githubPriority =
-    EXPERIENCE_PRIORITY[githubData.experienceLevel] || 2;
-
-  if (githubPriority > currentPriority) return true;
 
   return false;
 }
@@ -216,18 +171,17 @@ export function shouldUpdateProfile(
  */
 export function getProfileSuggestions(
   existingProfile: Profile | null,
-  githubData: GitHubProfileData
+  githubData: GitHubProfileData,
 ): {
   suggestedBio: string | null;
   suggestedSkills: string[];
   suggestedInterests: string[];
-  experienceUpgrade: string | null;
 } {
   const existingSkills = new Set(
-    (existingProfile?.skills || []).map((s) => s.toLowerCase())
+    (existingProfile?.skills || []).map((s) => s.toLowerCase()),
   );
   const existingInterests = new Set(
-    (existingProfile?.interests || []).map((s) => s.toLowerCase())
+    (existingProfile?.interests || []).map((s) => s.toLowerCase()),
   );
 
   const suggestedSkills = [
@@ -236,21 +190,8 @@ export function getProfileSuggestions(
   ].filter((s) => !existingSkills.has(s.toLowerCase()));
 
   const suggestedInterests = githubData.inferredInterests.filter(
-    (s) => !existingInterests.has(s.toLowerCase())
+    (s) => !existingInterests.has(s.toLowerCase()),
   );
-
-  // Check for experience upgrade
-  let experienceUpgrade: string | null = null;
-  if (existingProfile?.experience_level) {
-    const currentPriority =
-      EXPERIENCE_PRIORITY[existingProfile.experience_level] || 2;
-    const githubPriority =
-      EXPERIENCE_PRIORITY[githubData.experienceLevel] || 2;
-
-    if (githubPriority > currentPriority) {
-      experienceUpgrade = githubData.experienceLevel;
-    }
-  }
 
   // Only suggest bio if current is empty or very short
   const suggestedBio =
@@ -262,6 +203,5 @@ export function getProfileSuggestions(
     suggestedBio,
     suggestedSkills: suggestedSkills.slice(0, 10),
     suggestedInterests: suggestedInterests.slice(0, 5),
-    experienceUpgrade,
   };
 }

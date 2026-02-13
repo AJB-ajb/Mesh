@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { isTestMode } from "@/lib/environment";
+import { getEnvironmentName } from "@/lib/environment";
 
 interface LogoProps {
   className?: string;
@@ -21,9 +21,14 @@ const textSizeClasses = {
   lg: "text-xl",
 };
 
-export function Logo({ className, size = "md", showText = true, href = "/" }: LogoProps) {
-  const testMode = isTestMode();
-  const displayName = testMode ? "MeshIt - Demo" : "MeshIt";
+export function Logo({
+  className,
+  size = "md",
+  showText = true,
+  href = "/",
+}: LogoProps) {
+  const env = getEnvironmentName();
+  const displayName = env === "Production" ? "MeshIt" : `MeshIt - ${env}`;
 
   return (
     <Link
@@ -33,10 +38,12 @@ export function Logo({ className, size = "md", showText = true, href = "/" }: Lo
       <div
         className={cn(
           "flex items-center justify-center rounded-lg bg-primary text-primary-foreground",
-          sizeClasses[size]
+          sizeClasses[size],
         )}
       >
-        <span className={cn("font-bold", size === "sm" ? "text-xs" : "text-sm")}>
+        <span
+          className={cn("font-bold", size === "sm" ? "text-xs" : "text-sm")}
+        >
           M
         </span>
       </div>

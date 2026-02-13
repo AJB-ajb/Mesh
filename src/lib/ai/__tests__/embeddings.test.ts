@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   generateEmbedding,
   generateProfileEmbedding,
-  generateProjectEmbedding,
+  generatePostingEmbedding,
   validateEmbedding,
 } from "../embeddings";
 
@@ -216,7 +216,7 @@ describe("embeddings", () => {
     });
   });
 
-  describe("generateProjectEmbedding", () => {
+  describe("generatePostingEmbedding", () => {
     it("combines project fields into embedding text", async () => {
       const mockEmbedding = new Array(1536).fill(0.1);
       mockFetch.mockResolvedValueOnce({
@@ -226,7 +226,7 @@ describe("embeddings", () => {
         }),
       });
 
-      await generateProjectEmbedding(
+      await generatePostingEmbedding(
         "AI Assistant",
         "Build an AI-powered coding assistant",
         ["Python", "Machine Learning"],
@@ -251,7 +251,7 @@ describe("embeddings", () => {
         }),
       });
 
-      await generateProjectEmbedding("Project", "Description", null);
+      await generatePostingEmbedding("Project", "Description", null);
 
       const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(callBody.input).not.toContain("Required Skills:");
@@ -266,7 +266,7 @@ describe("embeddings", () => {
         }),
       });
 
-      await generateProjectEmbedding("Project", "Description", []);
+      await generatePostingEmbedding("Project", "Description", []);
 
       const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(callBody.input).not.toContain("Required Skills:");

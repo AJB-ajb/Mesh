@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
@@ -17,8 +17,8 @@ import {
 
 type OAuthProvider = "google" | "github" | "linkedin" | null;
 
-export default function SignUpPage() {
-  const _router = useRouter();
+function SignUpForm() {
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider>(null);
   const [email, setEmail] = useState("");
@@ -26,6 +26,13 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const next = searchParams.get("next");
+  const getCallbackUrl = () => {
+    const origin = window.location.origin;
+    return next
+      ? `${origin}/callback?next=${encodeURIComponent(next)}`
+      : `${origin}/callback`;
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +57,7 @@ export default function SignUpPage() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/callback`,
+        emailRedirectTo: getCallbackUrl(),
       },
     });
 
@@ -68,7 +75,7 @@ export default function SignUpPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/callback`,
+        redirectTo: getCallbackUrl(),
       },
     });
     if (error) setLoadingProvider(null);
@@ -80,7 +87,7 @@ export default function SignUpPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
-        redirectTo: `${window.location.origin}/callback`,
+        redirectTo: getCallbackUrl(),
       },
     });
     if (error) setLoadingProvider(null);
@@ -92,7 +99,7 @@ export default function SignUpPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "linkedin_oidc",
       options: {
-        redirectTo: `${window.location.origin}/callback`,
+        redirectTo: getCallbackUrl(),
       },
     });
     if (error) setLoadingProvider(null);
@@ -234,12 +241,23 @@ export default function SignUpPage() {
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link href="/login" className="text-primary hover:underline">
+            <Link
+              href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}
+              className="text-primary hover:underline"
+            >
               Sign in
             </Link>
           </p>
         </div>
       </main>
     </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense>
+      <SignUpForm />
+    </Suspense>
   );
 }

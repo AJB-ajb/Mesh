@@ -32,7 +32,7 @@ export const test = base.extend<AuthFixtures>({
   ],
 
   developerPage: [
-    async ({ page, developerUser: _developerUser }, use) => {
+    async ({ page }, use) => {
       // developerUser fixture already authenticated the page
       await use(page);
     },
@@ -51,7 +51,7 @@ export const test = base.extend<AuthFixtures>({
   ],
 
   ownerPage: [
-    async ({ page, ownerUser: _ownerUser }, use) => {
+    async ({ page }, use) => {
       // ownerUser fixture already authenticated the page
       await use(page);
     },

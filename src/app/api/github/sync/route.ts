@@ -1,7 +1,7 @@
 /**
  * GitHub Sync API Route
  * Triggers GitHub profile extraction and enrichment
- * 
+ *
  * POST /api/github/sync
  * - Extracts data from GitHub
  * - Analyzes with OpenAI
@@ -9,8 +9,8 @@
  * - Returns suggestions for user review
  */
 
-import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import {
   extractGitHubProfile,
   prepareAnalysisInput,
@@ -23,9 +23,9 @@ import {
   updateSyncStatus,
   updateUserProfile,
   getUserProfile,
-} from '@/lib/github';
+} from "@/lib/github";
 
-export async function POST(request: Request) {
+export async function POST() {
   try {
     const supabase = await createClient();
 
@@ -36,10 +36,7 @@ export async function POST(request: Request) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get GitHub access token from session
@@ -52,31 +49,34 @@ export async function POST(request: Request) {
     if (!providerToken) {
       return NextResponse.json(
         {
-          error: 'GitHub access token not available',
-          message: 'Please sign in with GitHub to sync your profile',
+          error: "GitHub access token not available",
+          message: "Please sign in with GitHub to sync your profile",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Check if user has GitHub linked (either primary or linked identity)
     // Supabase stores provider info in multiple places
     const identities = user.identities || [];
-    const hasGithubIdentity = identities.some((identity: { provider: string }) => identity.provider === 'github');
+    const hasGithubIdentity = identities.some(
+      (identity: { provider: string }) => identity.provider === "github",
+    );
 
     if (!hasGithubIdentity) {
       return NextResponse.json(
         {
-          error: 'GitHub account not linked',
-          message: 'Please link your GitHub account in Settings to sync your profile',
+          error: "GitHub account not linked",
+          message:
+            "Please link your GitHub account in Settings to sync your profile",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Update sync status to 'syncing'
     try {
-      await updateSyncStatus(user.id, 'syncing');
+      await updateSyncStatus(user.id, "syncing");
     } catch {
       // Ignore if record doesn't exist yet
     }
@@ -84,16 +84,22 @@ export async function POST(request: Request) {
     // Extract GitHub profile data
     console.log(`[GitHub Sync] Starting extraction for user ${user.id}`);
     const extraction = await extractGitHubProfile(providerToken);
-    console.log(`[GitHub Sync] Extracted ${extraction.repos.length} repos, ${extraction.commitMessages.length} commits`);
+    console.log(
+      `[GitHub Sync] Extracted ${extraction.repos.length} repos, ${extraction.commitMessages.length} commits`,
+    );
 
     // Prepare data for LLM analysis
     const analysisInput = prepareAnalysisInput(extraction);
-    console.log(`[GitHub Sync] Prepared analysis input with ${analysisInput.codeSnippets.length} code snippets`);
+    console.log(
+      `[GitHub Sync] Prepared analysis input with ${analysisInput.codeSnippets.length} code snippets`,
+    );
 
     // Analyze with OpenAI
     console.log(`[GitHub Sync] Starting OpenAI analysis`);
     const analysis = await analyzeGitHubProfile(analysisInput);
-    console.log(`[GitHub Sync] Analysis complete: ${analysis.inferredSkills.length} skills, ${analysis.inferredInterests.length} interests`);
+    console.log(
+      `[GitHub Sync] Analysis complete: ${analysis.inferredSkills.length} skills, ${analysis.inferredInterests.length} interests`,
+    );
 
     // Build GitHub profile data
     const githubProfileData = buildGitHubProfileData(extraction, analysis);
@@ -106,26 +112,31 @@ export async function POST(request: Request) {
     const existingProfile = await getUserProfile(user.id);
 
     // Get suggestions for user review
-    const suggestions = getProfileSuggestions(existingProfile, githubProfileData);
+    const suggestions = getProfileSuggestions(
+      existingProfile,
+      githubProfileData,
+    );
 
     // Merge with existing profile (auto-update non-conflicting fields)
-    const profileUpdate = mergeWithExistingProfile(existingProfile, githubProfileData);
+    const profileUpdate = mergeWithExistingProfile(
+      existingProfile,
+      githubProfileData,
+    );
     await updateUserProfile(user.id, profileUpdate);
     console.log(`[GitHub Sync] Updated user profile with merged data`);
 
     // Update sync status to 'completed'
-    await updateSyncStatus(user.id, 'completed');
+    await updateSyncStatus(user.id, "completed");
 
     return NextResponse.json({
       success: true,
-      message: 'GitHub profile synced successfully',
+      message: "GitHub profile synced successfully",
       data: {
         githubUsername: githubProfileData.githubUsername,
         reposAnalyzed: githubProfileData.repoCount,
         languagesFound: githubProfileData.primaryLanguages,
         skillsInferred: githubProfileData.inferredSkills,
         interestsInferred: githubProfileData.inferredInterests,
-        experienceLevel: githubProfileData.experienceLevel,
         codingStyle: githubProfileData.codingStyle,
         activityLevel: githubProfileData.activityLevel,
       },
@@ -133,22 +144,23 @@ export async function POST(request: Request) {
         suggestedBio: suggestions.suggestedBio,
         suggestedSkills: suggestions.suggestedSkills,
         suggestedInterests: suggestions.suggestedInterests,
-        experienceUpgrade: suggestions.experienceUpgrade,
       },
       profileUpdated: true,
     });
   } catch (error) {
-    console.error('[GitHub Sync] Error:', error);
+    console.error("[GitHub Sync] Error:", error);
 
     // Try to update sync status to failed
     try {
       const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         await updateSyncStatus(
           user.id,
-          'failed',
-          error instanceof Error ? error.message : 'Unknown error'
+          "failed",
+          error instanceof Error ? error.message : "Unknown error",
         );
       }
     } catch {
@@ -157,10 +169,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        error: 'Failed to sync GitHub profile',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to sync GitHub profile",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -179,10 +191,7 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get GitHub profile
@@ -191,7 +200,7 @@ export async function GET() {
     if (!githubProfile) {
       return NextResponse.json({
         synced: false,
-        message: 'No GitHub profile data found. Sync to get started.',
+        message: "No GitHub profile data found. Sync to get started.",
       });
     }
 
@@ -215,7 +224,6 @@ export async function GET() {
         topics: githubProfile.topics,
         inferredSkills: githubProfile.inferredSkills,
         inferredInterests: githubProfile.inferredInterests,
-        experienceLevel: githubProfile.experienceLevel,
         experienceSignals: githubProfile.experienceSignals,
         codingStyle: githubProfile.codingStyle,
         collaborationStyle: githubProfile.collaborationStyle,
@@ -225,13 +233,13 @@ export async function GET() {
       suggestions,
     });
   } catch (error) {
-    console.error('[GitHub Sync] GET Error:', error);
+    console.error("[GitHub Sync] GET Error:", error);
     return NextResponse.json(
       {
-        error: 'Failed to get GitHub profile',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to get GitHub profile",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

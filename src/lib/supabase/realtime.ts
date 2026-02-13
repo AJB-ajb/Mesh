@@ -33,7 +33,7 @@ export type Notification = {
   title: string;
   body: string | null;
   read: boolean;
-  related_project_id: string | null;
+  related_posting_id: string | null;
   related_application_id: string | null;
   related_user_id: string | null;
   created_at: string;
@@ -46,6 +46,65 @@ export type Conversation = {
   last_message_at: string | null;
   created_at: string;
   updated_at: string;
+};
+
+// ---------------------------------------------------------------------------
+// Type guards
+// ---------------------------------------------------------------------------
+
+function isMessage(value: unknown): value is Message {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.id === "string" &&
+    typeof v.conversation_id === "string" &&
+    typeof v.sender_id === "string" &&
+    typeof v.content === "string" &&
+    typeof v.created_at === "string"
+  );
+}
+
+function isNotification(value: unknown): value is Notification {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.id === "string" &&
+    typeof v.user_id === "string" &&
+    typeof v.type === "string" &&
+    typeof v.title === "string" &&
+    typeof v.created_at === "string"
+  );
+}
+
+function isConversation(value: unknown): value is Conversation {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.id === "string" &&
+    typeof v.participant_1 === "string" &&
+    typeof v.participant_2 === "string" &&
+    typeof v.created_at === "string"
+  );
+}
+
+function isPresenceStateArray(value: unknown): value is PresenceState[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        typeof item === "object" &&
+        item !== null &&
+        typeof (item as Record<string, unknown>).user_id === "string",
+    )
+  );
+}
+
+// Exported for testing
+export const _typeGuards = {
+  isMessage,
+  isNotification,
+  isConversation,
+  isPresenceStateArray,
 };
 
 /**
@@ -69,7 +128,14 @@ export function subscribeToMessages(
         filter: `conversation_id=eq.${conversationId}`,
       },
       (payload) => {
-        onNewMessage(payload.new as unknown as Message);
+        if (isMessage(payload.new)) {
+          onNewMessage(payload.new);
+        } else {
+          console.warn(
+            "[Realtime] Unexpected message payload shape:",
+            payload.new,
+          );
+        }
       },
     )
     .on(
@@ -81,7 +147,14 @@ export function subscribeToMessages(
         filter: `conversation_id=eq.${conversationId}`,
       },
       (payload) => {
-        onMessageUpdate?.(payload.new as unknown as Message);
+        if (isMessage(payload.new)) {
+          onMessageUpdate?.(payload.new);
+        } else {
+          console.warn(
+            "[Realtime] Unexpected message update payload shape:",
+            payload.new,
+          );
+        }
       },
     )
     .subscribe((status) => {
@@ -121,7 +194,14 @@ export function subscribeToNotifications(
         filter: `user_id=eq.${userId}`,
       },
       (payload) => {
-        onNewNotification(payload.new as unknown as Notification);
+        if (isNotification(payload.new)) {
+          onNewNotification(payload.new);
+        } else {
+          console.warn(
+            "[Realtime] Unexpected notification payload shape:",
+            payload.new,
+          );
+        }
       },
     )
     .on(
@@ -133,7 +213,14 @@ export function subscribeToNotifications(
         filter: `user_id=eq.${userId}`,
       },
       (payload) => {
-        onNotificationUpdate?.(payload.new as unknown as Notification);
+        if (isNotification(payload.new)) {
+          onNotificationUpdate?.(payload.new);
+        } else {
+          console.warn(
+            "[Realtime] Unexpected notification update payload shape:",
+            payload.new,
+          );
+        }
       },
     )
     .on(
@@ -145,7 +232,14 @@ export function subscribeToNotifications(
         filter: `user_id=eq.${userId}`,
       },
       (payload) => {
-        onNotificationDelete?.(payload.old as unknown as Notification);
+        if (isNotification(payload.old)) {
+          onNotificationDelete?.(payload.old);
+        } else {
+          console.warn(
+            "[Realtime] Unexpected notification delete payload shape:",
+            payload.old,
+          );
+        }
       },
     )
     .subscribe((status) => {
@@ -182,13 +276,19 @@ export function subscribeToConversations(
         table: "conversations",
       },
       (payload) => {
-        const conv = payload.new as unknown as Conversation;
+        if (!isConversation(payload.new)) {
+          console.warn(
+            "[Realtime] Unexpected conversation payload shape:",
+            payload.new,
+          );
+          return;
+        }
         // Only process if user is a participant
         if (
-          conv &&
-          (conv.participant_1 === userId || conv.participant_2 === userId)
+          payload.new.participant_1 === userId ||
+          payload.new.participant_2 === userId
         ) {
-          onConversationUpdate(conv);
+          onConversationUpdate(payload.new);
         }
       },
     )
@@ -233,10 +333,24 @@ export function createPresenceChannel(
       onPresenceSync(state);
     })
     .on("presence", { event: "join" }, ({ key, newPresences }) => {
-      onPresenceJoin?.(key, newPresences as unknown as PresenceState[]);
+      if (isPresenceStateArray(newPresences)) {
+        onPresenceJoin?.(key, newPresences);
+      } else {
+        console.warn(
+          "[Realtime] Unexpected presence join payload shape:",
+          newPresences,
+        );
+      }
     })
     .on("presence", { event: "leave" }, ({ key, leftPresences }) => {
-      onPresenceLeave?.(key, leftPresences as unknown as PresenceState[]);
+      if (isPresenceStateArray(leftPresences)) {
+        onPresenceLeave?.(key, leftPresences);
+      } else {
+        console.warn(
+          "[Realtime] Unexpected presence leave payload shape:",
+          leftPresences,
+        );
+      }
     })
     .subscribe(async (status) => {
       if (status === "SUBSCRIBED") {

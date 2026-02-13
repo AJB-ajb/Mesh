@@ -77,7 +77,7 @@ export function useRealtimeChat({
           onNewMessage?.(message);
         }
       },
-      (_message) => {
+      () => {
         // Handle message updates (e.g., read status)
       },
     );
@@ -87,11 +87,11 @@ export function useRealtimeChat({
       `chat:${conversationId}`,
       currentUserId,
       handlePresenceSync,
-      (_key, _newPresences) => {
+      () => {
         // User joined
         queueMicrotask(() => setIsConnected(true));
       },
-      (_key, _leftPresences) => {
+      () => {
         // User left
       },
     );

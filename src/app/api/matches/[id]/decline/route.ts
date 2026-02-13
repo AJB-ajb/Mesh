@@ -24,11 +24,19 @@ export const PATCH = withAuth(async (_req, { user, supabase, params }) => {
   const project = match.project as Record<string, unknown>;
 
   if (project?.creator_id !== user.id) {
-    return apiError("FORBIDDEN", "Only project creators can decline applicants", 403);
+    return apiError(
+      "FORBIDDEN",
+      "Only project creators can decline applicants",
+      403,
+    );
   }
 
   if (match.status !== "applied") {
-    return apiError("VALIDATION", `Match is not in 'applied' status (current: ${match.status})`, 400);
+    return apiError(
+      "VALIDATION",
+      `Match is not in 'applied' status (current: ${match.status})`,
+      400,
+    );
   }
 
   const { data: updatedMatch, error: updateError } = await supabase
@@ -47,7 +55,7 @@ export const PATCH = withAuth(async (_req, { user, supabase, params }) => {
 
   const response: MatchResponse = {
     id: updatedMatch.id,
-    project: updatedMatch.project as MatchResponse["project"],
+    posting: updatedMatch.project as MatchResponse["posting"],
     profile: updatedMatch.profile as MatchResponse["profile"],
     score: updatedMatch.similarity_score,
     explanation: updatedMatch.explanation,

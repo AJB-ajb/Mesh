@@ -1,11 +1,26 @@
--- Enable Realtime for messages table
-ALTER PUBLICATION supabase_realtime ADD TABLE messages;
+-- Enable Realtime for tables that may have been created via dashboard.
+-- Using DO blocks so the migration doesn't fail if tables don't exist yet.
 
--- Enable Realtime for notifications table
-ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'messages') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE messages;
+  END IF;
+END $$;
 
--- Enable Realtime for conversations table
-ALTER PUBLICATION supabase_realtime ADD TABLE conversations;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'notifications') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
+  END IF;
+END $$;
 
--- Enable Realtime for applications table (for real-time application updates)
-ALTER PUBLICATION supabase_realtime ADD TABLE applications;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'conversations') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE conversations;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'applications') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE applications;
+  END IF;
+END $$;

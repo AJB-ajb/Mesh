@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -22,7 +22,7 @@ import { NavItem } from "./nav-item";
 
 const navigation = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/projects", icon: FolderKanban, label: "Projects" },
+  { href: "/postings", icon: FolderKanban, label: "Postings" },
   { href: "/matches", icon: Users, label: "Matches" },
   { href: "/inbox", icon: Inbox, label: "Inbox" },
 ];
@@ -122,7 +122,7 @@ export function Sidebar({ className }: SidebarProps) {
           </Button>
         </div>
 
-        {/* New Project button */}
+        {/* New Posting button */}
         <div className="px-3 py-4">
           <Button
             className={cn(
@@ -131,7 +131,7 @@ export function Sidebar({ className }: SidebarProps) {
             )}
             asChild
           >
-            <Link href="/projects/new">
+            <Link href="/postings/new">
               <Plus className="h-4 w-4 flex-shrink-0" />
               <span
                 className={cn(
@@ -139,7 +139,7 @@ export function Sidebar({ className }: SidebarProps) {
                   isCollapsed && "md:hidden",
                 )}
               >
-                New Project
+                New Posting
               </span>
             </Link>
           </Button>

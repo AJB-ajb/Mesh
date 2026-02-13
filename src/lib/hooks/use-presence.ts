@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { RealtimeChannel, RealtimePresenceState } from "@supabase/supabase-js";
+import { RealtimeChannel } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import type { PresenceState } from "@/lib/supabase/realtime";
 
@@ -16,9 +16,9 @@ type UsePresenceReturn = {
  * Should be used at the app level (e.g., in a provider)
  */
 export function usePresence(currentUserId: string | null): UsePresenceReturn {
-  const [onlineUsers, setOnlineUsers] = useState<Map<string, { online_at: string }>>(
-    new Map()
-  );
+  const [onlineUsers, setOnlineUsers] = useState<
+    Map<string, { online_at: string }>
+  >(new Map());
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
@@ -84,7 +84,7 @@ export function usePresence(currentUserId: string | null): UsePresenceReturn {
     (userId: string): boolean => {
       return onlineUsers.has(userId);
     },
-    [onlineUsers]
+    [onlineUsers],
   );
 
   const getLastSeen = useCallback(
@@ -92,7 +92,7 @@ export function usePresence(currentUserId: string | null): UsePresenceReturn {
       const user = onlineUsers.get(userId);
       return user?.online_at || null;
     },
-    [onlineUsers]
+    [onlineUsers],
   );
 
   return {

@@ -8,16 +8,6 @@ import { formatScore, getScoreColorVariant } from "@/lib/matching/scoring";
 
 export interface MatchBreakdownProps {
   breakdown: ScoreBreakdown;
-  project: {
-    required_skills: string[];
-    experience_level: string | null;
-    commitment_hours: number | null;
-  };
-  profile: {
-    skills: string[] | null;
-    experience_level: string | null;
-    availability_hours: number | null;
-  };
   className?: string;
 }
 
@@ -25,82 +15,40 @@ export interface MatchBreakdownProps {
  * Visual breakdown of match scores by dimension
  * Shows progress bars and explanations for each matching attribute
  */
-export function MatchBreakdown({
-  breakdown,
-  project,
-  profile,
-  className,
-}: MatchBreakdownProps) {
+export function MatchBreakdown({ breakdown, className }: MatchBreakdownProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-
-  // Calculate skills overlap details
-  const userSkills = profile.skills || [];
-  const requiredSkills = project.required_skills || [];
-  const matchingSkills = userSkills.filter((skill) =>
-    requiredSkills.includes(skill)
-  );
 
   const dimensions = [
     {
       key: "semantic" as const,
-      label: "Semantic Relevance",
-      description: "Alignment in interests and project description",
+      label: "Relevance",
+      description: "Alignment in interests and posting description",
       score: breakdown.semantic,
     },
     {
-      key: "skills_overlap" as const,
-      label: "Skills Overlap",
-      description:
-        requiredSkills.length > 0
-          ? `${matchingSkills.length} of ${requiredSkills.length} required skills`
-          : "No specific skills required",
-      score: breakdown.skills_overlap,
+      key: "availability" as const,
+      label: "Availability",
+      description: "Schedule compatibility between you and the posting",
+      score: breakdown.availability,
     },
     {
-      key: "experience_match" as const,
-      label: "Experience Level",
-      description:
-        profile.experience_level && project.experience_level
-          ? `You: ${profile.experience_level} | Project: ${project.experience_level}`
-          : project.experience_level === "any"
-          ? "Any experience level accepted"
-          : "Experience level not specified",
-      score: breakdown.experience_match,
+      key: "skill_level" as const,
+      label: "Skill Level",
+      description: "How well your skill levels match the posting requirements",
+      score: breakdown.skill_level,
     },
     {
-      key: "commitment_match" as const,
-      label: "Time Commitment",
-      description:
-        profile.availability_hours && project.commitment_hours
-          ? `You: ${profile.availability_hours} hrs/week | Project: ${project.commitment_hours} hrs/week`
-          : "Time commitment not specified",
-      score: breakdown.commitment_match,
+      key: "location" as const,
+      label: "Location",
+      description: "Geographic proximity weighted by location preferences",
+      score: breakdown.location,
     },
-    // New dimensions - only show if available (for backwards compatibility)
-    ...(breakdown.location_match !== undefined
-      ? [
-          {
-            key: "location_match" as const,
-            label: "Location Match",
-            description: "Geographic proximity weighted by remote preferences",
-            score: breakdown.location_match,
-          },
-        ]
-      : []),
-    ...(breakdown.filter_match !== undefined
-      ? [
-          {
-            key: "filter_match" as const,
-            label: "Filter Compliance",
-            description: "How well you match the specified preferences",
-            score: breakdown.filter_match,
-          },
-        ]
-      : []),
   ];
 
   return (
-    <div className={cn("rounded-lg border border-border bg-muted/30", className)}>
+    <div
+      className={cn("rounded-lg border border-border bg-muted/30", className)}
+    >
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-muted/50"
@@ -136,7 +84,7 @@ export function MatchBreakdown({
                       "text-sm font-semibold",
                       colorVariant === "success" && "text-success",
                       colorVariant === "warning" && "text-warning",
-                      colorVariant === "destructive" && "text-destructive"
+                      colorVariant === "destructive" && "text-destructive",
                     )}
                   >
                     {formatScore(dimension.score)}
@@ -148,7 +96,7 @@ export function MatchBreakdown({
                   <div
                     className={cn(
                       "h-full transition-all duration-300",
-                      colorClasses[colorVariant]
+                      colorClasses[colorVariant],
                     )}
                     style={{ width: `${dimension.score * 100}%` }}
                   />

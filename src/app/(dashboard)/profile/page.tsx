@@ -12,6 +12,7 @@ import { ProfileForm } from "@/components/profile/profile-form";
 import { ProfileView } from "@/components/profile/profile-view";
 import { GitHubIntegrationCard } from "@/components/profile/github-integration-card";
 import { IntegrationsSection } from "@/components/profile/integrations-section";
+import { FreeFormProfileUpdate } from "@/components/profile/free-form-profile-update";
 
 export default function ProfilePage() {
   const {
@@ -29,7 +30,11 @@ export default function ProfilePage() {
     handleChange,
     handleSubmit,
     handleLinkProvider,
-    fetchProfile,
+    sourceText,
+    canUndo,
+    isApplyingUpdate,
+    applyFreeFormUpdate,
+    undoLastUpdate,
   } = useProfile();
 
   const {
@@ -41,15 +46,14 @@ export default function ProfilePage() {
     applySuggestion,
   } = useGithubSync(setForm, setIsEditing);
 
-  const location = useLocation(setForm, (_val) => {});
+  const location = useLocation(setForm, () => {});
 
+  // Fetch GitHub sync status once we know the user has a GitHub provider
   useEffect(() => {
-    fetchProfile().then(({ hasGithubProvider }) => {
-      if (hasGithubProvider) {
-        fetchGithubSyncStatus();
-      }
-    });
-  }, [fetchProfile, fetchGithubSyncStatus]);
+    if (isGithubProvider) {
+      fetchGithubSyncStatus();
+    }
+  }, [isGithubProvider, fetchGithubSyncStatus]);
 
   if (isLoading) {
     return (
@@ -104,6 +108,7 @@ export default function ProfilePage() {
         <>
           <ProfileForm
             form={form}
+            setForm={setForm}
             isSaving={isSaving}
             onSubmit={handleSubmit}
             onChange={handleChange}
@@ -125,6 +130,13 @@ export default function ProfilePage() {
             githubSyncError={githubSyncError}
             onSync={handleGithubSync}
             onApplySuggestion={applySuggestion}
+          />
+          <FreeFormProfileUpdate
+            sourceText={sourceText}
+            canUndo={canUndo}
+            isApplying={isApplyingUpdate}
+            onUpdate={applyFreeFormUpdate}
+            onUndo={undoLastUpdate}
           />
           <ProfileView form={form} />
           <IntegrationsSection

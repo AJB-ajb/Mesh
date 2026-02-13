@@ -41,11 +41,7 @@ async function inspectSchema() {
       ];
 
       for (const tableName of commonTables) {
-        const {
-          data: _data,
-          error,
-          count,
-        } = await supabase
+        const { error, count } = await supabase
           .from(tableName)
           .select("*", { count: "exact", head: true });
 

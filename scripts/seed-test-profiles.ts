@@ -1,18 +1,27 @@
 /**
  * Seed 5 test profiles into Supabase database
  *
- * Profile 1 & 2: Project creators with active postings
+ * Profile 1 & 2: Posting creators with active postings
  * Profile 3, 4, 5: Job seekers who completed onboarding
  */
 
 import { createClient } from "@supabase/supabase-js";
+import { config } from "dotenv";
 
-const supabaseUrl = "https://jirgkhjdxahfsgqxprhh.supabase.co";
-const supabaseServiceKey =
-  "***REMOVED***";
+config(); // Load .env
 
-// Use service key for admin operations
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
+
+if (!supabaseUrl || !supabaseSecretKey) {
+  console.error(
+    "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SECRET_KEY in .env",
+  );
+  process.exit(1);
+}
+
+// Use secret key for admin operations
+const supabase = createClient(supabaseUrl, supabaseSecretKey);
 
 interface TestProfile {
   email: string;
@@ -21,8 +30,6 @@ interface TestProfile {
   role: "creator" | "seeker";
   bio: string;
   skills: string[];
-  experience: string;
-  availability: string;
   github?: string;
 }
 
@@ -34,8 +41,6 @@ const testProfiles: TestProfile[] = [
     role: "creator",
     bio: "Senior Full-Stack Developer looking to build the next big thing. 8 years experience in React, Node.js, and cloud infrastructure.",
     skills: ["React", "Node.js", "TypeScript", "AWS", "PostgreSQL"],
-    experience: "8 years",
-    availability: "Part-time (10-15 hrs/week)",
     github: "github.com/alicejohnson",
   },
   {
@@ -45,8 +50,6 @@ const testProfiles: TestProfile[] = [
     role: "creator",
     bio: "Product designer turned entrepreneur. Building AI-powered tools for content creators. Expert in UX/UI and product strategy.",
     skills: ["Figma", "Product Design", "Python", "AI/ML", "User Research"],
-    experience: "6 years",
-    availability: "Full-time",
     github: "github.com/bobmartinez",
   },
   {
@@ -56,8 +59,6 @@ const testProfiles: TestProfile[] = [
     role: "seeker",
     bio: "Frontend developer passionate about creating beautiful, accessible web experiences. Recently completed boot camp.",
     skills: ["JavaScript", "React", "CSS", "Tailwind", "Figma"],
-    experience: "2 years",
-    availability: "Full-time",
     github: "github.com/caroldavis",
   },
   {
@@ -67,8 +68,6 @@ const testProfiles: TestProfile[] = [
     role: "seeker",
     bio: "Backend engineer with strong focus on scalability and performance. Love working with databases and APIs.",
     skills: ["Node.js", "PostgreSQL", "Redis", "Docker", "GraphQL"],
-    experience: "4 years",
-    availability: "Part-time (15-20 hrs/week)",
     github: "github.com/davidkim",
   },
   {
@@ -78,40 +77,50 @@ const testProfiles: TestProfile[] = [
     role: "seeker",
     bio: "Full-stack developer and designer. I bring ideas to life with clean code and beautiful interfaces.",
     skills: ["Vue.js", "Python", "Django", "Tailwind", "UI Design"],
-    experience: "3 years",
-    availability: "Part-time (10 hrs/week)",
     github: "github.com/emmawilson",
   },
 ];
 
-interface Project {
+interface Posting {
   title: string;
   description: string;
-  requiredSkills: string[];
-  commitment: string;
+  skills: string[];
+  category: string;
+  estimated_time: string;
+  team_size_min: number;
+  team_size_max: number;
+  mode: "remote" | "hybrid" | "onsite";
   status: "open" | "in-progress" | "closed";
 }
 
-const testProjects: { creatorEmail: string; project: Project }[] = [
+const testPostings: { creatorEmail: string; posting: Posting }[] = [
   {
     creatorEmail: "alice.creator@meshit.test",
-    project: {
+    posting: {
       title: "AI-Powered Task Manager",
       description:
         "Building an intelligent task management app that uses ML to predict completion times and suggest priorities. Looking for frontend developer with React experience.",
-      requiredSkills: ["React", "TypeScript", "Tailwind CSS"],
-      commitment: "10-15 hrs/week for 3 months",
+      skills: ["React", "TypeScript", "Tailwind CSS"],
+      category: "side-project",
+      estimated_time: "3 months",
+      team_size_min: 2,
+      team_size_max: 4,
+      mode: "remote",
       status: "open",
     },
   },
   {
     creatorEmail: "bob.creator@meshit.test",
-    project: {
+    posting: {
       title: "Content Creator Analytics Dashboard",
       description:
         "Real-time analytics platform for YouTube and TikTok creators. Need backend developer experienced with data pipelines and APIs.",
-      requiredSkills: ["Node.js", "PostgreSQL", "Redis", "REST APIs"],
-      commitment: "Full-time for 6 months",
+      skills: ["Node.js", "PostgreSQL", "Redis", "REST APIs"],
+      category: "startup",
+      estimated_time: "6 months",
+      team_size_min: 3,
+      team_size_max: 6,
+      mode: "hybrid",
       status: "open",
     },
   },
@@ -137,10 +146,10 @@ async function main() {
     );
   }
 
-  const { data: existingProjects } = await supabase
-    .from("projects")
+  const { data: existingPostings } = await supabase
+    .from("postings")
     .select("*");
-  console.log(`   Found ${existingProjects?.length || 0} existing projects\n`);
+  console.log(`   Found ${existingPostings?.length || 0} existing postings\n`);
 
   // Step 2: Check table structure
   console.log("📋 Step 2: Inspecting table structure...\n");
@@ -162,20 +171,20 @@ async function main() {
     );
   }
 
-  const { data: sampleProject } = await supabase
-    .from("projects")
+  const { data: samplePosting } = await supabase
+    .from("postings")
     .select("*")
     .limit(1)
     .single();
 
-  if (sampleProject) {
+  if (samplePosting) {
     console.log(
-      "   Project table columns:",
-      Object.keys(sampleProject).join(", "),
+      "   Posting table columns:",
+      Object.keys(samplePosting).join(", "),
     );
   } else {
     console.log(
-      "   No existing projects - will discover structure during insert",
+      "   No existing postings - will discover structure during insert",
     );
   }
 
@@ -230,10 +239,7 @@ async function main() {
           display_name: profile.displayName,
           bio: profile.bio,
           skills: profile.skills,
-          experience: profile.experience,
-          availability: profile.availability,
           github_url: profile.github,
-          onboarding_completed: true,
           created_at: new Date().toISOString(),
         })
         .select()
@@ -249,38 +255,42 @@ async function main() {
   }
 
   console.log(
-    `\n📊 Step 4: Creating ${testProjects.length} test projects...\n`,
+    `\n📊 Step 4: Creating ${testPostings.length} test postings...\n`,
   );
 
-  for (const { creatorEmail, project } of testProjects) {
+  for (const { creatorEmail, posting } of testPostings) {
     const creator = createdUsers.find((u) => u.email === creatorEmail);
     if (!creator) {
       console.log(`   ⚠️  Creator not found: ${creatorEmail}`);
       continue;
     }
 
-    console.log(`   Creating project: ${project.title}...`);
+    console.log(`   Creating posting: ${posting.title}...`);
 
-    const { data: projectData, error: projectError } = await supabase
-      .from("projects")
+    const { data: postingData, error: postingError } = await supabase
+      .from("postings")
       .insert({
         creator_id: creator.userId,
-        title: project.title,
-        description: project.description,
-        required_skills: project.requiredSkills,
-        commitment: project.commitment,
-        status: project.status,
+        title: posting.title,
+        description: posting.description,
+        skills: posting.skills,
+        category: posting.category,
+        estimated_time: posting.estimated_time,
+        team_size_min: posting.team_size_min,
+        team_size_max: posting.team_size_max,
+        mode: posting.mode,
+        status: posting.status,
         created_at: new Date().toISOString(),
       })
       .select()
       .single();
 
-    if (projectError) {
-      console.log(`   ⚠️  Project error: ${projectError.message}`);
-      console.log(`   Details:`, projectError);
+    if (postingError) {
+      console.log(`   ⚠️  Posting error: ${postingError.message}`);
+      console.log(`   Details:`, postingError);
     } else {
       console.log(
-        `   ✅ Project created: ${project.title} (ID: ${projectData.id})`,
+        `   ✅ Posting created: ${posting.title} (ID: ${postingData.id})`,
       );
     }
   }
@@ -288,7 +298,7 @@ async function main() {
   console.log("\n✅ Database seeding complete!\n");
   console.log("📝 Summary:");
   console.log(`   - ${createdUsers.length} users created`);
-  console.log(`   - ${testProjects.length} projects created`);
+  console.log(`   - ${testPostings.length} postings created`);
   console.log("\n🔑 Test Credentials:");
   testProfiles.forEach((p) => {
     console.log(`   ${p.displayName}: ${p.email} / ${p.password}`);

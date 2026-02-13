@@ -1,8 +1,10 @@
 "use client";
 
-import { Loader2, MapPin, Search } from "lucide-react";
+import { useState } from "react";
+import { Loader2, MapPin, Plus, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import {
   Card,
   CardContent,
@@ -12,10 +14,46 @@ import {
 } from "@/components/ui/card";
 import { LocationAutocomplete } from "@/components/location/location-autocomplete";
 import type { ProfileFormState } from "@/lib/types/profile";
+import {
+  type SkillLevel,
+  type LocationMode,
+  type AvailabilitySlots,
+  DAYS,
+  DAY_LABELS,
+  TIME_SLOTS,
+  TIME_SLOT_LABELS,
+} from "@/lib/types/profile";
 import type { GeocodingResult } from "@/lib/geocoding";
+
+// ---------------------------------------------------------------------------
+// Skill level reference labels
+// ---------------------------------------------------------------------------
+
+function skillLevelLabel(level: number): string {
+  if (level <= 2) return "Beginner";
+  if (level <= 4) return "Can follow tutorials";
+  if (level <= 6) return "Intermediate";
+  if (level <= 8) return "Advanced";
+  return "Expert";
+}
+
+// ---------------------------------------------------------------------------
+// Location mode labels
+// ---------------------------------------------------------------------------
+
+const LOCATION_MODE_OPTIONS: { value: LocationMode; label: string }[] = [
+  { value: "remote", label: "Remote" },
+  { value: "in_person", label: "In-person" },
+  { value: "either", label: "Either" },
+];
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 export function ProfileForm({
   form,
+  setForm,
   isSaving,
   onSubmit,
   onChange,
@@ -23,6 +61,7 @@ export function ProfileForm({
   location,
 }: {
   form: ProfileFormState;
+  setForm: React.Dispatch<React.SetStateAction<ProfileFormState>>;
   isSaving: boolean;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   onChange: (field: keyof ProfileFormState, value: string) => void;
@@ -37,13 +76,62 @@ export function ProfileForm({
     handleLocationInputChange: (value: string) => void;
   };
 }) {
+  // --- Skill levels handlers ---
+  const addSkill = () => {
+    setForm((prev) => ({
+      ...prev,
+      skillLevels: [...prev.skillLevels, { name: "", level: 5 }],
+    }));
+  };
+
+  const updateSkill = (index: number, update: Partial<SkillLevel>) => {
+    setForm((prev) => ({
+      ...prev,
+      skillLevels: prev.skillLevels.map((s, i) =>
+        i === index ? { ...s, ...update } : s,
+      ),
+    }));
+  };
+
+  const removeSkill = (index: number) => {
+    setForm((prev) => ({
+      ...prev,
+      skillLevels: prev.skillLevels.filter((_, i) => i !== index),
+    }));
+  };
+
+  // --- Location mode handler ---
+  const setLocationMode = (mode: LocationMode) => {
+    setForm((prev) => ({ ...prev, locationMode: mode }));
+  };
+
+  // --- Availability slot handler ---
+  const toggleSlot = (day: string, slot: string) => {
+    setForm((prev) => {
+      const current = prev.availabilitySlots[day] ?? [];
+      const next = current.includes(slot)
+        ? current.filter((s) => s !== slot)
+        : [...current, slot];
+      const slots: AvailabilitySlots = { ...prev.availabilitySlots };
+      if (next.length === 0) {
+        delete slots[day];
+      } else {
+        slots[day] = next;
+      }
+      return { ...prev, availabilitySlots: slots };
+    });
+  };
+
   return (
     <form data-testid="profile-form" onSubmit={onSubmit} className="space-y-6">
+      {/* ============================================ */}
+      {/* General Information */}
+      {/* ============================================ */}
       <Card>
         <CardHeader>
           <CardTitle>General Information</CardTitle>
           <CardDescription>
-            Share the essentials about who you are and how you like to work.
+            Share the essentials about who you are.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -147,9 +235,7 @@ export function ProfileForm({
                 }
               >
                 <Search className="mr-2 h-4 w-4" />
-                {location.showAutocomplete
-                  ? "Manual entry"
-                  : "Search location"}
+                {location.showAutocomplete ? "Manual entry" : "Search location"}
               </Button>
             </div>
 
@@ -185,45 +271,6 @@ export function ProfileForm({
             )}
           </div>
 
-          {/* Availability */}
-          <div className="space-y-2">
-            <label htmlFor="availabilityHours" className="text-sm font-medium">
-              Availability (hrs/week)
-            </label>
-            <Input
-              id="availabilityHours"
-              value={form.availabilityHours}
-              onChange={(e) => onChange("availabilityHours", e.target.value)}
-              placeholder="e.g., 10"
-            />
-            <p className="text-xs text-muted-foreground">
-              Your actual weekly availability for projects. This is used for
-              matching with project requirements.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="remotePreference" className="text-sm font-medium">
-              Remote preference: {form.remotePreference}%
-            </label>
-            <div className="flex items-center gap-4">
-              <span className="text-xs text-muted-foreground">On-site</span>
-              <input
-                id="remotePreference"
-                type="range"
-                min="0"
-                max="100"
-                value={form.remotePreference}
-                onChange={(e) => onChange("remotePreference", e.target.value)}
-                className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer"
-              />
-              <span className="text-xs text-muted-foreground">Remote</span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              0% = prefer fully on-site, 100% = prefer fully remote
-            </p>
-          </div>
-
           <div className="space-y-2">
             <label htmlFor="languages" className="text-sm font-medium">
               Spoken languages (comma-separated)
@@ -241,54 +288,6 @@ export function ProfileForm({
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <label htmlFor="experienceLevel" className="text-sm font-medium">
-                Experience level
-              </label>
-              <select
-                id="experienceLevel"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                value={form.experienceLevel}
-                onChange={(e) => onChange("experienceLevel", e.target.value)}
-              >
-                <option value="junior">Junior</option>
-                <option value="intermediate">Intermediate</option>
-                <option value="senior">Senior</option>
-                <option value="lead">Lead</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label
-                htmlFor="collaborationStyle"
-                className="text-sm font-medium"
-              >
-                Collaboration style
-              </label>
-              <select
-                id="collaborationStyle"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                value={form.collaborationStyle}
-                onChange={(e) => onChange("collaborationStyle", e.target.value)}
-              >
-                <option value="async">Mostly async</option>
-                <option value="sync">Mostly sync</option>
-                <option value="hybrid">Hybrid</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <label htmlFor="skills" className="text-sm font-medium">
-                Skills (comma-separated)
-              </label>
-              <Input
-                id="skills"
-                value={form.skills}
-                onChange={(e) => onChange("skills", e.target.value)}
-                placeholder="e.g., React, TypeScript, Supabase"
-              />
-            </div>
             <div className="space-y-2">
               <label htmlFor="interests" className="text-sm font-medium">
                 Interests (comma-separated)
@@ -329,177 +328,165 @@ export function ProfileForm({
         </CardContent>
       </Card>
 
+      {/* ============================================ */}
+      {/* Skill Level Sliders */}
+      {/* ============================================ */}
       <Card>
         <CardHeader>
-          <CardTitle>Project Preferences</CardTitle>
+          <CardTitle>Skill Levels</CardTitle>
           <CardDescription>
-            Tell us what kinds of projects youre excited to join.
+            Rate your proficiency in each domain on a 0-10 scale.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="rounded-md border border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-900 p-3">
-            <p className="text-xs text-blue-700 dark:text-blue-300">
-              <strong>Note:</strong> &quot;Preferred project commitment&quot; is
-              different from &quot;Availability&quot; above. Availability is your
-              actual weekly hours available, while preferred commitment is the
-              project commitment level you&apos;re looking for. Make sure both
-              are set for accurate matching.
+        <CardContent className="space-y-4">
+          {form.skillLevels.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No skills added yet. Click below to add your first skill.
             </p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <label htmlFor="projectTypes" className="text-sm font-medium">
-                Project types (comma-separated)
-              </label>
-              <Input
-                id="projectTypes"
-                value={form.projectTypes}
-                onChange={(e) => onChange("projectTypes", e.target.value)}
-                placeholder="e.g., SaaS, hackathon, open source"
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="preferredRoles" className="text-sm font-medium">
-                Preferred roles (comma-separated)
-              </label>
-              <Input
-                id="preferredRoles"
-                value={form.preferredRoles}
-                onChange={(e) => onChange("preferredRoles", e.target.value)}
-                placeholder="e.g., Frontend, Backend, PM"
-              />
-            </div>
-          </div>
+          )}
 
-          <div className="space-y-2">
-            <label htmlFor="preferredStack" className="text-sm font-medium">
-              Preferred tech stack (comma-separated)
-            </label>
-            <Input
-              id="preferredStack"
-              value={form.preferredStack}
-              onChange={(e) => onChange("preferredStack", e.target.value)}
-              placeholder="e.g., React, Node, Postgres"
-            />
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <label htmlFor="commitmentLevel" className="text-sm font-medium">
-                Preferred project commitment
-              </label>
-              <select
-                id="commitmentLevel"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                value={form.commitmentLevel}
-                onChange={(e) => onChange("commitmentLevel", e.target.value)}
-              >
-                <option value="5">5 hrs/week</option>
-                <option value="10">10 hrs/week</option>
-                <option value="15">15 hrs/week</option>
-                <option value="20">20+ hrs/week</option>
-              </select>
+          {form.skillLevels.map((skill, index) => (
+            <div key={index} className="space-y-2 rounded-lg border p-4">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={skill.name}
+                  onChange={(e) => updateSkill(index, { name: e.target.value })}
+                  placeholder="e.g., Frontend, Python, Design"
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeSkill(index)}
+                  aria-label="Remove skill"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-4">
+                <Slider
+                  min={0}
+                  max={10}
+                  step={1}
+                  value={[skill.level]}
+                  onValueChange={([val]) => updateSkill(index, { level: val })}
+                  className="flex-1"
+                />
+                <span className="w-20 text-right text-sm font-medium tabular-nums">
+                  {skill.level}/10
+                </span>
+              </div>
               <p className="text-xs text-muted-foreground">
-                Your preferred project commitment level. This helps match you
-                with projects that fit your desired time investment.
+                {skillLevelLabel(skill.level)}
               </p>
             </div>
-            <div className="space-y-2">
-              <label
-                htmlFor="timelinePreference"
-                className="text-sm font-medium"
-              >
-                Timeline preference
-              </label>
-              <select
-                id="timelinePreference"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                value={form.timelinePreference}
-                onChange={(e) => onChange("timelinePreference", e.target.value)}
-              >
-                <option value="weekend">This weekend</option>
-                <option value="1_week">1 week</option>
-                <option value="1_month">1 month</option>
-                <option value="ongoing">Ongoing</option>
-              </select>
-            </div>
+          ))}
+
+          <Button type="button" variant="outline" size="sm" onClick={addSkill}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add skill
+          </Button>
+
+          {/* Backward-compat text skills field */}
+          <div className="space-y-2 pt-2">
+            <label htmlFor="skills" className="text-sm font-medium">
+              Skills (comma-separated, for search)
+            </label>
+            <Input
+              id="skills"
+              value={form.skills}
+              onChange={(e) => onChange("skills", e.target.value)}
+              placeholder="e.g., React, TypeScript, Supabase"
+            />
+            <p className="text-xs text-muted-foreground">
+              Used for keyword matching alongside the skill levels above.
+            </p>
           </div>
         </CardContent>
       </Card>
 
+      {/* ============================================ */}
+      {/* Location Mode Toggle */}
+      {/* ============================================ */}
       <Card>
         <CardHeader>
-          <CardTitle>Match Filters</CardTitle>
+          <CardTitle>Location Mode</CardTitle>
+          <CardDescription>Where do you prefer to collaborate?</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            {LOCATION_MODE_OPTIONS.map((option) => (
+              <Button
+                key={option.value}
+                type="button"
+                variant={
+                  form.locationMode === option.value ? "default" : "outline"
+                }
+                onClick={() => setLocationMode(option.value)}
+                className="flex-1"
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ============================================ */}
+      {/* Availability Slot Picker */}
+      {/* ============================================ */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Availability</CardTitle>
           <CardDescription>
-            Set preferences for which projects rank higher in your matches.
-            Projects outside these preferences will still appear but with lower
-            scores.
+            Click cells to toggle when you are typically available.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <label
-                htmlFor="filterMaxDistance"
-                className="text-sm font-medium"
-              >
-                Max distance (km)
-              </label>
-              <Input
-                id="filterMaxDistance"
-                type="number"
-                min="0"
-                value={form.filterMaxDistance}
-                onChange={(e) => onChange("filterMaxDistance", e.target.value)}
-                placeholder="e.g., 500"
-              />
-              <p className="text-xs text-muted-foreground">
-                Leave empty for no distance preference
-              </p>
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="filterLanguages" className="text-sm font-medium">
-                Required languages
-              </label>
-              <Input
-                id="filterLanguages"
-                value={form.filterLanguages}
-                onChange={(e) => onChange("filterLanguages", e.target.value)}
-                placeholder="e.g., en, de"
-              />
-              <p className="text-xs text-muted-foreground">
-                Project owners must speak these languages
-              </p>
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <label htmlFor="filterMinHours" className="text-sm font-medium">
-                Min hours/week
-              </label>
-              <Input
-                id="filterMinHours"
-                type="number"
-                min="0"
-                value={form.filterMinHours}
-                onChange={(e) => onChange("filterMinHours", e.target.value)}
-                placeholder="e.g., 5"
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="filterMaxHours" className="text-sm font-medium">
-                Max hours/week
-              </label>
-              <Input
-                id="filterMaxHours"
-                type="number"
-                min="0"
-                value={form.filterMaxHours}
-                onChange={(e) => onChange("filterMaxHours", e.target.value)}
-                placeholder="e.g., 20"
-              />
-            </div>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr>
+                  <th className="p-2 text-left font-medium text-muted-foreground" />
+                  {TIME_SLOTS.map((slot) => (
+                    <th
+                      key={slot}
+                      className="p-2 text-center font-medium text-muted-foreground"
+                    >
+                      {TIME_SLOT_LABELS[slot]}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {DAYS.map((day) => (
+                  <tr key={day}>
+                    <td className="p-2 font-medium">{DAY_LABELS[day]}</td>
+                    {TIME_SLOTS.map((slot) => {
+                      const active = (
+                        form.availabilitySlots[day] ?? []
+                      ).includes(slot);
+                      return (
+                        <td key={slot} className="p-1 text-center">
+                          <button
+                            type="button"
+                            onClick={() => toggleSlot(day, slot)}
+                            className={`h-8 w-full rounded-md border transition-colors ${
+                              active
+                                ? "border-primary bg-primary/20 text-primary"
+                                : "border-border bg-background hover:bg-muted"
+                            }`}
+                            aria-label={`${DAY_LABELS[day]} ${TIME_SLOT_LABELS[slot]}`}
+                            aria-pressed={active}
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </CardContent>
       </Card>

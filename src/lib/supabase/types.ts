@@ -1,8 +1,8 @@
 /**
  * TypeScript types for Supabase database tables
  * These types match the database schema defined in migrations
- * 
- * See docs/DATA_MODEL.md for full schema documentation
+ *
+ * See docs/data-model.md for full schema documentation
  */
 
 export type Json =
@@ -13,6 +13,12 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
+/** Typed alias for Profile.skill_levels — { "domain": 0-10 } */
+export type SkillLevelsMap = Record<string, number>;
+
+/** Typed alias for Profile.availability_slots — { "mon": ["morning", "afternoon"] } */
+export type AvailabilitySlotsMap = Record<string, string[]>;
+
 export interface Database {
   public: {
     Tables: {
@@ -21,34 +27,28 @@ export interface Database {
         Insert: ProfileInsert;
         Update: ProfileUpdate;
       };
-      projects: {
-        Row: Project;
-        Insert: ProjectInsert;
-        Update: ProjectUpdate;
+      postings: {
+        Row: Posting;
+        Insert: PostingInsert;
+        Update: PostingUpdate;
       };
       matches: {
         Row: Match;
         Insert: MatchInsert;
         Update: MatchUpdate;
       };
+      friend_asks: {
+        Row: FriendAsk;
+        Insert: FriendAskInsert;
+        Update: Partial<FriendAskInsert>;
+      };
+      friendships: {
+        Row: Friendship;
+        Insert: FriendshipInsert;
+        Update: Partial<FriendshipInsert>;
+      };
     };
   };
-}
-
-// ============================================
-// SHARED TYPES
-// ============================================
-
-/**
- * Hard filters for match scoring
- * Used by both profiles (to filter projects) and projects (to filter applicants)
- * Matches violating filters receive penalized scores but still appear in results
- */
-export interface HardFilters {
-  max_distance_km?: number;  // Maximum distance in kilometers
-  min_hours?: number;        // Minimum commitment hours/week
-  max_hours?: number;        // Maximum commitment hours/week
-  languages?: string[];      // Required spoken languages (ISO codes)
 }
 
 // ============================================
@@ -61,28 +61,28 @@ export interface Profile {
   headline: string | null;
   bio: string | null;
   // Location fields
-  location: string | null;           // Legacy: human-readable location for display
-  location_lat: number | null;       // Latitude for distance-based matching
-  location_lng: number | null;       // Longitude for distance-based matching
-  // Experience and availability
-  experience_level: string | null;
-  collaboration_style: string | null; // Legacy: kept for UI (async, sync, hybrid)
-  remote_preference: number | null;   // 0-100: 0=on-site, 100=fully remote
-  availability_hours: number | null;
-  // Skills and interests
+  location: string | null;
+  location_lat: number | null;
+  location_lng: number | null;
+  // Skills and matching
   skills: string[] | null;
   interests: string[] | null;
-  languages: string[] | null;         // Spoken languages (ISO codes: en, de, es)
+  languages: string[] | null;
+  skill_levels: SkillLevelsMap | null;
+  location_preference: number | null; // 0-1 float (0=in-person, 0.5=either, 1=remote)
+  location_mode: "remote" | "in_person" | "either" | null;
+  availability_slots: AvailabilitySlotsMap | null;
   // Links
   portfolio_url: string | null;
   github_url: string | null;
-  // Preferences and filters
-  project_preferences: Json;
-  hard_filters: HardFilters | null;
+  // Free-form source text and undo
+  source_text: string | null;
+  previous_source_text: string | null;
+  previous_profile_snapshot: Json | null;
   // Matching
-  embedding: number[] | null;         // vector(1536) stored as array
-  // Data isolation
-  is_test_data: boolean;              // Flag for test/mock data vs production data
+  embedding: number[] | null;
+  // Notification preferences
+  notification_preferences: Json | null;
   // Timestamps
   created_at: string;
   updated_at: string;
@@ -96,19 +96,20 @@ export interface ProfileInsert {
   location?: string | null;
   location_lat?: number | null;
   location_lng?: number | null;
-  experience_level?: string | null;
-  collaboration_style?: string | null;
-  remote_preference?: number | null;
-  availability_hours?: number | null;
   skills?: string[] | null;
   interests?: string[] | null;
   languages?: string[] | null;
+  skill_levels?: SkillLevelsMap | null;
+  location_preference?: number | null;
+  location_mode?: "remote" | "in_person" | "either" | null;
+  availability_slots?: AvailabilitySlotsMap | null;
   portfolio_url?: string | null;
   github_url?: string | null;
-  project_preferences?: Json;
-  hard_filters?: HardFilters | null;
+  source_text?: string | null;
+  previous_source_text?: string | null;
+  previous_profile_snapshot?: Json | null;
   embedding?: number[] | null;
-  is_test_data?: boolean;
+  notification_preferences?: Json | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -121,79 +122,110 @@ export interface ProfileUpdate {
   location?: string | null;
   location_lat?: number | null;
   location_lng?: number | null;
-  experience_level?: string | null;
-  collaboration_style?: string | null;
-  remote_preference?: number | null;
-  availability_hours?: number | null;
   skills?: string[] | null;
   interests?: string[] | null;
   languages?: string[] | null;
+  skill_levels?: SkillLevelsMap | null;
+  location_preference?: number | null;
+  location_mode?: "remote" | "in_person" | "either" | null;
+  availability_slots?: AvailabilitySlotsMap | null;
   portfolio_url?: string | null;
   github_url?: string | null;
-  project_preferences?: Json;
-  hard_filters?: HardFilters | null;
+  source_text?: string | null;
+  previous_source_text?: string | null;
+  previous_profile_snapshot?: Json | null;
   embedding?: number[] | null;
-  is_test_data?: boolean;
+  notification_preferences?: Json | null;
   created_at?: string;
   updated_at?: string;
 }
 
 // ============================================
-// PROJECT TYPES
+// POSTING TYPES
 // ============================================
 
-export interface Project {
+export interface Posting {
   id: string;
   creator_id: string;
   title: string;
   description: string;
-  required_skills: string[];
-  team_size: number;
-  experience_level: string | null;
-  commitment_hours: number | null;
-  timeline: string | null;
-  hard_filters: HardFilters | null;   // Filters for scoring applicants
-  embedding: number[] | null;         // vector(1536) stored as array
-  status: "open" | "closed" | "filled" | "expired";
-  is_test_data: boolean;              // Flag for test/mock data vs production data
+  category:
+    | "study"
+    | "hackathon"
+    | "personal"
+    | "professional"
+    | "social"
+    | null;
+  context_identifier: string | null;
+  tags: string[];
+  skills: string[];
+  team_size_min: number;
+  team_size_max: number;
+  mode: "open" | "friend_ask";
+  location_preference: number | null; // 0-1 float (0=in-person, 0.5=either, 1=remote)
+  natural_language_criteria: string | null;
+  estimated_time: string | null;
+  skill_level_min: number | null; // 0-10
+  embedding: number[] | null;
+  status: "open" | "closed" | "filled" | "expired" | "paused";
   created_at: string;
   updated_at: string;
   expires_at: string;
 }
 
-export interface ProjectInsert {
+export interface PostingInsert {
   id?: string;
   creator_id: string;
   title: string;
   description: string;
-  required_skills?: string[];
-  team_size?: number;
-  experience_level?: string | null;
-  commitment_hours?: number | null;
-  timeline?: string | null;
-  hard_filters?: HardFilters | null;
+  category?:
+    | "study"
+    | "hackathon"
+    | "personal"
+    | "professional"
+    | "social"
+    | null;
+  context_identifier?: string | null;
+  tags?: string[];
+  skills?: string[];
+  team_size_min?: number;
+  team_size_max?: number;
+  mode?: "open" | "friend_ask";
+  location_preference?: number | null;
+  natural_language_criteria?: string | null;
+  estimated_time?: string | null;
+  skill_level_min?: number | null;
   embedding?: number[] | null;
-  status?: "open" | "closed" | "filled" | "expired";
-  is_test_data?: boolean;
+  status?: "open" | "closed" | "filled" | "expired" | "paused";
   created_at?: string;
   updated_at?: string;
   expires_at: string;
 }
 
-export interface ProjectUpdate {
+export interface PostingUpdate {
   id?: string;
   creator_id?: string;
   title?: string;
   description?: string;
-  required_skills?: string[];
-  team_size?: number;
-  experience_level?: string | null;
-  commitment_hours?: number | null;
-  timeline?: string | null;
-  hard_filters?: HardFilters | null;
+  category?:
+    | "study"
+    | "hackathon"
+    | "personal"
+    | "professional"
+    | "social"
+    | null;
+  context_identifier?: string | null;
+  tags?: string[];
+  skills?: string[];
+  team_size_min?: number;
+  team_size_max?: number;
+  mode?: "open" | "friend_ask";
+  location_preference?: number | null;
+  natural_language_criteria?: string | null;
+  estimated_time?: string | null;
+  skill_level_min?: number | null;
   embedding?: number[] | null;
-  status?: "open" | "closed" | "filled" | "expired";
-  is_test_data?: boolean;
+  status?: "open" | "closed" | "filled" | "expired" | "paused";
   created_at?: string;
   updated_at?: string;
   expires_at?: string;
@@ -204,22 +236,20 @@ export interface ProjectUpdate {
 // ============================================
 
 export interface ScoreBreakdown {
-  semantic: number;         // pgvector similarity (0-1)
-  skills_overlap: number;   // % of required skills user has (0-1)
-  experience_match: number; // experience level compatibility (0-1)
-  commitment_match: number; // hours alignment (0-1)
-  location_match: number;   // location + remote preference compatibility (0-1)
-  filter_match: number;     // hard filter compliance score (0-1)
+  semantic: number; // pgvector cosine similarity (0-1)
+  availability: number; // time slot overlap fraction (0-1)
+  skill_level: number; // 1 - |levelA - levelB| / 10 (0-1)
+  location: number; // 1 - |prefA - prefB| (0-1)
 }
 
 export interface Match {
   id: string;
-  project_id: string;
+  posting_id: string;
   user_id: string;
-  similarity_score: number; // 0-1 range
+  similarity_score: number;
   explanation: string | null;
   score_breakdown: ScoreBreakdown | null;
-  status: "pending" | "applied" | "accepted" | "declined";
+  status: "pending" | "applied" | "accepted" | "declined" | "interested";
   created_at: string;
   responded_at: string | null;
   updated_at: string;
@@ -227,12 +257,12 @@ export interface Match {
 
 export interface MatchInsert {
   id?: string;
-  project_id: string;
+  posting_id: string;
   user_id: string;
   similarity_score: number;
   explanation?: string | null;
   score_breakdown?: ScoreBreakdown | null;
-  status?: "pending" | "applied" | "accepted" | "declined";
+  status?: "pending" | "applied" | "accepted" | "declined" | "interested";
   created_at?: string;
   responded_at?: string | null;
   updated_at?: string;
@@ -240,23 +270,69 @@ export interface MatchInsert {
 
 export interface MatchUpdate {
   id?: string;
-  project_id?: string;
+  posting_id?: string;
   user_id?: string;
   similarity_score?: number;
   explanation?: string | null;
   score_breakdown?: ScoreBreakdown | null;
-  status?: "pending" | "applied" | "accepted" | "declined";
+  status?: "pending" | "applied" | "accepted" | "declined" | "interested";
   created_at?: string;
   responded_at?: string | null;
   updated_at?: string;
 }
 
 // ============================================
+// FRIEND ASK TYPES
+// ============================================
+
+export interface FriendAsk {
+  id: string;
+  posting_id: string;
+  creator_id: string;
+  ordered_friend_list: string[];
+  current_request_index: number;
+  status: "pending" | "accepted" | "completed" | "cancelled";
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FriendAskInsert {
+  id?: string;
+  posting_id: string;
+  creator_id: string;
+  ordered_friend_list: string[];
+  current_request_index?: number;
+  status?: "pending" | "accepted" | "completed" | "cancelled";
+  created_at?: string;
+  updated_at?: string;
+}
+
+// ============================================
+// FRIENDSHIP TYPES
+// ============================================
+
+export interface Friendship {
+  id: string;
+  user_id: string;
+  friend_id: string;
+  status: "pending" | "accepted" | "declined" | "blocked";
+  created_at: string;
+}
+
+export interface FriendshipInsert {
+  id?: string;
+  user_id: string;
+  friend_id: string;
+  status?: "pending" | "accepted" | "declined" | "blocked";
+  created_at?: string;
+}
+
+// ============================================
 // MATCH WITH DETAILS (JOINED TYPES)
 // ============================================
 
-export interface MatchWithProject extends Match {
-  project: Project;
+export interface MatchWithPosting extends Match {
+  posting: Posting;
 }
 
 export interface MatchWithProfile extends Match {
@@ -264,7 +340,7 @@ export interface MatchWithProfile extends Match {
 }
 
 export interface MatchWithDetails extends Match {
-  project: Project;
+  posting: Posting;
   profile: Profile;
 }
 
@@ -274,9 +350,9 @@ export interface MatchWithDetails extends Match {
 
 export interface MatchResponse {
   id: string;
-  project?: Project;
+  posting?: Posting;
   profile?: Profile;
-  score: number; // 0-1, displayed as percentage
+  score: number;
   explanation: string | null;
   score_breakdown: ScoreBreakdown | null;
   status: Match["status"];

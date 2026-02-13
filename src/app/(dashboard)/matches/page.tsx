@@ -1,91 +1,69 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Search, Filter, Check, MessageSquare, Loader2 } from "lucide-react";
+import { Search, Filter, Loader2, Heart, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import type { MatchResponse, Project } from "@/lib/supabase/types";
-
-const statusColors = {
-  pending: "bg-warning/10 text-warning",
-  applied: "bg-info/10 text-info",
-  accepted: "bg-success/10 text-success",
-  declined: "bg-muted text-muted-foreground",
-};
-
-const statusLabels = {
-  pending: "Pending",
-  applied: "Applied",
-  accepted: "Accepted",
-  declined: "Declined",
-};
-
-function formatTimeAgo(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (diffInSeconds < 60) {
-    return "just now";
-  } else if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60);
-    return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`;
-  } else if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600);
-    return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
-  } else {
-    const days = Math.floor(diffInSeconds / 86400);
-    return `${days} ${days === 1 ? "day" : "days"} ago`;
-  }
-}
+import { useMatches } from "@/lib/hooks/use-matches";
+import { useInterests } from "@/lib/hooks/use-interests";
+import { useNlFilter } from "@/lib/hooks/use-nl-filter";
+import type { Posting } from "@/lib/supabase/types";
+import { applyFilters } from "@/lib/filters/apply-filters";
+import { InterestReceivedCard } from "@/components/match/interest-received-card";
+import { InterestSentCard } from "@/components/match/interest-sent-card";
+import { AiMatchCard } from "@/components/match/ai-match-card";
 
 export default function MatchesPage() {
-  const router = useRouter();
-  const [matches, setMatches] = useState<MatchResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    matches,
+    apiError,
+    error: fetchError,
+    isLoading: matchesLoading,
+    mutate,
+  } = useMatches();
+  const {
+    myInterests,
+    interestsReceived,
+    isLoading: interestsLoading,
+  } = useInterests();
   const [applyingMatchId, setApplyingMatchId] = useState<string | null>(null);
 
-  const fetchMatches = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await fetch("/api/matches/for-me");
+  const isLoading = matchesLoading || interestsLoading;
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          router.replace("/login");
-          return;
-        }
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to fetch matches");
-      }
+  const error = fetchError
+    ? fetchError instanceof Error
+      ? fetchError.message
+      : "Failed to load matches"
+    : apiError;
 
-      const data = await response.json();
+  const {
+    nlQuery,
+    setNlQuery,
+    nlFilters,
+    nlFilterPills,
+    hasActiveFilters,
+    isTranslating,
+    handleNlSearch,
+    handleRemoveNlFilter,
+    clearFilters,
+  } = useNlFilter();
 
-      // Handle API-level errors (returned with 200 status)
-      if (data.error && (!data.matches || data.matches.length === 0)) {
-        setError(data.error);
-        setMatches([]);
-        return;
-      }
-
-      setMatches(data.matches || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load matches");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [router]);
-
-  useEffect(() => {
-    fetchMatches();
-  }, [fetchMatches]);
+  // Filter matches by applying NL filters to the posting within each match
+  const filteredMatches = useMemo(() => {
+    if (!hasActiveFilters) return matches;
+    const postings = matches.map((m) => m.posting as Posting).filter(Boolean);
+    const filtered = applyFilters(postings, nlFilters);
+    const filteredIds = new Set(filtered.map((p) => p.id));
+    return matches.filter((m) => {
+      const posting = m.posting as Posting | undefined;
+      return posting && filteredIds.has(posting.id);
+    });
+  }, [matches, nlFilters, hasActiveFilters]);
 
   const handleApply = async (matchId: string) => {
     try {
@@ -98,8 +76,7 @@ export default function MatchesPage() {
         throw new Error("Failed to apply");
       }
 
-      // Refresh matches
-      await fetchMatches();
+      await mutate();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to apply");
     } finally {
@@ -122,7 +99,7 @@ export default function MatchesPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Matches</h1>
           <p className="mt-1 text-muted-foreground">
-            Projects that match your skills and interests
+            Postings that match your skills and interests
           </p>
         </div>
         <Card className="border-warning/30 bg-warning/5">
@@ -153,13 +130,18 @@ export default function MatchesPage() {
     );
   }
 
+  const hasAnyContent =
+    matches.length > 0 ||
+    myInterests.length > 0 ||
+    interestsReceived.length > 0;
+
   return (
     <div className="space-y-6">
       {/* Page header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Matches</h1>
         <p className="mt-1 text-muted-foreground">
-          Projects that match your skills and interests
+          Postings that match your skills and interests
         </p>
       </div>
 
@@ -169,145 +151,119 @@ export default function MatchesPage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search matches..."
-            className="pl-9"
+            placeholder='Try "remote React, 10+ hours/week"...'
+            className="pl-9 pr-10"
+            value={nlQuery}
+            onChange={(e) => setNlQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleNlSearch(nlQuery);
+              }
+            }}
           />
+          {isTranslating && (
+            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+          )}
         </div>
-        <Button variant="outline" size="icon">
+        <Button
+          variant={hasActiveFilters ? "default" : "outline"}
+          size="icon"
+          disabled
+        >
           <Filter className="h-4 w-4" />
           <span className="sr-only">Filter</span>
         </Button>
       </div>
 
-      {/* Matches list */}
-      {matches.length === 0 ? (
+      {/* Active NL filter pills */}
+      {nlFilterPills.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {nlFilterPills.map((pill) => (
+            <Badge
+              key={pill.key}
+              variant="secondary"
+              className="flex items-center gap-1 pr-1"
+            >
+              {pill.label}
+              <button
+                onClick={() => handleRemoveNlFilter(pill.key)}
+                className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20"
+              >
+                <X className="h-3 w-3" />
+                <span className="sr-only">Remove {pill.label}</span>
+              </button>
+            </Badge>
+          ))}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 text-xs"
+            onClick={clearFilters}
+          >
+            Clear all
+          </Button>
+        </div>
+      )}
+
+      {!hasAnyContent ? (
         <EmptyState
           title="No matches yet"
-          description="Complete your profile to start seeing project matches that align with your skills and interests."
+          description="Complete your profile to start seeing matches that align with your skills and interests."
           action={{
             label: "Complete Profile",
             href: "/profile",
           }}
         />
       ) : (
-        <div className="space-y-4">
-          {matches.map((match) => {
-            const project = match.project as Project;
-            const matchScore = Math.round(match.score * 100);
-            const matchedAt = formatTimeAgo(match.created_at);
+        <div className="space-y-8">
+          {/* Interests Received section */}
+          {interestsReceived.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <Heart className="h-5 w-5 text-pink-500" />
+                Interests Received
+                <Badge variant="secondary">{interestsReceived.length}</Badge>
+              </h2>
+              <div className="space-y-4">
+                {interestsReceived.map((interest) => (
+                  <InterestReceivedCard key={interest.id} interest={interest} />
+                ))}
+              </div>
+            </div>
+          )}
 
-            return (
-              <Card key={match.id}>
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-3">
-                        <CardTitle className="text-xl">
-                          <Link
-                            href={`/matches/${match.id}`}
-                            className="hover:underline"
-                          >
-                            {project.title}
-                          </Link>
-                        </CardTitle>
-                        <span className="rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success">
-                          {matchScore}% match
-                        </span>
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            statusColors[
-                              match.status as keyof typeof statusColors
-                            ]
-                          }`}
-                        >
-                          {
-                            statusLabels[
-                              match.status as keyof typeof statusLabels
-                            ]
-                          }
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Matched {matchedAt}
-                      </p>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Why you matched */}
-                  {match.explanation && (
-                    <div className="rounded-lg border border-border bg-muted/30 p-4">
-                      <p className="text-sm font-medium text-muted-foreground mb-2">
-                        Why you matched
-                      </p>
-                      <p className="text-sm">{match.explanation}</p>
-                    </div>
-                  )}
+          {/* My Interests section */}
+          {myInterests.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <Heart className="h-5 w-5" />
+                My Interests
+                <Badge variant="secondary">{myInterests.length}</Badge>
+              </h2>
+              <div className="space-y-4">
+                {myInterests.map((interest) => (
+                  <InterestSentCard key={interest.id} interest={interest} />
+                ))}
+              </div>
+            </div>
+          )}
 
-                  {/* Project description */}
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {project.description}
-                  </p>
-
-                  {/* Skills */}
-                  {project.required_skills &&
-                    project.required_skills.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {project.required_skills.slice(0, 5).map((skill) => (
-                          <span
-                            key={skill}
-                            className="rounded-md border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium"
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                        {project.required_skills.length > 5 && (
-                          <span className="rounded-md border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium">
-                            +{project.required_skills.length - 5}
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                  {/* Actions */}
-                  <div className="flex gap-2">
-                    {match.status === "pending" && (
-                      <>
-                        <Button
-                          className="flex-1 sm:flex-none"
-                          onClick={() => handleApply(match.id)}
-                          disabled={applyingMatchId === match.id}
-                        >
-                          {applyingMatchId === match.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Check className="h-4 w-4" />
-                          )}
-                          Apply
-                        </Button>
-                      </>
-                    )}
-                    {match.status === "applied" && (
-                      <Button variant="secondary" disabled>
-                        Application Sent
-                      </Button>
-                    )}
-                    {match.status === "accepted" && (
-                      <Button asChild>
-                        <Link href={`/messages?project=${project.id}`}>
-                          <MessageSquare className="h-4 w-4" />
-                          Message Team
-                        </Link>
-                      </Button>
-                    )}
-                    <Button variant="outline" asChild>
-                      <Link href={`/matches/${match.id}`}>View Details</Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {/* AI Matches section */}
+          {filteredMatches.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold">AI Matches</h2>
+              <div className="space-y-4">
+                {filteredMatches.map((match) => (
+                  <AiMatchCard
+                    key={match.id}
+                    match={match}
+                    isApplying={applyingMatchId === match.id}
+                    onApply={handleApply}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

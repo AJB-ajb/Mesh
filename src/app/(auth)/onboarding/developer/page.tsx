@@ -2,7 +2,9 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Sparkles, FileText, Loader2, CheckCircle } from "lucide-react";
+import { Sparkles, FileText, Loader2, CheckCircle, Mic } from "lucide-react";
+import { SpeechInput } from "@/components/ai-elements/speech-input";
+import { transcribeAudio } from "@/lib/transcribe";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -174,21 +176,34 @@ function DeveloperOnboardingContent() {
         bio: profile.bio || form.bio,
         location: profile.location || form.location,
         experienceLevel: profile.experience_level || form.experienceLevel,
-        collaborationStyle: profile.collaboration_style || form.collaborationStyle,
-        availabilityHours: profile.availability_hours?.toString() || form.availabilityHours,
-        skills: Array.isArray(profile.skills) ? profile.skills.join(", ") : form.skills,
-        interests: Array.isArray(profile.interests) ? profile.interests.join(", ") : form.interests,
+        collaborationStyle:
+          profile.collaboration_style || form.collaborationStyle,
+        availabilityHours:
+          profile.availability_hours?.toString() || form.availabilityHours,
+        skills: Array.isArray(profile.skills)
+          ? profile.skills.join(", ")
+          : form.skills,
+        interests: Array.isArray(profile.interests)
+          ? profile.interests.join(", ")
+          : form.interests,
         projectTypes: Array.isArray(profile.project_preferences?.project_types)
           ? profile.project_preferences.project_types.join(", ")
           : form.projectTypes,
-        preferredRoles: Array.isArray(profile.project_preferences?.preferred_roles)
+        preferredRoles: Array.isArray(
+          profile.project_preferences?.preferred_roles,
+        )
           ? profile.project_preferences.preferred_roles.join(", ")
           : form.preferredRoles,
-        preferredStack: Array.isArray(profile.project_preferences?.preferred_stack)
+        preferredStack: Array.isArray(
+          profile.project_preferences?.preferred_stack,
+        )
           ? profile.project_preferences.preferred_stack.join(", ")
           : form.preferredStack,
-        commitmentLevel: profile.project_preferences?.commitment_level || form.commitmentLevel,
-        timelinePreference: profile.project_preferences?.timeline_preference || form.timelinePreference,
+        commitmentLevel:
+          profile.project_preferences?.commitment_level || form.commitmentLevel,
+        timelinePreference:
+          profile.project_preferences?.timeline_preference ||
+          form.timelinePreference,
         portfolioUrl: profile.portfolio_url || form.portfolioUrl,
         githubUrl: profile.github_url || form.githubUrl,
       });
@@ -200,7 +215,9 @@ function DeveloperOnboardingContent() {
         setExtractionSuccess(false);
       }, 1500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to extract profile");
+      setError(
+        err instanceof Error ? err.message : "Failed to extract profile",
+      );
     } finally {
       setIsExtracting(false);
     }
@@ -223,36 +240,21 @@ function DeveloperOnboardingContent() {
       return;
     }
 
-    const availabilityHours = Number(form.availabilityHours);
-    const { error: upsertError } = await supabase
-      .from("profiles")
-      .upsert(
-        {
-          user_id: user.id,
-          full_name: form.fullName.trim(),
-          headline: form.headline.trim(),
-          bio: form.bio.trim(),
-          location: form.location.trim(),
-          experience_level: form.experienceLevel,
-          collaboration_style: form.collaborationStyle,
-          availability_hours: Number.isFinite(availabilityHours)
-            ? availabilityHours
-            : null,
-          skills: parseList(form.skills),
-          interests: parseList(form.interests),
-          portfolio_url: form.portfolioUrl.trim(),
-          github_url: form.githubUrl.trim(),
-          project_preferences: {
-            project_types: parseList(form.projectTypes),
-            preferred_roles: parseList(form.preferredRoles),
-            preferred_stack: parseList(form.preferredStack),
-            commitment_level: form.commitmentLevel,
-            timeline_preference: form.timelinePreference,
-          },
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" }
-      );
+    const { error: upsertError } = await supabase.from("profiles").upsert(
+      {
+        user_id: user.id,
+        full_name: form.fullName.trim(),
+        headline: form.headline.trim(),
+        bio: form.bio.trim(),
+        location: form.location.trim(),
+        skills: parseList(form.skills),
+        interests: parseList(form.interests),
+        portfolio_url: form.portfolioUrl.trim(),
+        github_url: form.githubUrl.trim(),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" },
+    );
 
     if (upsertError) {
       setIsSaving(false);
@@ -285,11 +287,10 @@ function DeveloperOnboardingContent() {
       <main className="flex flex-1 items-center justify-center px-6 py-12 lg:px-8">
         <form onSubmit={handleSubmit} className="w-full max-w-3xl space-y-6">
           <div className="text-center">
-            <h1 className="text-3xl font-semibold">
-              Complete your profile
-            </h1>
+            <h1 className="text-3xl font-semibold">Complete your profile</h1>
             <p className="mt-2 text-muted-foreground">
-              Tell us about yourself so we can help you find the right projects and collaborators.
+              Tell us about yourself so we can help you find the right postings
+              and collaborators.
             </p>
           </div>
 
@@ -336,28 +337,40 @@ function DeveloperOnboardingContent() {
                   AI Profile Extraction
                 </CardTitle>
                 <CardDescription>
-                  Paste your GitHub profile README, LinkedIn bio, resume, or any text describing yourself. 
-                  Our AI will automatically extract your profile information.
+                  Paste your GitHub profile README, LinkedIn bio, resume, or use
+                  the mic to describe yourself. Our AI will automatically
+                  extract your profile information.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <textarea
-                  rows={12}
-                  value={aiText}
-                  onChange={(e) => setAiText(e.target.value)}
-                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  placeholder={`Paste your profile text here...
+                <div className="relative">
+                  <textarea
+                    rows={12}
+                    value={aiText}
+                    onChange={(e) => setAiText(e.target.value)}
+                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    placeholder={`Paste your profile text here, or use the mic to describe yourself...
 
 Example:
 Hi, I'm Alex! I'm a full-stack developer with 5 years of experience.
 
-🔧 Tech Stack: React, TypeScript, Node.js, PostgreSQL, AWS
-🎯 Interests: AI/ML, fintech, developer tools
-📍 Based in San Francisco, available 15 hrs/week
+Tech Stack: React, TypeScript, Node.js, PostgreSQL, AWS
+Interests: AI/ML, fintech, developer tools
+Based in San Francisco, available 15 hrs/week
 
 Currently looking for hackathon projects and open source contributions.
 Check out my work at github.com/alexdev`}
-                />
+                  />
+                  <SpeechInput
+                    className="absolute bottom-2 right-2 h-10 w-10 p-0"
+                    size="icon"
+                    variant="ghost"
+                    onAudioRecorded={transcribeAudio}
+                    onTranscriptionChange={(text) =>
+                      setAiText((prev) => (prev ? prev + " " + text : text))
+                    }
+                  />
+                </div>
                 <div className="flex gap-3">
                   <Button
                     type="button"
@@ -391,7 +404,8 @@ Check out my work at github.com/alexdev`}
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  After extraction, youll be able to review and edit the extracted information.
+                  After extraction, youll be able to review and edit the
+                  extracted information.
                 </p>
               </CardContent>
             </Card>
@@ -399,289 +413,327 @@ Check out my work at github.com/alexdev`}
 
           {/* Traditional Form Mode */}
           {inputMode === "form" && (
-          <>
-          <Card>
-            <CardHeader>
-              <CardTitle>General Information</CardTitle>
-              <CardDescription>
-                Share the essentials about who you are and how you like to work.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label htmlFor="fullName" className="text-sm font-medium">
-                    Full name
-                  </label>
-                  <Input
-                    id="fullName"
-                    value={form.fullName}
-                    onChange={(event) =>
-                      handleChange("fullName", event.target.value)
-                    }
-                    placeholder="e.g., Alex Johnson"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="headline" className="text-sm font-medium">
-                    Headline
-                  </label>
-                  <Input
-                    id="headline"
-                    value={form.headline}
-                    onChange={(event) =>
-                      handleChange("headline", event.target.value)
-                    }
-                    placeholder="e.g., Full-stack developer"
-                  />
-                </div>
-              </div>
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>General Information</CardTitle>
+                  <CardDescription>
+                    Share the essentials about who you are and how you like to
+                    work.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <label htmlFor="fullName" className="text-sm font-medium">
+                        Full name
+                      </label>
+                      <Input
+                        id="fullName"
+                        value={form.fullName}
+                        onChange={(event) =>
+                          handleChange("fullName", event.target.value)
+                        }
+                        placeholder="e.g., Alex Johnson"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="headline" className="text-sm font-medium">
+                        Headline
+                      </label>
+                      <Input
+                        id="headline"
+                        value={form.headline}
+                        onChange={(event) =>
+                          handleChange("headline", event.target.value)
+                        }
+                        placeholder="e.g., Full-stack developer"
+                      />
+                    </div>
+                  </div>
 
-              <div className="space-y-2">
-                <label htmlFor="bio" className="text-sm font-medium">
-                  About you
-                </label>
-                <textarea
-                  id="bio"
-                  rows={4}
-                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  value={form.bio}
-                  onChange={(event) => handleChange("bio", event.target.value)}
-                  placeholder="What do you enjoy building? What makes you unique?"
-                />
-              </div>
+                  <div className="space-y-2">
+                    <label htmlFor="bio" className="text-sm font-medium">
+                      About you
+                    </label>
+                    <div className="relative">
+                      <textarea
+                        id="bio"
+                        rows={4}
+                        className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        value={form.bio}
+                        onChange={(event) =>
+                          handleChange("bio", event.target.value)
+                        }
+                        placeholder="What do you enjoy building? What makes you unique?"
+                      />
+                      <SpeechInput
+                        className="absolute bottom-2 right-2 h-10 w-10 p-0"
+                        size="icon"
+                        variant="ghost"
+                        onAudioRecorded={transcribeAudio}
+                        onTranscriptionChange={(text) =>
+                          handleChange(
+                            "bio",
+                            form.bio ? form.bio + " " + text : text,
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label htmlFor="location" className="text-sm font-medium">
-                    Location (optional)
-                  </label>
-                  <Input
-                    id="location"
-                    value={form.location}
-                    onChange={(event) =>
-                      handleChange("location", event.target.value)
-                    }
-                    placeholder="e.g., Lagos, Remote"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="availabilityHours"
-                    className="text-sm font-medium"
-                  >
-                    Availability (hrs/week)
-                  </label>
-                  <Input
-                    id="availabilityHours"
-                    value={form.availabilityHours}
-                    onChange={(event) =>
-                      handleChange("availabilityHours", event.target.value)
-                    }
-                    placeholder="e.g., 10"
-                  />
-                </div>
-              </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <label htmlFor="location" className="text-sm font-medium">
+                        Location (optional)
+                      </label>
+                      <Input
+                        id="location"
+                        value={form.location}
+                        onChange={(event) =>
+                          handleChange("location", event.target.value)
+                        }
+                        placeholder="e.g., Lagos, Remote"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="availabilityHours"
+                        className="text-sm font-medium"
+                      >
+                        Availability (hrs/week)
+                      </label>
+                      <Input
+                        id="availabilityHours"
+                        value={form.availabilityHours}
+                        onChange={(event) =>
+                          handleChange("availabilityHours", event.target.value)
+                        }
+                        placeholder="e.g., 10"
+                      />
+                    </div>
+                  </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label
-                    htmlFor="experienceLevel"
-                    className="text-sm font-medium"
-                  >
-                    Experience level
-                  </label>
-                  <select
-                    id="experienceLevel"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    value={form.experienceLevel}
-                    onChange={(event) =>
-                      handleChange("experienceLevel", event.target.value)
-                    }
-                  >
-                    <option value="junior">Junior</option>
-                    <option value="intermediate">Intermediate</option>
-                    <option value="senior">Senior</option>
-                    <option value="lead">Lead</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="collaborationStyle"
-                    className="text-sm font-medium"
-                  >
-                    Collaboration style
-                  </label>
-                  <select
-                    id="collaborationStyle"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    value={form.collaborationStyle}
-                    onChange={(event) =>
-                      handleChange("collaborationStyle", event.target.value)
-                    }
-                  >
-                    <option value="async">Mostly async</option>
-                    <option value="sync">Mostly sync</option>
-                    <option value="hybrid">Hybrid</option>
-                  </select>
-                </div>
-              </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="experienceLevel"
+                        className="text-sm font-medium"
+                      >
+                        Experience level
+                      </label>
+                      <select
+                        id="experienceLevel"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        value={form.experienceLevel}
+                        onChange={(event) =>
+                          handleChange("experienceLevel", event.target.value)
+                        }
+                      >
+                        <option value="junior">Junior</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="senior">Senior</option>
+                        <option value="lead">Lead</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="collaborationStyle"
+                        className="text-sm font-medium"
+                      >
+                        Collaboration style
+                      </label>
+                      <select
+                        id="collaborationStyle"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        value={form.collaborationStyle}
+                        onChange={(event) =>
+                          handleChange("collaborationStyle", event.target.value)
+                        }
+                      >
+                        <option value="async">Mostly async</option>
+                        <option value="sync">Mostly sync</option>
+                        <option value="hybrid">Hybrid</option>
+                      </select>
+                    </div>
+                  </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label htmlFor="skills" className="text-sm font-medium">
-                    Skills (comma-separated)
-                  </label>
-                  <Input
-                    id="skills"
-                    value={form.skills}
-                    onChange={(event) =>
-                      handleChange("skills", event.target.value)
-                    }
-                    placeholder="e.g., React, TypeScript, Supabase"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="interests" className="text-sm font-medium">
-                    Interests (comma-separated)
-                  </label>
-                  <Input
-                    id="interests"
-                    value={form.interests}
-                    onChange={(event) =>
-                      handleChange("interests", event.target.value)
-                    }
-                    placeholder="e.g., AI, fintech, education"
-                  />
-                </div>
-              </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <label htmlFor="skills" className="text-sm font-medium">
+                        Skills (comma-separated)
+                      </label>
+                      <Input
+                        id="skills"
+                        value={form.skills}
+                        onChange={(event) =>
+                          handleChange("skills", event.target.value)
+                        }
+                        placeholder="e.g., React, TypeScript, Supabase"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="interests"
+                        className="text-sm font-medium"
+                      >
+                        Interests (comma-separated)
+                      </label>
+                      <Input
+                        id="interests"
+                        value={form.interests}
+                        onChange={(event) =>
+                          handleChange("interests", event.target.value)
+                        }
+                        placeholder="e.g., AI, fintech, education"
+                      />
+                    </div>
+                  </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label htmlFor="portfolioUrl" className="text-sm font-medium">
-                    Portfolio link (optional)
-                  </label>
-                  <Input
-                    id="portfolioUrl"
-                    value={form.portfolioUrl}
-                    onChange={(event) =>
-                      handleChange("portfolioUrl", event.target.value)
-                    }
-                    placeholder="https://your-portfolio.com"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="githubUrl" className="text-sm font-medium">
-                    GitHub link (optional)
-                  </label>
-                  <Input
-                    id="githubUrl"
-                    value={form.githubUrl}
-                    onChange={(event) =>
-                      handleChange("githubUrl", event.target.value)
-                    }
-                    placeholder="https://github.com/username"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="portfolioUrl"
+                        className="text-sm font-medium"
+                      >
+                        Portfolio link (optional)
+                      </label>
+                      <Input
+                        id="portfolioUrl"
+                        value={form.portfolioUrl}
+                        onChange={(event) =>
+                          handleChange("portfolioUrl", event.target.value)
+                        }
+                        placeholder="https://your-portfolio.com"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="githubUrl"
+                        className="text-sm font-medium"
+                      >
+                        GitHub link (optional)
+                      </label>
+                      <Input
+                        id="githubUrl"
+                        value={form.githubUrl}
+                        onChange={(event) =>
+                          handleChange("githubUrl", event.target.value)
+                        }
+                        placeholder="https://github.com/username"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Project Preferences</CardTitle>
-              <CardDescription>
-                Tell us what kinds of projects youre excited to join.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label htmlFor="projectTypes" className="text-sm font-medium">
-                    Project types (comma-separated)
-                  </label>
-                  <Input
-                    id="projectTypes"
-                    value={form.projectTypes}
-                    onChange={(event) =>
-                      handleChange("projectTypes", event.target.value)
-                    }
-                    placeholder="e.g., SaaS, hackathon, open source"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="preferredRoles" className="text-sm font-medium">
-                    Preferred roles (comma-separated)
-                  </label>
-                  <Input
-                    id="preferredRoles"
-                    value={form.preferredRoles}
-                    onChange={(event) =>
-                      handleChange("preferredRoles", event.target.value)
-                    }
-                    placeholder="e.g., Frontend, Backend, PM"
-                  />
-                </div>
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Posting Preferences</CardTitle>
+                  <CardDescription>
+                    Tell us what kinds of postings youre excited to join.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="projectTypes"
+                        className="text-sm font-medium"
+                      >
+                        Posting types (comma-separated)
+                      </label>
+                      <Input
+                        id="projectTypes"
+                        value={form.projectTypes}
+                        onChange={(event) =>
+                          handleChange("projectTypes", event.target.value)
+                        }
+                        placeholder="e.g., SaaS, hackathon, open source"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="preferredRoles"
+                        className="text-sm font-medium"
+                      >
+                        Preferred roles (comma-separated)
+                      </label>
+                      <Input
+                        id="preferredRoles"
+                        value={form.preferredRoles}
+                        onChange={(event) =>
+                          handleChange("preferredRoles", event.target.value)
+                        }
+                        placeholder="e.g., Frontend, Backend, PM"
+                      />
+                    </div>
+                  </div>
 
-              <div className="space-y-2">
-                <label htmlFor="preferredStack" className="text-sm font-medium">
-                  Preferred tech stack (comma-separated)
-                </label>
-                <Input
-                  id="preferredStack"
-                  value={form.preferredStack}
-                  onChange={(event) =>
-                    handleChange("preferredStack", event.target.value)
-                  }
-                  placeholder="e.g., React, Node, Postgres"
-                />
-              </div>
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="preferredStack"
+                      className="text-sm font-medium"
+                    >
+                      Preferred tech stack (comma-separated)
+                    </label>
+                    <Input
+                      id="preferredStack"
+                      value={form.preferredStack}
+                      onChange={(event) =>
+                        handleChange("preferredStack", event.target.value)
+                      }
+                      placeholder="e.g., React, Node, Postgres"
+                    />
+                  </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label htmlFor="commitmentLevel" className="text-sm font-medium">
-                    Time commitment
-                  </label>
-                  <select
-                    id="commitmentLevel"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    value={form.commitmentLevel}
-                    onChange={(event) =>
-                      handleChange("commitmentLevel", event.target.value)
-                    }
-                  >
-                    <option value="5">5 hrs/week</option>
-                    <option value="10">10 hrs/week</option>
-                    <option value="15">15 hrs/week</option>
-                    <option value="20">20+ hrs/week</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="timelinePreference"
-                    className="text-sm font-medium"
-                  >
-                    Timeline preference
-                  </label>
-                  <select
-                    id="timelinePreference"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    value={form.timelinePreference}
-                    onChange={(event) =>
-                      handleChange("timelinePreference", event.target.value)
-                    }
-                  >
-                    <option value="weekend">This weekend</option>
-                    <option value="1_week">1 week</option>
-                    <option value="1_month">1 month</option>
-                    <option value="ongoing">Ongoing</option>
-                  </select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          </>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="commitmentLevel"
+                        className="text-sm font-medium"
+                      >
+                        Time commitment
+                      </label>
+                      <select
+                        id="commitmentLevel"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        value={form.commitmentLevel}
+                        onChange={(event) =>
+                          handleChange("commitmentLevel", event.target.value)
+                        }
+                      >
+                        <option value="5">5 hrs/week</option>
+                        <option value="10">10 hrs/week</option>
+                        <option value="15">15 hrs/week</option>
+                        <option value="20">20+ hrs/week</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="timelinePreference"
+                        className="text-sm font-medium"
+                      >
+                        Timeline preference
+                      </label>
+                      <select
+                        id="timelinePreference"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        value={form.timelinePreference}
+                        onChange={(event) =>
+                          handleChange("timelinePreference", event.target.value)
+                        }
+                      >
+                        <option value="weekend">This weekend</option>
+                        <option value="1_week">1 week</option>
+                        <option value="1_month">1 month</option>
+                        <option value="ongoing">Ongoing</option>
+                      </select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
           )}
 
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
@@ -704,11 +756,13 @@ Check out my work at github.com/alexdev`}
 
 export default function DeveloperOnboardingPage() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-sm text-muted-foreground">Loading...</p>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      }
+    >
       <DeveloperOnboardingContent />
     </Suspense>
   );

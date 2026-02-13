@@ -11,14 +11,13 @@ export type TestProfile = {
   headline: string | null;
   bio: string | null;
   location: string | null;
-  experience_level: "beginner" | "intermediate" | "advanced" | null;
-  collaboration_style: "sync" | "async" | "flexible" | null;
-  availability_hours: number | null;
+  skill_levels: Record<string, number> | null;
+  location_preference: number | null;
+  availability_slots: Record<string, unknown> | null;
   skills: string[];
   interests: string[];
   portfolio_url: string | null;
   github_url: string | null;
-  project_preferences: Record<string, unknown>;
 };
 
 const skillPool = [
@@ -52,6 +51,22 @@ const interestPool = [
   "FinTech",
 ];
 
+function generateSkillLevels(skills: string[]): Record<string, number> {
+  const levels: Record<string, number> = {};
+  for (const skill of skills) {
+    levels[skill] = faker.number.int({ min: 1, max: 5 });
+  }
+  return levels;
+}
+
+function generateAvailabilitySlots(): Record<string, unknown> {
+  return {
+    monday: { start: "09:00", end: "17:00" },
+    wednesday: { start: "09:00", end: "17:00" },
+    friday: { start: "09:00", end: "13:00" },
+  };
+}
+
 export const createProfile = (
   overrides: Partial<TestProfile> = {},
 ): TestProfile => {
@@ -70,26 +85,13 @@ export const createProfile = (
     headline: faker.person.jobTitle(),
     bio: faker.lorem.paragraph(),
     location: faker.location.city() + ", " + faker.location.country(),
-    experience_level: faker.helpers.arrayElement([
-      "beginner",
-      "intermediate",
-      "advanced",
-    ]),
-    collaboration_style: faker.helpers.arrayElement([
-      "sync",
-      "async",
-      "flexible",
-    ]),
-    availability_hours: faker.number.int({ min: 5, max: 40 }),
+    skill_levels: generateSkillLevels(skills),
+    location_preference: faker.number.int({ min: 0, max: 100 }),
+    availability_slots: generateAvailabilitySlots(),
     skills,
     interests,
     portfolio_url: faker.internet.url(),
     github_url: `https://github.com/${faker.internet.userName()}`,
-    project_preferences: {
-      remote_only: faker.datatype.boolean(),
-      min_team_size: faker.number.int({ min: 1, max: 3 }),
-      max_team_size: faker.number.int({ min: 4, max: 10 }),
-    },
     ...overrides,
   };
 };
@@ -107,10 +109,10 @@ export const createProfiles = (
 export const createBeginnerProfile = (
   overrides: Partial<TestProfile> = {},
 ): TestProfile => {
+  const skills = ["HTML", "CSS", "JavaScript"];
   return createProfile({
-    experience_level: "beginner",
-    skills: ["HTML", "CSS", "JavaScript"],
-    availability_hours: faker.number.int({ min: 10, max: 20 }),
+    skill_levels: generateSkillLevels(skills),
+    skills,
     ...overrides,
   });
 };
@@ -121,10 +123,19 @@ export const createBeginnerProfile = (
 export const createAdvancedProfile = (
   overrides: Partial<TestProfile> = {},
 ): TestProfile => {
+  const skills = [
+    "TypeScript",
+    "React",
+    "Node.js",
+    "PostgreSQL",
+    "AWS",
+    "Docker",
+  ];
   return createProfile({
-    experience_level: "advanced",
-    skills: ["TypeScript", "React", "Node.js", "PostgreSQL", "AWS", "Docker"],
-    availability_hours: faker.number.int({ min: 20, max: 40 }),
+    skill_levels: Object.fromEntries(
+      skills.map((s) => [s, faker.number.int({ min: 4, max: 5 })]),
+    ),
+    skills,
     ...overrides,
   });
 };

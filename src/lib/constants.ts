@@ -16,7 +16,7 @@ export const VOICE = {
 
 /** AI model identifiers */
 export const AI_MODELS = {
-  CONVERSATION: "gpt-4o-mini",
+  CONVERSATION: "gemini-2.0-flash",
   GEMINI_FLASH: "gemini-2.0-flash",
 } as const;
 
