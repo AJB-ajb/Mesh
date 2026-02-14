@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Loader2, MapPin, Plus, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -244,30 +243,9 @@ export function ProfileForm({
             )}
 
             {(form.locationLat || form.locationLng) && (
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Latitude
-                  </label>
-                  <Input
-                    value={form.locationLat}
-                    readOnly
-                    className="bg-muted cursor-not-allowed"
-                    placeholder="Auto-filled"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Longitude
-                  </label>
-                  <Input
-                    value={form.locationLng}
-                    readOnly
-                    className="bg-muted cursor-not-allowed"
-                    placeholder="Auto-filled"
-                  />
-                </div>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Coordinates: {form.locationLat}, {form.locationLng}
+              </p>
             )}
           </div>
 

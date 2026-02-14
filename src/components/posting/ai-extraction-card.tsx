@@ -43,12 +43,12 @@ export function AiExtractionCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="relative">
+        <div className="flex items-end gap-2">
           <textarea
             rows={12}
             value={aiText}
             onChange={(e) => onAiTextChange(e.target.value)}
-            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="flex flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             placeholder={`Paste your posting text here, or use the mic to describe it...
 
 Example:
@@ -62,17 +62,15 @@ Commitment: ~10 hrs over the weekend
 
 DM if interested!`}
           />
-          <div className="absolute bottom-2 right-2">
-            <SpeechInput
-              className="h-10 w-10 p-0"
-              size="icon"
-              variant="ghost"
-              onAudioRecorded={transcribeAudio}
-              onTranscriptionChange={(text) =>
-                onAiTextChange(aiText ? aiText + " " + text : text)
-              }
-            />
-          </div>
+          <SpeechInput
+            className="mb-2 h-10 w-10 shrink-0 p-0"
+            size="icon"
+            variant="ghost"
+            onAudioRecorded={transcribeAudio}
+            onTranscriptionChange={(text) =>
+              onAiTextChange(aiText ? aiText + " " + text : text)
+            }
+          />
         </div>
         <div className="flex gap-3">
           <Button

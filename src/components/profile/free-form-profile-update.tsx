@@ -41,7 +41,7 @@ export function FreeFormProfileUpdate({
   const [showSourceText, setShowSourceText] = useState(!!sourceText);
 
   const handleApplyUpdate = async () => {
-    if (!editableSourceText.trim() || !updateInstruction.trim()) return;
+    if (!updateInstruction.trim()) return;
 
     setError(null);
 
@@ -96,30 +96,32 @@ export function FreeFormProfileUpdate({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Collapsible source text */}
-        <div>
-          <button
-            type="button"
-            className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
-            onClick={() => setShowSourceText(!showSourceText)}
-          >
-            {showSourceText ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
+        {/* Collapsible source text — only shown when there's existing text */}
+        {(sourceText || editableSourceText) && (
+          <div>
+            <button
+              type="button"
+              className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
+              onClick={() => setShowSourceText(!showSourceText)}
+            >
+              {showSourceText ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+              Profile description
+            </button>
+            {showSourceText && (
+              <Textarea
+                className="mt-2"
+                rows={6}
+                value={editableSourceText}
+                onChange={(e) => setEditableSourceText(e.target.value)}
+                placeholder="Paste or type your profile description here (e.g., a short bio, your skills, what you're looking for)..."
+              />
             )}
-            Profile description
-          </button>
-          {showSourceText && (
-            <Textarea
-              className="mt-2"
-              rows={6}
-              value={editableSourceText}
-              onChange={(e) => setEditableSourceText(e.target.value)}
-              placeholder="Paste or type your profile description here (e.g., a short bio, your skills, what you're looking for)..."
-            />
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Update instruction */}
         <div className="space-y-2">
@@ -140,11 +142,7 @@ export function FreeFormProfileUpdate({
 
         <Button
           onClick={handleApplyUpdate}
-          disabled={
-            isApplying ||
-            !editableSourceText.trim() ||
-            !updateInstruction.trim()
-          }
+          disabled={isApplying || !updateInstruction.trim()}
         >
           {isApplying ? (
             <>

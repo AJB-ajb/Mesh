@@ -1,6 +1,7 @@
 "use client";
 
-import { Share2, Flag, MessageSquare } from "lucide-react";
+import { useState } from "react";
+import { Share2, Flag, MessageSquare, Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,24 @@ export function PostingSidebar({
   const creatorName = posting.profiles?.full_name || "Unknown";
   const creatorHeadline = posting.profiles?.headline || "";
   const creatorSkills = posting.profiles?.skills || [];
+  const [shared, setShared] = useState(false);
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    const title = posting.title || "Check out this posting on MeshIt";
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, url });
+      } catch {
+        // User cancelled or share failed — ignore
+      }
+    } else {
+      await navigator.clipboard.writeText(url);
+      setShared(true);
+      setTimeout(() => setShared(false), 2000);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -71,9 +90,22 @@ export function PostingSidebar({
           <CardTitle className="text-base">Actions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <Button variant="outline" className="w-full justify-start">
-            <Share2 className="h-4 w-4" />
-            Share Posting
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={handleShare}
+          >
+            {shared ? (
+              <>
+                <Check className="h-4 w-4" />
+                Link Copied!
+              </>
+            ) : (
+              <>
+                <Share2 className="h-4 w-4" />
+                Share Posting
+              </>
+            )}
           </Button>
           <Button variant="outline" className="w-full justify-start">
             <Flag className="h-4 w-4" />
