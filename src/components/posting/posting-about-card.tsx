@@ -171,6 +171,36 @@ export function PostingAboutCard({
           )}
         </div>
 
+        {/* Tags */}
+        {!isEditing && posting.tags && posting.tags.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium">Tags</h4>
+            <div className="flex flex-wrap gap-1.5">
+              {posting.tags.map((tag: string) => (
+                <Badge key={tag} variant="outline" className="text-xs">
+                  #{tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Context Identifier */}
+        {!isEditing && posting.context_identifier && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium">Context</h4>
+            <Badge variant="secondary">{posting.context_identifier}</Badge>
+          </div>
+        )}
+
+        {/* Skill Level Minimum */}
+        {!isEditing && posting.skill_level_min != null && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium">Minimum Skill Level</h4>
+            <span className="text-sm">{posting.skill_level_min}/10</span>
+          </div>
+        )}
+
         {/* Meta */}
         {isEditing ? (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -238,6 +268,39 @@ export function PostingAboutCard({
                 <option value="filled">Filled</option>
                 <option value="closed">Closed</option>
               </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Tags (comma-separated)
+              </label>
+              <Input
+                value={form.tags}
+                onChange={(e) => onFormChange("tags", e.target.value)}
+                placeholder="e.g., beginner-friendly, remote"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Context</label>
+              <Input
+                value={form.contextIdentifier}
+                onChange={(e) =>
+                  onFormChange("contextIdentifier", e.target.value)
+                }
+                placeholder="e.g., CS101, HackMIT 2026"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Min Skill Level (0-10)
+              </label>
+              <Input
+                type="number"
+                min={0}
+                max={10}
+                value={form.skillLevelMin}
+                onChange={(e) => onFormChange("skillLevelMin", e.target.value)}
+                placeholder="e.g., 3"
+              />
             </div>
             <LocationEditFields form={form} onFormChange={onFormChange} />
           </div>

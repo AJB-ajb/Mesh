@@ -51,6 +51,9 @@ const baseForm: PostingFormState = {
   locationLat: "",
   locationLng: "",
   maxDistanceKm: "",
+  tags: "",
+  contextIdentifier: "",
+  skillLevelMin: "",
 };
 
 describe("PostingAboutCard", () => {
@@ -200,6 +203,50 @@ describe("PostingAboutCard", () => {
     );
     expect(screen.getByText(/Berlin, Germany/)).toBeInTheDocument();
     expect(screen.getByText("Within 50 km")).toBeInTheDocument();
+  });
+
+  it("renders tags as badges in view mode", () => {
+    const posting = {
+      ...basePosting,
+      tags: ["remote", "weekend", "beginner-friendly"],
+    };
+    render(
+      <PostingAboutCard
+        posting={posting}
+        isEditing={false}
+        form={baseForm}
+        onFormChange={onFormChange}
+      />,
+    );
+    expect(screen.getByText("#remote")).toBeInTheDocument();
+    expect(screen.getByText("#weekend")).toBeInTheDocument();
+    expect(screen.getByText("#beginner-friendly")).toBeInTheDocument();
+  });
+
+  it("renders context identifier in view mode", () => {
+    const posting = { ...basePosting, context_identifier: "CS101" };
+    render(
+      <PostingAboutCard
+        posting={posting}
+        isEditing={false}
+        form={baseForm}
+        onFormChange={onFormChange}
+      />,
+    );
+    expect(screen.getByText("CS101")).toBeInTheDocument();
+  });
+
+  it("renders skill level minimum in view mode", () => {
+    const posting = { ...basePosting, skill_level_min: 5 };
+    render(
+      <PostingAboutCard
+        posting={posting}
+        isEditing={false}
+        form={baseForm}
+        onFormChange={onFormChange}
+      />,
+    );
+    expect(screen.getByText("5/10")).toBeInTheDocument();
   });
 
   it("renders textarea in editing mode", () => {

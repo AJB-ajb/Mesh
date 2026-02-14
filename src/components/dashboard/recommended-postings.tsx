@@ -13,6 +13,9 @@ export type RecommendedPosting = {
   category: string;
   matchScore: number;
   expiresAt?: string | null;
+  tags?: string[];
+  mode?: string;
+  contextIdentifier?: string;
   creator: { name: string; initials: string };
   createdAt: string;
 };

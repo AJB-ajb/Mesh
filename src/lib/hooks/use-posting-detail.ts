@@ -25,6 +25,9 @@ export type PostingDetail = {
   location_lat: number | null;
   location_lng: number | null;
   max_distance_km: number | null;
+  tags?: string[];
+  context_identifier?: string | null;
+  skill_level_min?: number | null;
   profiles?: {
     full_name: string | null;
     headline: string | null;

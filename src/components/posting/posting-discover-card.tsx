@@ -110,6 +110,14 @@ export function PostingDiscoverCard({
                   {posting.context_identifier}
                 </Badge>
               )}
+              {posting.mode === "friend_ask" && (
+                <Badge
+                  variant="outline"
+                  className="border-amber-500/30 text-amber-600 dark:text-amber-400"
+                >
+                  Friend Ask
+                </Badge>
+              )}
               {posting.status !== "open" && (
                 <Badge
                   variant={
@@ -214,6 +222,22 @@ export function PostingDiscoverCard({
             ))}
             {posting.skills.length > 5 && (
               <Badge variant="outline">+{posting.skills.length - 5}</Badge>
+            )}
+          </div>
+        )}
+
+        {/* Tags */}
+        {posting.tags && posting.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {posting.tags.slice(0, 4).map((tag: string) => (
+              <Badge key={tag} variant="outline" className="text-xs">
+                #{tag}
+              </Badge>
+            ))}
+            {posting.tags.length > 4 && (
+              <Badge variant="outline" className="text-xs">
+                +{posting.tags.length - 4}
+              </Badge>
             )}
           </div>
         )}

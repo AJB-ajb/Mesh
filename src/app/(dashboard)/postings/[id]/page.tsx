@@ -63,6 +63,9 @@ export default function PostingDetailPage() {
     locationLat: "",
     locationLng: "",
     maxDistanceKm: "",
+    tags: "",
+    contextIdentifier: "",
+    skillLevelMin: "",
   });
 
   // Application UI state
@@ -117,6 +120,9 @@ export default function PostingDetailPage() {
       locationLat: posting.location_lat?.toString() || "",
       locationLng: posting.location_lng?.toString() || "",
       maxDistanceKm: posting.max_distance_km?.toString() || "",
+      tags: posting.tags?.join(", ") || "",
+      contextIdentifier: posting.context_identifier || "",
+      skillLevelMin: posting.skill_level_min?.toString() || "",
     });
     setIsEditing(true);
   };
@@ -154,6 +160,16 @@ export default function PostingDetailPage() {
           Number.isFinite(maxDistanceKm) && maxDistanceKm > 0
             ? maxDistanceKm
             : null,
+        tags: form.tags
+          ? form.tags
+              .split(",")
+              .map((t: string) => t.trim())
+              .filter(Boolean)
+          : [],
+        context_identifier: form.contextIdentifier.trim() || null,
+        skill_level_min: form.skillLevelMin
+          ? parseInt(form.skillLevelMin, 10)
+          : null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", postingId);
@@ -258,7 +274,8 @@ export default function PostingDetailPage() {
         .single();
 
       const applicantName = applicantProfile?.full_name || "Someone";
-      const ownerPrefs = ownerProfile?.notification_preferences as NotificationPreferences | null;
+      const ownerPrefs =
+        ownerProfile?.notification_preferences as NotificationPreferences | null;
 
       if (shouldNotify(ownerPrefs, "interest_received", "in_app")) {
         await supabase.from("notifications").insert({
@@ -333,7 +350,8 @@ export default function PostingDetailPage() {
         .eq("user_id", application.applicant_id)
         .single();
 
-      const recipientPrefs = recipientProfile?.notification_preferences as NotificationPreferences | null;
+      const recipientPrefs =
+        recipientProfile?.notification_preferences as NotificationPreferences | null;
 
       if (shouldNotify(recipientPrefs, notifType, "in_app")) {
         await supabase.from("notifications").insert({

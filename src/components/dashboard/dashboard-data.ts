@@ -131,6 +131,9 @@ export async function fetchRecommendedPostings(
         team_size_max,
         estimated_time,
         category,
+        tags,
+        mode,
+        context_identifier,
         created_at,
         expires_at,
         profiles:creator_id (
@@ -169,6 +172,9 @@ export async function fetchRecommendedPostings(
           initials: getInitials((profiles?.full_name as string) || null),
         },
         expiresAt: (posting.expires_at as string) || null,
+        tags: (posting.tags as string[]) || [],
+        mode: (posting.mode as string) || "open",
+        contextIdentifier: (posting.context_identifier as string) || undefined,
         createdAt: formatDate(posting.created_at as string),
       };
     })

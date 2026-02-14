@@ -204,4 +204,40 @@ describe("PostingFormCard", () => {
     if (form) fireEvent.submit(form);
     expect(onSubmit).toHaveBeenCalled();
   });
+
+  it("renders tags input", () => {
+    renderCard({ tags: "remote, weekend" });
+    expect(screen.getByDisplayValue("remote, weekend")).toBeInTheDocument();
+  });
+
+  it("calls onChange when tags changes", () => {
+    renderCard();
+    const input = screen.getByLabelText("Tags (comma-separated)");
+    fireEvent.change(input, { target: { value: "beginner-friendly" } });
+    expect(onChange).toHaveBeenCalledWith("tags", "beginner-friendly");
+  });
+
+  it("renders context identifier input", () => {
+    renderCard({ contextIdentifier: "CS101" });
+    expect(screen.getByDisplayValue("CS101")).toBeInTheDocument();
+  });
+
+  it("calls onChange when context identifier changes", () => {
+    renderCard();
+    const input = screen.getByLabelText("Context (optional)");
+    fireEvent.change(input, { target: { value: "HackMIT 2026" } });
+    expect(onChange).toHaveBeenCalledWith("contextIdentifier", "HackMIT 2026");
+  });
+
+  it("renders skill level min input", () => {
+    renderCard({ skillLevelMin: "5" });
+    expect(screen.getByDisplayValue("5")).toBeInTheDocument();
+  });
+
+  it("calls onChange when skill level min changes", () => {
+    renderCard();
+    const input = screen.getByLabelText("Minimum Skill Level (0-10)");
+    fireEvent.change(input, { target: { value: "3" } });
+    expect(onChange).toHaveBeenCalledWith("skillLevelMin", "3");
+  });
 });

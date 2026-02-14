@@ -218,6 +218,22 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
             />
           </div>
 
+          {/* Tags */}
+          <div className="space-y-2">
+            <label htmlFor="tags" className="text-sm font-medium">
+              Tags (comma-separated)
+            </label>
+            <Input
+              id="tags"
+              value={form.tags}
+              onChange={(e) => onChange("tags", e.target.value)}
+              placeholder="e.g., beginner-friendly, weekend, remote, sustainability"
+            />
+            <p className="text-xs text-muted-foreground">
+              Free-form tags to help people discover your posting.
+            </p>
+          </div>
+
           {/* Estimated Time and Category */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
@@ -248,6 +264,23 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
                 <option value="social">Social</option>
               </select>
             </div>
+          </div>
+
+          {/* Context Identifier */}
+          <div className="space-y-2">
+            <label htmlFor="context-identifier" className="text-sm font-medium">
+              Context (optional)
+            </label>
+            <Input
+              id="context-identifier"
+              value={form.contextIdentifier}
+              onChange={(e) => onChange("contextIdentifier", e.target.value)}
+              placeholder="e.g., CS101, HackMIT 2026, Book Club #3"
+            />
+            <p className="text-xs text-muted-foreground">
+              Course code, hackathon name, or group identifier for exact-match
+              filtering.
+            </p>
           </div>
 
           {/* Looking for, Mode, and Expires */}
@@ -298,6 +331,25 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
                 Default: 90 days from today
               </p>
             </div>
+          </div>
+
+          {/* Skill Level Minimum */}
+          <div className="space-y-2">
+            <label htmlFor="skill-level-min" className="text-sm font-medium">
+              Minimum Skill Level (0-10)
+            </label>
+            <Input
+              id="skill-level-min"
+              type="number"
+              min={0}
+              max={10}
+              value={form.skillLevelMin}
+              onChange={(e) => onChange("skillLevelMin", e.target.value)}
+              placeholder="e.g., 3"
+            />
+            <p className="text-xs text-muted-foreground">
+              Leave empty for no minimum. 0 = absolute beginner, 10 = expert.
+            </p>
           </div>
 
           {/* Location */}

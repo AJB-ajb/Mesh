@@ -15,6 +15,9 @@ export type PostingFormState = {
   locationLat: string;
   locationLng: string;
   maxDistanceKm: string;
+  tags: string;
+  contextIdentifier: string;
+  skillLevelMin: string;
 };
 
 // Default expiry: 90 days from now
@@ -41,4 +44,7 @@ export const defaultPostingFormState: PostingFormState = {
   locationLat: "",
   locationLng: "",
   maxDistanceKm: "",
+  tags: "",
+  contextIdentifier: "",
+  skillLevelMin: "",
 };

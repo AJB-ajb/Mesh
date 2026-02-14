@@ -76,6 +76,15 @@ export default function NewPostingPage() {
         lookingFor: extractedMax,
         category: extracted.category || prev.category,
         mode: extracted.mode || prev.mode,
+        tags: Array.isArray(extracted.tags)
+          ? extracted.tags.join(", ")
+          : prev.tags,
+        contextIdentifier:
+          extracted.context_identifier || prev.contextIdentifier,
+        skillLevelMin:
+          extracted.skill_level_min != null
+            ? extracted.skill_level_min.toString()
+            : prev.skillLevelMin,
       }));
 
       setExtractionSuccess(true);
@@ -187,6 +196,16 @@ export default function NewPostingPage() {
           Number.isFinite(maxDistanceKm) && maxDistanceKm > 0
             ? maxDistanceKm
             : null,
+        tags: form.tags
+          ? form.tags
+              .split(",")
+              .map((t) => t.trim())
+              .filter(Boolean)
+          : [],
+        context_identifier: form.contextIdentifier.trim() || null,
+        skill_level_min: form.skillLevelMin
+          ? parseInt(form.skillLevelMin, 10)
+          : null,
       })
       .select()
       .single();
