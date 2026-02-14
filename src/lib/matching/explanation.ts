@@ -3,7 +3,10 @@
  * Uses Gemini Flash to generate 2-3 sentence explanations of why a match is good
  */
 
-import { getGeminiModel, isGeminiConfigured } from "@/lib/ai/gemini";
+import {
+  generateContentWithFallback,
+  isGeminiConfigured,
+} from "@/lib/ai/gemini";
 import type { Profile } from "@/lib/supabase/types";
 
 export type MatchExplanationProfile = Pick<
@@ -61,9 +64,7 @@ Match Score: ${scorePercent}%
 
 Explanation:`;
 
-  const model = getGeminiModel();
-
-  const result = await model.generateContent({
+  const result = await generateContentWithFallback({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: {
       temperature: 0.7,
