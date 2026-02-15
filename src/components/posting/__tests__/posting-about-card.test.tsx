@@ -32,6 +32,7 @@ const basePosting: PostingDetail = {
   location_lat: null,
   location_lng: null,
   max_distance_km: null,
+  auto_accept: false,
 };
 
 const baseForm: PostingFormState = {
@@ -54,6 +55,7 @@ const baseForm: PostingFormState = {
   tags: "",
   contextIdentifier: "",
   skillLevelMin: "",
+  autoAccept: "false",
 };
 
 describe("PostingAboutCard", () => {

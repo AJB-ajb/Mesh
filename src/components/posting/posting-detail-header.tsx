@@ -10,6 +10,7 @@ import {
   Pencil,
   Trash2,
   Send,
+  Clock,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -151,6 +152,7 @@ type ApplySectionProps = {
   posting: PostingDetail;
   hasApplied: boolean;
   myApplication: Application | null;
+  waitlistPosition: number | null;
   showApplyForm: boolean;
   coverMessage: string;
   isApplying: boolean;
@@ -165,6 +167,7 @@ function ApplySection({
   posting,
   hasApplied,
   myApplication,
+  waitlistPosition,
   showApplyForm,
   coverMessage,
   isApplying,
@@ -189,12 +192,20 @@ function ApplySection({
           }
           className="px-3 py-1"
         >
-          {myApplication?.status === "pending" && "Application Pending"}
+          {myApplication?.status === "pending" && "Request Pending"}
           {myApplication?.status === "accepted" && "\u2713 Accepted"}
           {myApplication?.status === "rejected" && "Not Selected"}
           {myApplication?.status === "withdrawn" && "Withdrawn"}
+          {myApplication?.status === "waitlisted" && (
+            <span className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              Waitlisted
+              {waitlistPosition ? ` — #${waitlistPosition} in line` : ""}
+            </span>
+          )}
         </Badge>
-        {myApplication?.status === "pending" && (
+        {(myApplication?.status === "pending" ||
+          myApplication?.status === "waitlisted") && (
           <Button variant="outline" size="sm" onClick={onWithdraw}>
             Withdraw
           </Button>
@@ -203,8 +214,89 @@ function ApplySection({
     );
   }
 
+  // Filled posting: show waitlist CTA
+  if (posting.status === "filled") {
+    if (posting.auto_accept) {
+      return (
+        <Button onClick={onApply} disabled={isApplying}>
+          {isApplying ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Joining waitlist...
+            </>
+          ) : (
+            <>
+              <Clock className="h-4 w-4" />
+              Join waitlist
+            </>
+          )}
+        </Button>
+      );
+    }
+
+    // Manual review: show cover message form for waitlist
+    if (showApplyForm) {
+      return (
+        <div className="flex flex-col gap-2 w-full max-w-md">
+          <textarea
+            value={coverMessage}
+            onChange={(e) => onCoverMessageChange(e.target.value)}
+            placeholder="Tell the posting creator why you'd like to join... (optional)"
+            rows={3}
+            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          />
+          <div className="flex gap-2">
+            <Button onClick={onApply} disabled={isApplying}>
+              {isApplying ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Requesting...
+                </>
+              ) : (
+                <>
+                  <Clock className="h-4 w-4" />
+                  Request to join waitlist
+                </>
+              )}
+            </Button>
+            <Button variant="outline" onClick={onHideApplyForm}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <Button onClick={onShowApplyForm}>
+        <Clock className="h-4 w-4" />
+        Request to join waitlist
+      </Button>
+    );
+  }
+
+  // Non-open, non-filled (e.g. closed, expired)
   if (posting.status !== "open") {
     return <Badge variant="secondary">Posting {posting.status}</Badge>;
+  }
+
+  // Auto-accept: instant join, no cover message form
+  if (posting.auto_accept) {
+    return (
+      <Button onClick={onApply} disabled={isApplying}>
+        {isApplying ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Joining...
+          </>
+        ) : (
+          <>
+            <Send className="h-4 w-4" />
+            Join
+          </>
+        )}
+      </Button>
+    );
   }
 
   if (showApplyForm) {
@@ -213,7 +305,7 @@ function ApplySection({
         <textarea
           value={coverMessage}
           onChange={(e) => onCoverMessageChange(e.target.value)}
-          placeholder="Tell the posting creator why you're interested... (optional)"
+          placeholder="Tell the posting creator why you'd like to join... (optional)"
           rows={3}
           className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         />
@@ -222,12 +314,12 @@ function ApplySection({
             {isApplying ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Applying...
+                Requesting...
               </>
             ) : (
               <>
                 <Send className="h-4 w-4" />
-                Submit Application
+                Request to join
               </>
             )}
           </Button>
@@ -242,7 +334,7 @@ function ApplySection({
   return (
     <Button onClick={onShowApplyForm}>
       <Send className="h-4 w-4" />
-      Apply to Posting
+      Request to join
     </Button>
   );
 }
@@ -269,6 +361,7 @@ type PostingDetailHeaderProps = {
   // Apply props (non-owner)
   hasApplied: boolean;
   myApplication: Application | null;
+  waitlistPosition: number | null;
   showApplyForm: boolean;
   coverMessage: string;
   isApplying: boolean;
@@ -297,6 +390,7 @@ export function PostingDetailHeader({
   onReactivate,
   hasApplied,
   myApplication,
+  waitlistPosition,
   showApplyForm,
   coverMessage,
   isApplying,
@@ -393,6 +487,7 @@ export function PostingDetailHeader({
               posting={posting}
               hasApplied={hasApplied}
               myApplication={myApplication}
+              waitlistPosition={waitlistPosition}
               showApplyForm={showApplyForm}
               coverMessage={coverMessage}
               isApplying={isApplying}

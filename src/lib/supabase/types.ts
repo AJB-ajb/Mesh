@@ -166,6 +166,7 @@ export interface Posting {
   natural_language_criteria: string | null;
   estimated_time: string | null;
   skill_level_min: number | null; // 0-10
+  auto_accept: boolean;
   embedding: number[] | null;
   status: "open" | "closed" | "filled" | "expired" | "paused";
   created_at: string;
@@ -195,6 +196,7 @@ export interface PostingInsert {
   natural_language_criteria?: string | null;
   estimated_time?: string | null;
   skill_level_min?: number | null;
+  auto_accept?: boolean;
   embedding?: number[] | null;
   status?: "open" | "closed" | "filled" | "expired" | "paused";
   created_at?: string;
@@ -224,6 +226,7 @@ export interface PostingUpdate {
   natural_language_criteria?: string | null;
   estimated_time?: string | null;
   skill_level_min?: number | null;
+  auto_accept?: boolean;
   embedding?: number[] | null;
   status?: "open" | "closed" | "filled" | "expired" | "paused";
   created_at?: string;

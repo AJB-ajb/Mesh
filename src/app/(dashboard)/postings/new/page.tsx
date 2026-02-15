@@ -206,6 +206,7 @@ export default function NewPostingPage() {
         skill_level_min: form.skillLevelMin
           ? parseInt(form.skillLevelMin, 10)
           : null,
+        auto_accept: form.autoAccept === "true",
       })
       .select()
       .single();
