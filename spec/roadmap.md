@@ -64,6 +64,7 @@
 | Availability input & matching | —     | Medium-Large | Weekly time grid / slot picker UI; posting-level scheduling; overlap scoring            |
 | Auto-location detection       | #16   | Small        | Detect user location from IP for matching defaults                                      |
 | Configurable matching weights | —     | Small-Medium | Weight sliders on posting creation; stored per posting; passed to scoring               |
+| Fix 0% match score display    | #46   | Small        | Investigate and fix 0% matches showing as "new match" on dashboard                      |
 
 ### v0.4 — Engagement & Discovery
 
@@ -105,6 +106,11 @@ These are ideas without a target milestone. They'll be prioritized as the produc
 - Public posting embed / share links
 - Multi-language support (i18n)
 - Mobile app (React Native or PWA enhancement)
+- Improve mic button visibility in textareas (#43)
+- Standardize date formatting across the app (#44)
+- Add CTAs to empty states (#45)
+- Keep AI Extract reference text visible while typing (#47)
+- Add skeleton/spinner loading states for slow connections (#48)
 
 ---
 

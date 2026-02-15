@@ -26,7 +26,7 @@ function Textarea({
       data-slot="textarea"
       className={cn(
         "border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 flex field-sizing-content min-h-16 w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-        enableMic && "pr-12",
+        enableMic && "pr-9",
         className,
       )}
       {...props}
@@ -39,7 +39,7 @@ function Textarea({
     <div className="relative w-full">
       {textareaEl}
       <SpeechInput
-        className="absolute right-2 bottom-2 h-8 w-8 shrink-0 p-0"
+        className="absolute right-1.5 top-1.5 h-7 w-7 shrink-0 p-0"
         size="icon"
         variant="ghost"
         type="button"
