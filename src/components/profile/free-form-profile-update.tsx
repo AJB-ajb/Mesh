@@ -118,6 +118,12 @@ export function FreeFormProfileUpdate({
                 value={editableSourceText}
                 onChange={(e) => setEditableSourceText(e.target.value)}
                 placeholder="Paste or type your profile description here (e.g., a short bio, your skills, what you're looking for)..."
+                enableMic
+                onTranscriptionChange={(text) =>
+                  setEditableSourceText((prev) =>
+                    prev ? prev + " " + text : text,
+                  )
+                }
               />
             )}
           </div>
@@ -131,6 +137,10 @@ export function FreeFormProfileUpdate({
             value={updateInstruction}
             onChange={(e) => setUpdateInstruction(e.target.value)}
             placeholder="e.g., I also know Python now and am available 20 hours/week"
+            enableMic
+            onTranscriptionChange={(text) =>
+              setUpdateInstruction((prev) => (prev ? prev + " " + text : text))
+            }
           />
         </div>
 

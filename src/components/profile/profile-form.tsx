@@ -3,6 +3,7 @@
 import { Loader2, MapPin, Plus, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import {
   Card,
@@ -163,13 +164,16 @@ export function ProfileForm({
             <label htmlFor="bio" className="text-sm font-medium">
               About you
             </label>
-            <textarea
+            <Textarea
               id="bio"
               rows={4}
-              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               value={form.bio}
               onChange={(e) => onChange("bio", e.target.value)}
               placeholder="What do you enjoy building? What makes you unique?"
+              enableMic
+              onTranscriptionChange={(text) =>
+                onChange("bio", form.bio ? form.bio + " " + text : text)
+              }
             />
           </div>
 

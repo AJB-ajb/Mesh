@@ -27,6 +27,27 @@ function defaultExpiresAt(): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Extracted posting fields from AI update */
+export type ExtractedPosting = {
+  title?: string;
+  description?: string;
+  skills?: string[];
+  category?: string;
+  estimated_time?: string;
+  team_size_min?: number;
+  team_size_max?: number;
+  skill_level_min?: number;
+  tags?: string[];
+  context_identifier?: string;
+  mode?: string;
+};
+
+export type PostingUpdateResponse = {
+  success: boolean;
+  updatedSourceText: string;
+  extractedPosting: ExtractedPosting;
+};
+
 export const defaultPostingFormState: PostingFormState = {
   title: "",
   description: "",

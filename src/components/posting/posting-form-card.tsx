@@ -3,8 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Loader2, MapPin, Search } from "lucide-react";
-import { SpeechInput } from "@/components/ai-elements/speech-input";
-import { transcribeAudio } from "@/lib/transcribe";
+import { Textarea } from "@/components/ui/textarea";
 import { LocationAutocomplete } from "@/components/location/location-autocomplete";
 import type { GeocodingResult } from "@/lib/geocoding";
 import { Button } from "@/components/ui/button";
@@ -172,31 +171,22 @@ export function PostingFormCard({
             <label htmlFor="description" className="text-sm font-medium">
               Description <span className="text-destructive">*</span>
             </label>
-            <div className="flex items-end gap-2">
-              <textarea
-                id="description"
-                rows={6}
-                value={form.description}
-                onChange={(e) => onChange("description", e.target.value)}
-                className="flex flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="Describe your project and what kind of collaborators you're looking for...
+            <Textarea
+              id="description"
+              rows={6}
+              value={form.description}
+              onChange={(e) => onChange("description", e.target.value)}
+              placeholder="Describe your project and what kind of collaborators you're looking for...
 
 Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebGL or game dev experience, hackathon this weekend."
-              />
-              <SpeechInput
-                className="mb-2 h-10 w-10 shrink-0 p-0"
-                size="icon"
-                variant="ghost"
-                type="button"
-                onAudioRecorded={transcribeAudio}
-                onTranscriptionChange={(text) =>
-                  onChange(
-                    "description",
-                    form.description ? form.description + " " + text : text,
-                  )
-                }
-              />
-            </div>
+              enableMic
+              onTranscriptionChange={(text) =>
+                onChange(
+                  "description",
+                  form.description ? form.description + " " + text : text,
+                )
+              }
+            />
             <p className="text-xs text-muted-foreground">
               Our AI will extract skills, team size, and timeline from your
               description.

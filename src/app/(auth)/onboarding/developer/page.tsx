@@ -3,8 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Sparkles, FileText, Loader2, CheckCircle } from "lucide-react";
-import { SpeechInput } from "@/components/ai-elements/speech-input";
-import { transcribeAudio } from "@/lib/transcribe";
+import { Textarea } from "@/components/ui/textarea";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -343,13 +342,11 @@ function DeveloperOnboardingContent() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-end gap-2">
-                  <textarea
-                    rows={12}
-                    value={aiText}
-                    onChange={(e) => setAiText(e.target.value)}
-                    className="flex flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    placeholder={`Paste your profile text here, or use the mic to describe yourself...
+                <Textarea
+                  rows={12}
+                  value={aiText}
+                  onChange={(e) => setAiText(e.target.value)}
+                  placeholder={`Paste your profile text here, or use the mic to describe yourself...
 
 Example:
 Hi, I'm Alex! I'm a full-stack developer with 5 years of experience.
@@ -360,17 +357,11 @@ Based in San Francisco, available 15 hrs/week
 
 Currently looking for hackathon projects and open source contributions.
 Check out my work at github.com/alexdev`}
-                  />
-                  <SpeechInput
-                    className="mb-2 h-10 w-10 shrink-0 p-0"
-                    size="icon"
-                    variant="ghost"
-                    onAudioRecorded={transcribeAudio}
-                    onTranscriptionChange={(text) =>
-                      setAiText((prev) => (prev ? prev + " " + text : text))
-                    }
-                  />
-                </div>
+                  enableMic
+                  onTranscriptionChange={(text) =>
+                    setAiText((prev) => (prev ? prev + " " + text : text))
+                  }
+                />
                 <div className="flex gap-3">
                   <Button
                     type="button"
@@ -456,30 +447,22 @@ Check out my work at github.com/alexdev`}
                     <label htmlFor="bio" className="text-sm font-medium">
                       About you
                     </label>
-                    <div className="flex items-end gap-2">
-                      <textarea
-                        id="bio"
-                        rows={4}
-                        className="flex flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        value={form.bio}
-                        onChange={(event) =>
-                          handleChange("bio", event.target.value)
-                        }
-                        placeholder="What do you enjoy building? What makes you unique?"
-                      />
-                      <SpeechInput
-                        className="mb-2 h-10 w-10 shrink-0 p-0"
-                        size="icon"
-                        variant="ghost"
-                        onAudioRecorded={transcribeAudio}
-                        onTranscriptionChange={(text) =>
-                          handleChange(
-                            "bio",
-                            form.bio ? form.bio + " " + text : text,
-                          )
-                        }
-                      />
-                    </div>
+                    <Textarea
+                      id="bio"
+                      rows={4}
+                      value={form.bio}
+                      onChange={(event) =>
+                        handleChange("bio", event.target.value)
+                      }
+                      placeholder="What do you enjoy building? What makes you unique?"
+                      enableMic
+                      onTranscriptionChange={(text) =>
+                        handleChange(
+                          "bio",
+                          form.bio ? form.bio + " " + text : text,
+                        )
+                      }
+                    />
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-2">

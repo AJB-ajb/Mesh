@@ -28,6 +28,9 @@ export type PostingDetail = {
   tags?: string[];
   context_identifier?: string | null;
   skill_level_min?: number | null;
+  source_text?: string | null;
+  previous_source_text?: string | null;
+  previous_posting_snapshot?: Record<string, unknown> | null;
   profiles?: {
     full_name: string | null;
     headline: string | null;
