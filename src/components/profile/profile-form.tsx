@@ -44,7 +44,7 @@ function skillLevelLabel(level: number): string {
 const LOCATION_MODE_OPTIONS: { value: LocationMode; label: string }[] = [
   { value: "remote", label: "Remote" },
   { value: "in_person", label: "In-person" },
-  { value: "either", label: "Either" },
+  { value: "either", label: "Flexible" },
 ];
 
 // ---------------------------------------------------------------------------

@@ -42,7 +42,7 @@ function getLocationLabel(
     case "in_person":
       return `📍 ${locationName || "In-person"}`;
     case "either":
-      return `🌐 ${locationName || "Either"}`;
+      return `🌐 ${locationName || "Flexible"}`;
     default:
       return null;
   }
@@ -115,7 +115,7 @@ export function PostingDiscoverCard({
                   variant="outline"
                   className="border-amber-500/30 text-amber-600 dark:text-amber-400"
                 >
-                  Friend Ask
+                  Sequential Invite
                 </Badge>
               )}
               {posting.status !== "open" && (
@@ -150,13 +150,13 @@ export function PostingDiscoverCard({
                 ) : (
                   <Heart className="h-4 w-4" />
                 )}
-                {isInteresting ? "Expressing Interest..." : "I'm Interested"}
+                {isInteresting ? "Requesting to join..." : "Request to join"}
               </Button>
             )}
             {!isOwner && activeTab === "discover" && isAlreadyInterested && (
               <Button variant="secondary" disabled>
                 <Heart className="h-4 w-4 fill-current" />
-                Interested
+                Requested
               </Button>
             )}
             <Button variant="outline" asChild>
@@ -167,7 +167,7 @@ export function PostingDiscoverCard({
             {!isOwner &&
               posting.status === "open" &&
               !isAlreadyInterested &&
-              posting.mode !== "open" && <Button>Apply</Button>}
+              posting.mode !== "open" && <Button>Request to join</Button>}
           </div>
         </div>
       </CardHeader>
@@ -185,7 +185,7 @@ export function PostingDiscoverCard({
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
               <div className="flex flex-col">
-                <span className="text-muted-foreground">Semantic</span>
+                <span className="text-muted-foreground">Relevance</span>
                 <span className="font-medium text-foreground">
                   {formatScore(posting.score_breakdown.semantic)}
                 </span>
@@ -269,7 +269,7 @@ export function PostingDiscoverCard({
             {getInitials(creatorName)}
           </div>
           <span className="text-sm text-muted-foreground">
-            {isOwner ? "Created by you" : `Posted by ${creatorName}`} •{" "}
+            {isOwner ? "Posted by you" : `Posted by ${creatorName}`} •{" "}
             {formatDate(posting.created_at)}
           </span>
         </div>

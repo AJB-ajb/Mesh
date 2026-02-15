@@ -171,7 +171,8 @@ export function FriendAskSelector({
           <Card>
             <CardContent className="py-6 text-center">
               <p className="text-sm text-muted-foreground">
-                No friends available. Add friends first to use Friend-Ask mode.
+                No friends available. Add friends first to use Sequential Invite
+                mode.
               </p>
             </CardContent>
           </Card>

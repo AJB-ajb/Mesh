@@ -192,7 +192,7 @@ function ApplySection({
           }
           className="px-3 py-1"
         >
-          {myApplication?.status === "pending" && "Request Pending"}
+          {myApplication?.status === "pending" && "Request pending"}
           {myApplication?.status === "accepted" && "\u2713 Accepted"}
           {myApplication?.status === "rejected" && "Not Selected"}
           {myApplication?.status === "withdrawn" && "Withdrawn"}
@@ -207,7 +207,7 @@ function ApplySection({
         {(myApplication?.status === "pending" ||
           myApplication?.status === "waitlisted") && (
           <Button variant="outline" size="sm" onClick={onWithdraw}>
-            Withdraw
+            Withdraw request
           </Button>
         )}
       </div>
@@ -314,7 +314,7 @@ function ApplySection({
             {isApplying ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Requesting...
+                Requesting to join...
               </>
             ) : (
               <>
@@ -464,7 +464,7 @@ export function PostingDetailHeader({
             )}
           </div>
           <p className="text-muted-foreground">
-            Created by {creatorName} &bull; {formatDate(posting.created_at)}
+            Posted by {creatorName} &bull; {formatDate(posting.created_at)}
           </p>
         </div>
 

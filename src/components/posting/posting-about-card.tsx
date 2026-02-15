@@ -29,7 +29,7 @@ function getLocationModeDisplay(mode: string | null) {
       return { icon: "📍", label: "In-person" };
     case "either":
     default:
-      return { icon: "🌐", label: "Either" };
+      return { icon: "🌐", label: "Flexible" };
   }
 }
 
@@ -61,7 +61,7 @@ function LocationEditFields({
           onChange={(e) => onFormChange("locationMode", e.target.value)}
           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
         >
-          <option value="either">Either (no preference)</option>
+          <option value="either">Flexible</option>
           <option value="remote">Remote</option>
           <option value="in_person">In-person</option>
         </select>
@@ -245,7 +245,7 @@ export function PostingAboutCard({
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
                 <option value="open">Open</option>
-                <option value="friend_ask">Friend Ask</option>
+                <option value="friend_ask">Sequential Invite</option>
               </select>
             </div>
             <div className="space-y-2">

@@ -462,7 +462,7 @@ export default function PostingDetailPage() {
     const confirmMsg =
       myApplication.status === "waitlisted"
         ? "Are you sure you want to leave the waitlist?"
-        : "Are you sure you want to withdraw your application?";
+        : "Are you sure you want to withdraw your request?";
     if (!confirm(confirmMsg)) return;
 
     const wasAccepted = myApplication.status === "accepted";
@@ -474,7 +474,7 @@ export default function PostingDetailPage() {
       .eq("id", myApplication.id);
 
     if (withdrawError) {
-      setError("Failed to withdraw application. Please try again.");
+      setError("Failed to withdraw request. Please try again.");
       return;
     }
 
@@ -499,7 +499,7 @@ export default function PostingDetailPage() {
       .eq("id", applicationId);
 
     if (updateError) {
-      setError("Failed to update application. Please try again.");
+      setError("Failed to update request. Please try again.");
       setIsUpdatingApplication(null);
       return;
     }
@@ -530,12 +530,12 @@ export default function PostingDetailPage() {
           type: notifType,
           title:
             newStatus === "accepted"
-              ? "Application Accepted! \uD83C\uDF89"
-              : "Application Update",
+              ? "Request Accepted! \uD83C\uDF89"
+              : "Request Update",
           body:
             newStatus === "accepted"
-              ? `Your application to "${posting.title}" has been accepted!`
-              : `Your application to "${posting.title}" was not selected.`,
+              ? `Your request to join "${posting.title}" has been accepted!`
+              : `Your request to join "${posting.title}" was not selected.`,
           related_posting_id: postingId,
           related_application_id: applicationId,
           related_user_id: posting.creator_id,

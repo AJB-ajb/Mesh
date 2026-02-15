@@ -74,14 +74,14 @@ export function PostingApplicationsCard({
               <Users className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle>Applications</CardTitle>
+              <CardTitle>Join Requests</CardTitle>
               <CardDescription>
                 {pendingCount > 0 ? (
                   <span className="text-primary font-medium">
                     {pendingCount} pending review
                   </span>
                 ) : (
-                  `${applications.length} application${applications.length !== 1 ? "s" : ""} received`
+                  `${applications.length} join request${applications.length !== 1 ? "s" : ""} received`
                 )}
               </CardDescription>
             </div>
@@ -93,7 +93,7 @@ export function PostingApplicationsCard({
           <div className="text-center py-8">
             <Users className="h-12 w-12 mx-auto text-muted-foreground/50" />
             <p className="mt-4 text-sm text-muted-foreground">
-              No applications yet
+              No join requests yet
             </p>
             <p className="text-xs text-muted-foreground">
               Share your posting to attract collaborators!
@@ -163,7 +163,7 @@ export function PostingApplicationsCard({
                           </div>
                         )}
                       <p className="mt-2 text-xs text-muted-foreground">
-                        Applied {formatDate(application.created_at)}
+                        Requested {formatDate(application.created_at)}
                       </p>
                     </div>
                   </div>

@@ -14,7 +14,7 @@ import {
 const LOCATION_MODE_DISPLAY: Record<string, string> = {
   remote: "Remote",
   in_person: "In-person",
-  either: "Either",
+  either: "Flexible",
 };
 
 function skillLevelLabel(level: number): string {
@@ -76,7 +76,7 @@ export function ProfileView({ form }: { form: ProfileFormState }) {
             <div>
               <p className="text-sm text-muted-foreground">Location mode</p>
               <p className="font-medium">
-                {LOCATION_MODE_DISPLAY[form.locationMode] ?? "Either"}
+                {LOCATION_MODE_DISPLAY[form.locationMode] ?? "Flexible"}
               </p>
             </div>
           </div>

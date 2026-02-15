@@ -68,24 +68,27 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
   // Send friend_request notification to the next friend
   const nextFriendId = friendAsk.ordered_friend_list[nextIndex];
 
-  const [{ data: recipientProfile }, { data: senderProfile }, { data: posting }] =
-    await Promise.all([
-      supabase
-        .from("profiles")
-        .select("notification_preferences")
-        .eq("user_id", nextFriendId)
-        .single(),
-      supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("user_id", user.id)
-        .single(),
-      supabase
-        .from("postings")
-        .select("title")
-        .eq("id", friendAsk.posting_id)
-        .single(),
-    ]);
+  const [
+    { data: recipientProfile },
+    { data: senderProfile },
+    { data: posting },
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("notification_preferences")
+      .eq("user_id", nextFriendId)
+      .single(),
+    supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", user.id)
+      .single(),
+    supabase
+      .from("postings")
+      .select("title")
+      .eq("id", friendAsk.posting_id)
+      .single(),
+  ]);
 
   const recipientPrefs =
     recipientProfile?.notification_preferences as NotificationPreferences | null;
@@ -97,7 +100,7 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
     await supabase.from("notifications").insert({
       user_id: nextFriendId,
       type: "friend_request",
-      title: "Friend Ask Received",
+      title: "Sequential Invite Received",
       body: `${senderName} wants you to join "${postingTitle}"`,
       related_posting_id: friendAsk.posting_id,
       related_user_id: user.id,
