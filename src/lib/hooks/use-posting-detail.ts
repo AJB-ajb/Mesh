@@ -67,7 +67,7 @@ export type MatchedProfile = {
 import { type PostingFormState } from "@/lib/types/posting";
 export type { PostingFormState };
 
-type PostingDetailData = {
+export type PostingDetailData = {
   posting: PostingDetail | null;
   isOwner: boolean;
   currentUserId: string | null;

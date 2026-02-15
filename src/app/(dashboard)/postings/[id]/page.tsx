@@ -20,6 +20,8 @@ import { PostingApplicationsCard } from "@/components/posting/posting-applicatio
 import { PostingCompatibilityCard } from "@/components/posting/posting-compatibility-card";
 import { PostingMatchedProfilesCard } from "@/components/posting/posting-matched-profiles-card";
 import { PostingSidebar } from "@/components/posting/posting-sidebar";
+import { FreeFormPostingUpdate } from "@/components/posting/free-form-posting-update";
+import { usePostingAiUpdate } from "@/lib/hooks/use-posting-ai-update";
 
 export default function PostingDetailPage() {
   const router = useRouter();
@@ -67,6 +69,10 @@ export default function PostingDetailPage() {
     contextIdentifier: "",
     skillLevelMin: "",
   });
+
+  // AI update hook
+  const { isApplyingUpdate, applyFreeFormUpdate, undoLastUpdate } =
+    usePostingAiUpdate(postingId, form, posting?.source_text ?? null, mutate);
 
   // Application UI state
   const [localHasApplied, setLocalHasApplied] = useState<boolean | null>(null);
@@ -487,6 +493,17 @@ export default function PostingDetailPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main content */}
         <div className="space-y-6 lg:col-span-2">
+          {isOwner && !isEditing && (
+            <FreeFormPostingUpdate
+              postingId={postingId}
+              sourceText={posting.source_text ?? null}
+              canUndo={!!posting.previous_source_text}
+              isApplying={isApplyingUpdate}
+              onUpdate={applyFreeFormUpdate}
+              onUndo={undoLastUpdate}
+            />
+          )}
+
           <PostingAboutCard
             posting={posting}
             isEditing={isEditing}

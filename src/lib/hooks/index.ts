@@ -11,6 +11,7 @@ export { useProfileData } from "./use-profile-data";
 export { useProfileForm } from "./use-profile-form";
 export { useProfileSave } from "./use-profile-save";
 export { useProfileAiUpdate } from "./use-profile-ai-update";
+export { usePostingAiUpdate } from "./use-posting-ai-update";
 export { useProfileProviders } from "./use-profile-providers";
 export { useNotifications } from "./use-notifications";
 export { useSignOut } from "./use-sign-out";
