@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Search, Filter, Loader2, Heart, X } from "lucide-react";
+import { Search, Filter, Loader2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,12 +10,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useMatches } from "@/lib/hooks/use-matches";
-import { useInterests } from "@/lib/hooks/use-interests";
 import { useNlFilter } from "@/lib/hooks/use-nl-filter";
 import type { Posting } from "@/lib/supabase/types";
 import { applyFilters } from "@/lib/filters/apply-filters";
-import { InterestReceivedCard } from "@/components/match/interest-received-card";
-import { InterestSentCard } from "@/components/match/interest-sent-card";
 import { AiMatchCard } from "@/components/match/ai-match-card";
 
 export default function MatchesPage() {
@@ -23,17 +20,10 @@ export default function MatchesPage() {
     matches,
     apiError,
     error: fetchError,
-    isLoading: matchesLoading,
+    isLoading,
     mutate,
   } = useMatches();
-  const {
-    myInterests,
-    interestsReceived,
-    isLoading: interestsLoading,
-  } = useInterests();
   const [applyingMatchId, setApplyingMatchId] = useState<string | null>(null);
-
-  const isLoading = matchesLoading || interestsLoading;
 
   const error = fetchError
     ? fetchError instanceof Error
@@ -130,11 +120,6 @@ export default function MatchesPage() {
     );
   }
 
-  const hasAnyContent =
-    matches.length > 0 ||
-    myInterests.length > 0 ||
-    interestsReceived.length > 0;
-
   return (
     <div className="space-y-6">
       {/* Page header */}
@@ -205,7 +190,7 @@ export default function MatchesPage() {
         </div>
       )}
 
-      {!hasAnyContent ? (
+      {filteredMatches.length === 0 ? (
         <EmptyState
           title="No matches yet"
           description="Complete your profile to start seeing matches that align with your skills and interests."
@@ -215,55 +200,15 @@ export default function MatchesPage() {
           }}
         />
       ) : (
-        <div className="space-y-8">
-          {/* Interests Received section */}
-          {interestsReceived.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold flex items-center gap-2">
-                <Heart className="h-5 w-5 text-pink-500" />
-                Interests Received
-                <Badge variant="secondary">{interestsReceived.length}</Badge>
-              </h2>
-              <div className="space-y-4">
-                {interestsReceived.map((interest) => (
-                  <InterestReceivedCard key={interest.id} interest={interest} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* My Interests section */}
-          {myInterests.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold flex items-center gap-2">
-                <Heart className="h-5 w-5" />
-                My Interests
-                <Badge variant="secondary">{myInterests.length}</Badge>
-              </h2>
-              <div className="space-y-4">
-                {myInterests.map((interest) => (
-                  <InterestSentCard key={interest.id} interest={interest} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* AI Matches section */}
-          {filteredMatches.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">AI Matches</h2>
-              <div className="space-y-4">
-                {filteredMatches.map((match) => (
-                  <AiMatchCard
-                    key={match.id}
-                    match={match}
-                    isApplying={applyingMatchId === match.id}
-                    onApply={handleApply}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+        <div className="space-y-4">
+          {filteredMatches.map((match) => (
+            <AiMatchCard
+              key={match.id}
+              match={match}
+              isApplying={applyingMatchId === match.id}
+              onApply={handleApply}
+            />
+          ))}
         </div>
       )}
     </div>
