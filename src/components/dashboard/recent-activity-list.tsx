@@ -15,13 +15,11 @@ type Activity = {
 type RecentActivityListProps = {
   supabase: Awaited<ReturnType<typeof createClient>>;
   userId: string;
-  persona?: string;
 };
 
 export async function RecentActivityList({
   supabase,
   userId,
-  persona,
 }: RecentActivityListProps) {
   const activities: Activity[] = [];
 
