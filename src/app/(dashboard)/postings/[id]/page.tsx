@@ -46,7 +46,8 @@ export default function PostingDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isReactivating, setIsReactivating] = useState(false);
+  const [isExtending, setIsExtending] = useState(false);
+  const [isReposting, setIsReposting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<PostingFormState>({
     title: "",
@@ -215,27 +216,55 @@ export default function PostingDetailPage() {
     router.push("/postings");
   };
 
-  const handleReactivate = async () => {
-    setIsReactivating(true);
+  const handleExtendDeadline = async (days: number) => {
+    setIsExtending(true);
     setError(null);
 
     try {
-      const res = await fetch(`/api/postings/${postingId}/reactivate`, {
+      const res = await fetch(`/api/postings/${postingId}/extend-deadline`, {
         method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ days }),
       });
 
       if (!res.ok) {
         const body = await res.json();
-        setError(body.error?.message || "Failed to reactivate posting.");
-        setIsReactivating(false);
+        setError(body.error?.message || "Failed to extend deadline.");
+        setIsExtending(false);
         return;
       }
 
-      setIsReactivating(false);
+      setIsExtending(false);
       mutate();
     } catch {
-      setError("Failed to reactivate posting. Please try again.");
-      setIsReactivating(false);
+      setError("Failed to extend deadline. Please try again.");
+      setIsExtending(false);
+    }
+  };
+
+  const handleRepost = async () => {
+    setIsReposting(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/postings/${postingId}/repost`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ days: 7 }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json();
+        setError(body.error?.message || "Failed to repost.");
+        setIsReposting(false);
+        return;
+      }
+
+      setIsReposting(false);
+      mutate();
+    } catch {
+      setError("Failed to repost. Please try again.");
+      setIsReposting(false);
     }
   };
 
@@ -469,14 +498,16 @@ export default function PostingDetailPage() {
         isEditing={isEditing}
         isSaving={isSaving}
         isDeleting={isDeleting}
-        isReactivating={isReactivating}
+        isExtending={isExtending}
+        isReposting={isReposting}
         editTitle={form.title}
         onEditTitleChange={(value) => handleFormChange("title", value)}
         onSave={handleSave}
         onCancelEdit={() => setIsEditing(false)}
         onStartEdit={handleStartEdit}
         onDelete={handleDelete}
-        onReactivate={handleReactivate}
+        onExtendDeadline={handleExtendDeadline}
+        onRepost={handleRepost}
         hasApplied={hasApplied}
         myApplication={myApplication}
         showApplyForm={showApplyForm}
