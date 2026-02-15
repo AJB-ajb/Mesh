@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  RefreshCw,
+  CalendarPlus,
   Check,
   Sparkles,
   Loader2,
@@ -11,10 +12,22 @@ import {
   Trash2,
   Send,
   Clock,
+  RefreshCw,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { formatScore } from "@/lib/matching/scoring";
 import type {
   PostingDetail,
@@ -66,6 +79,50 @@ function computeOverallScore(breakdown: ScoreBreakdown): number {
 }
 
 // ---------------------------------------------------------------------------
+// Extend Deadline Picker
+// ---------------------------------------------------------------------------
+
+const EXTEND_OPTIONS = [
+  { label: "7 days", days: 7 },
+  { label: "14 days", days: 14 },
+  { label: "30 days", days: 30 },
+] as const;
+
+function ExtendDeadlineButtons({
+  isExtending,
+  onExtend,
+}: {
+  isExtending: boolean;
+  onExtend: (days: number) => void;
+}) {
+  const [selectedDays, setSelectedDays] = useState<number | null>(null);
+
+  return (
+    <div className="flex items-center gap-1 flex-wrap">
+      {EXTEND_OPTIONS.map((opt) => (
+        <Button
+          key={opt.days}
+          size="sm"
+          variant={selectedDays === opt.days ? "default" : "outline"}
+          disabled={isExtending}
+          onClick={() => {
+            setSelectedDays(opt.days);
+            onExtend(opt.days);
+          }}
+        >
+          {isExtending && selectedDays === opt.days ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <CalendarPlus className="h-3 w-3" />
+          )}
+          +{opt.label}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Owner Actions
 // ---------------------------------------------------------------------------
 
@@ -74,12 +131,14 @@ type OwnerActionsProps = {
   isEditing: boolean;
   isSaving: boolean;
   isDeleting: boolean;
-  isReactivating: boolean;
+  isExtending: boolean;
+  isReposting: boolean;
   onSave: () => void;
   onCancelEdit: () => void;
   onStartEdit: () => void;
   onDelete: () => void;
-  onReactivate: () => void;
+  onExtendDeadline: (days: number) => void;
+  onRepost: () => void;
 };
 
 function OwnerActions({
@@ -87,12 +146,14 @@ function OwnerActions({
   isEditing,
   isSaving,
   isDeleting,
-  isReactivating,
+  isExtending,
+  isReposting,
   onSave,
   onCancelEdit,
   onStartEdit,
   onDelete,
-  onReactivate,
+  onExtendDeadline,
+  onRepost,
 }: OwnerActionsProps) {
   if (isEditing) {
     return (
@@ -118,28 +179,53 @@ function OwnerActions({
   }
 
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-col gap-2 items-end">
       {isExpired(posting.expires_at) && (
-        <Button onClick={onReactivate} disabled={isReactivating}>
-          {isReactivating ? (
+        <div className="flex gap-2 items-center flex-wrap justify-end">
+          <ExtendDeadlineButtons
+            isExtending={isExtending}
+            onExtend={onExtendDeadline}
+          />
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" disabled={isReposting}>
+                {isReposting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Repost
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Repost this posting?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will remove all existing join requests and repost the
+                  posting as fresh. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={onRepost}>Repost</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      )}
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={onStartEdit}>
+          <Pencil className="h-4 w-4" />
+          Edit
+        </Button>
+        <Button variant="destructive" onClick={onDelete} disabled={isDeleting}>
+          {isDeleting ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <RefreshCw className="h-4 w-4" />
+            <Trash2 className="h-4 w-4" />
           )}
-          Reactivate
         </Button>
-      )}
-      <Button variant="outline" onClick={onStartEdit}>
-        <Pencil className="h-4 w-4" />
-        Edit
-      </Button>
-      <Button variant="destructive" onClick={onDelete} disabled={isDeleting}>
-        {isDeleting ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Trash2 className="h-4 w-4" />
-        )}
-      </Button>
+      </div>
     </div>
   );
 }
@@ -350,14 +436,16 @@ type PostingDetailHeaderProps = {
   isEditing: boolean;
   isSaving: boolean;
   isDeleting: boolean;
-  isReactivating: boolean;
+  isExtending: boolean;
+  isReposting: boolean;
   editTitle: string;
   onEditTitleChange: (value: string) => void;
   onSave: () => void;
   onCancelEdit: () => void;
   onStartEdit: () => void;
   onDelete: () => void;
-  onReactivate: () => void;
+  onExtendDeadline: (days: number) => void;
+  onRepost: () => void;
   // Apply props (non-owner)
   hasApplied: boolean;
   myApplication: Application | null;
@@ -380,14 +468,16 @@ export function PostingDetailHeader({
   isEditing,
   isSaving,
   isDeleting,
-  isReactivating,
+  isExtending,
+  isReposting,
   editTitle,
   onEditTitleChange,
   onSave,
   onCancelEdit,
   onStartEdit,
   onDelete,
-  onReactivate,
+  onExtendDeadline,
+  onRepost,
   hasApplied,
   myApplication,
   waitlistPosition,
@@ -474,12 +564,14 @@ export function PostingDetailHeader({
             isEditing={isEditing}
             isSaving={isSaving}
             isDeleting={isDeleting}
-            isReactivating={isReactivating}
+            isExtending={isExtending}
+            isReposting={isReposting}
             onSave={onSave}
             onCancelEdit={onCancelEdit}
             onStartEdit={onStartEdit}
             onDelete={onDelete}
-            onReactivate={onReactivate}
+            onExtendDeadline={onExtendDeadline}
+            onRepost={onRepost}
           />
         ) : (
           <div className="flex gap-2">
