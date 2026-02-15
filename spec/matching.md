@@ -102,6 +102,37 @@ Binary available/unavailable per time slot. The posting specifies when the activ
 - **Collaboration preferences**: Intensity (0-10) and preferred activities (pair programming, brainstorming, async review, etc.) — relevant for project-type postings (overrides person-level work style preference)
 - **Estimated time**: How much time the activity or project requires (e.g., "2 hours", "10-20h/week for 4 weeks")
 
+### Waitlist
+
+When a posting is filled (accepted count >= `team_size_max`), additional users can join a waitlist. Always available on filled postings — no per-posting toggle.
+
+#### Behavior
+
+- **Joining**: Users who join or request to join a filled posting are automatically waitlisted (status: `waitlisted`)
+- **Ordering**: Waitlist is ordered by join time (FIFO — first come, first served)
+- **Spot opens**: When an accepted collaborator withdraws or is removed:
+  - **Auto-accept posting**: First waitlisted person is instantly promoted to accepted
+  - **Manual review posting**: Poster receives notification; can accept or skip waitlisted people
+- **Visibility**: Waitlisted users see their position ("You are #3 on the waitlist")
+- **Withdrawal**: Waitlisted users can withdraw at any time
+
+#### Status transitions
+
+- `waitlisted` → `accepted` (auto-promote or poster accepts)
+- `waitlisted` → `withdrawn` (user withdraws)
+- `accepted` → `withdrawn` (triggers waitlist promotion)
+
+#### Edge cases
+
+- Poster manually reopens a filled posting → waitlisted users stay waitlisted (no auto-promote since posting isn't over-capacity)
+- Poster reposts → resets everything (waitlisted users are cleared)
+- Posting expires → waitlisted users are notified and removed from the waitlist
+- Multiple spots open simultaneously → promote in FIFO order
+
+#### Application statuses (updated)
+
+`pending | accepted | rejected | withdrawn | waitlisted`
+
 ---
 
 ## Compatibility Scoring

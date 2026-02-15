@@ -147,7 +147,21 @@ The dev branch has completed Phase 1 of the redesign:
 - [ ] Add toggle in posting creation form
 - [ ] CTA dynamically shows "Join" (auto-accept) or "Request to join" (manual review)
 
-#### 3.7 Terminology Migration
+#### 3.7 Waitlist
+
+**Spec ref:** When a posting is filled, users can join a waitlist. Auto-promote on auto-accept postings; manual review otherwise.
+
+**Steps:**
+
+- [ ] Add `waitlisted` status to applications table
+- [ ] Update join/request API: auto-waitlist when posting is filled
+- [ ] Add promotion logic: when accepted user withdraws, promote first waitlisted
+- [ ] Update posting detail UI: "Join waitlist" CTA, position indicator, waitlisted section in Join Requests card
+- [ ] Add notification for poster when spot opens (manual review postings)
+
+**Depends on:** 3.6 Auto-Accept Setting (determines CTA label and promotion behavior)
+
+#### 3.8 Terminology Migration
 
 **Steps:**
 
@@ -160,15 +174,16 @@ The dev branch has completed Phase 1 of the redesign:
 
 | Step | Feature                      | Rationale                            |
 | ---- | ---------------------------- | ------------------------------------ |
-| 1    | 3.7 Terminology Migration    | Quick win, aligns UI with spec       |
+| 1    | 3.8 Terminology Migration    | Quick win, aligns UI with spec       |
 | 2    | 1.2 Context Identifier Input | Trivial, column exists               |
 | 3    | 3.4 Bookmarks Page           | Page restructure, decouples Matches  |
 | 4    | 3.5 Repost + Extend Deadline | UX clarity for expired postings      |
 | 5    | 3.6 Auto-Accept Setting      | Enables Join vs Request to join CTA  |
-| 6    | 2.1 Availability Input       | Key matching dimension, schema ready |
-| 7    | 2.3 Hard Filter Enforcement  | Aligns matching with spec            |
-| 8    | 2.2 Configurable Weights     | Empowers users                       |
-| 9    | 1.1 Sequential Invite Mode   | Headline feature, complex            |
-| 10   | 3.1 Daily Digest             | Nice-to-have                         |
-| 11   | 3.2 Thumbnails               | Nice-to-have                         |
-| 12   | 3.3 Real-Time Voice          | Infrastructure upgrade               |
+| 6    | 3.7 Waitlist                 | Depends on auto-accept setting       |
+| 7    | 2.1 Availability Input       | Key matching dimension, schema ready |
+| 8    | 2.3 Hard Filter Enforcement  | Aligns matching with spec            |
+| 9    | 2.2 Configurable Weights     | Empowers users                       |
+| 10   | 1.1 Sequential Invite Mode   | Headline feature, complex            |
+| 11   | 3.1 Daily Digest             | Nice-to-have                         |
+| 12   | 3.2 Thumbnails               | Nice-to-have                         |
+| 13   | 3.3 Real-Time Voice          | Infrastructure upgrade               |

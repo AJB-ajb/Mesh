@@ -24,7 +24,7 @@ Use "posting" throughout.
 
 Use "connections" for relationships between users.
 
-"Friends" is too casual and implies personal closeness that may not exist between people who met through a posting. "Contacts" is transactional and feels like an address book. "Connections" is non-hierarchical, neutral, well-understood, and covers the full range of relationship depth.
+"Friends" is too casual and implies personal closeness that may not exist between people who met through a posting. "Contacts" is transactional and feels more like an address book. "Connections" is non-hierarchical, neutral, well-understood, and covers the full range of relationship depth.
 
 ### Join / Request to join (not "Apply" or "I'm Interested")
 
@@ -104,6 +104,15 @@ The spec previously used "Work Style Preference" (person dimensions) and "Collab
 Use short, clean category names: `Study`, `Hackathon`, `Personal`, `Professional`, `Social`.
 
 The spec previously used slash-separated variants ("Hackathon/Competition", "Personal/Side", "Social/Leisure") but the code already uses the simpler forms.
+
+### Waitlist
+
+When a posting is filled, users can join a waitlist for automatic or manual promotion when a spot opens.
+
+- **"Join waitlist"** — CTA shown on filled auto-accept postings
+- **"Request to join waitlist"** — CTA shown on filled manual-review postings
+- **"Waitlisted"** — Status badge for users on the waitlist
+- **"You are #N on the waitlist"** — Position indicator shown to waitlisted users
 
 ---
 

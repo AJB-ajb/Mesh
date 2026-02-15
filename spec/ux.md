@@ -59,6 +59,7 @@ Personal profile configuration is **not required** to create a posting. It can b
 - **Real-time messaging** with typing indicators and presence status
 - **Progressive disclosure:** empty states guide the user to their next action
 - `[planned]` **Sequential Invite:** ordered invite flow — rank connections by preference, send invites one-by-one until enough accept
+- `[planned]` **Waitlist**: When a posting is filled, the CTA changes to "Join waitlist" (auto-accept) or "Request to join waitlist" (manual review). Users see their waitlist position. Poster sees waitlisted people in the Join Requests card.
 - `[planned]` **Voice input** for posting creation and natural language filtering
 - `[planned]` **AI-generated daily digest** notifications
 - `[planned]` **Markdown-first interface**: Markdown input/output for postings, conversations, and configuration. Copy posting as markdown. Auto-clean/format options. Handoff document export (full context including platform metadata).
