@@ -302,6 +302,26 @@ export function PostingAboutCard({
                 placeholder="e.g., 3"
               />
             </div>
+            <div className="flex items-center gap-3 sm:col-span-2">
+              <input
+                id="auto-accept"
+                type="checkbox"
+                checked={form.autoAccept === "true"}
+                onChange={(e) =>
+                  onFormChange(
+                    "autoAccept",
+                    e.target.checked ? "true" : "false",
+                  )
+                }
+                className="h-4 w-4 rounded border border-input"
+              />
+              <label htmlFor="auto-accept" className="text-sm font-medium">
+                Auto-accept
+              </label>
+              <span className="text-xs text-muted-foreground">
+                Instantly accept anyone who joins (no manual review)
+              </span>
+            </div>
             <LocationEditFields form={form} onFormChange={onFormChange} />
           </div>
         ) : (

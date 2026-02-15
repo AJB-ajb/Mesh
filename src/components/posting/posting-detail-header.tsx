@@ -207,13 +207,32 @@ function ApplySection({
     return <Badge variant="secondary">Posting {posting.status}</Badge>;
   }
 
+  // Auto-accept: instant join, no cover message form
+  if (posting.auto_accept) {
+    return (
+      <Button onClick={onApply} disabled={isApplying}>
+        {isApplying ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Joining...
+          </>
+        ) : (
+          <>
+            <Send className="h-4 w-4" />
+            Join
+          </>
+        )}
+      </Button>
+    );
+  }
+
   if (showApplyForm) {
     return (
       <div className="flex flex-col gap-2 w-full max-w-md">
         <textarea
           value={coverMessage}
           onChange={(e) => onCoverMessageChange(e.target.value)}
-          placeholder="Tell the posting creator why you're interested... (optional)"
+          placeholder="Tell the posting creator why you'd like to join... (optional)"
           rows={3}
           className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         />
@@ -222,12 +241,12 @@ function ApplySection({
             {isApplying ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Applying...
+                Requesting...
               </>
             ) : (
               <>
                 <Send className="h-4 w-4" />
-                Submit Application
+                Request to join
               </>
             )}
           </Button>
@@ -242,7 +261,7 @@ function ApplySection({
   return (
     <Button onClick={onShowApplyForm}>
       <Send className="h-4 w-4" />
-      Apply to Posting
+      Request to join
     </Button>
   );
 }

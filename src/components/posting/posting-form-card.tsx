@@ -343,6 +343,25 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
           {/* Location */}
           <LocationSection form={form} onChange={onChange} />
 
+          {/* Auto-Accept */}
+          <div className="flex items-center gap-3">
+            <input
+              id="auto-accept"
+              type="checkbox"
+              checked={form.autoAccept === "true"}
+              onChange={(e) =>
+                onChange("autoAccept", e.target.checked ? "true" : "false")
+              }
+              className="h-4 w-4 rounded border border-input"
+            />
+            <label htmlFor="auto-accept" className="text-sm font-medium">
+              Auto-accept
+            </label>
+            <p className="text-xs text-muted-foreground">
+              Instantly accept anyone who joins (no manual review)
+            </p>
+          </div>
+
           {/* Submit */}
           <div className="flex gap-4 pt-4">
             <Button

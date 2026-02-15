@@ -18,6 +18,7 @@ export type PostingFormState = {
   tags: string;
   contextIdentifier: string;
   skillLevelMin: string;
+  autoAccept: string;
 };
 
 // Default expiry: 90 days from now
@@ -68,4 +69,5 @@ export const defaultPostingFormState: PostingFormState = {
   tags: "",
   contextIdentifier: "",
   skillLevelMin: "",
+  autoAccept: "false",
 };

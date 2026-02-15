@@ -96,6 +96,7 @@ export async function matchProfileToPostings(
         natural_language_criteria: row.natural_language_criteria || null,
         estimated_time: row.estimated_time || null,
         skill_level_min: row.skill_level_min ?? null,
+        auto_accept: row.auto_accept ?? false,
         embedding: null,
         status: "open",
         created_at: row.created_at,

@@ -68,6 +68,7 @@ export default function PostingDetailPage() {
     tags: "",
     contextIdentifier: "",
     skillLevelMin: "",
+    autoAccept: "false",
   });
 
   // AI update hook
@@ -129,6 +130,7 @@ export default function PostingDetailPage() {
       tags: posting.tags?.join(", ") || "",
       contextIdentifier: posting.context_identifier || "",
       skillLevelMin: posting.skill_level_min?.toString() || "",
+      autoAccept: posting.auto_accept ? "true" : "false",
     });
     setIsEditing(true);
   };
@@ -176,6 +178,7 @@ export default function PostingDetailPage() {
         skill_level_min: form.skillLevelMin
           ? parseInt(form.skillLevelMin, 10)
           : null,
+        auto_accept: form.autoAccept === "true",
         updated_at: new Date().toISOString(),
       })
       .eq("id", postingId);
@@ -249,19 +252,26 @@ export default function PostingDetailPage() {
     setError(null);
 
     const supabase = createClient();
+    const isAutoAccept = posting?.auto_accept === true;
+
     const { data: application, error: applyError } = await supabase
       .from("applications")
       .insert({
         posting_id: postingId,
         applicant_id: currentUserId,
-        cover_message: coverMessage.trim() || null,
+        cover_message: isAutoAccept ? null : coverMessage.trim() || null,
+        status: isAutoAccept ? "accepted" : "pending",
       })
       .select()
       .single();
 
     if (applyError) {
       setIsApplying(false);
-      setError("Failed to submit application. Please try again.");
+      setError(
+        isAutoAccept
+          ? "Failed to join. Please try again."
+          : "Failed to submit request. Please try again.",
+      );
       return;
     }
 
@@ -287,12 +297,30 @@ export default function PostingDetailPage() {
         await supabase.from("notifications").insert({
           user_id: posting.creator_id,
           type: "application_received",
-          title: "New Application Received",
-          body: `${applicantName} has applied to your posting "${posting.title}"`,
+          title: isAutoAccept ? "New Member Joined" : "New Join Request",
+          body: isAutoAccept
+            ? `${applicantName} has joined your posting "${posting.title}"`
+            : `${applicantName} has requested to join your posting "${posting.title}"`,
           related_posting_id: postingId,
           related_application_id: application.id,
           related_user_id: currentUserId,
         });
+      }
+
+      // Auto-accept: check if posting should be marked as filled
+      if (isAutoAccept) {
+        const { count } = await supabase
+          .from("applications")
+          .select("*", { count: "exact", head: true })
+          .eq("posting_id", postingId)
+          .eq("status", "accepted");
+
+        if (count && count >= posting.team_size_max) {
+          await supabase
+            .from("postings")
+            .update({ status: "filled" })
+            .eq("id", postingId);
+        }
       }
     }
 

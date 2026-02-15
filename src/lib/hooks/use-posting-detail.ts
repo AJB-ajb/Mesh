@@ -28,6 +28,7 @@ export type PostingDetail = {
   tags?: string[];
   context_identifier?: string | null;
   skill_level_min?: number | null;
+  auto_accept: boolean;
   source_text?: string | null;
   previous_source_text?: string | null;
   previous_posting_snapshot?: Record<string, unknown> | null;
