@@ -10,8 +10,17 @@ import { Badge } from "@/components/ui/badge";
 import { useSearch } from "@/lib/hooks/use-search";
 import type { SearchResult } from "@/lib/hooks/use-search";
 
+function useIsMac() {
+  const [isMac, setIsMac] = useState(true);
+  useEffect(() => {
+    queueMicrotask(() => setIsMac(navigator.platform.startsWith("Mac")));
+  }, []);
+  return isMac;
+}
+
 export function GlobalSearch() {
   const router = useRouter();
+  const isMac = useIsMac();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -121,7 +130,7 @@ export function GlobalSearch() {
         <Input
           ref={inputRef}
           type="search"
-          placeholder="Search postings, profiles... (⌘K)"
+          placeholder={`Search postings, profiles... (${isMac ? "⌘" : "Ctrl+"}K)`}
           className="pl-9 pr-9 bg-muted/50"
           value={query}
           onChange={(e) => {

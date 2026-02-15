@@ -11,9 +11,12 @@ export async function apiFetcher<T = unknown>(url: string): Promise<T> {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    const error = new Error(
-      errorData.error || `Request failed with status ${response.status}`,
-    ) as Error & { status: number };
+    const message =
+      typeof errorData.error === "string"
+        ? errorData.error
+        : errorData.error?.message ||
+          `Request failed with status ${response.status}`;
+    const error = new Error(message) as Error & { status: number };
     error.status = response.status;
     throw error;
   }

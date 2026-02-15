@@ -142,6 +142,7 @@ export default function ProfilePage() {
           <IntegrationsSection
             connectedProviders={connectedProviders}
             isEditing={false}
+            onLinkProvider={handleLinkProvider}
           />
         </>
       )}
