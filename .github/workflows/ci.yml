@@ -104,6 +104,23 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+  roadmap-check:
+    name: Roadmap Check
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check roadmap update for feature PRs
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          if [[ "$BRANCH" == feat/* ]]; then
+            if ! git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "spec/roadmap.md"; then
+              echo "::warning::Feature PR does not update spec/roadmap.md. If this implements a roadmap item, please update the roadmap."
+            fi
+          fi
+
   build:
     name: Build
     runs-on: ubuntu-latest
