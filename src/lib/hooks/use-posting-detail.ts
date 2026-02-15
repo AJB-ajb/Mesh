@@ -78,6 +78,7 @@ export type PostingDetailData = {
   matchedProfiles: MatchedProfile[];
   myApplication: Application | null;
   hasApplied: boolean;
+  waitlistPosition: number | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -122,6 +123,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
       matchedProfiles: [],
       myApplication: null,
       hasApplied: false,
+      waitlistPosition: null,
     };
   }
 
@@ -129,6 +131,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
 
   let myApplication: Application | null = null;
   let hasApplied = false;
+  let waitlistPosition: number | null = null;
   let currentUserProfile: Profile | null = null;
   let matchBreakdown: ScoreBreakdown | null = null;
   let applications: Application[] = [];
@@ -147,8 +150,21 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
     ]);
 
     if (applicationResult.data && !applicationResult.error) {
-      myApplication = applicationResult.data;
+      const appData = applicationResult.data;
+      myApplication = appData;
       hasApplied = true;
+
+      // Compute waitlist position if waitlisted
+      if (appData.status === "waitlisted") {
+        const { count } = await supabase
+          .from("applications")
+          .select("*", { count: "exact", head: true })
+          .eq("posting_id", postingId)
+          .eq("status", "waitlisted")
+          .lt("created_at", appData.created_at);
+
+        waitlistPosition = (count ?? 0) + 1; // 1-indexed
+      }
     }
 
     if (profileResult.data) {
@@ -258,6 +274,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
     matchedProfiles,
     myApplication,
     hasApplied,
+    waitlistPosition,
   };
 }
 
@@ -281,6 +298,7 @@ export function usePostingDetail(postingId: string) {
     matchedProfiles: data?.matchedProfiles ?? [],
     myApplication: data?.myApplication ?? null,
     hasApplied: data?.hasApplied ?? false,
+    waitlistPosition: data?.waitlistPosition ?? null,
     error,
     isLoading,
     mutate,

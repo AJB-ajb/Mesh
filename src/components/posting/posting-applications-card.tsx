@@ -6,6 +6,7 @@ import {
   Loader2,
   CheckCircle,
   XCircle,
+  Clock,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,15 @@ export function PostingApplicationsCard({
   const pendingCount = applications.filter(
     (a) => a.status === "pending",
   ).length;
+  const waitlistedApps = applications
+    .filter((a) => a.status === "waitlisted")
+    .sort(
+      (a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    );
+  const nonWaitlistedApps = applications.filter(
+    (a) => a.status !== "waitlisted",
+  );
 
   return (
     <Card className={pendingCount > 0 ? "border-primary/50 shadow-md" : ""}>
@@ -91,7 +101,7 @@ export function PostingApplicationsCard({
           </div>
         ) : (
           <div className="space-y-4">
-            {applications.map((application) => (
+            {nonWaitlistedApps.map((application) => (
               <div
                 key={application.id}
                 className={`rounded-lg border p-4 transition-colors ${
@@ -229,6 +239,76 @@ export function PostingApplicationsCard({
                 </div>
               </div>
             ))}
+            {/* Waitlisted section */}
+            {waitlistedApps.length > 0 && (
+              <>
+                <div className="border-t border-border pt-4 mt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <h4 className="text-sm font-medium text-muted-foreground">
+                      Waitlisted ({waitlistedApps.length})
+                    </h4>
+                  </div>
+                  <div className="space-y-3">
+                    {waitlistedApps.map((application, index) => (
+                      <div
+                        key={application.id}
+                        className="rounded-lg border border-border p-3"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium shrink-0">
+                              #{index + 1}
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="font-medium text-sm truncate">
+                                {application.profiles?.full_name || "Unknown"}
+                              </h4>
+                              {application.profiles?.headline && (
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {application.profiles.headline}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                onMessage(application.applicant_id)
+                              }
+                            >
+                              <MessageSquare className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-green-500/50 text-green-600 hover:bg-green-50 hover:text-green-700"
+                              onClick={() =>
+                                onUpdateStatus(application.id, "accepted")
+                              }
+                              disabled={
+                                isUpdatingApplication === application.id
+                              }
+                            >
+                              {isUpdatingApplication === application.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <>
+                                  <CheckCircle className="h-3 w-3" />
+                                  Accept
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
       </CardContent>

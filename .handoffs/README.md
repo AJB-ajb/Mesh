@@ -14,3 +14,7 @@ Self-contained task briefs for delegating work to parallel Claude Code sessions.
 Files in this directory are gitignored. Only this README is committed.
 
 See `.AGENTS.md` for full documentation.
+
+## Format
+
+- Align numbering with roadmap and versioning
