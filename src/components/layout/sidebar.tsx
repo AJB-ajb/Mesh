@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   FolderKanban,
   Users,
+  Bookmark,
   Inbox,
   Plus,
   Menu,
@@ -24,6 +25,7 @@ const navigation = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/postings", icon: FolderKanban, label: "Postings" },
   { href: "/matches", icon: Users, label: "Matches" },
+  { href: "/bookmarks", icon: Bookmark, label: "Bookmarks" },
   { href: "/inbox", icon: Inbox, label: "Inbox" },
 ];
 
