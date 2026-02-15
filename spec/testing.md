@@ -23,10 +23,10 @@ Requires `SUPABASE_SERVICE_ROLE_KEY` and `TEST_USER_PASSWORD` in `.env`.
 
 Many features require two users interacting:
 
-- Create posting (User 1) → Express interest (User 2)
-- Send friendship request (User 1) → Accept (User 2)
-- Friend-ask mode: User 1 creates posting → selects User 2 as friend → User 2 responds
-- Apply to posting (User 2) → Accept application (User 1) → Conversation opens
+- Create posting (User 1) → Request to join (User 2)
+- Send connection request (User 1) → Accept (User 2)
+- Sequential Invite mode: User 1 creates posting → selects User 2 as connection → User 2 responds
+- Request to join posting (User 2) → Accept join request (User 1) → Conversation opens
 
 ### Login
 

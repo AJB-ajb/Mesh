@@ -51,14 +51,14 @@ Hackathons are great for collaboration but finding teammates aligned on a vision
 
 Asking friends for spontaneous activities (e.g., "learn topic X together today"):
 
-- Small expiry times, easy scheduling, cascading invites
+- Small expiry times, easy scheduling, sequential invites
 - Calendar integration for auto-rejection if unavailable
 - Good mobile UX, notifications, location awareness, privacy
 
 ## Product Goals
 
 - **High adoption is critical.** The product requires network effects to work.
-- **30-second onboarding.** A not-yet-registered user with a written project description should be able to post in under 30 seconds: click "Post project" on hero → OAuth login → paste description → post.
+- **30-second onboarding.** A not-yet-registered user with a written posting description should be able to post in under 30 seconds: click "Post" on hero → OAuth login → paste description → post.
 - **No personal configuration required to post.** Personal profile setup can improve matching quality but must not be a gate.
 
 ## Design Inspiration

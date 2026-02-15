@@ -64,7 +64,7 @@ Where collaboration or activity happens (person-level default, can be overridden
 
 - **Remote**: Fully online
 - **In-person**: Must be physically present
-- **Either**: No strong preference
+- **Flexible**: No strong preference
 
 #### Availability
 
@@ -82,14 +82,16 @@ Binary available/unavailable per time slot. The posting specifies when the activ
 - **Title**: Name of the posting
 - **Description**: Used for semantic matching via pgvector embeddings
 - **Category**:
-  - Coarse categories (for fast filtering): Study, Hackathon/Competition, Personal/Side, Professional, Social/Leisure
+  - Coarse categories (for fast filtering): Study, Hackathon, Personal, Professional, Social
   - Free-form tags/keywords (matched via overlap or pgvector embedding similarity)
 - **Context identifier**: Specific hackathon name, course code, etc. (exact string match filter)
 - **Natural language criteria**: Optional, stored as pgvector embeddings for semantic matching beyond structured dimensions
 - **Capacity**: How many people the poster is looking for (default: 1)
-- **Urgency / Expiry**: When the posting expires or when the activity happens
-- **Mode**: Open (anyone can express interest) vs. Friend-ask (sequential requests to ordered friend list)
-- **Remote preference**: Remote, in-person, or either (overrides person-level default)
+- **Deadline**: When the posting closes to new join requests
+- **Activity date**: When the activity or project starts (optional)
+- **Mode**: Open (anyone can join or request to join) vs. Sequential Invite (ordered invites sent one-by-one until enough accept)
+- **Auto-accept**: Per-posting boolean. When true, the CTA is "Join" (instant). When false, the CTA is "Request to join" (requires poster approval). Default: true for connection-scoped postings, false for open/global postings.
+- **Remote preference**: Remote, in-person, or flexible (overrides person-level default)
 - **Location**: Where the activity happens (overrides person-level default)
 - **Max distance**: Maximum distance for in-person activities (km)
 - **Person dimension overrides**: Posting-specific overrides of person-level defaults (e.g., skill level requirement, work style)
@@ -97,7 +99,7 @@ Binary available/unavailable per time slot. The posting specifies when the activ
 
 #### Optional Posting Fields
 
-- **Collaboration style**: Intensity (0-10) and preferred activities (pair programming, brainstorming, async review, etc.) — relevant for project-type postings (overrides person-level work style preference)
+- **Collaboration preferences**: Intensity (0-10) and preferred activities (pair programming, brainstorming, async review, etc.) — relevant for project-type postings (overrides person-level work style preference)
 - **Estimated time**: How much time the activity or project requires (e.g., "2 hours", "10-20h/week for 4 weeks")
 
 ---
@@ -135,7 +137,7 @@ User-configurable with defaults:
 
 | Dimension            | Default Weight |
 | -------------------- | -------------- |
-| Semantic similarity  | 1.0            |
+| Relevance            | 1.0            |
 | Availability overlap | 1.0            |
 | Skill level          | 0.7            |
 | Location preference  | 0.7            |
@@ -146,7 +148,7 @@ Users can adjust weights to reflect their priorities.
 
 | Dimension            | Score Formula                                                               |
 | -------------------- | --------------------------------------------------------------------------- | --------------- | -------------------------------- |
-| Semantic similarity  | pgvector cosine similarity of posting description embeddings                |
+| Relevance            | pgvector cosine similarity of posting description embeddings                |
 | Availability overlap | Fraction of requested time slots that overlap with candidate's availability |
 | Skill level          | `1 -                                                                        | levelA - levelB | / 10` (or complementarity score) |
 | Location preference  | 1.0 if compatible, 0.5 if partial match, 0.0 if incompatible                |

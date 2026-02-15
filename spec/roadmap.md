@@ -8,7 +8,7 @@ Gap analysis between the [spec](mesh.md), [UX spec](ux.md) and current implement
 
 The dev branch has completed Phase 1 of the redesign:
 
-- **Terminology**: projects -> postings
+- **Terminology**: projects → postings, friend-ask → sequential invite, apply → join/request to join, semantic → relevance, reactivate → repost + extend deadline
 - **Data model**: new schema with `postings` table (category, tags, mode, skill_level_min, context_identifier, etc.)
 - **Profile updates**: free-form AI extraction with undo
 - **Core features**: auth, onboarding (text), dashboard, profiles, posting CRUD, matching, real-time messaging (inbox), settings
@@ -16,7 +16,7 @@ The dev branch has completed Phase 1 of the redesign:
 ## Completed in This Pass
 
 - [x] **Voice input integration** — SpeechInput wired into onboarding (AI extract + bio), posting creation (description + AI extract), and browse search
-- [x] **Posting expiration display + reactivation** — Expired badge, countdown, Reactivate button for owners, expired postings filtered from discover
+- [x] **Posting expiration display + reactivation** — Expired badge, countdown, Repost + Extend Deadline buttons for owners, expired postings filtered from discover
 - [x] **Advanced filters on browse page** — Category and mode filters with toggle panel
 - [x] **Deprecated /messages page removed** — Links updated to /inbox
 
@@ -26,19 +26,19 @@ The dev branch has completed Phase 1 of the redesign:
 
 ### Priority 1 — Core Spec Gaps
 
-#### 1.1 Cascading Invites (Friend-Ask Mode)
+#### 1.1 Sequential Invite Mode
 
 **Spec ref:** "Select and order friends to ask; send requests one-by-one until one accepts"
 **UX spec:** `[planned]`
 
-**Current state:** `mode: "friend_ask"` exists in the data model but there's no friend list, invite queue, or sequential invite flow.
+**Current state:** `mode: "friend_ask"` exists in the data model (DB column stays `friend_ask` for now; UI label is "Sequential Invite") but there's no connection list, invite queue, or sequential invite flow.
 
 **Steps:**
 
-- [ ] Design friend list data model (connections between users)
-- [ ] Add DB table: `cascading_invites` (posting_id, ordered_user_ids[], current_index, status)
-- [ ] Build "Friend-Ask" mode UI on posting creation
-- [ ] Build friend selection + ordering UI (drag-to-reorder)
+- [ ] Design connections data model (connections between users)
+- [ ] Add DB table: `sequential_invites` (posting_id, ordered_user_ids[], current_index, status)
+- [ ] Build "Sequential Invite" mode UI on posting creation
+- [ ] Build connection selection + ordering UI (drag-to-reorder)
 - [ ] Implement sequential invite logic with notifications
 - [ ] Handle edge cases: all declined, timeout, posting expiry
 
@@ -123,17 +123,52 @@ The dev branch has completed Phase 1 of the redesign:
 
 **Docs:** Three upgrade paths documented (OpenAI Realtime, Gemini Live, Custom Pipeline). Currently using turn-based.
 
+#### 3.4 Bookmarks Page
+
+**Steps:**
+
+- [ ] Create `/bookmarks` page (saved postings for later review)
+- [ ] Add sidebar nav item
+- [ ] Move interest-sent / saved postings logic from Matches page
+
+#### 3.5 Repost + Extend Deadline
+
+**Steps:**
+
+- [ ] Replace single "Reactivate" button with "Repost" and "Extend Deadline"
+- [ ] "Repost" resets join requests and bumps posting to top of feed
+- [ ] "Extend Deadline" pushes deadline forward, keeps existing join requests
+
+#### 3.6 Auto-Accept Setting
+
+**Steps:**
+
+- [ ] Add `auto_accept` boolean field to postings
+- [ ] Add toggle in posting creation form
+- [ ] CTA dynamically shows "Join" (auto-accept) or "Request to join" (manual review)
+
+#### 3.7 Terminology Migration
+
+**Steps:**
+
+- [ ] Update all UI labels per terminology spec (`.prompts/terminology_specification.md`)
+- [ ] Grep for old terms to ensure none remain
+
 ---
 
 ## Recommended Execution Order
 
 | Step | Feature                      | Rationale                            |
 | ---- | ---------------------------- | ------------------------------------ |
-| 1    | 1.2 Context Identifier Input | Trivial, column exists               |
-| 2    | 2.1 Availability Input       | Key matching dimension, schema ready |
-| 3    | 2.3 Hard Filter Enforcement  | Aligns matching with spec            |
-| 4    | 2.2 Configurable Weights     | Empowers users                       |
-| 5    | 1.1 Cascading Invites        | Headline feature, complex            |
-| 6    | 3.1 Daily Digest             | Nice-to-have                         |
-| 7    | 3.2 Thumbnails               | Nice-to-have                         |
-| 8    | 3.3 Real-Time Voice          | Infrastructure upgrade               |
+| 1    | 3.7 Terminology Migration    | Quick win, aligns UI with spec       |
+| 2    | 1.2 Context Identifier Input | Trivial, column exists               |
+| 3    | 3.4 Bookmarks Page           | Page restructure, decouples Matches  |
+| 4    | 3.5 Repost + Extend Deadline | UX clarity for expired postings      |
+| 5    | 3.6 Auto-Accept Setting      | Enables Join vs Request to join CTA  |
+| 6    | 2.1 Availability Input       | Key matching dimension, schema ready |
+| 7    | 2.3 Hard Filter Enforcement  | Aligns matching with spec            |
+| 8    | 2.2 Configurable Weights     | Empowers users                       |
+| 9    | 1.1 Sequential Invite Mode   | Headline feature, complex            |
+| 10   | 3.1 Daily Digest             | Nice-to-have                         |
+| 11   | 3.2 Thumbnails               | Nice-to-have                         |
+| 12   | 3.3 Real-Time Voice          | Infrastructure upgrade               |
