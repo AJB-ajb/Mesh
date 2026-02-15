@@ -34,7 +34,7 @@ export function FriendAskStatus({
     <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium">Friend-Ask Progress</h4>
+        <h4 className="text-sm font-medium">Sequential Invite Progress</h4>
         <Badge variant={config.variant}>{config.label}</Badge>
       </div>
 
@@ -99,11 +99,11 @@ export function FriendAskStatus({
       {/* Summary */}
       <p className="text-xs text-muted-foreground">
         {status === "accepted"
-          ? `${friendNames[ordered_friend_list[current_request_index]] ?? "Friend"} accepted the ask`
+          ? `${friendNames[ordered_friend_list[current_request_index]] ?? "Friend"} accepted the invite`
           : status === "completed"
             ? `All ${ordered_friend_list.length} friends were asked — no one accepted`
             : status === "cancelled"
-              ? "This friend-ask was cancelled"
+              ? "This sequential invite was cancelled"
               : `${current_request_index + 1} of ${ordered_friend_list.length} — waiting for response`}
       </p>
     </div>

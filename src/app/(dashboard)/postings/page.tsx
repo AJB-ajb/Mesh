@@ -256,7 +256,7 @@ export default function PostingsPage() {
               >
                 <option value="all">Any mode</option>
                 <option value="open">Open</option>
-                <option value="friend_ask">Friend Ask</option>
+                <option value="friend_ask">Sequential Invite</option>
               </select>
             </div>
           </CardContent>

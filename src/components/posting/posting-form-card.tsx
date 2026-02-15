@@ -62,7 +62,7 @@ function LocationSection({
           onChange={(e) => onChange("locationMode", e.target.value)}
           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
-          <option value="either">Either (no preference)</option>
+          <option value="either">Flexible</option>
           <option value="remote">Remote</option>
           <option value="in_person">In-person</option>
         </select>
@@ -301,7 +301,7 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <option value="open">Open</option>
-                <option value="friend_ask">Friend Ask</option>
+                <option value="friend_ask">Sequential Invite</option>
               </select>
             </div>
             <div className="space-y-2">

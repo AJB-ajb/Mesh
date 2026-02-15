@@ -35,7 +35,7 @@ function getLocationDisplay(
     case "in_person":
       return locationName || "In-person";
     case "either":
-      return locationName || "Either";
+      return locationName || "Flexible";
     default:
       return null;
   }
@@ -127,7 +127,7 @@ export function PostingCard({
                   variant="outline"
                   className="border-amber-500/30 text-amber-600 dark:text-amber-400"
                 >
-                  Friend Ask
+                  Sequential Invite
                 </Badge>
               )}
               {matchScore !== undefined && (
@@ -145,7 +145,7 @@ export function PostingCard({
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
-            {onApply && <Button onClick={onApply}>Apply</Button>}
+            {onApply && <Button onClick={onApply}>Request to join</Button>}
           </div>
         </div>
       </CardHeader>

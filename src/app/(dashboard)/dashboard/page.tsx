@@ -84,7 +84,7 @@ export default async function DashboardPage() {
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
           <CardDescription>
-            Your latest matches, applications, and messages
+            Your latest matches, join requests, and messages
           </CardDescription>
         </CardHeader>
         <CardContent>

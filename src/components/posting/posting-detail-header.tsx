@@ -189,14 +189,14 @@ function ApplySection({
           }
           className="px-3 py-1"
         >
-          {myApplication?.status === "pending" && "Application Pending"}
+          {myApplication?.status === "pending" && "Request pending"}
           {myApplication?.status === "accepted" && "\u2713 Accepted"}
           {myApplication?.status === "rejected" && "Not Selected"}
           {myApplication?.status === "withdrawn" && "Withdrawn"}
         </Badge>
         {myApplication?.status === "pending" && (
           <Button variant="outline" size="sm" onClick={onWithdraw}>
-            Withdraw
+            Withdraw request
           </Button>
         )}
       </div>
@@ -222,12 +222,12 @@ function ApplySection({
             {isApplying ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Applying...
+                Requesting to join...
               </>
             ) : (
               <>
                 <Send className="h-4 w-4" />
-                Submit Application
+                Request to join
               </>
             )}
           </Button>
@@ -242,7 +242,7 @@ function ApplySection({
   return (
     <Button onClick={onShowApplyForm}>
       <Send className="h-4 w-4" />
-      Apply to Posting
+      Request to join
     </Button>
   );
 }
@@ -370,7 +370,7 @@ export function PostingDetailHeader({
             )}
           </div>
           <p className="text-muted-foreground">
-            Created by {creatorName} &bull; {formatDate(posting.created_at)}
+            Posted by {creatorName} &bull; {formatDate(posting.created_at)}
           </p>
         </div>
 

@@ -45,7 +45,7 @@ export function filtersToFilterPills(filters: PostingFilters): FilterPill[] {
   if (filters.mode) {
     pills.push({
       key: "mode",
-      label: filters.mode === "open" ? "Open" : "Friend Ask",
+      label: filters.mode === "open" ? "Open" : "Sequential Invite",
     });
   }
 

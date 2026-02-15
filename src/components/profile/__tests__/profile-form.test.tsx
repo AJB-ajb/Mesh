@@ -161,7 +161,7 @@ describe("ProfileForm", () => {
     renderForm();
     expect(screen.getByText("Remote")).toBeInTheDocument();
     expect(screen.getByText("In-person")).toBeInTheDocument();
-    expect(screen.getByText("Either")).toBeInTheDocument();
+    expect(screen.getByText("Flexible")).toBeInTheDocument();
   });
 
   it("renders Use current location button", () => {

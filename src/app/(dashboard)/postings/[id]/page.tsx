@@ -261,7 +261,7 @@ export default function PostingDetailPage() {
 
     if (applyError) {
       setIsApplying(false);
-      setError("Failed to submit application. Please try again.");
+      setError("Failed to submit request. Please try again.");
       return;
     }
 
@@ -287,8 +287,8 @@ export default function PostingDetailPage() {
         await supabase.from("notifications").insert({
           user_id: posting.creator_id,
           type: "application_received",
-          title: "New Application Received",
-          body: `${applicantName} has applied to your posting "${posting.title}"`,
+          title: "New Join Request Received",
+          body: `${applicantName} has requested to join your posting "${posting.title}"`,
           related_posting_id: postingId,
           related_application_id: application.id,
           related_user_id: currentUserId,
@@ -305,7 +305,7 @@ export default function PostingDetailPage() {
 
   const handleWithdrawApplication = async () => {
     if (!myApplication) return;
-    if (!confirm("Are you sure you want to withdraw your application?")) return;
+    if (!confirm("Are you sure you want to withdraw your request?")) return;
 
     const supabase = createClient();
     const { error: withdrawError } = await supabase
@@ -314,7 +314,7 @@ export default function PostingDetailPage() {
       .eq("id", myApplication.id);
 
     if (withdrawError) {
-      setError("Failed to withdraw application. Please try again.");
+      setError("Failed to withdraw request. Please try again.");
       return;
     }
 
@@ -334,7 +334,7 @@ export default function PostingDetailPage() {
       .eq("id", applicationId);
 
     if (updateError) {
-      setError("Failed to update application. Please try again.");
+      setError("Failed to update request. Please try again.");
       setIsUpdatingApplication(null);
       return;
     }
@@ -365,12 +365,12 @@ export default function PostingDetailPage() {
           type: notifType,
           title:
             newStatus === "accepted"
-              ? "Application Accepted! \uD83C\uDF89"
-              : "Application Update",
+              ? "Request Accepted! \uD83C\uDF89"
+              : "Request Update",
           body:
             newStatus === "accepted"
-              ? `Your application to "${posting.title}" has been accepted!`
-              : `Your application to "${posting.title}" was not selected.`,
+              ? `Your request to join "${posting.title}" has been accepted!`
+              : `Your request to join "${posting.title}" was not selected.`,
           related_posting_id: postingId,
           related_application_id: applicationId,
           related_user_id: posting.creator_id,
