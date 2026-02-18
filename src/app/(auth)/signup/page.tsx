@@ -53,7 +53,7 @@ function SignUpForm() {
     }
 
     const supabase = createClient();
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -63,9 +63,19 @@ function SignUpForm() {
 
     if (signUpError) {
       setError(signUpError.message);
-    } else {
-      setMessage("Check your email to confirm your account.");
+      setIsLoading(false);
+      return;
     }
+
+    if (data.session) {
+      // Email confirmation disabled — user is immediately authenticated
+      const destination = next || "/postings/new";
+      window.location.href = destination;
+      return;
+    }
+
+    // Fallback: email confirmation is enabled, user must verify
+    setMessage("Check your email to confirm your account.");
     setIsLoading(false);
   };
 
