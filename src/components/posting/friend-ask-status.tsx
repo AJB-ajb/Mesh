@@ -99,9 +99,9 @@ export function FriendAskStatus({
       {/* Summary */}
       <p className="text-xs text-muted-foreground">
         {status === "accepted"
-          ? `${friendNames[ordered_friend_list[current_request_index]] ?? "Friend"} accepted the invite`
+          ? `${friendNames[ordered_friend_list[current_request_index]] ?? "Connection"} accepted the invite`
           : status === "completed"
-            ? `All ${ordered_friend_list.length} friends were asked — no one accepted`
+            ? `All ${ordered_friend_list.length} connections were asked — no one accepted`
             : status === "cancelled"
               ? "This sequential invite was cancelled"
               : `${current_request_index + 1} of ${ordered_friend_list.length} — waiting for response`}

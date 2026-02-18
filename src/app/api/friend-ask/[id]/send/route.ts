@@ -8,8 +8,9 @@ import {
 
 /**
  * POST /api/friend-ask/[id]/send
- * Advance to the next friend in the sequence (send the next ask).
- * Only the creator can trigger this.
+ * Send the invite to the current friend in the sequence.
+ * Only the creator can trigger this. Does NOT advance the index —
+ * the respond route handles advancement on decline.
  */
 export const POST = withAuth(async (_req, { user, supabase, params }) => {
   const { id } = params;
@@ -36,10 +37,10 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
     );
   }
 
-  const nextIndex = friendAsk.current_request_index + 1;
+  const currentIndex = friendAsk.current_request_index;
 
   // If we've exhausted the list, mark as completed
-  if (nextIndex >= friendAsk.ordered_friend_list.length) {
+  if (currentIndex >= friendAsk.ordered_friend_list.length) {
     const { data, error } = await supabase
       .from("friend_asks")
       .update({ status: "completed" })
@@ -51,22 +52,12 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
 
     return NextResponse.json({
       friend_ask: data,
-      message: "All friends have been asked. Sequence completed.",
+      message: "All connections have been asked. Sequence completed.",
     });
   }
 
-  // Advance to next friend
-  const { data, error } = await supabase
-    .from("friend_asks")
-    .update({ current_request_index: nextIndex })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) return apiError("INTERNAL", error.message, 500);
-
-  // Send friend_request notification to the next friend
-  const nextFriendId = friendAsk.ordered_friend_list[nextIndex];
+  // Send notification to the current friend
+  const currentFriendId = friendAsk.ordered_friend_list[currentIndex];
 
   const [
     { data: recipientProfile },
@@ -76,7 +67,7 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
     supabase
       .from("profiles")
       .select("notification_preferences")
-      .eq("user_id", nextFriendId)
+      .eq("user_id", currentFriendId)
       .single(),
     supabase
       .from("profiles")
@@ -93,13 +84,13 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
   const recipientPrefs =
     recipientProfile?.notification_preferences as NotificationPreferences | null;
 
-  if (shouldNotify(recipientPrefs, "friend_request", "in_app")) {
+  if (shouldNotify(recipientPrefs, "sequential_invite", "in_app")) {
     const senderName = senderProfile?.full_name || "Someone";
     const postingTitle = posting?.title || "a posting";
 
     await supabase.from("notifications").insert({
-      user_id: nextFriendId,
-      type: "friend_request",
+      user_id: currentFriendId,
+      type: "sequential_invite",
       title: "Sequential Invite Received",
       body: `${senderName} wants you to join "${postingTitle}"`,
       related_posting_id: friendAsk.posting_id,
@@ -108,7 +99,7 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
   }
 
   return NextResponse.json({
-    friend_ask: data,
-    current_friend_id: nextFriendId,
+    friend_ask: friendAsk,
+    current_friend_id: currentFriendId,
   });
 });

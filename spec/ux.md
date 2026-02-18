@@ -58,7 +58,7 @@ Personal profile configuration is **not required** to create a posting. It can b
 - **AI compatibility scores** shown prominently on posting cards (relevance, availability, skill, location breakdown)
 - **Real-time messaging** with typing indicators and presence status
 - **Progressive disclosure:** empty states guide the user to their next action
-- `[planned]` **Sequential Invite:** ordered invite flow — rank connections by preference, send invites one-by-one until enough accept
+- `[in progress]` **Sequential Invite:** ordered invite flow — rank connections by preference, send invites one-by-one until someone accepts. **Owner flow:** on a `friend_ask` mode posting, the owner sees a Sequential Invite card with a connection selector (drag to reorder), a "Start Sequential Invite" button, and a progress timeline. **Invitee flow:** the invited user receives a `sequential_invite` notification with inline "Join / Do not join" buttons in the inbox, and also sees a response card on the posting detail page. The normal apply flow is hidden for `friend_ask` mode postings. **Notification types:** `sequential_invite` for invite received, accepted, and declined. Creator is notified when invitees respond. On decline, the next connection is auto-invited.
 - `[planned]` **Waitlist**: When a posting is filled, the CTA changes to "Join waitlist" (auto-accept) or "Request to join waitlist" (manual review). Users see their waitlist position. Poster sees waitlisted people in the Join Requests card.
 - `[planned]` **Voice input** for posting creation and natural language filtering
 - `[planned]` **AI-generated daily digest** notifications

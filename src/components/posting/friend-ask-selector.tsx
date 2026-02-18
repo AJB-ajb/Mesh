@@ -150,7 +150,7 @@ export function FriendAskSelector({
       {available.length > 0 ? (
         <div className="space-y-1">
           <p className="text-sm font-medium text-muted-foreground">
-            Add friends
+            Add connections
           </p>
           <div className="space-y-1">
             {available.map((friend) => (
@@ -171,8 +171,8 @@ export function FriendAskSelector({
           <Card>
             <CardContent className="py-6 text-center">
               <p className="text-sm text-muted-foreground">
-                No friends available. Add friends first to use Sequential Invite
-                mode.
+                No connections available. Connect with others first to use
+                Sequential Invite mode.
               </p>
             </CardContent>
           </Card>

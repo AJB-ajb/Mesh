@@ -7,6 +7,7 @@ export type NotificationType =
   | "application_accepted"
   | "application_rejected"
   | "friend_request"
+  | "sequential_invite"
   | "new_message"
   | "match_found";
 
@@ -25,6 +26,7 @@ export const defaultNotificationPreferences: NotificationPreferences = {
     application_accepted: true,
     application_rejected: true,
     friend_request: true,
+    sequential_invite: true,
     new_message: true,
     match_found: true,
   },
@@ -33,6 +35,7 @@ export const defaultNotificationPreferences: NotificationPreferences = {
     application_accepted: true,
     application_rejected: false,
     friend_request: true,
+    sequential_invite: true,
     new_message: true,
     match_found: false,
   },
@@ -59,7 +62,8 @@ export const notificationTypeLabels: Record<NotificationType, string> = {
   interest_received: "Interest Received",
   application_accepted: "Application Accepted",
   application_rejected: "Application Rejected",
-  friend_request: "Friend Request",
+  friend_request: "Connection Request",
+  sequential_invite: "Sequential Invite",
   new_message: "New Message",
   match_found: "Match Found",
 };
@@ -70,6 +74,7 @@ export const allNotificationTypes: NotificationType[] = [
   "application_accepted",
   "application_rejected",
   "friend_request",
+  "sequential_invite",
   "new_message",
   "match_found",
 ];

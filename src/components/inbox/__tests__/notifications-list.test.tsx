@@ -120,6 +120,21 @@ describe("NotificationsList", () => {
     expect(iconContainer).toBeTruthy();
   });
 
+  it("applies blue styling for sequential_invite type", () => {
+    const notification = makeNotification({
+      type: "sequential_invite",
+      title: "Sequential Invite Received",
+    });
+    render(
+      <NotificationsList {...defaultProps} notifications={[notification]} />,
+    );
+    const iconContainer = screen
+      .getByText("Sequential Invite Received")
+      .closest("[class*='group']")
+      ?.querySelector("[class*='bg-blue']");
+    expect(iconContainer).toBeTruthy();
+  });
+
   it("calls onClick when notification content is clicked", () => {
     const notification = makeNotification();
     render(
@@ -168,5 +183,110 @@ describe("NotificationsList", () => {
     expect(unreadEl?.className).toContain("bg-primary");
     // Read does not
     expect(readEl?.className).not.toContain("bg-primary");
+  });
+
+  describe("sequential invite inline actions", () => {
+    it("shows Join/Do not join buttons for actionable sequential_invite", () => {
+      const notification = makeNotification({
+        type: "sequential_invite",
+        title: "Sequential Invite Received",
+        related_posting_id: "p1",
+      });
+      const onRespond = vi.fn().mockResolvedValue(undefined);
+
+      render(
+        <NotificationsList
+          {...defaultProps}
+          notifications={[notification]}
+          onSequentialInviteRespond={onRespond}
+        />,
+      );
+      expect(screen.getByText("Join")).toBeInTheDocument();
+      expect(screen.getByText("Do not join")).toBeInTheDocument();
+    });
+
+    it("does not show inline actions for non-invite sequential_invite notifications", () => {
+      const notification = makeNotification({
+        type: "sequential_invite",
+        title: "Invite Accepted!", // Not an invite-received notification
+        related_posting_id: "p1",
+      });
+      const onRespond = vi.fn().mockResolvedValue(undefined);
+
+      render(
+        <NotificationsList
+          {...defaultProps}
+          notifications={[notification]}
+          onSequentialInviteRespond={onRespond}
+        />,
+      );
+      expect(screen.queryByText("Join")).not.toBeInTheDocument();
+      expect(screen.queryByText("Do not join")).not.toBeInTheDocument();
+    });
+
+    it("does not show inline actions when no handler provided", () => {
+      const notification = makeNotification({
+        type: "sequential_invite",
+        title: "Sequential Invite Received",
+        related_posting_id: "p1",
+      });
+
+      render(
+        <NotificationsList {...defaultProps} notifications={[notification]} />,
+      );
+      expect(screen.queryByText("Join")).not.toBeInTheDocument();
+    });
+
+    it("calls onSequentialInviteRespond with accept when Join clicked", async () => {
+      const notification = makeNotification({
+        id: "notif-invite",
+        type: "sequential_invite",
+        title: "Sequential Invite Received",
+        related_posting_id: "p1",
+      });
+      const onRespond = vi.fn().mockResolvedValue(undefined);
+
+      render(
+        <NotificationsList
+          {...defaultProps}
+          notifications={[notification]}
+          onSequentialInviteRespond={onRespond}
+        />,
+      );
+
+      fireEvent.click(screen.getByText("Join"));
+
+      expect(onRespond).toHaveBeenCalledWith({
+        postingId: "p1",
+        action: "accept",
+        notificationId: "notif-invite",
+      });
+    });
+
+    it("calls onSequentialInviteRespond with decline when Do not join clicked", async () => {
+      const notification = makeNotification({
+        id: "notif-invite",
+        type: "sequential_invite",
+        title: "Sequential Invite Received",
+        related_posting_id: "p1",
+      });
+      const onRespond = vi.fn().mockResolvedValue(undefined);
+
+      render(
+        <NotificationsList
+          {...defaultProps}
+          notifications={[notification]}
+          onSequentialInviteRespond={onRespond}
+        />,
+      );
+
+      fireEvent.click(screen.getByText("Do not join"));
+
+      expect(onRespond).toHaveBeenCalledWith({
+        postingId: "p1",
+        action: "decline",
+        notificationId: "notif-invite",
+      });
+    });
   });
 });

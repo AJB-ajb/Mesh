@@ -51,6 +51,7 @@
 
 - [ ] **Waitlist** — `feat/waitlist` branch: `waitlisted` status, auto-waitlist when filled, promotion logic, UI indicators. Depends on auto-accept (done). (#9)
 - [x] **Skills tree (steps 1-4)** — `skill_nodes` table + seed taxonomy, LLM auto-adding/normalization API, skill picker UI (typeahead + tree browsing), profile & posting form integration with per-skill levels. See `spec/skills.md`.
+- [ ] **Sequential Invite UI (Waves 2-3)** — `feat/sequential-invite-ui` branch: Owner-side create/manage invite card, invitee-side response card, notification handling, bug fixes (first-friend skip, notification type collision). See `spec/ux.md`.
 
 ---
 
@@ -83,11 +84,11 @@
 
 ### v0.5 — Sequential Invite & Channels
 
-| Feature                      | Issue | Effort       | Description                                                                           |
-| ---------------------------- | ----- | ------------ | ------------------------------------------------------------------------------------- |
-| Sequential invite mode       | —     | Large        | Headline feature: ordered invite queue, one-by-one requests, decline/timeout handling |
-| Channels for shared contexts | #27   | Medium-Large | Shared posting contexts for hackathons, courses, orgs                                 |
-| Markdown-first interface     | #28   | Medium       | Markdown editing and export for postings                                              |
+| Feature                      | Issue | Effort       | Description                                                                                 |
+| ---------------------------- | ----- | ------------ | ------------------------------------------------------------------------------------------- |
+| Sequential invite mode       | —     | Large        | **In progress** — Waves 2-3 wiring UI to existing backend. See `feat/sequential-invite-ui`. |
+| Channels for shared contexts | #27   | Medium-Large | Shared posting contexts for hackathons, courses, orgs                                       |
+| Markdown-first interface     | #28   | Medium       | Markdown editing and export for postings                                                    |
 
 ### v1.0 — Launch
 

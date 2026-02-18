@@ -459,6 +459,7 @@ type PostingDetailHeaderProps = {
   onApply: () => void;
   onWithdraw: () => void;
   error: string | null;
+  hideApplySection?: boolean;
 };
 
 export function PostingDetailHeader({
@@ -490,6 +491,7 @@ export function PostingDetailHeader({
   onApply,
   onWithdraw,
   error,
+  hideApplySection,
 }: PostingDetailHeaderProps) {
   const creatorName = posting.profiles?.full_name || "Unknown";
 
@@ -581,22 +583,24 @@ export function PostingDetailHeader({
             onRepost={onRepost}
           />
         ) : (
-          <div className="flex gap-2">
-            <ApplySection
-              posting={posting}
-              hasApplied={hasApplied}
-              myApplication={myApplication}
-              waitlistPosition={waitlistPosition}
-              showApplyForm={showApplyForm}
-              coverMessage={coverMessage}
-              isApplying={isApplying}
-              onShowApplyForm={onShowApplyForm}
-              onHideApplyForm={onHideApplyForm}
-              onCoverMessageChange={onCoverMessageChange}
-              onApply={onApply}
-              onWithdraw={onWithdraw}
-            />
-          </div>
+          !hideApplySection && (
+            <div className="flex gap-2">
+              <ApplySection
+                posting={posting}
+                hasApplied={hasApplied}
+                myApplication={myApplication}
+                waitlistPosition={waitlistPosition}
+                showApplyForm={showApplyForm}
+                coverMessage={coverMessage}
+                isApplying={isApplying}
+                onShowApplyForm={onShowApplyForm}
+                onHideApplyForm={onHideApplyForm}
+                onCoverMessageChange={onCoverMessageChange}
+                onApply={onApply}
+                onWithdraw={onWithdraw}
+              />
+            </div>
+          )
         )}
       </div>
     </>
