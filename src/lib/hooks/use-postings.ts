@@ -1,6 +1,6 @@
 import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
-import { formatScore } from "@/lib/matching/scoring";
+import { computeWeightedScore, formatScore } from "@/lib/matching/scoring";
 import type { ScoreBreakdown } from "@/lib/supabase/types";
 import { deriveSkillNames } from "@/lib/skills/derive";
 
@@ -138,16 +138,11 @@ async function fetchPostings(key: string): Promise<PostingsResult> {
             );
 
             if (!rpcError && breakdown) {
-              const overallScore =
-                breakdown.semantic * 0.3 +
-                breakdown.availability * 0.3 +
-                breakdown.skill_level * 0.2 +
-                breakdown.location * 0.2;
-
+              const bd = breakdown as ScoreBreakdown;
               return {
                 ...posting,
-                compatibility_score: overallScore,
-                score_breakdown: breakdown as ScoreBreakdown,
+                compatibility_score: computeWeightedScore(bd),
+                score_breakdown: bd,
               };
             }
           } catch (err) {

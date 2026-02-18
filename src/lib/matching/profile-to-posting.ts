@@ -5,6 +5,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import type { Posting, ScoreBreakdown } from "@/lib/supabase/types";
+import { MATCH_SCORE_THRESHOLD } from "@/lib/matching/scoring";
 
 export interface ProfileToPostingMatch {
   posting: Posting;
@@ -149,9 +150,9 @@ export async function createMatchRecords(
 ): Promise<void> {
   const supabase = await createClient();
 
-  // Create new matches
+  // Create new matches (exclude near-zero scores)
   const matchInserts = matches
-    .filter((m) => !m.matchId) // Only create new matches
+    .filter((m) => !m.matchId && m.score > MATCH_SCORE_THRESHOLD)
     .map((m) => ({
       user_id: userId,
       posting_id: m.posting.id,

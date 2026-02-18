@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { formatScore } from "@/lib/matching/scoring";
+import { computeWeightedScore, formatScore } from "@/lib/matching/scoring";
 import type {
   PostingDetail,
   Application,
@@ -69,14 +69,7 @@ const formatExpiry = (expiresAt: string | null) => {
   return `Expires ${date.toLocaleDateString()}`;
 };
 
-function computeOverallScore(breakdown: ScoreBreakdown): number {
-  return (
-    breakdown.semantic * 0.3 +
-    breakdown.availability * 0.3 +
-    breakdown.skill_level * 0.2 +
-    breakdown.location * 0.2
-  );
-}
+// Removed inline computeOverallScore — use shared computeWeightedScore instead
 
 // ---------------------------------------------------------------------------
 // Extend Deadline Picker
@@ -551,7 +544,7 @@ export function PostingDetailHeader({
                 className="bg-green-500 hover:bg-green-600 flex items-center gap-1"
               >
                 <Sparkles className="h-4 w-4" />
-                {formatScore(computeOverallScore(matchBreakdown))} match
+                {formatScore(computeWeightedScore(matchBreakdown))} match
               </Badge>
             )}
           </div>

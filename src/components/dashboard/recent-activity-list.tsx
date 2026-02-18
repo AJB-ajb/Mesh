@@ -70,7 +70,7 @@ export async function RecentActivityList({
         });
       }
 
-      // Get recent matches
+      // Get recent matches (exclude near-zero scores)
       const { data: recentMatches } = await supabase
         .from("matches")
         .select(
@@ -89,6 +89,7 @@ export async function RecentActivityList({
         `,
         )
         .in("posting_id", postingIds)
+        .gt("similarity_score", 0.05)
         .order("created_at", { ascending: false })
         .limit(3);
 
@@ -142,7 +143,7 @@ export async function RecentActivityList({
       });
     }
 
-    // Get recent matches
+    // Get recent matches (exclude near-zero scores)
     const { data: recentMatches } = await supabase
       .from("matches")
       .select(
@@ -158,6 +159,7 @@ export async function RecentActivityList({
       `,
       )
       .eq("user_id", userId)
+      .gt("similarity_score", 0.05)
       .order("created_at", { ascending: false })
       .limit(3);
 

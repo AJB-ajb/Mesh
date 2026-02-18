@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { ScoreBreakdown, Profile } from "@/lib/supabase/types";
 import type { SelectedPostingSkill } from "@/lib/types/skill";
 import { deriveSkillNames } from "@/lib/skills/derive";
+import { computeWeightedScore } from "@/lib/matching/scoring";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -280,12 +281,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
           );
 
           if (!breakdownError && breakdown) {
-            const overallScore =
-              breakdown.semantic * 0.3 +
-              breakdown.availability * 0.3 +
-              breakdown.skill_level * 0.2 +
-              breakdown.location * 0.2;
-
+            const bd = breakdown as ScoreBreakdown;
             const profJoinSkills = deriveSkillNames(profile.profile_skills);
             scored.push({
               profile_id: profile.user_id,
@@ -294,8 +290,8 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
               headline: profile.headline,
               skills:
                 profJoinSkills.length > 0 ? profJoinSkills : profile.skills,
-              overall_score: overallScore,
-              breakdown: breakdown as ScoreBreakdown,
+              overall_score: computeWeightedScore(bd),
+              breakdown: bd,
             });
           }
         } catch (err) {

@@ -1,6 +1,7 @@
 /**
  * Match Scoring Utilities
- * Implements weighted geometric mean for combining multi-dimensional match scores
+ * Implements weighted arithmetic mean for combining multi-dimensional match scores
+ * Spec: spec/matching.md:156 — score = Σ(sᵢ × wᵢ) / Σwᵢ
  */
 
 import type { ScoreBreakdown } from "@/lib/supabase/types";
@@ -9,79 +10,64 @@ import { haversineDistance } from "./similarity";
 /**
  * Default weights for each dimension
  * 4-dimension scoring: semantic, availability, skill_level, location
+ * Per spec/matching.md the ratio matters since we normalize
  */
 export interface DimensionWeights {
-  semantic: number; // 0.30 - Semantic similarity
-  availability: number; // 0.30 - Availability match
-  skill_level: number; // 0.20 - Skill level match
-  location: number; // 0.20 - Location compatibility
+  semantic: number;
+  availability: number;
+  skill_level: number;
+  location: number;
 }
 
 export const DEFAULT_WEIGHTS: DimensionWeights = {
-  semantic: 0.3,
-  availability: 0.3,
-  skill_level: 0.2,
-  location: 0.2,
+  semantic: 1.0,
+  availability: 1.0,
+  skill_level: 0.7,
+  location: 0.7,
 };
 
+/** Minimum match score threshold — matches below this are filtered out */
+export const MATCH_SCORE_THRESHOLD = 0.05;
+
+const DIMENSIONS: (keyof ScoreBreakdown)[] = [
+  "semantic",
+  "availability",
+  "skill_level",
+  "location",
+];
+
 /**
- * Computes weighted geometric mean of dimension scores
- * Formula: score = Π(sᵢ^wᵢ)^(1/Σwᵢ)
+ * Computes weighted arithmetic mean of dimension scores
+ * Formula: score = Σ(sᵢ × wᵢ) / Σwᵢ
  *
- * Where:
- * - sᵢ = score for dimension i (0-1)
- * - wᵢ = weight for dimension i
+ * Null dimensions are skipped (excluded from both numerator and denominator).
+ * This prevents missing data (e.g. no embeddings) from zeroing the entire score.
  *
- * Behavior:
- * - Low scores hurt multiplicatively (0.9 × 0.9 × 0.3 → 0.24)
- * - Zero in any weighted dimension → zero overall
- *
- * @param breakdown Per-dimension scores
+ * @param breakdown Per-dimension scores (null = data missing, skip)
  * @param weights Dimension weights (defaults to DEFAULT_WEIGHTS)
- * @returns Combined score (0-1)
+ * @returns Combined score (0-1), or 0 if no valid dimensions
  */
 export function computeWeightedScore(
   breakdown: ScoreBreakdown,
   weights: DimensionWeights = DEFAULT_WEIGHTS,
 ): number {
-  const dimensions: (keyof ScoreBreakdown)[] = [
-    "semantic",
-    "availability",
-    "skill_level",
-    "location",
-  ];
+  let weightedSum = 0;
+  let totalWeight = 0;
 
-  // Calculate product of (score^weight) for each dimension
-  let product = 1.0;
-  let totalWeight = 0.0;
-
-  for (const dimension of dimensions) {
+  for (const dimension of DIMENSIONS) {
     const score = breakdown[dimension];
     const weight = weights[dimension];
 
-    // Skip zero-weight dimensions or undefined scores
-    if (weight <= 0 || score === undefined) continue;
+    // Skip null/undefined dimensions or zero-weight dimensions
+    if (score == null || weight <= 0) continue;
 
-    // If score is 0, return 0 (multiplicative property)
-    if (score <= 0) {
-      return 0.0;
-    }
-
-    // Add to product: score^weight
-    product *= Math.pow(score, weight);
+    weightedSum += score * weight;
     totalWeight += weight;
   }
 
-  // If no weights, return average
-  if (totalWeight === 0) {
-    const scores = dimensions
-      .map((d) => breakdown[d])
-      .filter((s) => s !== undefined);
-    return scores.reduce((a, b) => a + b, 0) / scores.length;
-  }
+  if (totalWeight === 0) return 0;
 
-  // Return geometric mean: (product)^(1/totalWeight)
-  return Math.pow(product, 1 / totalWeight);
+  return weightedSum / totalWeight;
 }
 
 /**

@@ -181,30 +181,21 @@ export function PostingDiscoverCard({
               Your Compatibility Breakdown
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              <div className="flex flex-col">
-                <span className="text-muted-foreground">Relevance</span>
-                <span className="font-medium text-foreground">
-                  {formatScore(posting.score_breakdown.semantic)}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-muted-foreground">Availability</span>
-                <span className="font-medium text-foreground">
-                  {formatScore(posting.score_breakdown.availability)}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-muted-foreground">Skill Level</span>
-                <span className="font-medium text-foreground">
-                  {formatScore(posting.score_breakdown.skill_level)}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-muted-foreground">Location</span>
-                <span className="font-medium text-foreground">
-                  {formatScore(posting.score_breakdown.location)}
-                </span>
-              </div>
+              {(
+                [
+                  ["Relevance", posting.score_breakdown.semantic],
+                  ["Availability", posting.score_breakdown.availability],
+                  ["Skill Level", posting.score_breakdown.skill_level],
+                  ["Location", posting.score_breakdown.location],
+                ] as const
+              ).map(([label, score]) => (
+                <div key={label} className="flex flex-col">
+                  <span className="text-muted-foreground">{label}</span>
+                  <span className="font-medium text-foreground">
+                    {score != null ? formatScore(score) : "N/A"}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         )}

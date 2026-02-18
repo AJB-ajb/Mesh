@@ -239,10 +239,10 @@ export interface PostingUpdate {
 // ============================================
 
 export interface ScoreBreakdown {
-  semantic: number; // pgvector cosine similarity (0-1)
-  availability: number; // time slot overlap fraction (0-1)
-  skill_level: number; // 1 - |levelA - levelB| / 10 (0-1)
-  location: number; // 1 - |prefA - prefB| (0-1)
+  semantic: number | null; // pgvector cosine similarity (0-1), null if embeddings missing
+  availability: number | null; // time slot overlap fraction (0-1), null if data missing
+  skill_level: number | null; // 1 - |levelA - levelB| / 10 (0-1), null if data missing
+  location: number | null; // 1 - |prefA - prefB| (0-1), null if data missing
 }
 
 export interface Match {

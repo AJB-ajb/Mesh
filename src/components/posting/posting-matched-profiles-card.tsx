@@ -99,38 +99,32 @@ export function PostingMatchedProfilesCard({
 
                       {/* Match Breakdown */}
                       <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">
-                            Semantic:
-                          </span>
-                          <span className="font-medium">
-                            {formatScore(matchedProfile.breakdown.semantic)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">
-                            Availability:
-                          </span>
-                          <span className="font-medium">
-                            {formatScore(matchedProfile.breakdown.availability)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">
-                            Skill Level:
-                          </span>
-                          <span className="font-medium">
-                            {formatScore(matchedProfile.breakdown.skill_level)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">
-                            Location:
-                          </span>
-                          <span className="font-medium">
-                            {formatScore(matchedProfile.breakdown.location)}
-                          </span>
-                        </div>
+                        {(
+                          [
+                            ["Semantic", matchedProfile.breakdown.semantic],
+                            [
+                              "Availability",
+                              matchedProfile.breakdown.availability,
+                            ],
+                            [
+                              "Skill Level",
+                              matchedProfile.breakdown.skill_level,
+                            ],
+                            ["Location", matchedProfile.breakdown.location],
+                          ] as const
+                        ).map(([label, score]) => (
+                          <div
+                            key={label}
+                            className="flex items-center justify-between"
+                          >
+                            <span className="text-muted-foreground">
+                              {label}:
+                            </span>
+                            <span className="font-medium">
+                              {score != null ? formatScore(score) : "N/A"}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
