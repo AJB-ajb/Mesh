@@ -21,12 +21,32 @@ import { apiError } from "@/lib/errors";
 const BATCH_LIMIT = 50;
 const MAX_RETRIES = 2;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type JoinSkillRow = { skill_nodes: any };
+
+function deriveSkills(
+  joinRows: JoinSkillRow[] | null | undefined,
+  fallback: string[] | null,
+): string[] | null {
+  if (!joinRows || joinRows.length === 0) return fallback;
+  const names = joinRows
+    .map((r) => {
+      const node = r.skill_nodes;
+      return typeof node === "object" && node && "name" in node
+        ? (node.name as string)
+        : null;
+    })
+    .filter((n): n is string => !!n);
+  return names.length > 0 ? names : fallback;
+}
+
 interface ProfileRow {
   user_id: string;
   bio: string | null;
   skills: string[] | null;
   interests: string[] | null;
   headline: string | null;
+  profile_skills?: JoinSkillRow[] | null;
 }
 
 interface PostingRow {
@@ -34,6 +54,7 @@ interface PostingRow {
   title: string;
   description: string;
   skills: string[] | null;
+  posting_skills?: JoinSkillRow[] | null;
 }
 
 function createServiceClient() {
@@ -93,10 +114,12 @@ export async function POST(req: Request) {
   try {
     const supabase = createServiceClient();
 
-    // Fetch pending profiles
+    // Fetch pending profiles with join table skills
     const { data: pendingProfiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("user_id, bio, skills, interests, headline")
+      .select(
+        "user_id, bio, skills, interests, headline, profile_skills(skill_nodes(name))",
+      )
       .eq("needs_embedding", true)
       .limit(BATCH_LIMIT);
 
@@ -107,10 +130,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // Fetch pending postings
+    // Fetch pending postings with join table skills
     const { data: pendingPostings, error: postingsError } = await supabase
       .from("postings")
-      .select("id, title, description, skills")
+      .select(
+        "id, title, description, skills, posting_skills(skill_nodes(name))",
+      )
       .eq("needs_embedding", true)
       .limit(BATCH_LIMIT);
 
@@ -141,7 +166,7 @@ export async function POST(req: Request) {
     for (const profile of profiles) {
       const text = composeProfileText(
         profile.bio,
-        profile.skills,
+        deriveSkills(profile.profile_skills, profile.skills),
         profile.interests,
         profile.headline,
       );
@@ -160,7 +185,7 @@ export async function POST(req: Request) {
       const text = composePostingText(
         posting.title,
         posting.description,
-        posting.skills,
+        deriveSkills(posting.posting_skills, posting.skills),
       );
       if (text.trim()) {
         postingTexts.push({

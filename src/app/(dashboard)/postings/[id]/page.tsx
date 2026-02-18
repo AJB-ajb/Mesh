@@ -228,7 +228,7 @@ export default function PostingDetailPage() {
       contextIdentifier: posting.context_identifier || "",
       skillLevelMin: posting.skill_level_min?.toString() || "",
       autoAccept: posting.auto_accept ? "true" : "false",
-      selectedSkills: [],
+      selectedSkills: posting.selectedPostingSkills ?? [],
     });
     setIsEditing(true);
   };
@@ -243,12 +243,19 @@ export default function PostingDetailPage() {
     const locationLng = parseFloat(form.locationLng);
     const maxDistanceKm = parseInt(form.maxDistanceKm, 10);
 
+    // Merge selectedSkills names into the free-form skills array (dual-write)
+    const selectedSkillNames = form.selectedSkills.map((s) => s.name);
+    const freeFormSkills = parseList(form.skills);
+    const allSkillNames = [
+      ...new Set([...selectedSkillNames, ...freeFormSkills]),
+    ];
+
     const { error: updateError } = await supabase
       .from("postings")
       .update({
         title: form.title.trim(),
         description: form.description.trim(),
-        skills: parseList(form.skills),
+        skills: allSkillNames,
         estimated_time: form.estimatedTime || null,
         team_size_min: 1,
         team_size_max: lookingFor,
@@ -281,13 +288,33 @@ export default function PostingDetailPage() {
       })
       .eq("id", postingId);
 
-    setIsSaving(false);
-
     if (updateError) {
+      setIsSaving(false);
       setError("Failed to update posting. Please try again.");
       return;
     }
 
+    // Sync posting_skills join table
+    if (form.selectedSkills.length > 0) {
+      await supabase
+        .from("posting_skills")
+        .delete()
+        .eq("posting_id", postingId);
+
+      const postingSkillRows = form.selectedSkills.map((s) => ({
+        posting_id: postingId,
+        skill_id: s.skillId,
+        level_min: s.levelMin,
+      }));
+      await supabase.from("posting_skills").insert(postingSkillRows);
+    } else {
+      await supabase
+        .from("posting_skills")
+        .delete()
+        .eq("posting_id", postingId);
+    }
+
+    setIsSaving(false);
     setIsEditing(false);
     mutate();
   };

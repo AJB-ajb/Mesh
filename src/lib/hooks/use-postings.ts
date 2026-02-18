@@ -67,7 +67,8 @@ async function fetchPostings(key: string): Promise<PostingsResult> {
       profiles:creator_id (
         full_name,
         user_id
-      )
+      ),
+      posting_skills(skill_nodes(name))
     `,
     )
     .order("created_at", { ascending: false });
@@ -94,7 +95,23 @@ async function fetchPostings(key: string): Promise<PostingsResult> {
     throw error;
   }
 
-  const postings = (data || []) as PostingWithScore[];
+  const postings = (data || []).map((row) => {
+    // Derive skills from join table, fall back to old column
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const psRows = (row.posting_skills as any[]) ?? [];
+    const joinSkills = psRows
+      .map((ps) => {
+        const node = ps.skill_nodes;
+        return typeof node === "object" && node && "name" in node
+          ? (node.name as string)
+          : null;
+      })
+      .filter((n): n is string => !!n);
+    return {
+      ...row,
+      skills: joinSkills.length > 0 ? joinSkills : row.skills || [],
+    };
+  }) as PostingWithScore[];
 
   // Fetch user's existing application posting IDs (from applications table)
   let interestedPostingIds: string[] = [];

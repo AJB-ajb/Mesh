@@ -139,7 +139,8 @@ export async function fetchRecommendedPostings(
         profiles:creator_id (
           full_name,
           user_id
-        )
+        ),
+        posting_skills(skill_nodes(name))
       ),
       similarity_score
     `,
@@ -158,11 +159,22 @@ export async function fetchRecommendedPostings(
       if (!posting) return null;
 
       const profiles = posting.profiles as Record<string, unknown> | null;
+      // Derive skills from join table
+      const joinSkills = (
+        posting.posting_skills as
+          | { skill_nodes: { name: string } | null }[]
+          | null
+      )
+        ?.map((ps) => ps.skill_nodes?.name)
+        .filter((n): n is string => !!n);
       return {
         id: posting.id,
         title: posting.title,
         description: posting.description,
-        skills: (posting.skills as string[]) || [],
+        skills:
+          joinSkills && joinSkills.length > 0
+            ? joinSkills
+            : (posting.skills as string[]) || [],
         teamSize: `${posting.team_size_min}-${posting.team_size_max} people`,
         estimatedTime: (posting.estimated_time as string) || "",
         category: (posting.category as string) || "",
