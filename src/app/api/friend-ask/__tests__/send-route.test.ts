@@ -103,23 +103,23 @@ describe("POST /api/friend-ask/[id]/send", () => {
     expect(res.status).toBe(400);
   });
 
-  it("advances to next friend", async () => {
+  it("sends invite to current friend (first in list) without advancing index", async () => {
     authedUser();
     const fa = {
       id: "fa1",
       creator_id: "user-1",
+      posting_id: "p1",
       ordered_friend_list: ["u2", "u3", "u4"],
       current_request_index: 0,
       status: "pending",
     };
-    const updated = { ...fa, current_request_index: 1 };
 
-    let callCount = 0;
-    mockFrom.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) return chain({ data: fa, error: null });
-      return chain({ data: updated, error: null });
-    });
+    mockFrom.mockImplementation(() =>
+      chain({
+        data: fa,
+        error: null,
+      }),
+    );
 
     const res = await POST(
       makeReq("/api/friend-ask/fa1/send", { method: "POST" }),
@@ -127,16 +127,48 @@ describe("POST /api/friend-ask/[id]/send", () => {
     );
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(body.current_friend_id).toBe("u3");
+    // Should send to the FIRST friend (index 0), not skip to index 1
+    expect(body.current_friend_id).toBe("u2");
   });
 
-  it("marks as completed when list exhausted", async () => {
+  it("uses sequential_invite notification type", async () => {
     authedUser();
     const fa = {
       id: "fa1",
       creator_id: "user-1",
+      posting_id: "p1",
       ordered_friend_list: ["u2"],
       current_request_index: 0,
+      status: "pending",
+    };
+
+    const insertChain = chain({ data: null, error: null });
+    let insertCalled = false;
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "notifications") {
+        insertCalled = true;
+        return insertChain;
+      }
+      return chain({ data: fa, error: null });
+    });
+
+    const res = await POST(
+      makeReq("/api/friend-ask/fa1/send", { method: "POST" }),
+      routeCtx("fa1"),
+    );
+    expect(res.status).toBe(200);
+    expect(insertCalled).toBe(true);
+  });
+
+  it("marks as completed when index is past list length", async () => {
+    authedUser();
+    const fa = {
+      id: "fa1",
+      creator_id: "user-1",
+      posting_id: "p1",
+      ordered_friend_list: ["u2"],
+      current_request_index: 1, // past the end
       status: "pending",
     };
     const updated = { ...fa, status: "completed" };

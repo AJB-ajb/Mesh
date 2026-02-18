@@ -22,6 +22,8 @@ import { PostingMatchedProfilesCard } from "@/components/posting/posting-matched
 import { PostingSidebar } from "@/components/posting/posting-sidebar";
 import { FreeFormPostingUpdate } from "@/components/posting/free-form-posting-update";
 import { usePostingAiUpdate } from "@/lib/hooks/use-posting-ai-update";
+import { SequentialInviteCard } from "@/components/posting/sequential-invite-card";
+import { SequentialInviteResponseCard } from "@/components/posting/sequential-invite-response-card";
 
 export default function PostingDetailPage() {
   const router = useRouter();
@@ -672,7 +674,15 @@ export default function PostingDetailPage() {
         onApply={handleApply}
         onWithdraw={handleWithdrawApplication}
         error={error}
+        hideApplySection={!isOwner && posting.mode === "friend_ask"}
       />
+
+      {!isOwner && posting.mode === "friend_ask" && currentUserId && (
+        <SequentialInviteResponseCard
+          postingId={postingId}
+          currentUserId={currentUserId}
+        />
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main content */}
@@ -701,6 +711,13 @@ export default function PostingDetailPage() {
               isUpdatingApplication={isUpdatingApplication}
               onUpdateStatus={handleUpdateApplicationStatus}
               onMessage={handleStartConversation}
+            />
+          )}
+
+          {isOwner && posting.mode === "friend_ask" && currentUserId && (
+            <SequentialInviteCard
+              postingId={postingId}
+              currentUserId={currentUserId}
             />
           )}
 

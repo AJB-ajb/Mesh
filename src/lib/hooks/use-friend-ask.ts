@@ -20,3 +20,32 @@ export function useFriendAsks() {
     mutate,
   };
 }
+
+/**
+ * Fetch the active friend-ask for a specific posting.
+ * Returns the first pending/accepted friend-ask found, or null.
+ * Also resolves friend names for the ordered list.
+ */
+export function useFriendAskForPosting(postingId: string | null) {
+  const { friendAsks, error, isLoading, mutate } = useFriendAsks();
+
+  const friendAsk =
+    friendAsks.find(
+      (fa) =>
+        fa.posting_id === postingId &&
+        (fa.status === "pending" || fa.status === "accepted"),
+    ) ??
+    friendAsks.find(
+      (fa) =>
+        fa.posting_id === postingId &&
+        (fa.status === "completed" || fa.status === "cancelled"),
+    ) ??
+    null;
+
+  return {
+    friendAsk,
+    error,
+    isLoading,
+    mutate,
+  };
+}

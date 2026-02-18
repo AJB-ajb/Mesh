@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
 import { apiError } from "@/lib/errors";
+import {
+  type NotificationPreferences,
+  shouldNotify,
+} from "@/lib/notifications/preferences";
 
 /**
  * POST /api/friend-ask/[id]/respond
@@ -50,6 +54,75 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     return apiError("FORBIDDEN", "You are not the currently-asked friend", 403);
   }
 
+  // Fetch responder profile name and posting title for notifications
+  const [{ data: responderProfile }, { data: posting }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", user.id)
+      .single(),
+    supabase
+      .from("postings")
+      .select("title")
+      .eq("id", friendAsk.posting_id)
+      .single(),
+  ]);
+
+  const responderName = responderProfile?.full_name || "Someone";
+  const postingTitle = posting?.title || "a posting";
+
+  // Helper: notify the creator
+  const notifyCreator = async (title: string, body: string) => {
+    const { data: creatorProfile } = await supabase
+      .from("profiles")
+      .select("notification_preferences")
+      .eq("user_id", friendAsk.creator_id)
+      .single();
+
+    const creatorPrefs =
+      creatorProfile?.notification_preferences as NotificationPreferences | null;
+
+    if (shouldNotify(creatorPrefs, "sequential_invite", "in_app")) {
+      await supabase.from("notifications").insert({
+        user_id: friendAsk.creator_id,
+        type: "sequential_invite",
+        title,
+        body,
+        related_posting_id: friendAsk.posting_id,
+        related_user_id: user.id,
+      });
+    }
+  };
+
+  // Helper: send invite notification to a friend
+  const notifyNextFriend = async (friendId: string) => {
+    const { data: recipientProfile } = await supabase
+      .from("profiles")
+      .select("notification_preferences")
+      .eq("user_id", friendId)
+      .single();
+
+    const recipientPrefs =
+      recipientProfile?.notification_preferences as NotificationPreferences | null;
+
+    if (shouldNotify(recipientPrefs, "sequential_invite", "in_app")) {
+      const { data: creatorName } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", friendAsk.creator_id)
+        .single();
+
+      await supabase.from("notifications").insert({
+        user_id: friendId,
+        type: "sequential_invite",
+        title: "Sequential Invite Received",
+        body: `${creatorName?.full_name || "Someone"} wants you to join "${postingTitle}"`,
+        related_posting_id: friendAsk.posting_id,
+        related_user_id: friendAsk.creator_id,
+      });
+    }
+  };
+
   if (action === "accept") {
     const { data, error } = await supabase
       .from("friend_asks")
@@ -60,6 +133,12 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
     if (error) return apiError("INTERNAL", error.message, 500);
 
+    // Notify the creator
+    await notifyCreator(
+      "Invite Accepted!",
+      `${responderName} has joined "${postingTitle}"`,
+    );
+
     return NextResponse.json({
       friend_ask: data,
       message: "Friend-ask accepted",
@@ -68,6 +147,12 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
   // Decline: auto-advance to next friend
   const nextIndex = friendAsk.current_request_index + 1;
+
+  // Notify the creator about the decline
+  await notifyCreator(
+    "Invite Declined",
+    `${responderName} declined the invite for "${postingTitle}"`,
+  );
 
   if (nextIndex >= friendAsk.ordered_friend_list.length) {
     // No more friends to ask
@@ -82,7 +167,8 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
     return NextResponse.json({
       friend_ask: data,
-      message: "Declined. No more friends in the list — sequence completed.",
+      message:
+        "Declined. No more connections in the list — sequence completed.",
     });
   }
 
@@ -96,9 +182,13 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
   if (error) return apiError("INTERNAL", error.message, 500);
 
+  // Auto-send invite to the next friend
+  const nextFriendId = friendAsk.ordered_friend_list[nextIndex];
+  await notifyNextFriend(nextFriendId);
+
   return NextResponse.json({
     friend_ask: data,
-    message: "Declined. Next friend will be asked.",
-    next_friend_id: friendAsk.ordered_friend_list[nextIndex],
+    message: "Declined. Next connection will be asked.",
+    next_friend_id: nextFriendId,
   });
 });
