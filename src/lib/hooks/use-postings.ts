@@ -2,6 +2,7 @@ import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { formatScore } from "@/lib/matching/scoring";
 import type { ScoreBreakdown } from "@/lib/supabase/types";
+import { deriveSkillNames } from "@/lib/skills/derive";
 
 type Posting = {
   id: string;
@@ -67,7 +68,8 @@ async function fetchPostings(key: string): Promise<PostingsResult> {
       profiles:creator_id (
         full_name,
         user_id
-      )
+      ),
+      posting_skills(skill_nodes(name))
     `,
     )
     .order("created_at", { ascending: false });
@@ -94,7 +96,14 @@ async function fetchPostings(key: string): Promise<PostingsResult> {
     throw error;
   }
 
-  const postings = (data || []) as PostingWithScore[];
+  const postings = (data || []).map((row) => {
+    // Derive skills from join table, fall back to old column
+    const joinSkills = deriveSkillNames(row.posting_skills);
+    return {
+      ...row,
+      skills: joinSkills.length > 0 ? joinSkills : row.skills || [],
+    };
+  }) as PostingWithScore[];
 
   // Fetch user's existing application posting IDs (from applications table)
   let interestedPostingIds: string[] = [];

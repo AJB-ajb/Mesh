@@ -223,6 +223,75 @@ describe("POST /api/embeddings/process", () => {
     expect(mockGenerateEmbeddingsBatch.mock.calls[0][0]).toHaveLength(2);
   });
 
+  it("derives skills from join-table rows instead of old column", async () => {
+    const pendingProfiles = [
+      {
+        user_id: "user-1",
+        bio: "Developer bio",
+        skills: ["OldSkill"],
+        interests: null,
+        headline: "Dev",
+        profile_skills: [
+          { skill_nodes: { name: "TypeScript" } },
+          { skill_nodes: { name: "React" } },
+        ],
+      },
+    ];
+
+    const pendingPostings = [
+      {
+        id: "posting-1",
+        title: "Project",
+        description: "A cool project",
+        skills: ["OldPostingSkill"],
+        posting_skills: [{ skill_nodes: { name: "Go" } }],
+      },
+    ];
+
+    const profilesQuery = mockQuery({ data: pendingProfiles, error: null });
+    const postingsQuery = mockQuery({ data: pendingPostings, error: null });
+
+    const calls: string[] = [];
+    mockFrom.mockImplementation((table: string) => {
+      calls.push(table);
+      if (
+        table === "profiles" &&
+        calls.filter((c) => c === "profiles").length === 1
+      ) {
+        return profilesQuery;
+      }
+      if (
+        table === "postings" &&
+        calls.filter((c) => c === "postings").length === 1
+      ) {
+        return postingsQuery;
+      }
+      return mockUpdateQuery({ data: null, error: null });
+    });
+
+    const mockEmbeddings = [
+      new Array(1536).fill(0.1),
+      new Array(1536).fill(0.2),
+    ];
+    mockGenerateEmbeddingsBatch.mockResolvedValueOnce(mockEmbeddings);
+
+    const req = makeRequest({ "x-internal-call": "true" });
+    const response = await POST(req);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.processed.profiles).toBe(1);
+    expect(body.processed.postings).toBe(1);
+
+    // Verify join-table skills were used (not the old column fallback)
+    const texts = mockGenerateEmbeddingsBatch.mock.calls[0][0] as string[];
+    expect(texts[0]).toContain("TypeScript");
+    expect(texts[0]).toContain("React");
+    expect(texts[0]).not.toContain("OldSkill");
+    expect(texts[1]).toContain("Go");
+    expect(texts[1]).not.toContain("OldPostingSkill");
+  });
+
   it("returns error when embedding generation fails", async () => {
     const pendingProfiles = [
       {
