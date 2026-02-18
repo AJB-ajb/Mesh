@@ -5,7 +5,8 @@ import {
   MapPin,
   Loader2,
   Sparkles,
-  Heart,
+  Send,
+  Check,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -148,15 +149,15 @@ export function PostingDiscoverCard({
                 {isInteresting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Heart className="h-4 w-4" />
+                  <Send className="h-4 w-4" />
                 )}
-                {isInteresting ? "Requesting to join..." : "Request to join"}
+                {isInteresting ? "Requesting..." : "Request to join"}
               </Button>
             )}
             {!isOwner && activeTab === "discover" && isAlreadyInterested && (
               <Button variant="secondary" disabled>
-                <Heart className="h-4 w-4 fill-current" />
-                Requested
+                <Check className="h-4 w-4" />
+                Pending
               </Button>
             )}
             <Button variant="outline" asChild>
@@ -164,10 +165,6 @@ export function PostingDiscoverCard({
                 {isOwner ? "Edit" : "View Details"}
               </Link>
             </Button>
-            {!isOwner &&
-              posting.status === "open" &&
-              !isAlreadyInterested &&
-              posting.mode !== "open" && <Button>Request to join</Button>}
           </div>
         </div>
       </CardHeader>
@@ -269,8 +266,20 @@ export function PostingDiscoverCard({
             {getInitials(creatorName)}
           </div>
           <span className="text-sm text-muted-foreground">
-            {isOwner ? "Posted by you" : `Posted by ${creatorName}`} •{" "}
-            {formatDate(posting.created_at)}
+            {isOwner ? (
+              "Posted by you"
+            ) : (
+              <>
+                Posted by{" "}
+                <Link
+                  href={`/profile/${posting.profiles?.user_id}`}
+                  className="hover:underline text-foreground"
+                >
+                  {creatorName}
+                </Link>
+              </>
+            )}{" "}
+            • {formatDate(posting.created_at)}
           </span>
         </div>
       </CardContent>

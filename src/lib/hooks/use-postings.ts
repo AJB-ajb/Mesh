@@ -96,16 +96,16 @@ async function fetchPostings(key: string): Promise<PostingsResult> {
 
   const postings = (data || []) as PostingWithScore[];
 
-  // Fetch user's existing interested posting IDs
+  // Fetch user's existing application posting IDs (from applications table)
   let interestedPostingIds: string[] = [];
   if (user && tab === "discover") {
-    const { data: interests } = await supabase
-      .from("matches")
+    const { data: applications } = await supabase
+      .from("applications")
       .select("posting_id")
-      .eq("user_id", user.id)
-      .in("status", ["interested", "applied", "accepted"]);
+      .eq("applicant_id", user.id)
+      .in("status", ["pending", "accepted", "waitlisted"]);
 
-    interestedPostingIds = (interests || []).map((i) => i.posting_id);
+    interestedPostingIds = (applications || []).map((a) => a.posting_id);
   }
 
   // Compute compatibility scores for discover tab

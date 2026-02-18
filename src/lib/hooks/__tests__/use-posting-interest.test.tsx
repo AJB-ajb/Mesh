@@ -39,7 +39,7 @@ describe("usePostingInterest", () => {
       await result.current.handleExpressInterest("posting-1");
     });
 
-    expect(fetchMock).toHaveBeenCalledWith("/api/matches/interest", {
+    expect(fetchMock).toHaveBeenCalledWith("/api/applications", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ posting_id: "posting-1" }),
@@ -113,6 +113,6 @@ describe("usePostingInterest", () => {
       await result.current.handleExpressInterest("posting-1");
     });
 
-    expect(result.current.interestError).toBe("Failed to express interest");
+    expect(result.current.interestError).toBe("Failed to submit request");
   });
 });

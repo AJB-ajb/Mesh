@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -30,6 +30,19 @@ export default function NewPostingPage() {
   const [aiText, setAiText] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionSuccess, setExtractionSuccess] = useState(false);
+  const errorRef = useRef<HTMLParagraphElement>(null);
+
+  // Scroll to error when it appears
+  useEffect(() => {
+    if (error && errorRef.current) {
+      queueMicrotask(() => {
+        errorRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      });
+    }
+  }, [error]);
 
   const handleChange = (field: keyof PostingFormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -284,7 +297,10 @@ export default function NewPostingPage() {
       </div>
 
       {error && (
-        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <p
+          ref={errorRef}
+          className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
           {error}
         </p>
       )}

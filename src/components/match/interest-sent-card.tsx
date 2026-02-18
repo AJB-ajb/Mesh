@@ -1,31 +1,16 @@
 import Link from "next/link";
-
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { getInitials } from "@/lib/format";
+import { formatTimeAgo } from "@/lib/format";
 import type { MyInterest } from "@/lib/hooks/use-interests";
-
-const statusColors = {
-  interested: "bg-pink-500/10 text-pink-600",
-};
-
-function formatTimeAgo(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (diffInSeconds < 60) {
-    return "just now";
-  } else if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60);
-    return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`;
-  } else if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600);
-    return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
-  } else {
-    const days = Math.floor(diffInSeconds / 86400);
-    return `${days} ${days === 1 ? "day" : "days"} ago`;
-  }
-}
 
 export interface InterestSentCardProps {
   interest: MyInterest;
@@ -33,65 +18,73 @@ export interface InterestSentCardProps {
 
 export function InterestSentCard({ interest }: InterestSentCardProps) {
   const posting = interest.postings;
+  const creatorName = posting?.profiles?.full_name || "Unknown";
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <CardTitle className="text-lg">
+          <div className="space-y-1 flex-1">
+            <div className="flex items-center gap-3 flex-wrap">
+              <CardTitle className="text-xl">
                 <Link
                   href={`/postings/${posting?.id}`}
-                  className="hover:underline"
+                  className="hover:underline cursor-pointer"
                 >
                   {posting?.title}
                 </Link>
               </CardTitle>
-              <span
-                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors.interested}`}
-              >
-                Interested
-              </span>
+              {posting?.category && (
+                <Badge variant="secondary">{posting.category}</Badge>
+              )}
+              <Badge variant="outline" className="text-xs">
+                Pending
+              </Badge>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Expressed interest {formatTimeAgo(interest.created_at)}
-            </p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            {posting && (
+              <Button variant="outline" asChild>
+                <Link href={`/postings/${posting.id}`}>View Details</Link>
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {posting?.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">
+          <CardDescription className="text-sm line-clamp-2">
             {posting.description}
-          </p>
+          </CardDescription>
         )}
 
         {posting?.skills && posting.skills.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {posting.skills.slice(0, 5).map((skill) => (
-              <span
-                key={skill}
-                className="rounded-md border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium"
-              >
+              <Badge key={skill} variant="secondary">
                 {skill}
-              </span>
+              </Badge>
             ))}
             {posting.skills.length > 5 && (
-              <span className="rounded-md border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium">
-                +{posting.skills.length - 5}
-              </span>
+              <Badge variant="outline">+{posting.skills.length - 5}</Badge>
             )}
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex gap-2">
-          {posting && (
-            <Button variant="outline" asChild>
-              <Link href={`/postings/${posting.id}`}>View Details</Link>
-            </Button>
-          )}
+        <div className="flex items-center gap-2 border-t border-border pt-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium">
+            {getInitials(creatorName)}
+          </div>
+          <span className="text-sm text-muted-foreground">
+            Posted by{" "}
+            <Link
+              href={`/profile/${posting?.profiles?.user_id}`}
+              className="hover:underline text-foreground"
+            >
+              {creatorName}
+            </Link>{" "}
+            • Requested {formatTimeAgo(interest.created_at)}
+          </span>
         </div>
       </CardContent>
     </Card>

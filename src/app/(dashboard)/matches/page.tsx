@@ -101,11 +101,13 @@ export default function MatchesPage() {
               <div className="space-y-2">
                 <h3 className="font-semibold">
                   {isProfileError
-                    ? "Complete Your Profile"
+                    ? "Profile Incomplete"
                     : "Unable to Find Matches"}
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-md">
-                  {error}
+                  {isProfileError
+                    ? "Add a description and skills to your profile so we can find relevant matches for you."
+                    : error}
                 </p>
               </div>
               {isProfileError && (
