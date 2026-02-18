@@ -1,8 +1,7 @@
 /**
- * Authentication Flow Tests - Feature Branch
- * Branch: feature/auth-tests
+ * Authentication Flow Tests
  *
- * 10 Test Cases:
+ * 11 Test Cases:
  * 1. Login page renders correctly with all elements
  * 2. Email/password login with valid credentials
  * 3. Email/password login with invalid credentials shows error
@@ -10,12 +9,14 @@
  * 5. Signup page renders and validates form
  * 6. Signup with password mismatch shows error
  * 7. Forgot password page sends reset email
- * 8. Reset password page updates password
+ * 8. Reset password page shows error without valid reset token
  * 9. Protected routes redirect unauthenticated users
  * 10. Logout clears session
+ * 11. API returns 401 when not authenticated
  */
 
 import { test, expect } from "@playwright/test";
+import { loginAsUser, logout } from "../utils/auth-helpers";
 
 test.describe("Feature: Authentication Flow", () => {
   // Test 1: Login page renders correctly
@@ -46,33 +47,20 @@ test.describe("Feature: Authentication Flow", () => {
     await expect(page.locator('a:has-text("Sign up")')).toBeVisible();
   });
 
-  // Test 2: Email/password login success
+  // Test 2: Email/password login success (requires seeded test user)
   test("2. Email/password login redirects to dashboard on success", async ({
     page,
   }) => {
-    await page.goto("/login");
+    const password = process.env.TEST_USER_PASSWORD;
+    test.skip(!password, "TEST_USER_PASSWORD not set — run seed-test-users");
 
-    // Fill in credentials
-    await page.fill('input[type="email"]', "test@example.com");
-    await page.fill('input[type="password"]', "password123");
+    await loginAsUser(page, {
+      email: "ajb60721@gmail.com",
+      password: password!,
+    });
 
-    // Submit form
-    await page.click('button:has-text("Sign in")');
-
-    // Wait for either redirect or error message
-    await Promise.race([
-      page.waitForURL("/dashboard", { timeout: 5000 }),
-      page.waitForSelector("text=Invalid login credentials", { timeout: 5000 }),
-    ]).catch(() => {});
-
-    // Test passes if we get to dashboard or see expected error
-    const url = page.url();
-    const hasError = await page
-      .locator("text=Invalid")
-      .isVisible()
-      .catch(() => false);
-
-    expect(url.includes("/dashboard") || hasError).toBeTruthy();
+    // loginAsUser waits for /dashboard — verify we arrived
+    expect(page.url()).toContain("/dashboard");
   });
 
   // Test 3: Email/password login with invalid credentials
@@ -196,31 +184,18 @@ test.describe("Feature: Authentication Flow", () => {
       page.locator('button:has-text("Send reset link")'),
     ).toBeVisible();
 
-    // Fill email and submit
-    await page.fill('input[type="email"]', "test@example.com");
+    // Fill with real test user email and submit
+    await page.fill('input[type="email"]', "ajb60721@gmail.com");
     await page.click('button:has-text("Send reset link")');
 
-    // Should show success or error message
-    await Promise.race([
-      page.waitForSelector("text=Check your email", { timeout: 5000 }),
-      page.waitForSelector(".text-destructive", { timeout: 5000 }),
-    ]).catch(() => {});
-
-    // Verify some feedback was shown
-    const hasSuccess = await page
-      .locator("text=Check your email")
-      .isVisible()
-      .catch(() => false);
-    const hasError = await page
-      .locator(".text-destructive")
-      .isVisible()
-      .catch(() => false);
-
-    expect(hasSuccess || hasError).toBeTruthy();
+    // Wait for feedback (success if SMTP configured, error otherwise)
+    const successMsg = page.locator("text=Check your email");
+    const errorMsg = page.locator(".text-destructive");
+    await expect(successMsg.or(errorMsg)).toBeVisible({ timeout: 5000 });
   });
 
-  // Test 8: Reset password page
-  test("8. Reset password page validates and updates password", async ({
+  // Test 8: Reset password page shows error without valid reset token
+  test("8. Reset password page shows error without valid reset token", async ({
     page,
   }) => {
     await page.goto("/reset-password");
@@ -236,23 +211,13 @@ test.describe("Feature: Authentication Flow", () => {
     await passwordInputs.first().fill("newpassword123");
     await passwordInputs.nth(1).fill("newpassword123");
 
-    // Submit
+    // Submit — no valid reset token, so this must produce an error
     await page.click('button:has-text("Update password")');
 
-    // Should show success or error (depends on valid session from email link)
-    await page.waitForTimeout(2000);
-
-    const hasSuccess = await page
-      .locator("text=Password updated")
-      .isVisible()
-      .catch(() => false);
-    const hasError = await page
-      .locator(".text-destructive")
-      .isVisible()
-      .catch(() => false);
-
-    // Either success or error is expected (error if no valid reset session)
-    expect(hasSuccess || hasError).toBeTruthy();
+    // Assert error is shown (no valid reset session without email link)
+    await expect(page.locator(".text-destructive")).toBeVisible({
+      timeout: 5000,
+    });
   });
 
   // Test 9: Protected routes redirect
@@ -279,33 +244,32 @@ test.describe("Feature: Authentication Flow", () => {
     }
   });
 
-  // Test 10: Logout functionality
+  // Test 10: Logout functionality (requires seeded test user)
   test("10. Logout clears session and redirects to login", async ({ page }) => {
-    // Navigate to a page where logout might be available
+    const password = process.env.TEST_USER_PASSWORD;
+    test.skip(!password, "TEST_USER_PASSWORD not set — run seed-test-users");
+
+    // Authenticate first so we have a real session
+    await loginAsUser(page, {
+      email: "ajb60721@gmail.com",
+      password: password!,
+    });
+
+    // Logout via the helper (navigates to /settings, clicks sign out)
+    await logout(page);
+
+    // Verify we landed on /login
+    expect(page.url()).toContain("/login");
+
+    // Verify dashboard is no longer accessible
     await page.goto("/dashboard");
+    await page.waitForURL(/\/login/, { timeout: 10000 });
+    expect(page.url()).toContain("/login");
+  });
 
-    // If we're on login (unauthenticated), test passes by default
-    if (page.url().includes("/login")) {
-      expect(true).toBeTruthy();
-      return;
-    }
-
-    // Look for logout button
-    const logoutButton = page
-      .locator(
-        'button:has-text("Logout"), button:has-text("Sign out"), a:has-text("Logout"), a:has-text("Sign out")',
-      )
-      .first();
-
-    if (await logoutButton.isVisible().catch(() => false)) {
-      await logoutButton.click();
-
-      // Should redirect to login
-      await page.waitForURL("/login", { timeout: 5000 });
-      expect(page.url()).toContain("/login");
-    } else {
-      // No logout button found - might need to check settings or dropdown
-      expect(true).toBeTruthy(); // Pass for now
-    }
+  // Test 11: API returns 401 when not authenticated (moved from auth.spec.ts)
+  test("11. API returns 401 when not authenticated", async ({ request }) => {
+    const response = await request.get("/api/matches/for-me");
+    expect(response.status()).toBe(401);
   });
 });
