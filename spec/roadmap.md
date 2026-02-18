@@ -3,7 +3,7 @@
 ## Version & Status
 
 - **Current version**: 0.2.0
-- **Last updated**: 2026-02-15
+- **Last updated**: 2026-02-18
 - **Versioning**: Milestone-based semver (`MAJOR.MINOR.PATCH`). See [Update Protocol](#update-protocol).
 
 ---
@@ -45,13 +45,35 @@
 - [x] CI pipeline: lint, typecheck, unit tests, E2E tests, build (#32–36)
 - [x] Pre-commit hooks (Prettier + ESLint via lint-staged)
 
----
+### Skills System (v0.2)
 
-## In Progress
+- [x] `skill_nodes` table with seed taxonomy (~150+ nodes, 12 root categories)
+- [x] `profile_skills` and `posting_skills` join tables with per-skill levels
+- [x] LLM auto-adding pipeline (`/api/skills/normalize`) — Gemini-powered normalization with alias matching
+- [x] Skill search and browse APIs (`/api/skills/search`, `/api/skills/children`)
+- [x] Skill picker UI — typeahead search, hierarchical tree browsing, custom skill addition
+- [x] Profile and posting form integration with per-skill level sliders
+- [x] Code reads from join tables with fallback to old columns (expand phase complete, `1a5e42b`)
 
-- [ ] **Waitlist** — `feat/waitlist` branch: `waitlisted` status, auto-waitlist when filled, promotion logic, UI indicators. Depends on auto-accept (done). (#9)
-- [x] **Skills tree (steps 1-4)** — `skill_nodes` table + seed taxonomy, LLM auto-adding/normalization API, skill picker UI (typeahead + tree browsing), profile & posting form integration with per-skill levels. See `spec/skills.md`.
-- [ ] **Sequential Invite UI (Waves 2-3)** — `feat/sequential-invite-ui` branch: Owner-side create/manage invite card, invitee-side response card, notification handling, bug fixes (first-connection skip, notification type collision). See `spec/ux.md`.
+### Waitlist (v0.2)
+
+- [x] `waitlisted` application status with auto-waitlist when posting filled
+- [x] FIFO promotion logic (auto-promote on auto-accept postings, notify on manual-review)
+- [x] Waitlist position display ("You are #N on the waitlist")
+- [x] Edge cases: withdrawal triggers promotion, repost clears waitlist, unique constraint prevents duplicates
+
+### Engagement (v0.2)
+
+- [x] Bookmarks page (`/bookmarks`) with sidebar nav item
+- [x] In-app notification system (table, preferences, types, real-time display)
+
+### Sequential Invite (v0.2)
+
+- [x] Owner-side create/manage invite card with connection selector and progress timeline
+- [x] Invitee-side response card with inline Join / Do not join buttons
+- [x] Notification handling (`sequential_invite` type for invite, accept, decline)
+- [x] Auto-invite next connection on decline
+- [x] Terminology migration: `friend_ask` → sequential invite (`c0a0c96`)
 
 ---
 
@@ -59,36 +81,35 @@
 
 ### v0.3 — Matching & Filtering
 
-| Feature                          | Issue | Effort       | Description                                                                                                        |
-| -------------------------------- | ----- | ------------ | ------------------------------------------------------------------------------------------------------------------ |
-| Hard filter enforcement          | —     | Medium       | Two-stage matching: hard filters (context, category, skill, location) then soft scoring                            |
-| Tree-aware skill filtering       | —     | Medium       | Selecting a parent skill node includes all descendants via recursive CTE (e.g., "Programming" matches Python)      |
-| Per-skill matching scoring       | —     | Medium       | Replace averaged `skill_level_min` with per-skill level comparison from `posting_skills` join table                |
-| Deprecate old skill columns      | —     | Small        | Remove `skills text[]`, `skill_levels jsonb`, `skill_level_min integer` after migration verified (expand-contract) |
-| Existing data migration (skills) | —     | Medium       | Batch-process existing profile/posting free-form skills through LLM normalization to populate join tables          |
-| Max distance matching            | #31   | Medium       | Location-based distance as a matching dimension                                                                    |
-| Availability input & matching    | —     | Medium-Large | Weekly time grid / slot picker UI; posting-level scheduling; overlap scoring                                       |
-| Auto-location detection          | #16   | Small        | Detect user location from IP for matching defaults                                                                 |
-| Configurable matching weights    | —     | Small-Medium | Weight sliders on posting creation; stored per posting; passed to scoring                                          |
-| Fix 0% match score display       | #46   | Small        | Investigate and fix 0% matches showing as "new match" on dashboard                                                 |
+| Feature                           | Issue | Effort       | Description                                                                                                                      |
+| --------------------------------- | ----- | ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Hard filter enforcement           | —     | Medium       | Two-stage matching: hard filters (context, category, skill, location) then soft scoring                                          |
+| Tree-aware skill filtering        | —     | Medium       | Selecting a parent skill node includes all descendants via recursive CTE (e.g., "Programming" matches Python)                    |
+| Per-skill matching scoring        | —     | Medium       | Replace averaged `skill_level_min` with per-skill level comparison from `posting_skills` join table                              |
+| Drop old skill columns (contract) | —     | Small        | Drop `skills text[]`, `skill_levels jsonb`, `skill_level_min integer` columns (expand phase done — code reads join tables)       |
+| Existing data migration (skills)  | —     | Medium       | Batch-process existing free-form skills through LLM normalization (pipeline exists at `/api/skills/normalize`, batch run needed) |
+| Max distance matching             | #31   | Medium       | Location-based distance as a matching dimension                                                                                  |
+| Availability input & matching     | —     | Medium-Large | Weekly time grid / slot picker UI; posting-level scheduling; overlap scoring                                                     |
+| Auto-location detection           | #16   | Small        | Detect user location from IP for matching defaults                                                                               |
+| Configurable matching weights     | —     | Small-Medium | Weight sliders on posting creation; stored per posting; passed to scoring                                                        |
+| Fix 0% match score display        | #46   | Small        | Investigate and fix 0% matches showing as "new match" on dashboard                                                               |
 
 ### v0.4 — Engagement & Discovery
 
-| Feature                            | Issue | Effort | Description                                                        |
-| ---------------------------------- | ----- | ------ | ------------------------------------------------------------------ |
-| Bookmarks page                     | —     | Small  | `/bookmarks` for saved postings; sidebar nav item                  |
-| Notification system (email + push) | #14   | Large  | In-app + email + push notifications for matches, messages, invites |
-| Daily digest notifications         | —     | Medium | Cron-based email digest of new relevant postings (Resend)          |
-| Posting images                     | #29   | Medium | Upload and display images on postings                              |
-| Email auth fix (SMTP)              | #37   | Small  | Configure Supabase SMTP for confirmation emails                    |
+| Feature                    | Issue | Effort | Description                                                                          |
+| -------------------------- | ----- | ------ | ------------------------------------------------------------------------------------ |
+| Email + push notifications | #14   | Large  | Email and push delivery for notifications (in-app notifications already implemented) |
+| Daily digest notifications | —     | Medium | Cron-based email digest of new relevant postings (Resend)                            |
+| Posting images             | #29   | Medium | Upload and display images on postings                                                |
+| Email auth fix (SMTP)      | #37   | Small  | Configure Supabase SMTP for confirmation emails                                      |
 
 ### v0.5 — Sequential Invite & Channels
 
-| Feature                      | Issue | Effort       | Description                                                                                 |
-| ---------------------------- | ----- | ------------ | ------------------------------------------------------------------------------------------- |
-| Sequential invite mode       | —     | Large        | **In progress** — Waves 2-3 wiring UI to existing backend. See `feat/sequential-invite-ui`. |
-| Channels for shared contexts | #27   | Medium-Large | Shared posting contexts for hackathons, courses, orgs                                       |
-| Markdown-first interface     | #28   | Medium       | Markdown editing and export for postings                                                    |
+| Feature                      | Issue | Effort       | Description                                           |
+| ---------------------------- | ----- | ------------ | ----------------------------------------------------- |
+| Sequential invite mode       | —     | Large        | **Done** — merged to `dev`. See "Implemented" above.  |
+| Channels for shared contexts | #27   | Medium-Large | Shared posting contexts for hackathons, courses, orgs |
+| Markdown-first interface     | #28   | Medium       | Markdown editing and export for postings              |
 
 ### v1.0 — Launch
 

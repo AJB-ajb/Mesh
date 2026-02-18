@@ -4,9 +4,13 @@ Idea-based social platform for quickly finding people to do things with — proj
 
 ## Status
 
-<!-- Link epics here as they are created. Check off when fully implemented. -->
-<!-- - [ ] #42 Posting creation flow -->
-<!-- - [ ] #43 Matching algorithm v1 -->
+- [x] #5 Redesign phase 1
+- [x] #6 Redesign phase 2
+- [x] #7 Redesign phase 3
+- [x] #8 Redesign phase 4
+- [ ] #9 Redesign phase 5 (in progress)
+
+See [roadmap.md](roadmap.md) for full milestone tracking.
 
 ## Problem
 
