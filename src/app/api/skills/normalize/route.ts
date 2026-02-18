@@ -91,31 +91,27 @@ export async function POST(request: Request) {
     });
   }
 
-  // Step 2: Check alias match
-  const { data: aliasMatches } = await supabase
+  // Step 2: Check alias match using the GIN index (skill_nodes_aliases_idx)
+  // .contains() translates to the @> operator which uses the GIN index,
+  // avoiding a full-table scan.
+  const { data: aliasMatch } = await supabase
     .from("skill_nodes")
-    .select("id, name, is_leaf, depth, parent_id, aliases");
+    .select("id, name, is_leaf, depth, parent_id")
+    .contains("aliases", [skill])
+    .maybeSingle();
 
-  if (aliasMatches) {
-    const lowerSkill = skill.toLowerCase();
-    const aliasMatch = aliasMatches.find((n) =>
-      (n.aliases as string[])?.some(
-        (a: string) => a.toLowerCase() === lowerSkill,
-      ),
-    );
-    if (aliasMatch) {
-      const path = await buildNodePath(supabase, aliasMatch);
-      return NextResponse.json({
-        node: {
-          id: aliasMatch.id,
-          name: aliasMatch.name,
-          path,
-          isLeaf: aliasMatch.is_leaf,
-          depth: aliasMatch.depth,
-        },
-        created: false,
-      });
-    }
+  if (aliasMatch) {
+    const path = await buildNodePath(supabase, aliasMatch);
+    return NextResponse.json({
+      node: {
+        id: aliasMatch.id,
+        name: aliasMatch.name,
+        path,
+        isLeaf: aliasMatch.is_leaf,
+        depth: aliasMatch.depth,
+      },
+      created: false,
+    });
   }
 
   // Step 3: LLM auto-adding

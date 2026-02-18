@@ -5,6 +5,12 @@
 -- 4. Rewritten compute_match_breakdown() with per-skill scoring from join tables
 -- 5. Updated compute_match_breakdowns_batch()
 
+-- Drop old 3-param overloads from 20260207010000 migration.
+-- The new functions have additional filter parameters, so CREATE OR REPLACE
+-- creates new overloads instead of replacing. We must drop the old signatures.
+DROP FUNCTION IF EXISTS match_postings_to_user(extensions.vector, uuid, integer);
+DROP FUNCTION IF EXISTS match_users_to_posting(extensions.vector, uuid, integer);
+
 -- ============================================
 -- 1. get_skill_descendants()
 -- Returns all descendant node IDs for a given skill node (inclusive)
@@ -133,7 +139,7 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION match_postings_to_user IS 'Finds top matching postings for a user based on embedding similarity, with optional hard filters for category, context, location mode, and max distance.';
+COMMENT ON FUNCTION match_postings_to_user(extensions.vector, uuid, integer, text, text, text, double precision, double precision, double precision) IS 'Finds top matching postings for a user based on embedding similarity, with optional hard filters for category, context, location mode, and max distance.';
 
 -- ============================================
 -- 3. match_users_to_posting() — with hard filters
@@ -218,7 +224,7 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION match_users_to_posting IS 'Finds top matching users for a posting based on embedding similarity, with optional hard filters for location mode and max distance.';
+COMMENT ON FUNCTION match_users_to_posting(extensions.vector, uuid, integer, text, double precision, double precision, double precision) IS 'Finds top matching users for a posting based on embedding similarity, with optional hard filters for location mode and max distance.';
 
 -- ============================================
 -- 4. compute_match_breakdown() — per-skill scoring + distance-aware location
