@@ -126,7 +126,7 @@ describe("GET /api/matches/for-me", () => {
     expect(body.matches).toHaveLength(1);
     expect(body.matches[0].id).toBe("m1");
     expect(body.matches[0].score).toBe(0.85);
-    expect(mockMatchProfileToPostings).toHaveBeenCalledWith("user-1", 10);
+    expect(mockMatchProfileToPostings).toHaveBeenCalledWith("user-1", 10, {});
     expect(mockCreateMatchRecords).toHaveBeenCalled();
   });
 

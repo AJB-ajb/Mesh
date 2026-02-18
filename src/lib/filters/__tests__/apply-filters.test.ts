@@ -12,7 +12,6 @@ const samplePostings = [
     location_preference: 1.0,
     location_name: null,
     skills: ["React", "TypeScript", "Node.js"],
-    skill_level_min: 5,
     tags: ["web", "frontend"],
     estimated_time: "10-20h/week",
     team_size_min: 2,
@@ -26,7 +25,6 @@ const samplePostings = [
     location_preference: 0.0,
     location_name: "Berlin",
     skills: ["Python", "Machine Learning"],
-    skill_level_min: 3,
     tags: ["ai", "data"],
     estimated_time: "5h/week",
     team_size_min: 1,
@@ -40,7 +38,6 @@ const samplePostings = [
     location_preference: 0.5,
     location_name: "Munich",
     skills: ["Java", "Spring", "React"],
-    skill_level_min: 7,
     tags: ["backend", "enterprise"],
     estimated_time: "30h/week",
     team_size_min: 3,
@@ -54,7 +51,6 @@ const samplePostings = [
     location_preference: null,
     location_name: null,
     skills: ["Design", "Figma"],
-    skill_level_min: null,
     tags: [],
     estimated_time: null,
     team_size_min: 1,
@@ -174,29 +170,6 @@ describe("applyFilters", () => {
         skills: ["Rust", "Go"],
       });
       expect(result).toHaveLength(0);
-    });
-  });
-
-  describe("skill_level filter", () => {
-    it("filters by minimum skill level", () => {
-      const result = applyFilters(samplePostings, {
-        skill_level_min: 5,
-      });
-      // postings with skill_level_min >= 5: posting 1 (5), posting 3 (7)
-      // posting 4 has null skill_level_min so it won't be checked
-      expect(result.map((p) => p.id)).toEqual(
-        expect.arrayContaining(["1", "3", "4"]),
-      );
-    });
-
-    it("filters by maximum skill level", () => {
-      const result = applyFilters(samplePostings, {
-        skill_level_max: 4,
-      });
-      // posting 2 has skill_level_min=3, posting 4 null
-      expect(result.map((p) => p.id)).toEqual(
-        expect.arrayContaining(["2", "4"]),
-      );
     });
   });
 

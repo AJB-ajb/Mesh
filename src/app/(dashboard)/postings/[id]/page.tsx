@@ -282,9 +282,6 @@ export default function PostingDetailPage() {
               .filter(Boolean)
           : [],
         context_identifier: form.contextIdentifier.trim() || null,
-        skill_level_min: form.skillLevelMin
-          ? parseInt(form.skillLevelMin, 10)
-          : null,
         auto_accept: form.autoAccept === "true",
         updated_at: new Date().toISOString(),
       })

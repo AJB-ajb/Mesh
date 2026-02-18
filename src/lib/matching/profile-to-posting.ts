@@ -7,6 +7,13 @@ import { createClient } from "@/lib/supabase/server";
 import type { Posting, ScoreBreakdown } from "@/lib/supabase/types";
 import { MATCH_SCORE_THRESHOLD } from "@/lib/matching/scoring";
 
+export interface MatchFilters {
+  category?: string;
+  context?: string;
+  locationMode?: string;
+  maxDistanceKm?: number;
+}
+
 export interface ProfileToPostingMatch {
   posting: Posting;
   score: number; // 0-1 similarity score
@@ -20,18 +27,22 @@ export interface ProfileToPostingMatch {
  *
  * @param userId The user ID to find matches for
  * @param limit Maximum number of matches to return (default: 10)
+ * @param filters Optional hard filters for category, context, location
  * @returns Array of matching postings with similarity scores
  */
 export async function matchProfileToPostings(
   userId: string,
   limit: number = 10,
+  filters?: MatchFilters,
 ): Promise<ProfileToPostingMatch[]> {
   const supabase = await createClient();
 
-  // First, get the user's profile and embedding
+  // Fetch user's profile with location data for hard filters
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("embedding, bio, interests, headline")
+    .select(
+      "embedding, bio, interests, headline, location_lat, location_lng, location_mode",
+    )
     .eq("user_id", userId)
     .single();
 
@@ -50,12 +61,32 @@ export async function matchProfileToPostings(
     );
   }
 
-  // Call the database function to find matching postings
-  const { data, error } = await supabase.rpc("match_postings_to_user", {
+  // Build RPC params with optional hard filters
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rpcParams: Record<string, any> = {
     user_embedding: embedding,
     user_id_param: userId,
     match_limit: limit,
-  });
+  };
+
+  if (filters?.category) rpcParams.category_filter = filters.category;
+  if (filters?.context) rpcParams.context_filter = filters.context;
+  if (filters?.locationMode || profile.location_mode) {
+    rpcParams.location_mode_filter =
+      filters?.locationMode ?? profile.location_mode;
+  }
+  if (profile.location_lat != null && profile.location_lng != null) {
+    rpcParams.user_location_lat = profile.location_lat;
+    rpcParams.user_location_lng = profile.location_lng;
+  }
+  if (filters?.maxDistanceKm) {
+    rpcParams.max_distance_km = filters.maxDistanceKm;
+  }
+
+  const { data, error } = await supabase.rpc(
+    "match_postings_to_user",
+    rpcParams,
+  );
 
   if (error) {
     throw new Error(`Failed to match postings: ${error.message}`);
@@ -66,7 +97,7 @@ export async function matchProfileToPostings(
   }
 
   // Check for existing match records
-  const postingIds = data.map((row: { project_id: string }) => row.project_id);
+  const postingIds = data.map((row: { posting_id: string }) => row.posting_id);
   const { data: existingMatches } = await supabase
     .from("matches")
     .select("id, posting_id, similarity_score, status, score_breakdown")
@@ -82,7 +113,7 @@ export async function matchProfileToPostings(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data.map(async (row: any) => {
       const posting: Posting = {
-        id: row.project_id, // RPC still returns this column name
+        id: row.posting_id,
         creator_id: row.creator_id,
         title: row.title,
         description: row.description,
@@ -103,20 +134,18 @@ export async function matchProfileToPostings(
         expires_at: row.expires_at,
       };
 
-      const existingMatch = matchMap.get(row.project_id);
+      const existingMatch = matchMap.get(row.posting_id);
 
       // Compute score breakdown using database function
       let scoreBreakdown: ScoreBreakdown | null = null;
       if (existingMatch?.score_breakdown) {
-        // Use existing breakdown if available
         scoreBreakdown = existingMatch.score_breakdown as ScoreBreakdown;
       } else {
-        // Compute new breakdown
         const { data: breakdown, error: breakdownError } = await supabase.rpc(
           "compute_match_breakdown",
           {
             profile_user_id: userId,
-            target_posting_id: row.project_id,
+            target_posting_id: row.posting_id,
           },
         );
 
@@ -126,7 +155,7 @@ export async function matchProfileToPostings(
       }
 
       return {
-        posting: posting,
+        posting,
         score: row.similarity,
         scoreBreakdown,
         matchId: existingMatch?.id,

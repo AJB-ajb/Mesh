@@ -94,10 +94,7 @@ export default function NewPostingPage() {
           : prev.tags,
         contextIdentifier:
           extracted.context_identifier || prev.contextIdentifier,
-        skillLevelMin:
-          extracted.skill_level_min != null
-            ? extracted.skill_level_min.toString()
-            : prev.skillLevelMin,
+        skillLevelMin: prev.skillLevelMin,
       }));
 
       setExtractionSuccess(true);
@@ -223,9 +220,6 @@ export default function NewPostingPage() {
               .filter(Boolean)
           : [],
         context_identifier: form.contextIdentifier.trim() || null,
-        skill_level_min: form.skillLevelMin
-          ? parseInt(form.skillLevelMin, 10)
-          : null,
         auto_accept: form.autoAccept === "true",
       })
       .select()

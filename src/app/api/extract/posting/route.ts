@@ -43,11 +43,6 @@ const postingSchema: Schema = {
       type: SchemaType.NUMBER,
       description: "Maximum number of people needed for the team",
     },
-    skill_level_min: {
-      type: SchemaType.NUMBER,
-      description:
-        "Minimum skill level required (0=absolute beginner, 10=expert). Only include when explicitly stated or strongly implied.",
-    },
     tags: {
       type: SchemaType.ARRAY,
       items: { type: SchemaType.STRING },

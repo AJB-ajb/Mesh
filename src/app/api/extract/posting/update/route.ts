@@ -37,10 +37,6 @@ const postingUpdateSchema: Schema = {
       type: SchemaType.NUMBER,
       description: "Maximum team size (number of people needed)",
     },
-    skill_level_min: {
-      type: SchemaType.NUMBER,
-      description: "Minimum skill level required (0-10 scale)",
-    },
     tags: {
       type: SchemaType.ARRAY,
       items: { type: SchemaType.STRING },
@@ -108,7 +104,7 @@ export async function POST(request: Request) {
     const { data: posting, error: postingError } = await supabase
       .from("postings")
       .select(
-        "creator_id, title, description, skills, category, estimated_time, team_size_max, skill_level_min, tags, context_identifier, mode",
+        "creator_id, title, description, category, estimated_time, team_size_max, tags, context_identifier, mode",
       )
       .eq("id", postingId)
       .single();
@@ -134,15 +130,11 @@ export async function POST(request: Request) {
       if (posting.title) parts.push(`Title: ${posting.title}`);
       if (posting.description)
         parts.push(`Description: ${posting.description}`);
-      if (posting.skills?.length)
-        parts.push(`Skills: ${posting.skills.join(", ")}`);
       if (posting.category) parts.push(`Category: ${posting.category}`);
       if (posting.estimated_time)
         parts.push(`Estimated time: ${posting.estimated_time}`);
       if (posting.team_size_max)
         parts.push(`Team size: ${posting.team_size_max}`);
-      if (posting.skill_level_min != null)
-        parts.push(`Min skill level: ${posting.skill_level_min}`);
       if (posting.tags?.length) parts.push(`Tags: ${posting.tags.join(", ")}`);
       if (posting.context_identifier)
         parts.push(`Context: ${posting.context_identifier}`);

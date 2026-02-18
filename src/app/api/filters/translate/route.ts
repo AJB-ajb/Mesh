@@ -39,14 +39,6 @@ const filterSchema: Schema = {
       items: { type: SchemaType.STRING },
       description: "Skills to filter by (e.g. React, Python, TypeScript)",
     },
-    skill_level_min: {
-      type: SchemaType.NUMBER,
-      description: "Minimum skill level (0-10)",
-    },
-    skill_level_max: {
-      type: SchemaType.NUMBER,
-      description: "Maximum skill level (0-10)",
-    },
     languages: {
       type: SchemaType.ARRAY,
       items: { type: SchemaType.STRING },

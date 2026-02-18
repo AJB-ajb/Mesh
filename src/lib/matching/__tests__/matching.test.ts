@@ -74,7 +74,6 @@ describe("matchProfileToPostings", () => {
           mode: "open",
           location_preference: 0.5,
           estimated_time: "1_month",
-          skill_level_min: "intermediate",
           context_identifier: null,
           natural_language_criteria: null,
           creator_id: "user-2",

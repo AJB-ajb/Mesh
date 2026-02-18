@@ -82,18 +82,6 @@ export function filtersToFilterPills(filters: PostingFilters): FilterPill[] {
     });
   }
 
-  if (filters.skill_level_min != null || filters.skill_level_max != null) {
-    const parts: string[] = [];
-    if (filters.skill_level_min != null)
-      parts.push(`${filters.skill_level_min}+`);
-    if (filters.skill_level_max != null)
-      parts.push(`up to ${filters.skill_level_max}`);
-    pills.push({
-      key: "skill_level",
-      label: `Skill level: ${parts.join(", ")}`,
-    });
-  }
-
   if (filters.languages && filters.languages.length > 0) {
     const names = filters.languages.map(
       (code) => LANGUAGE_NAMES[code] || code.toUpperCase(),
@@ -186,10 +174,6 @@ export function removeFilterByKey(
       break;
     case "skills":
       delete updated.skills;
-      break;
-    case "skill_level":
-      delete updated.skill_level_min;
-      delete updated.skill_level_max;
       break;
     case "languages":
       delete updated.languages;
