@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LocationAutocomplete } from "@/components/location/location-autocomplete";
+import { NOT_SPECIFIED } from "@/lib/format";
 import type { GeocodingResult } from "@/lib/geocoding";
 import type {
   PostingDetail,
@@ -340,14 +341,14 @@ export function PostingAboutCard({
                 Estimated Time
               </p>
               <p className="font-medium">
-                {posting.estimated_time || "Not specified"}
+                {posting.estimated_time || NOT_SPECIFIED}
               </p>
             </div>
             <div className="rounded-lg border border-border p-4">
               <Clock className="h-5 w-5 text-muted-foreground" />
               <p className="mt-2 text-sm text-muted-foreground">Category</p>
               <p className="font-medium capitalize">
-                {posting.category || "Not specified"}
+                {posting.category || NOT_SPECIFIED}
               </p>
             </div>
             <div className="rounded-lg border border-border p-4">

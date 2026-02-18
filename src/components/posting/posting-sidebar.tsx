@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Share2, Flag, MessageSquare, Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -55,7 +56,12 @@ export function PostingSidebar({
               {getInitials(creatorName)}
             </div>
             <div>
-              <h4 className="font-medium">{creatorName}</h4>
+              <Link
+                href={`/profile/${posting.profiles?.user_id}`}
+                className="font-medium hover:underline"
+              >
+                {creatorName}
+              </Link>
               {creatorHeadline && (
                 <p className="text-sm text-muted-foreground">
                   {creatorHeadline}
@@ -107,7 +113,12 @@ export function PostingSidebar({
               </>
             )}
           </Button>
-          <Button variant="outline" className="w-full justify-start">
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            disabled
+            title="Coming soon"
+          >
             <Flag className="h-4 w-4" />
             Report Issue
           </Button>

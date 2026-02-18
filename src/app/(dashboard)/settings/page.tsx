@@ -12,6 +12,7 @@ import {
   Linkedin,
   AlertCircle,
   RefreshCw,
+  Link2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -60,10 +61,8 @@ function SettingsContent() {
     mutateGithubSync,
   } = useSettings();
 
-  const {
-    preferences: notifPrefs,
-    updatePreferences: updateNotifPrefs,
-  } = useNotificationPreferences();
+  const { preferences: notifPrefs, updatePreferences: updateNotifPrefs } =
+    useNotificationPreferences();
 
   const handleToggleNotification = async (
     type: NotificationType,
@@ -361,7 +360,7 @@ function SettingsContent() {
                     </>
                   ) : (
                     <>
-                      <Check className="mr-2 h-4 w-4" />
+                      <Link2 className="mr-2 h-4 w-4" />
                       Connect
                     </>
                   )}
@@ -447,7 +446,10 @@ function SettingsContent() {
               </thead>
               <tbody>
                 {allNotificationTypes.map((type) => (
-                  <tr key={type} className="border-b border-border last:border-0">
+                  <tr
+                    key={type}
+                    className="border-b border-border last:border-0"
+                  >
                     <td className="py-3 pr-4">
                       {notificationTypeLabels[type]}
                     </td>

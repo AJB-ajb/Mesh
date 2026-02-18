@@ -17,7 +17,7 @@ export function usePostingInterest(
       setInterestingIds((prev) => new Set(prev).add(postingId));
       setInterestError(null);
       try {
-        const response = await fetch("/api/matches/interest", {
+        const response = await fetch("/api/applications", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ posting_id: postingId }),
@@ -25,7 +25,7 @@ export function usePostingInterest(
 
         if (!response.ok) {
           const data = await response.json();
-          throw new Error(data.error?.message || "Failed to express interest");
+          throw new Error(data.error?.message || "Failed to submit request");
         }
 
         await mutate();
@@ -36,7 +36,7 @@ export function usePostingInterest(
           return next;
         });
         setInterestError(
-          err instanceof Error ? err.message : "Failed to express interest",
+          err instanceof Error ? err.message : "Failed to submit request",
         );
       }
     },

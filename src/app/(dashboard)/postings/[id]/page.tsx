@@ -377,114 +377,43 @@ export default function PostingDetailPage() {
     setIsApplying(true);
     setError(null);
 
-    const supabase = createClient();
-    const isAutoAccept = posting?.auto_accept === true;
-    const isFilled = posting?.status === "filled";
+    try {
+      const response = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          posting_id: postingId,
+          cover_message: coverMessage.trim() || undefined,
+        }),
+      });
 
-    // Determine the initial application status
-    let initialStatus: string;
-    if (isFilled) {
-      initialStatus = "waitlisted";
-    } else if (isAutoAccept) {
-      initialStatus = "accepted";
-    } else {
-      initialStatus = "pending";
-    }
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error?.message || "Failed to submit request");
+      }
 
-    const { data: application, error: applyError } = await supabase
-      .from("applications")
-      .insert({
-        posting_id: postingId,
-        applicant_id: currentUserId,
-        cover_message:
-          isFilled || isAutoAccept ? null : coverMessage.trim() || null,
-        status: initialStatus,
-      })
-      .select()
-      .single();
+      const {
+        application,
+        status,
+        waitlistPosition: wlPos,
+      } = await response.json();
 
-    if (applyError) {
-      setIsApplying(false);
+      setLocalHasApplied(true);
+      setLocalMyApplication(application);
+      setShowApplyForm(false);
+      setCoverMessage("");
+
+      if (status === "waitlisted" && wlPos != null) {
+        setLocalWaitlistPosition(wlPos);
+      }
+    } catch (err) {
       setError(
-        isAutoAccept
-          ? "Failed to join. Please try again."
+        err instanceof Error
+          ? err.message
           : "Failed to submit request. Please try again.",
       );
-      return;
-    }
-
-    // Create notification for posting owner (if their preferences allow it)
-    if (posting) {
-      const { data: ownerProfile } = await supabase
-        .from("profiles")
-        .select("full_name, notification_preferences")
-        .eq("user_id", posting.creator_id)
-        .single();
-
-      const { data: applicantProfile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("user_id", currentUserId)
-        .single();
-
-      const applicantName = applicantProfile?.full_name || "Someone";
-      const ownerPrefs =
-        ownerProfile?.notification_preferences as NotificationPreferences | null;
-
-      if (shouldNotify(ownerPrefs, "interest_received", "in_app")) {
-        const notifTitle = isFilled
-          ? "New Waitlist Entry"
-          : isAutoAccept
-            ? "New Member Joined"
-            : "New Join Request";
-        const notifBody = isFilled
-          ? `${applicantName} has joined the waitlist for "${posting.title}"`
-          : isAutoAccept
-            ? `${applicantName} has joined your posting "${posting.title}"`
-            : `${applicantName} has requested to join your posting "${posting.title}"`;
-
-        await supabase.from("notifications").insert({
-          user_id: posting.creator_id,
-          type: "application_received",
-          title: notifTitle,
-          body: notifBody,
-          related_posting_id: postingId,
-          related_application_id: application.id,
-          related_user_id: currentUserId,
-        });
-      }
-
-      // Auto-accept: check if posting should be marked as filled
-      if (isAutoAccept) {
-        const { count } = await supabase
-          .from("applications")
-          .select("*", { count: "exact", head: true })
-          .eq("posting_id", postingId)
-          .eq("status", "accepted");
-
-        if (count && count >= posting.team_size_max) {
-          await supabase
-            .from("postings")
-            .update({ status: "filled" })
-            .eq("id", postingId);
-        }
-      }
-    }
-
-    setLocalHasApplied(true);
-    setLocalMyApplication(application);
-    setShowApplyForm(false);
-    setCoverMessage("");
-    setIsApplying(false);
-
-    // Set waitlist position if waitlisted
-    if (initialStatus === "waitlisted") {
-      const { count: waitlistedCount } = await supabase
-        .from("applications")
-        .select("*", { count: "exact", head: true })
-        .eq("posting_id", postingId)
-        .eq("status", "waitlisted");
-      setLocalWaitlistPosition(waitlistedCount ?? 1);
+    } finally {
+      setIsApplying(false);
     }
   };
 
@@ -699,7 +628,10 @@ export default function PostingDetailPage() {
         coverMessage={coverMessage}
         isApplying={isApplying}
         onShowApplyForm={() => setShowApplyForm(true)}
-        onHideApplyForm={() => setShowApplyForm(false)}
+        onHideApplyForm={() => {
+          setShowApplyForm(false);
+          setError(null);
+        }}
         onCoverMessageChange={setCoverMessage}
         onApply={handleApply}
         onWithdraw={handleWithdrawApplication}

@@ -554,7 +554,14 @@ export function PostingDetailHeader({
             )}
           </div>
           <p className="text-muted-foreground">
-            Posted by {creatorName} &bull; {formatDate(posting.created_at)}
+            Posted by{" "}
+            <Link
+              href={`/profile/${posting.profiles?.user_id}`}
+              className="hover:underline text-foreground"
+            >
+              {creatorName}
+            </Link>{" "}
+            &bull; {formatDate(posting.created_at)}
           </p>
         </div>
 

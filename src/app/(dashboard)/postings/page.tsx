@@ -121,8 +121,8 @@ export default function PostingsPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
                 tab.id === activeTab
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
               {tab.label}
