@@ -2,6 +2,7 @@ import { FolderKanban, Users, MessageSquare, TrendingUp } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, getInitials } from "@/lib/format";
+import { deriveSkillNames } from "@/lib/skills/derive";
 import type { StatItem } from "@/components/dashboard/stats-overview";
 import type { RecommendedPosting } from "@/components/dashboard/recommended-postings";
 import type { PostingMetric } from "@/components/dashboard/posting-performance";
@@ -160,19 +161,14 @@ export async function fetchRecommendedPostings(
 
       const profiles = posting.profiles as Record<string, unknown> | null;
       // Derive skills from join table
-      const joinSkills = (
-        posting.posting_skills as
-          | { skill_nodes: { name: string } | null }[]
-          | null
-      )
-        ?.map((ps) => ps.skill_nodes?.name)
-        .filter((n): n is string => !!n);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const joinSkills = deriveSkillNames(posting.posting_skills as any[]);
       return {
         id: posting.id,
         title: posting.title,
         description: posting.description,
         skills:
-          joinSkills && joinSkills.length > 0
+          joinSkills.length > 0
             ? joinSkills
             : (posting.skills as string[]) || [],
         teamSize: `${posting.team_size_min}-${posting.team_size_max} people`,

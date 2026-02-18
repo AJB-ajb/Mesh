@@ -294,24 +294,33 @@ export default function PostingDetailPage() {
       return;
     }
 
-    // Sync posting_skills join table
-    if (form.selectedSkills.length > 0) {
-      await supabase
-        .from("posting_skills")
-        .delete()
-        .eq("posting_id", postingId);
+    // Sync posting_skills join table: always clear, then re-insert if needed
+    const { error: deleteError } = await supabase
+      .from("posting_skills")
+      .delete()
+      .eq("posting_id", postingId);
 
+    if (deleteError) {
+      setIsSaving(false);
+      setError("Failed to update skills. Please try again.");
+      return;
+    }
+
+    if (form.selectedSkills.length > 0) {
       const postingSkillRows = form.selectedSkills.map((s) => ({
         posting_id: postingId,
         skill_id: s.skillId,
         level_min: s.levelMin,
       }));
-      await supabase.from("posting_skills").insert(postingSkillRows);
-    } else {
-      await supabase
+      const { error: insertError } = await supabase
         .from("posting_skills")
-        .delete()
-        .eq("posting_id", postingId);
+        .insert(postingSkillRows);
+
+      if (insertError) {
+        setIsSaving(false);
+        setError("Failed to save skills. Please try again.");
+        return;
+      }
     }
 
     setIsSaving(false);

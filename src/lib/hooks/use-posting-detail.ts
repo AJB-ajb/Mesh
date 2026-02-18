@@ -2,19 +2,7 @@ import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import type { ScoreBreakdown, Profile } from "@/lib/supabase/types";
 import type { SelectedPostingSkill } from "@/lib/types/skill";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function deriveSkillNames(joinRows: any[] | null | undefined): string[] {
-  if (!joinRows || joinRows.length === 0) return [];
-  return joinRows
-    .map((r) => {
-      const node = r.skill_nodes;
-      return typeof node === "object" && node && "name" in node
-        ? (node.name as string)
-        : null;
-    })
-    .filter((n): n is string => !!n);
-}
+import { deriveSkillNames } from "@/lib/skills/derive";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -133,14 +121,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
   if (rawPosting) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const psRows = (rawPosting.posting_skills as any[]) ?? [];
-    const joinSkills = psRows
-      .map((ps) => {
-        const node = ps.skill_nodes;
-        return typeof node === "object" && node && "name" in node
-          ? (node.name as string)
-          : null;
-      })
-      .filter((n): n is string => !!n);
+    const joinSkills = deriveSkillNames(psRows);
 
     // Build selectedPostingSkills for edit mode
     const selectedPostingSkills: SelectedPostingSkill[] = psRows

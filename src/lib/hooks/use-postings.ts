@@ -2,6 +2,7 @@ import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { formatScore } from "@/lib/matching/scoring";
 import type { ScoreBreakdown } from "@/lib/supabase/types";
+import { deriveSkillNames } from "@/lib/skills/derive";
 
 type Posting = {
   id: string;
@@ -97,16 +98,7 @@ async function fetchPostings(key: string): Promise<PostingsResult> {
 
   const postings = (data || []).map((row) => {
     // Derive skills from join table, fall back to old column
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const psRows = (row.posting_skills as any[]) ?? [];
-    const joinSkills = psRows
-      .map((ps) => {
-        const node = ps.skill_nodes;
-        return typeof node === "object" && node && "name" in node
-          ? (node.name as string)
-          : null;
-      })
-      .filter((n): n is string => !!n);
+    const joinSkills = deriveSkillNames(row.posting_skills);
     return {
       ...row,
       skills: joinSkills.length > 0 ? joinSkills : row.skills || [],

@@ -21,24 +21,10 @@ import { apiError } from "@/lib/errors";
 const BATCH_LIMIT = 50;
 const MAX_RETRIES = 2;
 
+import { deriveSkillsWithFallback } from "@/lib/skills/derive";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JoinSkillRow = { skill_nodes: any };
-
-function deriveSkills(
-  joinRows: JoinSkillRow[] | null | undefined,
-  fallback: string[] | null,
-): string[] | null {
-  if (!joinRows || joinRows.length === 0) return fallback;
-  const names = joinRows
-    .map((r) => {
-      const node = r.skill_nodes;
-      return typeof node === "object" && node && "name" in node
-        ? (node.name as string)
-        : null;
-    })
-    .filter((n): n is string => !!n);
-  return names.length > 0 ? names : fallback;
-}
 
 interface ProfileRow {
   user_id: string;
@@ -166,7 +152,7 @@ export async function POST(req: Request) {
     for (const profile of profiles) {
       const text = composeProfileText(
         profile.bio,
-        deriveSkills(profile.profile_skills, profile.skills),
+        deriveSkillsWithFallback(profile.profile_skills, profile.skills),
         profile.interests,
         profile.headline,
       );
@@ -185,7 +171,7 @@ export async function POST(req: Request) {
       const text = composePostingText(
         posting.title,
         posting.description,
-        deriveSkills(posting.posting_skills, posting.skills),
+        deriveSkillsWithFallback(posting.posting_skills, posting.skills),
       );
       if (text.trim()) {
         postingTexts.push({
