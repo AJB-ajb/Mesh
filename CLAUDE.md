@@ -1,5 +1,8 @@
-See `.AGENTS.md` for agent workflow rules and dev reference.
-See `spec/` for product specifications.
+## CRITICAL — Read Before Any Task
+
+1. **Read `.AGENTS.md` first.** Before writing or modifying any code, read `.AGENTS.md` in full. It contains workflow rules, conventions, and the testing checklist you must follow.
+2. **Never commit code directly to `dev` or `main`.** Always create a feature/fix branch. Use a **git worktree** branched off `dev` for all code work (unless you are in the web environment). Documentation-only changes on `dev` are fine.
+3. See `spec/` for product specifications.
 
 ## Bash Tool Rules
 
