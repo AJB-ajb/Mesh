@@ -21,7 +21,7 @@ import { apiError } from "@/lib/errors";
 const BATCH_LIMIT = 50;
 const MAX_RETRIES = 2;
 
-import { deriveSkillsWithFallback } from "@/lib/skills/derive";
+import { deriveSkillNames } from "@/lib/skills/derive";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JoinSkillRow = { skill_nodes: any };
@@ -152,7 +152,7 @@ export async function POST(req: Request) {
     for (const profile of profiles) {
       const text = composeProfileText(
         profile.bio,
-        deriveSkillsWithFallback(profile.profile_skills, profile.skills),
+        deriveSkillNames(profile.profile_skills),
         profile.interests,
         profile.headline,
       );
@@ -171,7 +171,7 @@ export async function POST(req: Request) {
       const text = composePostingText(
         posting.title,
         posting.description,
-        deriveSkillsWithFallback(posting.posting_skills, posting.skills),
+        deriveSkillNames(posting.posting_skills),
       );
       if (text.trim()) {
         postingTexts.push({

@@ -41,25 +41,6 @@ export function useProfileSave(
       const locationLat = Number(form.locationLat);
       const locationLng = Number(form.locationLng);
 
-      // Derive backward-compat fields from selectedSkills
-      const skillLevelsObj: Record<string, number> = {};
-      for (const sl of form.skillLevels) {
-        if (sl.name.trim()) {
-          skillLevelsObj[sl.name.trim()] = sl.level;
-        }
-      }
-      // Also add selectedSkills to the skill_levels object for backward compat
-      for (const ss of form.selectedSkills) {
-        skillLevelsObj[ss.name] = ss.level;
-      }
-
-      // Merge selectedSkills names into the free-form skills array
-      const selectedSkillNames = form.selectedSkills.map((s) => s.name);
-      const freeFormSkills = parseList(form.skills);
-      const allSkillNames = [
-        ...new Set([...selectedSkillNames, ...freeFormSkills]),
-      ];
-
       const { error: upsertError } = await supabase.from("profiles").upsert(
         {
           user_id: user.id,
@@ -69,12 +50,10 @@ export function useProfileSave(
           location: form.location.trim(),
           location_lat: Number.isFinite(locationLat) ? locationLat : null,
           location_lng: Number.isFinite(locationLng) ? locationLng : null,
-          skills: allSkillNames,
           interests: parseList(form.interests),
           languages: parseList(form.languages),
           portfolio_url: form.portfolioUrl.trim(),
           github_url: form.githubUrl.trim(),
-          skill_levels: skillLevelsObj,
           location_mode: form.locationMode,
           availability_slots: form.availabilitySlots,
           updated_at: new Date().toISOString(),
@@ -109,6 +88,14 @@ export function useProfileSave(
           .delete()
           .eq("profile_id", user.id);
       }
+
+      // Mark profile as needing re-embedding since skills changed.
+      // The old DB trigger fired on `skills` column writes, but we no longer
+      // write that column. Temporary workaround until PR 3 adds join table triggers.
+      await supabase
+        .from("profiles")
+        .update({ needs_embedding: true })
+        .eq("user_id", user.id);
 
       setIsSaving(false);
 

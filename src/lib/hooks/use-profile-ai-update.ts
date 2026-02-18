@@ -47,12 +47,10 @@ export function useProfileAiUpdate(
         headline: currentForm.headline,
         bio: currentForm.bio,
         location: currentForm.location,
-        skills: parseList(currentForm.skills),
         interests: parseList(currentForm.interests),
         languages: parseList(currentForm.languages),
         portfolio_url: currentForm.portfolioUrl,
         github_url: currentForm.githubUrl,
-        skill_levels: currentForm.skillLevels,
         location_mode: currentForm.locationMode,
         availability_slots: currentForm.availabilitySlots,
       };
@@ -75,9 +73,6 @@ export function useProfileAiUpdate(
           ...(extractedProfile.location != null && {
             location: extractedProfile.location,
           }),
-          ...(extractedProfile.skills != null && {
-            skills: extractedProfile.skills,
-          }),
           ...(extractedProfile.interests != null && {
             interests: extractedProfile.interests,
           }),
@@ -89,9 +84,6 @@ export function useProfileAiUpdate(
           }),
           ...(extractedProfile.github_url != null && {
             github_url: extractedProfile.github_url,
-          }),
-          ...(extractedProfile.skill_levels != null && {
-            skill_levels: extractedProfile.skill_levels,
           }),
           ...(extractedProfile.location_mode != null && {
             location_mode: extractedProfile.location_mode,
@@ -164,7 +156,6 @@ export function useProfileAiUpdate(
         ...(snapshot.headline != null && { headline: snapshot.headline }),
         ...(snapshot.bio != null && { bio: snapshot.bio }),
         ...(snapshot.location != null && { location: snapshot.location }),
-        ...(snapshot.skills != null && { skills: snapshot.skills }),
         ...(snapshot.interests != null && { interests: snapshot.interests }),
         ...(snapshot.languages != null && { languages: snapshot.languages }),
         ...(snapshot.portfolio_url != null && {
@@ -172,9 +163,6 @@ export function useProfileAiUpdate(
         }),
         ...(snapshot.github_url != null && {
           github_url: snapshot.github_url,
-        }),
-        ...(snapshot.skill_levels != null && {
-          skill_levels: snapshot.skill_levels,
         }),
         ...(snapshot.location_mode != null && {
           location_mode: snapshot.location_mode,

@@ -88,13 +88,17 @@ describe("useProfileSave", () => {
     mockGetUser.mockResolvedValue({ data: { user: fakeUser } });
 
     const upsertMock = vi.fn().mockResolvedValue({ error: null });
+    const updateMock = vi.fn().mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ error: null }),
+    });
     const deleteMock = vi.fn().mockReturnValue({
       eq: vi.fn().mockResolvedValue({ error: null }),
     });
     const insertMock = vi.fn().mockResolvedValue({ error: null });
 
     mockFrom.mockImplementation((table: string) => {
-      if (table === "profiles") return { upsert: upsertMock };
+      if (table === "profiles")
+        return { upsert: upsertMock, update: updateMock };
       if (table === "profile_skills")
         return { delete: deleteMock, insert: insertMock };
       return {};
@@ -113,8 +117,12 @@ describe("useProfileSave", () => {
     const upsertArgs = upsertMock.mock.calls[0];
     expect(upsertArgs[0].user_id).toBe("user-1");
     expect(upsertArgs[0].full_name).toBe("Test User");
-    expect(upsertArgs[0].skills).toEqual(["React", "TypeScript"]);
+    expect(upsertArgs[0].skills).toBeUndefined(); // no longer dual-written
+    expect(upsertArgs[0].skill_levels).toBeUndefined(); // no longer dual-written
     expect(upsertArgs[0].location_mode).toBe("remote");
+
+    // Verify needs_embedding is set
+    expect(updateMock).toHaveBeenCalledWith({ needs_embedding: true });
     expect(upsertArgs[1]).toEqual({ onConflict: "user_id" });
 
     expect(onSuccess).toHaveBeenCalledTimes(1);

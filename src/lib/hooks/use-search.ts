@@ -1,6 +1,6 @@
 import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
-import { deriveSkillsWithFallback } from "@/lib/skills/derive";
+import { deriveSkillNames } from "@/lib/skills/derive";
 
 type SearchResult = {
   id: string;
@@ -42,7 +42,7 @@ async function fetchSearchResults(key: string): Promise<SearchResult[]> {
     subtitle:
       p.description?.slice(0, 80) + (p.description?.length > 80 ? "..." : "") ||
       "",
-    skills: deriveSkillsWithFallback(p.posting_skills, p.skills) || [],
+    skills: deriveSkillNames(p.posting_skills),
     status: p.status,
   }));
 
@@ -51,7 +51,7 @@ async function fetchSearchResults(key: string): Promise<SearchResult[]> {
     type: "profile",
     title: p.full_name || "Unknown",
     subtitle: p.headline || "",
-    skills: deriveSkillsWithFallback(p.profile_skills, p.skills) || [],
+    skills: deriveSkillNames(p.profile_skills),
   }));
 
   return [...postingResults, ...profileResults];

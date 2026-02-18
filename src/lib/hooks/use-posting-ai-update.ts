@@ -44,13 +44,9 @@ export function usePostingAiUpdate(
       const currentSnapshot: Record<string, unknown> = {
         title: currentForm.title,
         description: currentForm.description,
-        skills: parseList(currentForm.skills),
         category: currentForm.category,
         estimated_time: currentForm.estimatedTime,
         team_size_max: parseInt(currentForm.lookingFor, 10) || 5,
-        skill_level_min: currentForm.skillLevelMin
-          ? parseInt(currentForm.skillLevelMin, 10)
-          : null,
         tags: currentForm.tags ? parseList(currentForm.tags) : [],
         context_identifier: currentForm.contextIdentifier || null,
         mode: currentForm.mode,
@@ -69,9 +65,6 @@ export function usePostingAiUpdate(
           ...(extractedPosting.description != null && {
             description: extractedPosting.description,
           }),
-          ...(extractedPosting.skills != null && {
-            skills: extractedPosting.skills,
-          }),
           ...(extractedPosting.category != null && {
             category: extractedPosting.category,
           }),
@@ -80,9 +73,6 @@ export function usePostingAiUpdate(
           }),
           ...(extractedPosting.team_size_max != null && {
             team_size_max: extractedPosting.team_size_max,
-          }),
-          ...(extractedPosting.skill_level_min != null && {
-            skill_level_min: extractedPosting.skill_level_min,
           }),
           ...(extractedPosting.tags != null && {
             tags: extractedPosting.tags,
@@ -157,16 +147,12 @@ export function usePostingAiUpdate(
         ...(snapshot.description != null && {
           description: snapshot.description,
         }),
-        ...(snapshot.skills != null && { skills: snapshot.skills }),
         ...(snapshot.category != null && { category: snapshot.category }),
         ...(snapshot.estimated_time != null && {
           estimated_time: snapshot.estimated_time,
         }),
         ...(snapshot.team_size_max != null && {
           team_size_max: snapshot.team_size_max,
-        }),
-        ...(snapshot.skill_level_min != null && {
-          skill_level_min: snapshot.skill_level_min,
         }),
         ...(snapshot.tags != null && { tags: snapshot.tags }),
         ...(snapshot.context_identifier != null && {
