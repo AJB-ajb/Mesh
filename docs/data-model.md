@@ -15,31 +15,29 @@ This document describes the database schema for the Meshit application. It cover
 
 User profile information including skills, preferences, and matching-related data.
 
-| Field                       | Type             | Nullable | Default  | Description                                                           |
-| --------------------------- | ---------------- | -------- | -------- | --------------------------------------------------------------------- |
-| `user_id`                   | uuid             | NO       | -        | Primary key, references `auth.users(id)`                              |
-| `full_name`                 | text             | YES      | null     | User's display name                                                   |
-| `headline`                  | text             | YES      | null     | Short professional headline                                           |
-| `bio`                       | text             | YES      | null     | Longer biography/description                                          |
-| `location`                  | text             | YES      | null     | Human-readable location string for display                            |
-| `location_lat`              | double precision | YES      | null     | Latitude coordinate for matching                                      |
-| `location_lng`              | double precision | YES      | null     | Longitude coordinate for matching                                     |
-| `skills`                    | text[]           | YES      | null     | Array of skill strings (backward-compat keyword matching)             |
-| `skill_levels`              | jsonb            | YES      | null     | Domain-to-level map, e.g. `{"frontend": 7, "design": 4}` (0-10 scale) |
-| `interests`                 | text[]           | YES      | null     | Array of interest strings                                             |
-| `languages`                 | text[]           | YES      | '{}'     | Spoken languages (ISO codes: en, de, es, etc.)                        |
-| `location_mode`             | text             | YES      | 'either' | One of: remote, in_person, either                                     |
-| `location_preference`       | double precision | YES      | null     | 0.0 = in-person only, 0.5 = either, 1.0 = remote only                 |
-| `availability_slots`        | jsonb            | YES      | null     | Weekly availability grid, e.g. `{"mon": ["morning","evening"]}`       |
-| `collaboration_style`       | text             | YES      | null     | **Optional:** One of: async, sync, hybrid                             |
-| `portfolio_url`             | text             | YES      | null     | Link to portfolio                                                     |
-| `github_url`                | text             | YES      | null     | Link to GitHub profile                                                |
-| `source_text`               | text             | YES      | null     | Free-form text description that profile fields are derived from       |
-| `previous_source_text`      | text             | YES      | null     | Previous source_text for single-level undo                            |
-| `previous_profile_snapshot` | jsonb            | YES      | null     | Previous profile field values (JSON) for single-level undo            |
-| `embedding`                 | vector(1536)     | YES      | null     | OpenAI embedding for semantic matching                                |
-| `created_at`                | timestamptz      | NO       | now()    | Record creation timestamp                                             |
-| `updated_at`                | timestamptz      | NO       | now()    | Last update timestamp (auto-updated)                                  |
+| Field                       | Type             | Nullable | Default  | Description                                                     |
+| --------------------------- | ---------------- | -------- | -------- | --------------------------------------------------------------- |
+| `user_id`                   | uuid             | NO       | -        | Primary key, references `auth.users(id)`                        |
+| `full_name`                 | text             | YES      | null     | User's display name                                             |
+| `headline`                  | text             | YES      | null     | Short professional headline                                     |
+| `bio`                       | text             | YES      | null     | Longer biography/description                                    |
+| `location`                  | text             | YES      | null     | Human-readable location string for display                      |
+| `location_lat`              | double precision | YES      | null     | Latitude coordinate for matching                                |
+| `location_lng`              | double precision | YES      | null     | Longitude coordinate for matching                               |
+| `interests`                 | text[]           | YES      | null     | Array of interest strings                                       |
+| `languages`                 | text[]           | YES      | '{}'     | Spoken languages (ISO codes: en, de, es, etc.)                  |
+| `location_mode`             | text             | YES      | 'either' | One of: remote, in_person, either                               |
+| `location_preference`       | double precision | YES      | null     | 0.0 = in-person only, 0.5 = either, 1.0 = remote only           |
+| `availability_slots`        | jsonb            | YES      | null     | Weekly availability grid, e.g. `{"mon": ["morning","evening"]}` |
+| `collaboration_style`       | text             | YES      | null     | **Optional:** One of: async, sync, hybrid                       |
+| `portfolio_url`             | text             | YES      | null     | Link to portfolio                                               |
+| `github_url`                | text             | YES      | null     | Link to GitHub profile                                          |
+| `source_text`               | text             | YES      | null     | Free-form text description that profile fields are derived from |
+| `previous_source_text`      | text             | YES      | null     | Previous source_text for single-level undo                      |
+| `previous_profile_snapshot` | jsonb            | YES      | null     | Previous profile field values (JSON) for single-level undo      |
+| `embedding`                 | vector(1536)     | YES      | null     | OpenAI embedding for semantic matching                          |
+| `created_at`                | timestamptz      | NO       | now()    | Record creation timestamp                                       |
+| `updated_at`                | timestamptz      | NO       | now()    | Last update timestamp (auto-updated)                            |
 
 **RLS Policies:**
 
@@ -109,17 +107,6 @@ Matches between users and projects, including scores and status.
 
 ## JSONB Structures
 
-### skill_levels (profiles)
-
-Stored in `profiles.skill_levels`:
-
-```typescript
-// Map of domain name → skill level (0-10)
-// Reference: 1-2 Beginner, 3-4 Can follow tutorials, 5-6 Intermediate, 7-8 Advanced, 9-10 Expert
-type SkillLevels = Record<string, number>;
-// Example: { "frontend": 7, "python": 5, "design": 3 }
-```
-
 ### availability_slots (profiles)
 
 Stored in `profiles.availability_slots`:
@@ -169,12 +156,11 @@ auth.users
 
 Fields kept for backward compatibility but superseded by newer fields:
 
-| Table    | Field                          | Superseded By                  | Reason Kept                          |
-| -------- | ------------------------------ | ------------------------------ | ------------------------------------ |
-| profiles | `location` (text)              | `location_lat`, `location_lng` | Human-readable display in UI         |
-| profiles | `skills` (text[])              | `skill_levels` (jsonb)         | Keyword matching and backward compat |
-| profiles | `location_preference` (double) | `location_mode` (text)         | Continuous scale kept for scoring    |
-| profiles | `collaboration_style`          | —                              | Optional, demoted from required      |
+| Table    | Field                          | Superseded By                  | Reason Kept                       |
+| -------- | ------------------------------ | ------------------------------ | --------------------------------- |
+| profiles | `location` (text)              | `location_lat`, `location_lng` | Human-readable display in UI      |
+| profiles | `location_preference` (double) | `location_mode` (text)         | Continuous scale kept for scoring |
+| profiles | `collaboration_style`          | —                              | Optional, demoted from required   |
 
 ### Removed Columns (dropped in redesign migration)
 
@@ -185,6 +171,10 @@ Fields kept for backward compatibility but superseded by newer fields:
 | profiles | `availability_hours`  | `availability_slots`                    | `20260207000000_redesign_postings_schema.sql` |
 | profiles | `project_preferences` | — (removed)                             | `20260207000000_redesign_postings_schema.sql` |
 | profiles | `hard_filters`        | — (removed)                             | `20260207000000_redesign_postings_schema.sql` |
+| profiles | `skills`              | `profile_skills` join table             | `20260218155203_drop_old_skill_columns.sql`   |
+| profiles | `skill_levels`        | `profile_skills` join table (per-skill) | `20260218155203_drop_old_skill_columns.sql`   |
+| postings | `skills`              | `posting_skills` join table             | `20260218155203_drop_old_skill_columns.sql`   |
+| postings | `skill_level_min`     | `posting_skills.level_min` (per-skill)  | `20260218155203_drop_old_skill_columns.sql`   |
 
 ---
 

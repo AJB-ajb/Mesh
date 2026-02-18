@@ -77,26 +77,6 @@ export function PostingMatchedProfilesCard({
                           {matchedProfile.headline}
                         </p>
                       )}
-                      {matchedProfile.skills &&
-                        matchedProfile.skills.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {matchedProfile.skills.slice(0, 4).map((skill) => (
-                              <Badge
-                                key={skill}
-                                variant="outline"
-                                className="text-xs"
-                              >
-                                {skill}
-                              </Badge>
-                            ))}
-                            {matchedProfile.skills.length > 4 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{matchedProfile.skills.length - 4} more
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-
                       {/* Match Breakdown */}
                       <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                         {(

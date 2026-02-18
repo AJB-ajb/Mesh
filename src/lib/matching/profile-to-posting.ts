@@ -31,7 +31,7 @@ export async function matchProfileToPostings(
   // First, get the user's profile and embedding
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("embedding, bio, skills, interests, headline")
+    .select("embedding, bio, interests, headline")
     .eq("user_id", userId)
     .single();
 
@@ -86,7 +86,6 @@ export async function matchProfileToPostings(
         creator_id: row.creator_id,
         title: row.title,
         description: row.description,
-        skills: row.skills || [],
         team_size_min: row.team_size_min || 1,
         team_size_max: row.team_size_max || 1,
         category: row.category || null,
@@ -96,7 +95,6 @@ export async function matchProfileToPostings(
         location_preference: row.location_preference ?? null,
         natural_language_criteria: row.natural_language_criteria || null,
         estimated_time: row.estimated_time || null,
-        skill_level_min: row.skill_level_min ?? null,
         auto_accept: row.auto_accept ?? false,
         embedding: null,
         status: "open",

@@ -228,7 +228,7 @@ export default function PostingDetailPage() {
       maxDistanceKm: posting.max_distance_km?.toString() || "",
       tags: posting.tags?.join(", ") || "",
       contextIdentifier: posting.context_identifier || "",
-      skillLevelMin: posting.skill_level_min?.toString() || "",
+      skillLevelMin: "",
       autoAccept: posting.auto_accept ? "true" : "false",
       selectedSkills: posting.selectedPostingSkills ?? [],
     });

@@ -98,10 +98,6 @@ export function mergeWithExistingProfile(
   // If no existing profile, build from GitHub data
   if (!existingProfile) {
     return {
-      skills: [
-        ...githubData.primaryLanguages.slice(0, 5),
-        ...githubData.inferredSkills.slice(0, 10),
-      ],
       interests: githubData.inferredInterests.slice(0, 10),
       github_url: githubData.githubUrl,
       bio: githubData.suggestedBio,
@@ -110,13 +106,6 @@ export function mergeWithExistingProfile(
 
   // Merge with existing profile - user data takes precedence
   const update: ProfileUpdate = {};
-
-  // Skills: merge languages + inferred skills with existing
-  const combinedGitHubSkills = [
-    ...githubData.primaryLanguages.slice(0, 5),
-    ...githubData.inferredSkills,
-  ];
-  update.skills = mergeArrays(existingProfile.skills, combinedGitHubSkills);
 
   // Interests: merge with existing
   update.interests = mergeArrays(
@@ -141,17 +130,6 @@ export function shouldUpdateProfile(
   existingProfile: Profile,
   githubData: GitHubProfileData,
 ): boolean {
-  // Check if there are new skills to add
-  const existingSkills = new Set(
-    (existingProfile.skills || []).map((s) => s.toLowerCase()),
-  );
-  const newSkills = [
-    ...githubData.primaryLanguages,
-    ...githubData.inferredSkills,
-  ].filter((s) => !existingSkills.has(s.toLowerCase()));
-
-  if (newSkills.length >= 3) return true;
-
   // Check if there are new interests
   const existingInterests = new Set(
     (existingProfile.interests || []).map((s) => s.toLowerCase()),
@@ -177,17 +155,16 @@ export function getProfileSuggestions(
   suggestedSkills: string[];
   suggestedInterests: string[];
 } {
-  const existingSkills = new Set(
-    (existingProfile?.skills || []).map((s) => s.toLowerCase()),
-  );
   const existingInterests = new Set(
     (existingProfile?.interests || []).map((s) => s.toLowerCase()),
   );
 
+  // Return all GitHub skills as suggestions (no dedup against profile —
+  // old skills/skill_levels columns have been dropped)
   const suggestedSkills = [
     ...githubData.primaryLanguages,
     ...githubData.inferredSkills,
-  ].filter((s) => !existingSkills.has(s.toLowerCase()));
+  ];
 
   const suggestedInterests = githubData.inferredInterests.filter(
     (s) => !existingInterests.has(s.toLowerCase()),

@@ -88,17 +88,13 @@ describe("useProfileSave", () => {
     mockGetUser.mockResolvedValue({ data: { user: fakeUser } });
 
     const upsertMock = vi.fn().mockResolvedValue({ error: null });
-    const updateMock = vi.fn().mockReturnValue({
-      eq: vi.fn().mockResolvedValue({ error: null }),
-    });
     const deleteMock = vi.fn().mockReturnValue({
       eq: vi.fn().mockResolvedValue({ error: null }),
     });
     const insertMock = vi.fn().mockResolvedValue({ error: null });
 
     mockFrom.mockImplementation((table: string) => {
-      if (table === "profiles")
-        return { upsert: upsertMock, update: updateMock };
+      if (table === "profiles") return { upsert: upsertMock };
       if (table === "profile_skills")
         return { delete: deleteMock, insert: insertMock };
       return {};
@@ -121,8 +117,7 @@ describe("useProfileSave", () => {
     expect(upsertArgs[0].skill_levels).toBeUndefined(); // no longer dual-written
     expect(upsertArgs[0].location_mode).toBe("remote");
 
-    // Verify needs_embedding is set
-    expect(updateMock).toHaveBeenCalledWith({ needs_embedding: true });
+    // needs_embedding is now handled by join table triggers (no manual update)
     expect(upsertArgs[1]).toEqual({ onConflict: "user_id" });
 
     expect(onSuccess).toHaveBeenCalledTimes(1);

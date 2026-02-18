@@ -194,14 +194,6 @@ export function PostingAboutCard({
           </div>
         )}
 
-        {/* Skill Level Minimum */}
-        {!isEditing && posting.skill_level_min != null && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Minimum Skill Level</h4>
-            <span className="text-sm">{posting.skill_level_min}/10</span>
-          </div>
-        )}
-
         {/* Meta */}
         {isEditing ? (
           <div className="grid gap-4 sm:grid-cols-2">

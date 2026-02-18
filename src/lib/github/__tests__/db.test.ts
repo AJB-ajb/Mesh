@@ -367,14 +367,14 @@ describe("GitHub DB Operations", () => {
       mockFrom.mockReturnValue(chain);
 
       await updateUserProfile("user-1", {
-        skills: ["React", "TypeScript"],
+        interests: ["React", "TypeScript"],
         github_url: "https://github.com/testuser",
       });
 
       expect(mockFrom).toHaveBeenCalledWith("profiles");
       expect(chain.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          skills: ["React", "TypeScript"],
+          interests: ["React", "TypeScript"],
           github_url: "https://github.com/testuser",
           updated_at: expect.any(String),
         }),
@@ -386,7 +386,7 @@ describe("GitHub DB Operations", () => {
       mockFrom.mockReturnValue(chain);
 
       await expect(
-        updateUserProfile("user-1", { skills: ["React"] }),
+        updateUserProfile("user-1", { interests: ["React"] }),
       ).rejects.toThrow("Failed to update user profile");
     });
   });
@@ -396,7 +396,7 @@ describe("GitHub DB Operations", () => {
       const profileRow = {
         user_id: "user-1",
         full_name: "Test User",
-        skills: ["React"],
+        interests: ["React"],
       };
       const chain = mockChain({ data: profileRow, error: null });
       mockFrom.mockReturnValue(chain);

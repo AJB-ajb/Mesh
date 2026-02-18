@@ -36,12 +36,10 @@ function defaultExpiresAt(): string {
 export type ExtractedPosting = {
   title?: string;
   description?: string;
-  skills?: string[];
   category?: string;
   estimated_time?: string;
   team_size_min?: number;
   team_size_max?: number;
-  skill_level_min?: number;
   tags?: string[];
   context_identifier?: string;
   mode?: string;

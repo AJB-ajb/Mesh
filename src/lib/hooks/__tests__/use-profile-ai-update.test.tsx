@@ -114,7 +114,7 @@ describe("useProfileAiUpdate", () => {
     await act(async () => {
       await result.current.applyFreeFormUpdate("updated text", {
         full_name: "Updated Name",
-        skills: ["React", "Node"],
+        interests: ["AI", "ML"],
       });
     });
 

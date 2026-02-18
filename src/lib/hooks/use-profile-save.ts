@@ -89,14 +89,6 @@ export function useProfileSave(
           .eq("profile_id", user.id);
       }
 
-      // Mark profile as needing re-embedding since skills changed.
-      // The old DB trigger fired on `skills` column writes, but we no longer
-      // write that column. Temporary workaround until PR 3 adds join table triggers.
-      await supabase
-        .from("profiles")
-        .update({ needs_embedding: true })
-        .eq("user_id", user.id);
-
       setIsSaving(false);
 
       triggerEmbeddingGeneration();

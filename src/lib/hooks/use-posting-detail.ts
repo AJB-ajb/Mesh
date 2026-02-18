@@ -30,7 +30,6 @@ export type PostingDetail = {
   max_distance_km: number | null;
   tags?: string[];
   context_identifier?: string | null;
-  skill_level_min?: number | null;
   auto_accept: boolean;
   source_text?: string | null;
   previous_source_text?: string | null;
@@ -39,7 +38,6 @@ export type PostingDetail = {
   profiles?: {
     full_name: string | null;
     headline: string | null;
-    skills: string[] | null;
     user_id: string;
   };
 };
@@ -53,7 +51,6 @@ export type Application = {
   profiles?: {
     full_name: string | null;
     headline: string | null;
-    skills: string[] | null;
     user_id: string;
   };
 };
@@ -63,7 +60,6 @@ export type MatchedProfile = {
   user_id: string;
   full_name: string | null;
   headline: string | null;
-  skills: string[] | null;
   overall_score: number;
   breakdown: ScoreBreakdown;
 };
@@ -108,7 +104,6 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
       profiles:creator_id (
         full_name,
         headline,
-        skills,
         user_id
       ),
       posting_skills(skill_id, level_min, skill_nodes(id, name, parent_id, depth))
@@ -141,7 +136,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
 
     posting = {
       ...rawPosting,
-      skills: joinSkills.length > 0 ? joinSkills : rawPosting.skills || [],
+      skills: joinSkills,
       selectedPostingSkills,
     };
   }
@@ -234,7 +229,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
       supabase
         .from("profiles")
         .select(
-          "user_id, full_name, headline, skills, skill_levels, location_preference, availability_slots, profile_skills(skill_nodes(name))",
+          "user_id, full_name, headline, location_preference, availability_slots, profile_skills(skill_nodes(name))",
         ),
     ]);
 
@@ -244,7 +239,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
       const { data: profilesData } = await supabase
         .from("profiles")
         .select(
-          "full_name, headline, skills, user_id, profile_skills(skill_nodes(name))",
+          "full_name, headline, user_id, profile_skills(skill_nodes(name))",
         )
         .in("user_id", applicantIds);
 
@@ -253,12 +248,10 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
           (p) => p.user_id === app.applicant_id,
         );
         if (!rawProfile) return { ...app, profiles: undefined };
-        const joinSkills = deriveSkillNames(rawProfile.profile_skills);
         return {
           ...app,
           profiles: {
             ...rawProfile,
-            skills: joinSkills.length > 0 ? joinSkills : rawProfile.skills,
           },
         };
       });
@@ -282,14 +275,11 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
 
           if (!breakdownError && breakdown) {
             const bd = breakdown as ScoreBreakdown;
-            const profJoinSkills = deriveSkillNames(profile.profile_skills);
             scored.push({
               profile_id: profile.user_id,
               user_id: profile.user_id,
               full_name: profile.full_name,
               headline: profile.headline,
-              skills:
-                profJoinSkills.length > 0 ? profJoinSkills : profile.skills,
               overall_score: computeWeightedScore(bd),
               breakdown: bd,
             });

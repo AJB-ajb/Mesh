@@ -114,12 +114,10 @@ export type ExtractedProfileV2 = {
   headline?: string;
   bio?: string;
   location?: string;
-  skills?: string[];
   interests?: string[];
   languages?: string[];
   portfolio_url?: string;
   github_url?: string;
-  skill_levels?: Record<string, number>;
   location_preference?: number;
   location_mode?: LocationMode;
   availability_slots?: Record<string, unknown>;
@@ -154,7 +152,6 @@ export function mapExtractedToFormState(
     ...(extracted.headline != null && { headline: extracted.headline }),
     ...(extracted.bio != null && { bio: extracted.bio }),
     ...(extracted.location != null && { location: extracted.location }),
-    ...(extracted.skills != null && { skills: extracted.skills.join(", ") }),
     ...(extracted.interests != null && {
       interests: extracted.interests.join(", "),
     }),
@@ -165,11 +162,6 @@ export function mapExtractedToFormState(
       portfolioUrl: extracted.portfolio_url,
     }),
     ...(extracted.github_url != null && { githubUrl: extracted.github_url }),
-    ...(extracted.skill_levels != null && {
-      skillLevels: Object.entries(extracted.skill_levels).map(
-        ([name, level]) => ({ name, level }),
-      ),
-    }),
     locationMode,
     ...(extracted.availability_slots != null && {
       availabilitySlots: extracted.availability_slots as AvailabilitySlots,

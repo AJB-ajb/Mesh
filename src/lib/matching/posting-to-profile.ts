@@ -30,7 +30,7 @@ export async function matchPostingToProfiles(
   // First, get the posting and its embedding
   const { data: posting, error: postingError } = await supabase
     .from("postings")
-    .select("embedding, creator_id, title, description, skills")
+    .select("embedding, creator_id, title, description")
     .eq("id", postingId)
     .single();
 
@@ -84,8 +84,6 @@ export async function matchPostingToProfiles(
         location: row.location || null,
         location_lat: row.location_lat || null,
         location_lng: row.location_lng || null,
-        skills: row.skills || [],
-        skill_levels: row.skill_levels || null,
         interests: row.interests || null,
         languages: row.languages || null,
         portfolio_url: row.portfolio_url || null,

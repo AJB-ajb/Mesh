@@ -141,27 +141,6 @@ export function PostingApplicationsCard({
                           </p>
                         </div>
                       )}
-                      {application.profiles?.skills &&
-                        application.profiles.skills.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {application.profiles.skills
-                              .slice(0, 5)
-                              .map((skill) => (
-                                <Badge
-                                  key={skill}
-                                  variant="outline"
-                                  className="text-xs"
-                                >
-                                  {skill}
-                                </Badge>
-                              ))}
-                            {application.profiles.skills.length > 5 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{application.profiles.skills.length - 5} more
-                              </Badge>
-                            )}
-                          </div>
-                        )}
                       <p className="mt-2 text-xs text-muted-foreground">
                         Requested {formatDate(application.created_at)}
                       </p>

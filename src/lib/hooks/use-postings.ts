@@ -24,7 +24,6 @@ type Posting = {
   location_mode: string | null;
   location_name: string | null;
   estimated_time: string | null;
-  skill_level_min: number | null;
   context_identifier: string | null;
   natural_language_criteria: string | null;
   status: string;
@@ -97,11 +96,11 @@ async function fetchPostings(key: string): Promise<PostingsResult> {
   }
 
   const postings = (data || []).map((row) => {
-    // Derive skills from join table, fall back to old column
+    // Derive skills from join table
     const joinSkills = deriveSkillNames(row.posting_skills);
     return {
       ...row,
-      skills: joinSkills.length > 0 ? joinSkills : row.skills || [],
+      skills: joinSkills,
     };
   }) as PostingWithScore[];
 

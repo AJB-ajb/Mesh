@@ -239,18 +239,7 @@ describe("PostingAboutCard", () => {
     expect(screen.getByText("CS101")).toBeInTheDocument();
   });
 
-  it("renders skill level minimum in view mode", () => {
-    const posting = { ...basePosting, skill_level_min: 5 };
-    render(
-      <PostingAboutCard
-        posting={posting}
-        isEditing={false}
-        form={baseForm}
-        onFormChange={onFormChange}
-      />,
-    );
-    expect(screen.getByText("5/10")).toBeInTheDocument();
-  });
+  // skill_level_min column dropped — now per-skill in posting_skills join table
 
   it("renders textarea in editing mode", () => {
     render(

@@ -3,7 +3,12 @@ import { Check, MessageSquare, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { MatchResponse, Posting } from "@/lib/supabase/types";
+import type {
+  MatchResponse,
+  Posting as BasePosting,
+} from "@/lib/supabase/types";
+
+type Posting = BasePosting & { skills?: string[] };
 
 const statusColors: Record<string, string> = {
   pending: "bg-warning/10 text-warning",

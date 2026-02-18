@@ -13,9 +13,6 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-/** Typed alias for Profile.skill_levels — { "domain": 0-10 } */
-export type SkillLevelsMap = Record<string, number>;
-
 /** Typed alias for Profile.availability_slots — { "mon": ["morning", "afternoon"] } */
 export type AvailabilitySlotsMap = Record<string, string[]>;
 
@@ -65,10 +62,8 @@ export interface Profile {
   location_lat: number | null;
   location_lng: number | null;
   // Skills and matching
-  skills: string[] | null;
   interests: string[] | null;
   languages: string[] | null;
-  skill_levels: SkillLevelsMap | null;
   location_preference: number | null; // 0-1 float (0=in-person, 0.5=either, 1=remote)
   location_mode: "remote" | "in_person" | "either" | null;
   availability_slots: AvailabilitySlotsMap | null;
@@ -96,10 +91,8 @@ export interface ProfileInsert {
   location?: string | null;
   location_lat?: number | null;
   location_lng?: number | null;
-  skills?: string[] | null;
   interests?: string[] | null;
   languages?: string[] | null;
-  skill_levels?: SkillLevelsMap | null;
   location_preference?: number | null;
   location_mode?: "remote" | "in_person" | "either" | null;
   availability_slots?: AvailabilitySlotsMap | null;
@@ -122,10 +115,8 @@ export interface ProfileUpdate {
   location?: string | null;
   location_lat?: number | null;
   location_lng?: number | null;
-  skills?: string[] | null;
   interests?: string[] | null;
   languages?: string[] | null;
-  skill_levels?: SkillLevelsMap | null;
   location_preference?: number | null;
   location_mode?: "remote" | "in_person" | "either" | null;
   availability_slots?: AvailabilitySlotsMap | null;
@@ -158,14 +149,12 @@ export interface Posting {
     | null;
   context_identifier: string | null;
   tags: string[];
-  skills: string[];
   team_size_min: number;
   team_size_max: number;
   mode: "open" | "friend_ask";
   location_preference: number | null; // 0-1 float (0=in-person, 0.5=either, 1=remote)
   natural_language_criteria: string | null;
   estimated_time: string | null;
-  skill_level_min: number | null; // 0-10
   auto_accept: boolean;
   embedding: number[] | null;
   status: "open" | "closed" | "filled" | "expired" | "paused";
@@ -188,14 +177,12 @@ export interface PostingInsert {
     | null;
   context_identifier?: string | null;
   tags?: string[];
-  skills?: string[];
   team_size_min?: number;
   team_size_max?: number;
   mode?: "open" | "friend_ask";
   location_preference?: number | null;
   natural_language_criteria?: string | null;
   estimated_time?: string | null;
-  skill_level_min?: number | null;
   auto_accept?: boolean;
   embedding?: number[] | null;
   status?: "open" | "closed" | "filled" | "expired" | "paused";
@@ -218,14 +205,12 @@ export interface PostingUpdate {
     | null;
   context_identifier?: string | null;
   tags?: string[];
-  skills?: string[];
   team_size_min?: number;
   team_size_max?: number;
   mode?: "open" | "friend_ask";
   location_preference?: number | null;
   natural_language_criteria?: string | null;
   estimated_time?: string | null;
-  skill_level_min?: number | null;
   auto_accept?: boolean;
   embedding?: number[] | null;
   status?: "open" | "closed" | "filled" | "expired" | "paused";

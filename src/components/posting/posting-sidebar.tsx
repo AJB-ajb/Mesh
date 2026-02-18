@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Share2, Flag, MessageSquare, Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getInitials } from "@/lib/format";
 import type { PostingDetail } from "@/lib/hooks/use-posting-detail";
@@ -23,7 +22,6 @@ export function PostingSidebar({
 }: PostingSidebarProps) {
   const creatorName = posting.profiles?.full_name || "Unknown";
   const creatorHeadline = posting.profiles?.headline || "";
-  const creatorSkills = posting.profiles?.skills || [];
   const [shared, setShared] = useState(false);
 
   const handleShare = async () => {
@@ -69,18 +67,6 @@ export function PostingSidebar({
               )}
             </div>
           </div>
-          {creatorSkills.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Skills</p>
-              <div className="flex flex-wrap gap-1">
-                {creatorSkills.slice(0, 5).map((skill) => (
-                  <Badge key={skill} variant="outline" className="text-xs">
-                    {skill}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
           {!isOwner && (
             <Button className="w-full" onClick={onContactCreator}>
               <MessageSquare className="h-4 w-4" />
