@@ -1,7 +1,7 @@
 import useSWR from "swr";
 import type { Friendship } from "@/lib/supabase/types";
 
-type FriendshipsResponse = {
+type ConnectionsResponse = {
   friendships: (Friendship & {
     friend: {
       user_id: string;
@@ -16,12 +16,12 @@ type FriendshipsResponse = {
   })[];
 };
 
-export function useFriendships() {
+export function useConnections() {
   const { data, error, isLoading, mutate } =
-    useSWR<FriendshipsResponse>("/api/friendships");
+    useSWR<ConnectionsResponse>("/api/friendships");
 
   return {
-    friendships: data?.friendships ?? [],
+    connections: data?.friendships ?? [],
     error,
     isLoading,
     mutate,

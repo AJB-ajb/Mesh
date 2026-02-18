@@ -8,9 +8,9 @@ import {
 
 /**
  * POST /api/friend-ask/[id]/respond
- * Respond to a friend-ask (accept or decline).
+ * Respond to a sequential invite (accept or decline).
  * Body: { action: "accept" | "decline" }
- * Only the currently-asked friend can respond.
+ * Only the currently-invited connection can respond.
  */
 export const POST = withAuth(async (req, { user, supabase, params }) => {
   const { id } = params;
@@ -35,23 +35,27 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     .single();
 
   if (fetchError || !friendAsk) {
-    return apiError("NOT_FOUND", "Friend-ask not found", 404);
+    return apiError("NOT_FOUND", "Sequential invite not found", 404);
   }
 
   if (friendAsk.status !== "pending") {
     return apiError(
       "VALIDATION",
-      `Cannot respond: friend-ask status is ${friendAsk.status}`,
+      `Cannot respond: sequential invite status is ${friendAsk.status}`,
       400,
     );
   }
 
-  // Verify the user is the current friend being asked
+  // Verify the user is the currently-invited connection
   const currentFriendId =
     friendAsk.ordered_friend_list[friendAsk.current_request_index];
 
   if (user.id !== currentFriendId) {
-    return apiError("FORBIDDEN", "You are not the currently-asked friend", 403);
+    return apiError(
+      "FORBIDDEN",
+      "You are not the currently-invited connection",
+      403,
+    );
   }
 
   // Fetch responder profile name and posting title for notifications
@@ -94,7 +98,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     }
   };
 
-  // Helper: send invite notification to a friend
+  // Helper: send invite notification to the next connection
   const notifyNextFriend = async (friendId: string) => {
     const { data: recipientProfile } = await supabase
       .from("profiles")
@@ -141,11 +145,11 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
     return NextResponse.json({
       friend_ask: data,
-      message: "Friend-ask accepted",
+      message: "Sequential invite accepted",
     });
   }
 
-  // Decline: auto-advance to next friend
+  // Decline: auto-advance to next connection
   const nextIndex = friendAsk.current_request_index + 1;
 
   // Notify the creator about the decline
@@ -155,7 +159,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
   );
 
   if (nextIndex >= friendAsk.ordered_friend_list.length) {
-    // No more friends to ask
+    // No more connections to ask
     const { data, error } = await supabase
       .from("friend_asks")
       .update({ status: "completed", current_request_index: nextIndex })
@@ -172,7 +176,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     });
   }
 
-  // Advance to next friend
+  // Advance to next connection
   const { data, error } = await supabase
     .from("friend_asks")
     .update({ current_request_index: nextIndex })
@@ -182,7 +186,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
   if (error) return apiError("INTERNAL", error.message, 500);
 
-  // Auto-send invite to the next friend
+  // Auto-send invite to the next connection
   const nextFriendId = friendAsk.ordered_friend_list[nextIndex];
   await notifyNextFriend(nextFriendId);
 

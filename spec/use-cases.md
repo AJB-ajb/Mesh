@@ -22,9 +22,9 @@ These examples illustrate the variety of matching scenarios:
 
 ## Use Cases
 
-- Case: I want to do something together with exactly one friend. I need to ask one friend. If this friend isn't available, I ask another friend. This requires significant back-and-forth messaging.
-  - This is a fundamental problem emerging when searching for a limited number of people (here: 1) in a larger group (here: friends).
-  - 'Ordering friends' might seem weird, but it is a natural way to express preference that is already used in many contexts.
+- Case: I want to do something together with exactly one connection. I need to ask one connection. If this connection isn't available, I ask another. This requires significant back-and-forth messaging.
+  - This is a fundamental problem emerging when searching for a limited number of people (here: 1) in a larger group (here: connections).
+  - Ordering connections might seem unusual, but it is a natural way to express preference that is already used in many contexts.
   - Functionality: "Sequential Invite"; Select and order connections to invite; Send invites one by one until enough accept or all decline.
 
 - Case: I want to do something together with exactly one person, but I don't have a specific person in mind. I want to find a suitable person from a larger group (e.g., colleagues, classmates, community members).
@@ -33,6 +33,6 @@ These examples illustrate the variety of matching scenarios:
 
 - Case: **Hackathon with channel.** An organizer creates a channel for "XHacks 2026" with defaults (expiry: event end, category: Hackathon). Participants join via QR code at the venue. They post team-finding requests within the channel context, and matching is scoped to channel members.
 
-- Case: **Spontaneous activity with sequential invites.** A user wants to play tennis this afternoon. They create a posting with a 4-hour deadline and select 5 connections ordered by preference. The system sends invites one-by-one. If a connection's calendar shows they're busy, they're auto-skipped. The first available connection who accepts is matched.
+- Case: **Spontaneous activity with sequential invites.** A user wants to play tennis this afternoon. They create a posting with a 4-hour deadline and select 5 connections ordered by preference. The system sends invites one by one. If a connection's calendar shows they're busy, they're auto-skipped. The first available connection who accepts is matched.
 
 - Case: **Mentorship matching.** An AI safety organization creates a channel for their mentorship program. Mentors and mentees post profiles with verified credentials (GitHub, LinkedIn). The matching algorithm weighs skill level complementarity (mentor should be significantly more experienced) and interest alignment.

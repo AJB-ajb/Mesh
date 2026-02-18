@@ -5,11 +5,11 @@ import { Loader2, ListOrdered, XCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useFriendAskForPosting } from "@/lib/hooks/use-friend-ask";
-import { FriendAskSelector } from "./friend-ask-selector";
-import { FriendAskStatus } from "./friend-ask-status";
+import { useSequentialInviteForPosting } from "@/lib/hooks/use-sequential-invites";
+import { SequentialInviteSelector } from "./sequential-invite-selector";
+import { SequentialInviteStatus } from "./sequential-invite-status";
 
-type FriendItem = {
+type ConnectionItem = {
   user_id: string;
   full_name: string;
 };
@@ -23,18 +23,23 @@ export function SequentialInviteCard({
   postingId,
   currentUserId,
 }: SequentialInviteCardProps) {
-  const { friendAsk, isLoading, mutate } = useFriendAskForPosting(postingId);
-  const [selectedFriends, setSelectedFriends] = useState<FriendItem[]>([]);
+  const { sequentialInvite, isLoading, mutate } =
+    useSequentialInviteForPosting(postingId);
+  const [selectedConnections, setSelectedConnections] = useState<
+    ConnectionItem[]
+  >([]);
   const [isCreating, setIsCreating] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [friendNames, setFriendNames] = useState<Record<string, string>>({});
+  const [connectionNames, setConnectionNames] = useState<
+    Record<string, string>
+  >({});
 
-  // Resolve friend names when we have an active friend-ask
+  // Resolve connection names when we have an active sequential invite
   useEffect(() => {
-    if (!friendAsk) return;
+    if (!sequentialInvite) return;
 
-    const ids = friendAsk.ordered_friend_list;
+    const ids = sequentialInvite.ordered_friend_list;
     if (ids.length === 0) return;
 
     let cancelled = false;
@@ -56,9 +61,9 @@ export function SequentialInviteCard({
         for (const p of profiles) {
           names[p.user_id] = p.full_name || p.user_id.slice(0, 8);
         }
-        setFriendNames(names);
+        setConnectionNames(names);
       } catch {
-        // Silently fail — FriendAskStatus will use truncated IDs
+        // Silently fail — SequentialInviteStatus will use truncated IDs
       }
     };
 
@@ -66,22 +71,22 @@ export function SequentialInviteCard({
     return () => {
       cancelled = true;
     };
-  }, [friendAsk]);
+  }, [sequentialInvite]);
 
   const handleCreate = useCallback(async () => {
-    if (selectedFriends.length === 0) return;
+    if (selectedConnections.length === 0) return;
 
     setIsCreating(true);
     setError(null);
 
     try {
-      // 1. Create the friend-ask
+      // 1. Create the sequential invite
       const createRes = await fetch("/api/friend-ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           posting_id: postingId,
-          ordered_friend_list: selectedFriends.map((f) => f.user_id),
+          ordered_friend_list: selectedConnections.map((c) => c.user_id),
         }),
       });
 
@@ -108,16 +113,16 @@ export function SequentialInviteCard({
     } finally {
       setIsCreating(false);
     }
-  }, [selectedFriends, postingId, mutate]);
+  }, [selectedConnections, postingId, mutate]);
 
   const handleCancel = useCallback(async () => {
-    if (!friendAsk) return;
+    if (!sequentialInvite) return;
 
     setIsCancelling(true);
     setError(null);
 
     try {
-      const res = await fetch(`/api/friend-ask/${friendAsk.id}`, {
+      const res = await fetch(`/api/friend-ask/${sequentialInvite.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "cancelled" }),
@@ -134,7 +139,7 @@ export function SequentialInviteCard({
     } finally {
       setIsCancelling(false);
     }
-  }, [friendAsk, mutate]);
+  }, [sequentialInvite, mutate]);
 
   if (isLoading) {
     return (
@@ -146,8 +151,8 @@ export function SequentialInviteCard({
     );
   }
 
-  // Active or completed friend-ask exists — show status
-  if (friendAsk) {
+  // Active or completed sequential invite — show status
+  if (sequentialInvite) {
     return (
       <Card>
         <CardHeader>
@@ -159,9 +164,12 @@ export function SequentialInviteCard({
         <CardContent className="space-y-4">
           {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <FriendAskStatus friendAsk={friendAsk} friendNames={friendNames} />
+          <SequentialInviteStatus
+            friendAsk={sequentialInvite}
+            connectionNames={connectionNames}
+          />
 
-          {friendAsk.status === "pending" && (
+          {sequentialInvite.status === "pending" && (
             <Button
               variant="outline"
               size="sm"
@@ -181,7 +189,7 @@ export function SequentialInviteCard({
     );
   }
 
-  // No friend-ask yet — show creation UI
+  // No sequential invite yet — show creation UI
   return (
     <Card>
       <CardHeader>
@@ -198,13 +206,13 @@ export function SequentialInviteCard({
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
-        <FriendAskSelector
+        <SequentialInviteSelector
           currentUserId={currentUserId}
-          selectedFriends={selectedFriends}
-          onChange={setSelectedFriends}
+          selectedConnections={selectedConnections}
+          onChange={setSelectedConnections}
         />
 
-        {selectedFriends.length > 0 && (
+        {selectedConnections.length > 0 && (
           <Button onClick={handleCreate} disabled={isCreating}>
             {isCreating ? (
               <>

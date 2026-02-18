@@ -10,7 +10,7 @@ Idea-based social platform for quickly finding people to do things with — proj
 
 ## Problem
 
-- Finding people to do things with requires high effort (scanning Slack/WhatsApp channels, messaging friends one by one)
+- Finding people to do things with requires high effort (scanning Slack/WhatsApp channels, messaging connections one by one)
 - Large communities don't scale for individual matching
 - Skill levels and personal compatibility are rarely explicit
 

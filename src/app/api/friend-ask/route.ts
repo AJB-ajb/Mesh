@@ -4,7 +4,7 @@ import { apiError } from "@/lib/errors";
 
 /**
  * GET /api/friend-ask
- * List friend-ask sequences created by the authenticated user.
+ * List sequential invite sequences created by the authenticated user.
  */
 export const GET = withAuth(async (_req, { user, supabase }) => {
   const { data, error } = await supabase
@@ -20,7 +20,7 @@ export const GET = withAuth(async (_req, { user, supabase }) => {
 
 /**
  * POST /api/friend-ask
- * Create a friend-ask sequence for a posting.
+ * Create a sequential invite for a posting.
  * Body: { posting_id: string, ordered_friend_list: string[] }
  */
 export const POST = withAuth(async (req, { user, supabase }) => {
@@ -63,7 +63,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   if (posting.creator_id !== user.id) {
     return apiError(
       "FORBIDDEN",
-      "You can only create friend-asks for your own postings",
+      "You can only create sequential invites for your own postings",
       403,
     );
   }
@@ -76,7 +76,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
       .eq("id", posting_id);
   }
 
-  // Check for an existing active friend-ask on this posting
+  // Check for an existing active sequential invite on this posting
   const { data: existing } = await supabase
     .from("friend_asks")
     .select("id")
@@ -88,7 +88,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   if (existing) {
     return apiError(
       "CONFLICT",
-      "An active friend-ask already exists for this posting",
+      "An active sequential invite already exists for this posting",
       409,
     );
   }

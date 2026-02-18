@@ -19,9 +19,9 @@ function wrapper({ children }: { children: ReactNode }) {
   );
 }
 
-import { useFriendships } from "../use-friendships";
+import { useConnections } from "../use-connections";
 
-const fakeFriendships = [
+const fakeConnections = [
   {
     id: "f1",
     user_id: "user-1",
@@ -33,7 +33,7 @@ const fakeFriendships = [
   },
 ];
 
-describe("useFriendships", () => {
+describe("useConnections", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -41,42 +41,42 @@ describe("useFriendships", () => {
   it("starts in loading state", () => {
     fetchMock.mockReturnValue(new Promise(() => {}));
 
-    const { result } = renderHook(() => useFriendships(), { wrapper });
+    const { result } = renderHook(() => useConnections(), { wrapper });
 
     expect(result.current.isLoading).toBe(true);
-    expect(result.current.friendships).toEqual([]);
+    expect(result.current.connections).toEqual([]);
   });
 
-  it("fetches friendships successfully", async () => {
-    fetchMock.mockResolvedValue({ friendships: fakeFriendships });
+  it("fetches connections successfully", async () => {
+    fetchMock.mockResolvedValue({ friendships: fakeConnections });
 
-    const { result } = renderHook(() => useFriendships(), { wrapper });
+    const { result } = renderHook(() => useConnections(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    expect(result.current.friendships).toHaveLength(1);
-    expect(result.current.friendships[0].friend?.full_name).toBe("Bob");
+    expect(result.current.connections).toHaveLength(1);
+    expect(result.current.connections[0].friend?.full_name).toBe("Bob");
     expect(result.current.error).toBeUndefined();
   });
 
   it("handles fetch error", async () => {
     fetchMock.mockRejectedValue(new Error("Network error"));
 
-    const { result } = renderHook(() => useFriendships(), { wrapper });
+    const { result } = renderHook(() => useConnections(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.error).toBeTruthy();
     });
 
-    expect(result.current.friendships).toEqual([]);
+    expect(result.current.connections).toEqual([]);
   });
 
   it("provides mutate for revalidation", async () => {
-    fetchMock.mockResolvedValue({ friendships: fakeFriendships });
+    fetchMock.mockResolvedValue({ friendships: fakeConnections });
 
-    const { result } = renderHook(() => useFriendships(), { wrapper });
+    const { result } = renderHook(() => useConnections(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);

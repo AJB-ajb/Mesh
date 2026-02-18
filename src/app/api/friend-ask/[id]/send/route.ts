@@ -8,7 +8,7 @@ import {
 
 /**
  * POST /api/friend-ask/[id]/send
- * Send the invite to the current friend in the sequence.
+ * Send the invite to the current connection in the sequence.
  * Only the creator can trigger this. Does NOT advance the index —
  * the respond route handles advancement on decline.
  */
@@ -22,7 +22,7 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
     .single();
 
   if (fetchError || !friendAsk) {
-    return apiError("NOT_FOUND", "Friend-ask not found", 404);
+    return apiError("NOT_FOUND", "Sequential invite not found", 404);
   }
 
   if (friendAsk.creator_id !== user.id) {
@@ -32,7 +32,7 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
   if (friendAsk.status !== "pending") {
     return apiError(
       "VALIDATION",
-      `Cannot send: friend-ask status is ${friendAsk.status}`,
+      `Cannot send: sequential invite status is ${friendAsk.status}`,
       400,
     );
   }
@@ -56,7 +56,7 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
     });
   }
 
-  // Send notification to the current friend
+  // Send notification to the current connection
   const currentFriendId = friendAsk.ordered_friend_list[currentIndex];
 
   const [

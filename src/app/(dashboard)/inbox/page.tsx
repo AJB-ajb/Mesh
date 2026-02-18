@@ -145,7 +145,7 @@ function InboxPageContent() {
   }) => {
     const supabase = createClient();
 
-    // Look up the friend_ask by posting_id where user is in the ordered list
+    // Look up the sequential invite by posting_id where user is in the ordered list
     const { data: friendAsks } = await supabase
       .from("friend_asks")
       .select("id, ordered_friend_list, current_request_index")

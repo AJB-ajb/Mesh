@@ -49,7 +49,7 @@ Hackathons are great for collaboration but finding teammates aligned on a vision
 
 ### Spontaneous Activities
 
-Asking friends for spontaneous activities (e.g., "learn topic X together today"):
+Asking connections for spontaneous activities (e.g., "learn topic X together today"):
 
 - Small expiry times, easy scheduling, sequential invites
 - Calendar integration for auto-rejection if unavailable

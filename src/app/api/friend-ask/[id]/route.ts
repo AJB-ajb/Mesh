@@ -4,7 +4,7 @@ import { apiError } from "@/lib/errors";
 
 /**
  * PATCH /api/friend-ask/[id]
- * Update a friend-ask (currently only supports cancellation).
+ * Update a sequential invite (currently only supports cancellation).
  * Body: { status: "cancelled" }
  * Only the creator can cancel.
  */
@@ -29,7 +29,7 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
     .single();
 
   if (fetchError || !friendAsk) {
-    return apiError("NOT_FOUND", "Friend-ask not found", 404);
+    return apiError("NOT_FOUND", "Sequential invite not found", 404);
   }
 
   if (friendAsk.creator_id !== user.id) {
@@ -39,7 +39,7 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
   if (friendAsk.status !== "pending") {
     return apiError(
       "VALIDATION",
-      `Cannot cancel: friend-ask status is ${friendAsk.status}`,
+      `Cannot cancel: sequential invite status is ${friendAsk.status}`,
       400,
     );
   }

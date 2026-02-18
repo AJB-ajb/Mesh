@@ -64,7 +64,7 @@ const postingSchema: Schema = {
       format: "enum",
       enum: ["open", "friend_ask"],
       description:
-        "Posting mode: 'open' for public discovery (default), 'friend_ask' for sequential friend-by-friend requests",
+        "Posting mode: 'open' for public discovery (default), 'friend_ask' for sequential connection-by-connection invites",
     },
   },
   required: ["title", "description", "skills"],

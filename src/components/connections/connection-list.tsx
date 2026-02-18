@@ -7,17 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useFriendships } from "@/lib/hooks/use-friendships";
+import { useConnections } from "@/lib/hooks/use-connections";
 
-export function FriendList({ currentUserId }: { currentUserId: string }) {
-  const { friendships, isLoading, mutate } = useFriendships();
+export function ConnectionList({ currentUserId }: { currentUserId: string }) {
+  const { connections, isLoading, mutate } = useConnections();
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  const accepted = friendships.filter((f) => f.status === "accepted");
-  const pendingIncoming = friendships.filter(
+  const accepted = connections.filter((f) => f.status === "accepted");
+  const pendingIncoming = connections.filter(
     (f) => f.status === "pending" && f.friend_id === currentUserId,
   );
-  const pendingSent = friendships.filter(
+  const pendingSent = connections.filter(
     (f) => f.status === "pending" && f.user_id === currentUserId,
   );
 
@@ -45,15 +45,15 @@ export function FriendList({ currentUserId }: { currentUserId: string }) {
     }
   }
 
-  /** Resolve the "other person" display name from a friendship row. */
-  function otherName(f: (typeof friendships)[number]) {
+  /** Resolve the "other person" display name from a connection row. */
+  function otherName(f: (typeof connections)[number]) {
     if (f.user_id === currentUserId) {
       return f.friend?.full_name ?? "Unknown";
     }
     return f.user?.full_name ?? "Unknown";
   }
 
-  function otherHeadline(f: (typeof friendships)[number]) {
+  function otherHeadline(f: (typeof connections)[number]) {
     if (f.user_id === currentUserId) {
       return f.friend?.headline ?? null;
     }
@@ -73,12 +73,12 @@ export function FriendList({ currentUserId }: { currentUserId: string }) {
     );
   }
 
-  if (friendships.length === 0) {
+  if (connections.length === 0) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Users className="h-12 w-12 text-muted-foreground/50" />
-          <p className="mt-4 text-muted-foreground">No friends yet</p>
+          <p className="mt-4 text-muted-foreground">No connections yet</p>
         </CardContent>
       </Card>
     );
@@ -159,11 +159,11 @@ export function FriendList({ currentUserId }: { currentUserId: string }) {
         </section>
       )}
 
-      {/* Accepted friends */}
+      {/* Accepted connections */}
       {accepted.length > 0 && (
         <section>
           <h3 className="mb-2 text-sm font-medium text-muted-foreground">
-            Friends ({accepted.length})
+            Connections ({accepted.length})
           </h3>
           <div className="space-y-2">
             {accepted.map((f) => (

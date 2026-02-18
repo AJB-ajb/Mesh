@@ -4,7 +4,7 @@ import { apiError } from "@/lib/errors";
 
 /**
  * PATCH /api/friendships/[id]
- * Update friendship status (accept, decline, block).
+ * Update connection status (accept, decline, block).
  * Body: { status: "accepted" | "declined" | "blocked" }
  */
 export const PATCH = withAuth(async (req, { user, supabase, params }) => {
@@ -28,7 +28,7 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
     );
   }
 
-  // Verify the friendship exists and the user is a participant
+  // Verify the connection exists and the user is a participant
   const { data: friendship, error: fetchError } = await supabase
     .from("friendships")
     .select("*")
@@ -36,12 +36,12 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
     .single();
 
   if (fetchError || !friendship) {
-    return apiError("NOT_FOUND", "Friendship not found", 404);
+    return apiError("NOT_FOUND", "Connection not found", 404);
   }
 
   // Only participants can update
   if (friendship.user_id !== user.id && friendship.friend_id !== user.id) {
-    return apiError("FORBIDDEN", "Not a participant in this friendship", 403);
+    return apiError("FORBIDDEN", "Not a participant in this connection", 403);
   }
 
   // Only the recipient (friend_id) can accept/decline
@@ -70,12 +70,12 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
 
 /**
  * DELETE /api/friendships/[id]
- * Remove a friendship. Only the initiator (user_id) can delete.
+ * Remove a connection. Only the initiator (user_id) can delete.
  */
 export const DELETE = withAuth(async (_req, { user, supabase, params }) => {
   const { id } = params;
 
-  // Verify the friendship exists and the user is the initiator
+  // Verify the connection exists and the user is the initiator
   const { data: friendship, error: fetchError } = await supabase
     .from("friendships")
     .select("user_id")
@@ -83,13 +83,13 @@ export const DELETE = withAuth(async (_req, { user, supabase, params }) => {
     .single();
 
   if (fetchError || !friendship) {
-    return apiError("NOT_FOUND", "Friendship not found", 404);
+    return apiError("NOT_FOUND", "Connection not found", 404);
   }
 
   if (friendship.user_id !== user.id) {
     return apiError(
       "FORBIDDEN",
-      "Only the initiator can delete a friendship",
+      "Only the initiator can delete a connection",
       403,
     );
   }
