@@ -80,6 +80,8 @@ export type ProfileFormState = {
   skillLevels: SkillLevel[];
   locationMode: LocationMode;
   availabilitySlots: AvailabilitySlots;
+  /** Skills selected from the skill tree (new normalized model) */
+  selectedSkills: import("./skill").SelectedProfileSkill[];
 };
 
 export const defaultFormState: ProfileFormState = {
@@ -97,6 +99,7 @@ export const defaultFormState: ProfileFormState = {
   skillLevels: [],
   locationMode: "either",
   availabilitySlots: {},
+  selectedSkills: [],
 };
 
 export const parseList = (value: string) =>

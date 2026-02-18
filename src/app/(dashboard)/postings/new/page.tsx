@@ -174,13 +174,20 @@ export default function NewPostingPage() {
     const locationLng = parseFloat(form.locationLng);
     const maxDistanceKm = parseInt(form.maxDistanceKm, 10);
 
+    // Derive backward-compat skills array from selectedSkills (+ any free-form text)
+    const selectedSkillNames = form.selectedSkills.map((s) => s.name);
+    const freeFormSkills = parseList(form.skills);
+    const allSkillNames = [
+      ...new Set([...selectedSkillNames, ...freeFormSkills]),
+    ];
+
     const { data: posting, error: insertError } = await supabase
       .from("postings")
       .insert({
         creator_id: user.id,
         title,
         description: form.description.trim(),
-        skills: parseList(form.skills),
+        skills: allSkillNames,
         estimated_time: form.estimatedTime || null,
         team_size_min: 1,
         team_size_max: lookingFor,
@@ -237,6 +244,16 @@ export default function NewPostingPage() {
       return;
     }
 
+    // Insert posting_skills join table rows
+    if (form.selectedSkills.length > 0) {
+      const postingSkillRows = form.selectedSkills.map((s) => ({
+        posting_id: posting.id,
+        skill_id: s.skillId,
+        level_min: s.levelMin,
+      }));
+      await supabase.from("posting_skills").insert(postingSkillRows);
+    }
+
     // Trigger embedding generation (fire-and-forget, non-blocking)
     fetch("/api/embeddings/process", {
       method: "POST",
@@ -288,6 +305,7 @@ export default function NewPostingPage() {
       {inputMode === "form" && (
         <PostingFormCard
           form={form}
+          setForm={setForm}
           onChange={handleChange}
           onSubmit={handleSubmit}
           isSaving={isSaving}

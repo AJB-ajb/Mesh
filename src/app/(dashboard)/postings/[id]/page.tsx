@@ -71,6 +71,7 @@ export default function PostingDetailPage() {
     contextIdentifier: "",
     skillLevelMin: "",
     autoAccept: "false",
+    selectedSkills: [],
   });
 
   // AI update hook
@@ -227,6 +228,7 @@ export default function PostingDetailPage() {
       contextIdentifier: posting.context_identifier || "",
       skillLevelMin: posting.skill_level_min?.toString() || "",
       autoAccept: posting.auto_accept ? "true" : "false",
+      selectedSkills: [],
     });
     setIsEditing(true);
   };

@@ -1,3 +1,5 @@
+import type { SelectedPostingSkill } from "@/lib/types/skill";
+
 export type PostingFormState = {
   title: string;
   description: string;
@@ -19,6 +21,8 @@ export type PostingFormState = {
   contextIdentifier: string;
   skillLevelMin: string;
   autoAccept: string;
+  /** Skills selected from the skill tree (new normalized model) */
+  selectedSkills: SelectedPostingSkill[];
 };
 
 // Default expiry: 90 days from now
@@ -70,4 +74,5 @@ export const defaultPostingFormState: PostingFormState = {
   contextIdentifier: "",
   skillLevelMin: "",
   autoAccept: "false",
+  selectedSkills: [],
 };

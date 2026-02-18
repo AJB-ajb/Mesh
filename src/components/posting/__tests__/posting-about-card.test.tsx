@@ -56,6 +56,7 @@ const baseForm: PostingFormState = {
   contextIdentifier: "",
   skillLevelMin: "",
   autoAccept: "false",
+  selectedSkills: [],
 };
 
 describe("PostingAboutCard", () => {

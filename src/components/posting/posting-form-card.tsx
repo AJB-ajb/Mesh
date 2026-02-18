@@ -5,7 +5,9 @@ import Link from "next/link";
 import { Loader2, MapPin, Search } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { LocationAutocomplete } from "@/components/location/location-autocomplete";
+import { SkillPicker } from "@/components/skill/skill-picker";
 import type { GeocodingResult } from "@/lib/geocoding";
+import type { SelectedPostingSkill } from "@/lib/types/skill";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,6 +27,7 @@ export { defaultPostingFormState as defaultFormState };
 
 type PostingFormCardProps = {
   form: PostingFormState;
+  setForm: React.Dispatch<React.SetStateAction<PostingFormState>>;
   onChange: (field: keyof PostingFormState, value: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   isSaving: boolean;
@@ -136,11 +139,36 @@ function LocationSection({
 
 export function PostingFormCard({
   form,
+  setForm,
   onChange,
   onSubmit,
   isSaving,
   isExtracting,
 }: PostingFormCardProps) {
+  // --- Selected skills handlers ---
+  const handleAddSkill = (skill: SelectedPostingSkill) => {
+    setForm((prev) => ({
+      ...prev,
+      selectedSkills: [...prev.selectedSkills, skill],
+    }));
+  };
+
+  const handleRemoveSkill = (skillId: string) => {
+    setForm((prev) => ({
+      ...prev,
+      selectedSkills: prev.selectedSkills.filter((s) => s.skillId !== skillId),
+    }));
+  };
+
+  const handleUpdateSkillLevel = (skillId: string, levelMin: number | null) => {
+    setForm((prev) => ({
+      ...prev,
+      selectedSkills: prev.selectedSkills.map((s) =>
+        s.skillId === skillId ? { ...s, levelMin } : s,
+      ),
+    }));
+  };
+
   return (
     <form onSubmit={onSubmit}>
       <Card>
@@ -195,14 +223,18 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
 
           {/* Skills */}
           <div className="space-y-2">
-            <label htmlFor="skills" className="text-sm font-medium">
-              Skills (comma-separated)
-            </label>
-            <Input
-              id="skills"
-              value={form.skills}
-              onChange={(e) => onChange("skills", e.target.value)}
-              placeholder="e.g., React, TypeScript, Node.js, AI/ML"
+            <label className="text-sm font-medium">Required Skills</label>
+            <p className="text-xs text-muted-foreground">
+              Search or browse the skill tree. Set an optional minimum level per
+              skill.
+            </p>
+            <SkillPicker
+              mode="posting"
+              selectedSkills={form.selectedSkills}
+              onAdd={handleAddSkill}
+              onRemove={handleRemoveSkill}
+              onUpdateLevel={handleUpdateSkillLevel}
+              placeholder="Search skills (e.g., React, Python, Design)..."
             />
           </div>
 
@@ -319,25 +351,6 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
                 Default: 90 days from today
               </p>
             </div>
-          </div>
-
-          {/* Skill Level Minimum */}
-          <div className="space-y-2">
-            <label htmlFor="skill-level-min" className="text-sm font-medium">
-              Minimum Skill Level (0-10)
-            </label>
-            <Input
-              id="skill-level-min"
-              type="number"
-              min={0}
-              max={10}
-              value={form.skillLevelMin}
-              onChange={(e) => onChange("skillLevelMin", e.target.value)}
-              placeholder="e.g., 3"
-            />
-            <p className="text-xs text-muted-foreground">
-              Leave empty for no minimum. 0 = absolute beginner, 10 = expert.
-            </p>
           </div>
 
           {/* Location */}

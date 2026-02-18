@@ -50,6 +50,7 @@
 ## In Progress
 
 - [ ] **Waitlist** — `feat/waitlist` branch: `waitlisted` status, auto-waitlist when filled, promotion logic, UI indicators. Depends on auto-accept (done). (#9)
+- [x] **Skills tree (steps 1-4)** — `skill_nodes` table + seed taxonomy, LLM auto-adding/normalization API, skill picker UI (typeahead + tree browsing), profile & posting form integration with per-skill levels. See `spec/skills.md`.
 
 ---
 
@@ -57,14 +58,18 @@
 
 ### v0.3 — Matching & Filtering
 
-| Feature                       | Issue | Effort       | Description                                                                             |
-| ----------------------------- | ----- | ------------ | --------------------------------------------------------------------------------------- |
-| Hard filter enforcement       | —     | Medium       | Two-stage matching: hard filters (context, category, skill, location) then soft scoring |
-| Max distance matching         | #31   | Medium       | Location-based distance as a matching dimension                                         |
-| Availability input & matching | —     | Medium-Large | Weekly time grid / slot picker UI; posting-level scheduling; overlap scoring            |
-| Auto-location detection       | #16   | Small        | Detect user location from IP for matching defaults                                      |
-| Configurable matching weights | —     | Small-Medium | Weight sliders on posting creation; stored per posting; passed to scoring               |
-| Fix 0% match score display    | #46   | Small        | Investigate and fix 0% matches showing as "new match" on dashboard                      |
+| Feature                          | Issue | Effort       | Description                                                                                                        |
+| -------------------------------- | ----- | ------------ | ------------------------------------------------------------------------------------------------------------------ |
+| Hard filter enforcement          | —     | Medium       | Two-stage matching: hard filters (context, category, skill, location) then soft scoring                            |
+| Tree-aware skill filtering       | —     | Medium       | Selecting a parent skill node includes all descendants via recursive CTE (e.g., "Programming" matches Python)      |
+| Per-skill matching scoring       | —     | Medium       | Replace averaged `skill_level_min` with per-skill level comparison from `posting_skills` join table                |
+| Deprecate old skill columns      | —     | Small        | Remove `skills text[]`, `skill_levels jsonb`, `skill_level_min integer` after migration verified (expand-contract) |
+| Existing data migration (skills) | —     | Medium       | Batch-process existing profile/posting free-form skills through LLM normalization to populate join tables          |
+| Max distance matching            | #31   | Medium       | Location-based distance as a matching dimension                                                                    |
+| Availability input & matching    | —     | Medium-Large | Weekly time grid / slot picker UI; posting-level scheduling; overlap scoring                                       |
+| Auto-location detection          | #16   | Small        | Detect user location from IP for matching defaults                                                                 |
+| Configurable matching weights    | —     | Small-Medium | Weight sliders on posting creation; stored per posting; passed to scoring                                          |
+| Fix 0% match score display       | #46   | Small        | Investigate and fix 0% matches showing as "new match" on dashboard                                                 |
 
 ### v0.4 — Engagement & Discovery
 
