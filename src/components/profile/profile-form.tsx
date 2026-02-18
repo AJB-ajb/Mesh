@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Loader2, MapPin, Plus, Search, X } from "lucide-react";
+import { Loader2, MapPin, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardContent,
@@ -13,9 +12,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { LocationAutocomplete } from "@/components/location/location-autocomplete";
+import { SkillPicker } from "@/components/skill/skill-picker";
 import type { ProfileFormState } from "@/lib/types/profile";
 import {
-  type SkillLevel,
   type LocationMode,
   type AvailabilitySlots,
   DAYS,
@@ -23,19 +22,8 @@ import {
   TIME_SLOTS,
   TIME_SLOT_LABELS,
 } from "@/lib/types/profile";
+import type { SelectedProfileSkill } from "@/lib/types/skill";
 import type { GeocodingResult } from "@/lib/geocoding";
-
-// ---------------------------------------------------------------------------
-// Skill level reference labels
-// ---------------------------------------------------------------------------
-
-function skillLevelLabel(level: number): string {
-  if (level <= 2) return "Beginner";
-  if (level <= 4) return "Can follow tutorials";
-  if (level <= 6) return "Intermediate";
-  if (level <= 8) return "Advanced";
-  return "Expert";
-}
 
 // ---------------------------------------------------------------------------
 // Location mode labels
@@ -44,7 +32,7 @@ function skillLevelLabel(level: number): string {
 const LOCATION_MODE_OPTIONS: { value: LocationMode; label: string }[] = [
   { value: "remote", label: "Remote" },
   { value: "in_person", label: "In-person" },
-  { value: "either", label: "Either" },
+  { value: "either", label: "Flexible" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -76,27 +64,27 @@ export function ProfileForm({
     handleLocationInputChange: (value: string) => void;
   };
 }) {
-  // --- Skill levels handlers ---
-  const addSkill = () => {
+  // --- Selected skills handlers ---
+  const handleAddSkill = (skill: SelectedProfileSkill) => {
     setForm((prev) => ({
       ...prev,
-      skillLevels: [...prev.skillLevels, { name: "", level: 5 }],
+      selectedSkills: [...prev.selectedSkills, skill],
     }));
   };
 
-  const updateSkill = (index: number, update: Partial<SkillLevel>) => {
+  const handleRemoveSkill = (skillId: string) => {
     setForm((prev) => ({
       ...prev,
-      skillLevels: prev.skillLevels.map((s, i) =>
-        i === index ? { ...s, ...update } : s,
+      selectedSkills: prev.selectedSkills.filter((s) => s.skillId !== skillId),
+    }));
+  };
+
+  const handleUpdateSkillLevel = (skillId: string, level: number) => {
+    setForm((prev) => ({
+      ...prev,
+      selectedSkills: prev.selectedSkills.map((s) =>
+        s.skillId === skillId ? { ...s, level } : s,
       ),
-    }));
-  };
-
-  const removeSkill = (index: number) => {
-    setForm((prev) => ({
-      ...prev,
-      skillLevels: prev.skillLevels.filter((_, i) => i !== index),
     }));
   };
 
@@ -164,13 +152,16 @@ export function ProfileForm({
             <label htmlFor="bio" className="text-sm font-medium">
               About you
             </label>
-            <textarea
+            <Textarea
               id="bio"
               rows={4}
-              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               value={form.bio}
               onChange={(e) => onChange("bio", e.target.value)}
               placeholder="What do you enjoy building? What makes you unique?"
+              enableMic
+              onTranscriptionChange={(text) =>
+                onChange("bio", form.bio ? form.bio + " " + text : text)
+              }
             />
           </div>
 
@@ -244,30 +235,9 @@ export function ProfileForm({
             )}
 
             {(form.locationLat || form.locationLng) && (
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Latitude
-                  </label>
-                  <Input
-                    value={form.locationLat}
-                    readOnly
-                    className="bg-muted cursor-not-allowed"
-                    placeholder="Auto-filled"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Longitude
-                  </label>
-                  <Input
-                    value={form.locationLng}
-                    readOnly
-                    className="bg-muted cursor-not-allowed"
-                    placeholder="Auto-filled"
-                  />
-                </div>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Coordinates: {form.locationLat}, {form.locationLng}
+              </p>
             )}
           </div>
 
@@ -329,80 +299,24 @@ export function ProfileForm({
       </Card>
 
       {/* ============================================ */}
-      {/* Skill Level Sliders */}
+      {/* Skills */}
       {/* ============================================ */}
       <Card>
         <CardHeader>
-          <CardTitle>Skill Levels</CardTitle>
+          <CardTitle>Skills</CardTitle>
           <CardDescription>
-            Rate your proficiency in each domain on a 0-10 scale.
+            Search or browse the skill tree and rate your proficiency (0-10).
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {form.skillLevels.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No skills added yet. Click below to add your first skill.
-            </p>
-          )}
-
-          {form.skillLevels.map((skill, index) => (
-            <div key={index} className="space-y-2 rounded-lg border p-4">
-              <div className="flex items-center gap-2">
-                <Input
-                  value={skill.name}
-                  onChange={(e) => updateSkill(index, { name: e.target.value })}
-                  placeholder="e.g., Frontend, Python, Design"
-                  className="flex-1"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeSkill(index)}
-                  aria-label="Remove skill"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex items-center gap-4">
-                <Slider
-                  min={0}
-                  max={10}
-                  step={1}
-                  value={[skill.level]}
-                  onValueChange={([val]) => updateSkill(index, { level: val })}
-                  className="flex-1"
-                />
-                <span className="w-20 text-right text-sm font-medium tabular-nums">
-                  {skill.level}/10
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {skillLevelLabel(skill.level)}
-              </p>
-            </div>
-          ))}
-
-          <Button type="button" variant="outline" size="sm" onClick={addSkill}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add skill
-          </Button>
-
-          {/* Backward-compat text skills field */}
-          <div className="space-y-2 pt-2">
-            <label htmlFor="skills" className="text-sm font-medium">
-              Skills (comma-separated, for search)
-            </label>
-            <Input
-              id="skills"
-              value={form.skills}
-              onChange={(e) => onChange("skills", e.target.value)}
-              placeholder="e.g., React, TypeScript, Supabase"
-            />
-            <p className="text-xs text-muted-foreground">
-              Used for keyword matching alongside the skill levels above.
-            </p>
-          </div>
+        <CardContent>
+          <SkillPicker
+            mode="profile"
+            selectedSkills={form.selectedSkills}
+            onAdd={handleAddSkill}
+            onRemove={handleRemoveSkill}
+            onUpdateLevel={handleUpdateSkillLevel}
+            placeholder="Search skills (e.g., React, Piano, Photography)..."
+          />
         </CardContent>
       </Card>
 

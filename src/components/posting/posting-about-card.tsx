@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LocationAutocomplete } from "@/components/location/location-autocomplete";
+import { NOT_SPECIFIED } from "@/lib/format";
 import type { GeocodingResult } from "@/lib/geocoding";
 import type {
   PostingDetail,
@@ -29,7 +30,7 @@ function getLocationModeDisplay(mode: string | null) {
       return { icon: "📍", label: "In-person" };
     case "either":
     default:
-      return { icon: "🌐", label: "Either" };
+      return { icon: "🌐", label: "Flexible" };
   }
 }
 
@@ -61,7 +62,7 @@ function LocationEditFields({
           onChange={(e) => onFormChange("locationMode", e.target.value)}
           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
         >
-          <option value="either">Either (no preference)</option>
+          <option value="either">Flexible</option>
           <option value="remote">Remote</option>
           <option value="in_person">In-person</option>
         </select>
@@ -171,6 +172,36 @@ export function PostingAboutCard({
           )}
         </div>
 
+        {/* Tags */}
+        {!isEditing && posting.tags && posting.tags.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium">Tags</h4>
+            <div className="flex flex-wrap gap-1.5">
+              {posting.tags.map((tag: string) => (
+                <Badge key={tag} variant="outline" className="text-xs">
+                  #{tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Context Identifier */}
+        {!isEditing && posting.context_identifier && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium">Context</h4>
+            <Badge variant="secondary">{posting.context_identifier}</Badge>
+          </div>
+        )}
+
+        {/* Skill Level Minimum */}
+        {!isEditing && posting.skill_level_min != null && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium">Minimum Skill Level</h4>
+            <span className="text-sm">{posting.skill_level_min}/10</span>
+          </div>
+        )}
+
         {/* Meta */}
         {isEditing ? (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -215,7 +246,7 @@ export function PostingAboutCard({
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
                 <option value="open">Open</option>
-                <option value="friend_ask">Friend Ask</option>
+                <option value="friend_ask">Sequential Invite</option>
               </select>
             </div>
             <div className="space-y-2">
@@ -239,6 +270,59 @@ export function PostingAboutCard({
                 <option value="closed">Closed</option>
               </select>
             </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Tags (comma-separated)
+              </label>
+              <Input
+                value={form.tags}
+                onChange={(e) => onFormChange("tags", e.target.value)}
+                placeholder="e.g., beginner-friendly, remote"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Context</label>
+              <Input
+                value={form.contextIdentifier}
+                onChange={(e) =>
+                  onFormChange("contextIdentifier", e.target.value)
+                }
+                placeholder="e.g., CS101, HackMIT 2026"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Min Skill Level (0-10)
+              </label>
+              <Input
+                type="number"
+                min={0}
+                max={10}
+                value={form.skillLevelMin}
+                onChange={(e) => onFormChange("skillLevelMin", e.target.value)}
+                placeholder="e.g., 3"
+              />
+            </div>
+            <div className="flex items-center gap-3 sm:col-span-2">
+              <input
+                id="auto-accept"
+                type="checkbox"
+                checked={form.autoAccept === "true"}
+                onChange={(e) =>
+                  onFormChange(
+                    "autoAccept",
+                    e.target.checked ? "true" : "false",
+                  )
+                }
+                className="h-4 w-4 rounded border border-input"
+              />
+              <label htmlFor="auto-accept" className="text-sm font-medium">
+                Auto-accept
+              </label>
+              <span className="text-xs text-muted-foreground">
+                Instantly accept anyone who joins (no manual review)
+              </span>
+            </div>
             <LocationEditFields form={form} onFormChange={onFormChange} />
           </div>
         ) : (
@@ -257,14 +341,14 @@ export function PostingAboutCard({
                 Estimated Time
               </p>
               <p className="font-medium">
-                {posting.estimated_time || "Not specified"}
+                {posting.estimated_time || NOT_SPECIFIED}
               </p>
             </div>
             <div className="rounded-lg border border-border p-4">
               <Clock className="h-5 w-5 text-muted-foreground" />
               <p className="mt-2 text-sm text-muted-foreground">Category</p>
               <p className="font-medium capitalize">
-                {posting.category || "Not specified"}
+                {posting.category || NOT_SPECIFIED}
               </p>
             </div>
             <div className="rounded-lg border border-border p-4">

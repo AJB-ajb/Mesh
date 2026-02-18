@@ -14,11 +14,13 @@ export const VOICE = {
   SILENCE_DURATION_MS: 2500,
 } as const;
 
-/** AI model identifiers */
-export const AI_MODELS = {
-  CONVERSATION: "gemini-2.0-flash",
-  GEMINI_FLASH: "gemini-2.0-flash",
-} as const;
+/** Gemini models in fallback order for rate-limit (429) retry (free tier) */
+export const GEMINI_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-3-flash-preview",
+  "gemini-2.0-flash",
+] as const;
 
 /** Default pagination limits */
 export const PAGINATION = {

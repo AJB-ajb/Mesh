@@ -4,7 +4,7 @@ import { apiError } from "@/lib/errors";
 
 /**
  * GET /api/friendships
- * List all friendships for the authenticated user (both directions).
+ * List all connections for the authenticated user (both directions).
  */
 export const GET = withAuth(async (_req, { user, supabase }) => {
   const { data, error } = await supabase
@@ -21,7 +21,7 @@ export const GET = withAuth(async (_req, { user, supabase }) => {
 
 /**
  * POST /api/friendships
- * Send a friendship request. Body: { friend_id: string }
+ * Send a connection request. Body: { friend_id: string }
  */
 export const POST = withAuth(async (req, { user, supabase }) => {
   let body: { friend_id?: string };
@@ -40,12 +40,12 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   if (friend_id === user.id) {
     return apiError(
       "VALIDATION",
-      "Cannot send a friend request to yourself",
+      "Cannot send a connection request to yourself",
       400,
     );
   }
 
-  // Check if a friendship already exists in either direction
+  // Check if a connection already exists in either direction
   const { data: existing } = await supabase
     .from("friendships")
     .select("id, status")
@@ -58,7 +58,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   if (existing) {
     return apiError(
       "CONFLICT",
-      `Friendship already exists (status: ${existing.status})`,
+      `Connection already exists (status: ${existing.status})`,
       409,
     );
   }

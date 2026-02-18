@@ -6,10 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { FriendAsk } from "@/lib/supabase/types";
 
-interface FriendAskStatusProps {
+interface SequentialInviteStatusProps {
   friendAsk: FriendAsk;
-  /** Map of user_id → display name for friends in the list */
-  friendNames: Record<string, string>;
+  /** Map of user_id → display name for connections in the list */
+  connectionNames: Record<string, string>;
 }
 
 const statusConfig = {
@@ -20,13 +20,13 @@ const statusConfig = {
 };
 
 /**
- * Displays the progress of a friend-ask sequence: who was asked,
+ * Displays the progress of a sequential invite: who was asked,
  * current position, and responses.
  */
-export function FriendAskStatus({
+export function SequentialInviteStatus({
   friendAsk,
-  friendNames,
-}: FriendAskStatusProps) {
+  connectionNames,
+}: SequentialInviteStatusProps) {
   const { ordered_friend_list, current_request_index, status } = friendAsk;
   const config = statusConfig[status];
 
@@ -34,14 +34,15 @@ export function FriendAskStatus({
     <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium">Friend-Ask Progress</h4>
+        <h4 className="text-sm font-medium">Sequential Invite Progress</h4>
         <Badge variant={config.variant}>{config.label}</Badge>
       </div>
 
       {/* Timeline */}
       <div className="space-y-1">
-        {ordered_friend_list.map((friendId, index) => {
-          const name = friendNames[friendId] ?? friendId.slice(0, 8);
+        {ordered_friend_list.map((connectionId, index) => {
+          const name =
+            connectionNames[connectionId] ?? connectionId.slice(0, 8);
           const isCurrent =
             index === current_request_index && status === "pending";
           const isPast = index < current_request_index;
@@ -50,7 +51,7 @@ export function FriendAskStatus({
 
           return (
             <div
-              key={friendId}
+              key={connectionId}
               className={cn(
                 "flex items-center gap-3 rounded-md p-2 text-sm transition-colors",
                 isCurrent && "bg-primary/10 border border-primary/20",
@@ -99,11 +100,11 @@ export function FriendAskStatus({
       {/* Summary */}
       <p className="text-xs text-muted-foreground">
         {status === "accepted"
-          ? `${friendNames[ordered_friend_list[current_request_index]] ?? "Friend"} accepted the ask`
+          ? `${connectionNames[ordered_friend_list[current_request_index]] ?? "Connection"} accepted the invite`
           : status === "completed"
-            ? `All ${ordered_friend_list.length} friends were asked — no one accepted`
+            ? `All ${ordered_friend_list.length} connections were asked — no one accepted`
             : status === "cancelled"
-              ? "This friend-ask was cancelled"
+              ? "This sequential invite was cancelled"
               : `${current_request_index + 1} of ${ordered_friend_list.length} — waiting for response`}
       </p>
     </div>

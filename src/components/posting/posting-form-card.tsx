@@ -3,10 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Loader2, MapPin, Search } from "lucide-react";
-import { SpeechInput } from "@/components/ai-elements/speech-input";
-import { transcribeAudio } from "@/lib/transcribe";
+import { Textarea } from "@/components/ui/textarea";
 import { LocationAutocomplete } from "@/components/location/location-autocomplete";
+import { SkillPicker } from "@/components/skill/skill-picker";
 import type { GeocodingResult } from "@/lib/geocoding";
+import type { SelectedPostingSkill } from "@/lib/types/skill";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,6 +27,7 @@ export { defaultPostingFormState as defaultFormState };
 
 type PostingFormCardProps = {
   form: PostingFormState;
+  setForm: React.Dispatch<React.SetStateAction<PostingFormState>>;
   onChange: (field: keyof PostingFormState, value: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   isSaving: boolean;
@@ -63,7 +65,7 @@ function LocationSection({
           onChange={(e) => onChange("locationMode", e.target.value)}
           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
-          <option value="either">Either (no preference)</option>
+          <option value="either">Flexible</option>
           <option value="remote">Remote</option>
           <option value="in_person">In-person</option>
         </select>
@@ -137,11 +139,36 @@ function LocationSection({
 
 export function PostingFormCard({
   form,
+  setForm,
   onChange,
   onSubmit,
   isSaving,
   isExtracting,
 }: PostingFormCardProps) {
+  // --- Selected skills handlers ---
+  const handleAddSkill = (skill: SelectedPostingSkill) => {
+    setForm((prev) => ({
+      ...prev,
+      selectedSkills: [...prev.selectedSkills, skill],
+    }));
+  };
+
+  const handleRemoveSkill = (skillId: string) => {
+    setForm((prev) => ({
+      ...prev,
+      selectedSkills: prev.selectedSkills.filter((s) => s.skillId !== skillId),
+    }));
+  };
+
+  const handleUpdateSkillLevel = (skillId: string, levelMin: number | null) => {
+    setForm((prev) => ({
+      ...prev,
+      selectedSkills: prev.selectedSkills.map((s) =>
+        s.skillId === skillId ? { ...s, levelMin } : s,
+      ),
+    }));
+  };
+
   return (
     <form onSubmit={onSubmit}>
       <Card>
@@ -172,33 +199,22 @@ export function PostingFormCard({
             <label htmlFor="description" className="text-sm font-medium">
               Description <span className="text-destructive">*</span>
             </label>
-            <div className="relative">
-              <textarea
-                id="description"
-                rows={6}
-                value={form.description}
-                onChange={(e) => onChange("description", e.target.value)}
-                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="Describe your project and what kind of collaborators you're looking for...
+            <Textarea
+              id="description"
+              rows={6}
+              value={form.description}
+              onChange={(e) => onChange("description", e.target.value)}
+              placeholder="Describe your project and what kind of collaborators you're looking for...
 
 Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebGL or game dev experience, hackathon this weekend."
-              />
-              <div className="absolute bottom-2 right-2">
-                <SpeechInput
-                  className="h-10 w-10 p-0"
-                  size="icon"
-                  variant="ghost"
-                  type="button"
-                  onAudioRecorded={transcribeAudio}
-                  onTranscriptionChange={(text) =>
-                    onChange(
-                      "description",
-                      form.description ? form.description + " " + text : text,
-                    )
-                  }
-                />
-              </div>
-            </div>
+              enableMic
+              onTranscriptionChange={(text) =>
+                onChange(
+                  "description",
+                  form.description ? form.description + " " + text : text,
+                )
+              }
+            />
             <p className="text-xs text-muted-foreground">
               Our AI will extract skills, team size, and timeline from your
               description.
@@ -207,15 +223,35 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
 
           {/* Skills */}
           <div className="space-y-2">
-            <label htmlFor="skills" className="text-sm font-medium">
-              Skills (comma-separated)
+            <label className="text-sm font-medium">Required Skills</label>
+            <p className="text-xs text-muted-foreground">
+              Search or browse the skill tree. Set an optional minimum level per
+              skill.
+            </p>
+            <SkillPicker
+              mode="posting"
+              selectedSkills={form.selectedSkills}
+              onAdd={handleAddSkill}
+              onRemove={handleRemoveSkill}
+              onUpdateLevel={handleUpdateSkillLevel}
+              placeholder="Search skills (e.g., React, Python, Design)..."
+            />
+          </div>
+
+          {/* Tags */}
+          <div className="space-y-2">
+            <label htmlFor="tags" className="text-sm font-medium">
+              Tags (comma-separated)
             </label>
             <Input
-              id="skills"
-              value={form.skills}
-              onChange={(e) => onChange("skills", e.target.value)}
-              placeholder="e.g., React, TypeScript, Node.js, AI/ML"
+              id="tags"
+              value={form.tags}
+              onChange={(e) => onChange("tags", e.target.value)}
+              placeholder="e.g., beginner-friendly, weekend, remote, sustainability"
             />
+            <p className="text-xs text-muted-foreground">
+              Free-form tags to help people discover your posting.
+            </p>
           </div>
 
           {/* Estimated Time and Category */}
@@ -250,6 +286,23 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
             </div>
           </div>
 
+          {/* Context Identifier */}
+          <div className="space-y-2">
+            <label htmlFor="context-identifier" className="text-sm font-medium">
+              Context (optional)
+            </label>
+            <Input
+              id="context-identifier"
+              value={form.contextIdentifier}
+              onChange={(e) => onChange("contextIdentifier", e.target.value)}
+              placeholder="e.g., CS101, HackMIT 2026, Book Club #3"
+            />
+            <p className="text-xs text-muted-foreground">
+              Course code, hackathon name, or group identifier for exact-match
+              filtering.
+            </p>
+          </div>
+
           {/* Looking for, Mode, and Expires */}
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
@@ -280,7 +333,7 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <option value="open">Open</option>
-                <option value="friend_ask">Friend Ask</option>
+                <option value="friend_ask">Sequential Invite</option>
               </select>
             </div>
             <div className="space-y-2">
@@ -302,6 +355,25 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
 
           {/* Location */}
           <LocationSection form={form} onChange={onChange} />
+
+          {/* Auto-Accept */}
+          <div className="flex items-center gap-3">
+            <input
+              id="auto-accept"
+              type="checkbox"
+              checked={form.autoAccept === "true"}
+              onChange={(e) =>
+                onChange("autoAccept", e.target.checked ? "true" : "false")
+              }
+              className="h-4 w-4 rounded border border-input"
+            />
+            <label htmlFor="auto-accept" className="text-sm font-medium">
+              Auto-accept
+            </label>
+            <p className="text-xs text-muted-foreground">
+              Instantly accept anyone who joins (no manual review)
+            </p>
+          </div>
 
           {/* Submit */}
           <div className="flex gap-4 pt-4">

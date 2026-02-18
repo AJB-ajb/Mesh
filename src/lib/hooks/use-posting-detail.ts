@@ -1,6 +1,8 @@
 import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import type { ScoreBreakdown, Profile } from "@/lib/supabase/types";
+import type { SelectedPostingSkill } from "@/lib/types/skill";
+import { deriveSkillNames } from "@/lib/skills/derive";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -25,6 +27,14 @@ export type PostingDetail = {
   location_lat: number | null;
   location_lng: number | null;
   max_distance_km: number | null;
+  tags?: string[];
+  context_identifier?: string | null;
+  skill_level_min?: number | null;
+  auto_accept: boolean;
+  source_text?: string | null;
+  previous_source_text?: string | null;
+  previous_posting_snapshot?: Record<string, unknown> | null;
+  selectedPostingSkills?: SelectedPostingSkill[];
   profiles?: {
     full_name: string | null;
     headline: string | null;
@@ -61,7 +71,7 @@ export type MatchedProfile = {
 import { type PostingFormState } from "@/lib/types/posting";
 export type { PostingFormState };
 
-type PostingDetailData = {
+export type PostingDetailData = {
   posting: PostingDetail | null;
   isOwner: boolean;
   currentUserId: string | null;
@@ -71,6 +81,7 @@ type PostingDetailData = {
   matchedProfiles: MatchedProfile[];
   myApplication: Application | null;
   hasApplied: boolean;
+  waitlistPosition: number | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -87,8 +98,8 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
 
   const currentUserId = user?.id || null;
 
-  // Fetch posting with creator profile
-  const { data: posting, error: postingError } = await supabase
+  // Fetch posting with creator profile and join table skills
+  const { data: rawPosting, error: postingError } = await supabase
     .from("postings")
     .select(
       `
@@ -98,11 +109,41 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
         headline,
         skills,
         user_id
-      )
+      ),
+      posting_skills(skill_id, level_min, skill_nodes(id, name, parent_id, depth))
     `,
     )
     .eq("id", postingId)
     .single();
+
+  // Derive skills and selectedPostingSkills from join table
+  let posting = rawPosting;
+  if (rawPosting) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const psRows = (rawPosting.posting_skills as any[]) ?? [];
+    const joinSkills = deriveSkillNames(psRows);
+
+    // Build selectedPostingSkills for edit mode
+    const selectedPostingSkills: SelectedPostingSkill[] = psRows
+      .filter(
+        (ps) =>
+          ps.skill_nodes &&
+          typeof ps.skill_nodes === "object" &&
+          "id" in ps.skill_nodes,
+      )
+      .map((ps) => ({
+        skillId: ps.skill_nodes.id as string,
+        name: ps.skill_nodes.name as string,
+        path: [],
+        levelMin: ps.level_min as number | null,
+      }));
+
+    posting = {
+      ...rawPosting,
+      skills: joinSkills.length > 0 ? joinSkills : rawPosting.skills || [],
+      selectedPostingSkills,
+    };
+  }
 
   if (postingError || !posting) {
     return {
@@ -115,6 +156,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
       matchedProfiles: [],
       myApplication: null,
       hasApplied: false,
+      waitlistPosition: null,
     };
   }
 
@@ -122,6 +164,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
 
   let myApplication: Application | null = null;
   let hasApplied = false;
+  let waitlistPosition: number | null = null;
   let currentUserProfile: Profile | null = null;
   let matchBreakdown: ScoreBreakdown | null = null;
   let applications: Application[] = [];
@@ -140,8 +183,21 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
     ]);
 
     if (applicationResult.data && !applicationResult.error) {
-      myApplication = applicationResult.data;
+      const appData = applicationResult.data;
+      myApplication = appData;
       hasApplied = true;
+
+      // Compute waitlist position if waitlisted
+      if (appData.status === "waitlisted") {
+        const { count } = await supabase
+          .from("applications")
+          .select("*", { count: "exact", head: true })
+          .eq("posting_id", postingId)
+          .eq("status", "waitlisted")
+          .lt("created_at", appData.created_at);
+
+        waitlistPosition = (count ?? 0) + 1; // 1-indexed
+      }
     }
 
     if (profileResult.data) {
@@ -177,7 +233,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
       supabase
         .from("profiles")
         .select(
-          "user_id, full_name, headline, skills, skill_levels, location_preference, availability_slots",
+          "user_id, full_name, headline, skills, skill_levels, location_preference, availability_slots, profile_skills(skill_nodes(name))",
         ),
     ]);
 
@@ -186,13 +242,25 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
       const applicantIds = applicationsResult.data.map((a) => a.applicant_id);
       const { data: profilesData } = await supabase
         .from("profiles")
-        .select("full_name, headline, skills, user_id")
+        .select(
+          "full_name, headline, skills, user_id, profile_skills(skill_nodes(name))",
+        )
         .in("user_id", applicantIds);
 
-      applications = applicationsResult.data.map((app) => ({
-        ...app,
-        profiles: profilesData?.find((p) => p.user_id === app.applicant_id),
-      }));
+      applications = applicationsResult.data.map((app) => {
+        const rawProfile = profilesData?.find(
+          (p) => p.user_id === app.applicant_id,
+        );
+        if (!rawProfile) return { ...app, profiles: undefined };
+        const joinSkills = deriveSkillNames(rawProfile.profile_skills);
+        return {
+          ...app,
+          profiles: {
+            ...rawProfile,
+            skills: joinSkills.length > 0 ? joinSkills : rawProfile.skills,
+          },
+        };
+      });
     }
 
     // Compute matched profiles
@@ -218,12 +286,14 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
               breakdown.skill_level * 0.2 +
               breakdown.location * 0.2;
 
+            const profJoinSkills = deriveSkillNames(profile.profile_skills);
             scored.push({
               profile_id: profile.user_id,
               user_id: profile.user_id,
               full_name: profile.full_name,
               headline: profile.headline,
-              skills: profile.skills,
+              skills:
+                profJoinSkills.length > 0 ? profJoinSkills : profile.skills,
               overall_score: overallScore,
               breakdown: breakdown as ScoreBreakdown,
             });
@@ -251,6 +321,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
     matchedProfiles,
     myApplication,
     hasApplied,
+    waitlistPosition,
   };
 }
 
@@ -274,6 +345,7 @@ export function usePostingDetail(postingId: string) {
     matchedProfiles: data?.matchedProfiles ?? [],
     myApplication: data?.myApplication ?? null,
     hasApplied: data?.hasApplied ?? false,
+    waitlistPosition: data?.waitlistPosition ?? null,
     error,
     isLoading,
     mutate,

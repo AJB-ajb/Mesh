@@ -20,6 +20,10 @@ import { PostingApplicationsCard } from "@/components/posting/posting-applicatio
 import { PostingCompatibilityCard } from "@/components/posting/posting-compatibility-card";
 import { PostingMatchedProfilesCard } from "@/components/posting/posting-matched-profiles-card";
 import { PostingSidebar } from "@/components/posting/posting-sidebar";
+import { FreeFormPostingUpdate } from "@/components/posting/free-form-posting-update";
+import { usePostingAiUpdate } from "@/lib/hooks/use-posting-ai-update";
+import { SequentialInviteCard } from "@/components/posting/sequential-invite-card";
+import { SequentialInviteResponseCard } from "@/components/posting/sequential-invite-response-card";
 
 export default function PostingDetailPage() {
   const router = useRouter();
@@ -36,6 +40,7 @@ export default function PostingDetailPage() {
     matchedProfiles,
     myApplication: fetchedMyApplication,
     hasApplied: fetchedHasApplied,
+    waitlistPosition: fetchedWaitlistPosition,
     isLoading,
     mutate,
   } = usePostingDetail(postingId);
@@ -44,7 +49,8 @@ export default function PostingDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isReactivating, setIsReactivating] = useState(false);
+  const [isExtending, setIsExtending] = useState(false);
+  const [isReposting, setIsReposting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<PostingFormState>({
     title: "",
@@ -63,9 +69,21 @@ export default function PostingDetailPage() {
     locationLat: "",
     locationLng: "",
     maxDistanceKm: "",
+    tags: "",
+    contextIdentifier: "",
+    skillLevelMin: "",
+    autoAccept: "false",
+    selectedSkills: [],
   });
 
+  // AI update hook
+  const { isApplyingUpdate, applyFreeFormUpdate, undoLastUpdate } =
+    usePostingAiUpdate(postingId, form, posting?.source_text ?? null, mutate);
+
   // Application UI state
+  const [localWaitlistPosition, setLocalWaitlistPosition] = useState<
+    number | null | undefined
+  >(undefined);
   const [localHasApplied, setLocalHasApplied] = useState<boolean | null>(null);
   const [localMyApplication, setLocalMyApplication] = useState<
     typeof fetchedMyApplication | undefined
@@ -87,6 +105,97 @@ export default function PostingDetailPage() {
       ? localMyApplication
       : fetchedMyApplication;
   const effectiveApplications = localApplications ?? applications;
+  const waitlistPosition =
+    localWaitlistPosition !== undefined
+      ? localWaitlistPosition
+      : fetchedWaitlistPosition;
+
+  // Promote the first waitlisted user when a spot opens
+  const promoteFromWaitlist = async (
+    supabase: ReturnType<typeof createClient>,
+    pId: string,
+    p: NonNullable<typeof posting>,
+  ) => {
+    // Get first waitlisted user (FIFO)
+    const { data: waitlisted } = await supabase
+      .from("applications")
+      .select("id, applicant_id")
+      .eq("posting_id", pId)
+      .eq("status", "waitlisted")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (!waitlisted) {
+      // No one on waitlist — reopen the posting if it was filled
+      if (p.status === "filled") {
+        await supabase
+          .from("postings")
+          .update({ status: "open" })
+          .eq("id", pId);
+      }
+      return;
+    }
+
+    if (p.auto_accept) {
+      // Auto-promote: instantly accept the first waitlisted user
+      await supabase
+        .from("applications")
+        .update({ status: "accepted" })
+        .eq("id", waitlisted.id);
+
+      // Notify the promoted user
+      const { data: promotedProfile } = await supabase
+        .from("profiles")
+        .select("notification_preferences")
+        .eq("user_id", waitlisted.applicant_id)
+        .single();
+
+      const promotedPrefs =
+        promotedProfile?.notification_preferences as NotificationPreferences | null;
+
+      if (shouldNotify(promotedPrefs, "application_accepted", "in_app")) {
+        await supabase.from("notifications").insert({
+          user_id: waitlisted.applicant_id,
+          type: "application_accepted",
+          title: "You're in! 🎉",
+          body: `A spot opened on "${p.title}" and you've been promoted from the waitlist!`,
+          related_posting_id: pId,
+          related_application_id: waitlisted.id,
+        });
+      }
+    } else {
+      // Manual review: notify the poster that a spot opened
+      const { data: ownerProfile } = await supabase
+        .from("profiles")
+        .select("notification_preferences")
+        .eq("user_id", p.creator_id)
+        .single();
+
+      const ownerPrefs =
+        ownerProfile?.notification_preferences as NotificationPreferences | null;
+
+      if (shouldNotify(ownerPrefs, "interest_received", "in_app")) {
+        await supabase.from("notifications").insert({
+          user_id: p.creator_id,
+          type: "application_received",
+          title: "Spot opened — waitlist ready",
+          body: `A spot opened on "${p.title}". You have waitlisted people ready to accept.`,
+          related_posting_id: pId,
+        });
+      }
+
+      // Reopen the posting since it needs manual review
+      if (p.status === "filled") {
+        await supabase
+          .from("postings")
+          .update({ status: "open" })
+          .eq("id", pId);
+      }
+    }
+
+    mutate();
+  };
 
   const handleFormChange = (field: keyof PostingFormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -117,6 +226,11 @@ export default function PostingDetailPage() {
       locationLat: posting.location_lat?.toString() || "",
       locationLng: posting.location_lng?.toString() || "",
       maxDistanceKm: posting.max_distance_km?.toString() || "",
+      tags: posting.tags?.join(", ") || "",
+      contextIdentifier: posting.context_identifier || "",
+      skillLevelMin: posting.skill_level_min?.toString() || "",
+      autoAccept: posting.auto_accept ? "true" : "false",
+      selectedSkills: posting.selectedPostingSkills ?? [],
     });
     setIsEditing(true);
   };
@@ -131,12 +245,19 @@ export default function PostingDetailPage() {
     const locationLng = parseFloat(form.locationLng);
     const maxDistanceKm = parseInt(form.maxDistanceKm, 10);
 
+    // Merge selectedSkills names into the free-form skills array (dual-write)
+    const selectedSkillNames = form.selectedSkills.map((s) => s.name);
+    const freeFormSkills = parseList(form.skills);
+    const allSkillNames = [
+      ...new Set([...selectedSkillNames, ...freeFormSkills]),
+    ];
+
     const { error: updateError } = await supabase
       .from("postings")
       .update({
         title: form.title.trim(),
         description: form.description.trim(),
-        skills: parseList(form.skills),
+        skills: allSkillNames,
         estimated_time: form.estimatedTime || null,
         team_size_min: 1,
         team_size_max: lookingFor,
@@ -154,17 +275,57 @@ export default function PostingDetailPage() {
           Number.isFinite(maxDistanceKm) && maxDistanceKm > 0
             ? maxDistanceKm
             : null,
+        tags: form.tags
+          ? form.tags
+              .split(",")
+              .map((t: string) => t.trim())
+              .filter(Boolean)
+          : [],
+        context_identifier: form.contextIdentifier.trim() || null,
+        skill_level_min: form.skillLevelMin
+          ? parseInt(form.skillLevelMin, 10)
+          : null,
+        auto_accept: form.autoAccept === "true",
         updated_at: new Date().toISOString(),
       })
       .eq("id", postingId);
 
-    setIsSaving(false);
-
     if (updateError) {
+      setIsSaving(false);
       setError("Failed to update posting. Please try again.");
       return;
     }
 
+    // Sync posting_skills join table: always clear, then re-insert if needed
+    const { error: deleteError } = await supabase
+      .from("posting_skills")
+      .delete()
+      .eq("posting_id", postingId);
+
+    if (deleteError) {
+      setIsSaving(false);
+      setError("Failed to update skills. Please try again.");
+      return;
+    }
+
+    if (form.selectedSkills.length > 0) {
+      const postingSkillRows = form.selectedSkills.map((s) => ({
+        posting_id: postingId,
+        skill_id: s.skillId,
+        level_min: s.levelMin,
+      }));
+      const { error: insertError } = await supabase
+        .from("posting_skills")
+        .insert(postingSkillRows);
+
+      if (insertError) {
+        setIsSaving(false);
+        setError("Failed to save skills. Please try again.");
+        return;
+      }
+    }
+
+    setIsSaving(false);
     setIsEditing(false);
     mutate();
   };
@@ -193,27 +354,55 @@ export default function PostingDetailPage() {
     router.push("/postings");
   };
 
-  const handleReactivate = async () => {
-    setIsReactivating(true);
+  const handleExtendDeadline = async (days: number) => {
+    setIsExtending(true);
     setError(null);
 
     try {
-      const res = await fetch(`/api/postings/${postingId}/reactivate`, {
+      const res = await fetch(`/api/postings/${postingId}/extend-deadline`, {
         method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ days }),
       });
 
       if (!res.ok) {
         const body = await res.json();
-        setError(body.error?.message || "Failed to reactivate posting.");
-        setIsReactivating(false);
+        setError(body.error?.message || "Failed to extend deadline.");
+        setIsExtending(false);
         return;
       }
 
-      setIsReactivating(false);
+      setIsExtending(false);
       mutate();
     } catch {
-      setError("Failed to reactivate posting. Please try again.");
-      setIsReactivating(false);
+      setError("Failed to extend deadline. Please try again.");
+      setIsExtending(false);
+    }
+  };
+
+  const handleRepost = async () => {
+    setIsReposting(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/postings/${postingId}/repost`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ days: 7 }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json();
+        setError(body.error?.message || "Failed to repost.");
+        setIsReposting(false);
+        return;
+      }
+
+      setIsReposting(false);
+      mutate();
+    } catch {
+      setError("Failed to repost. Please try again.");
+      setIsReposting(false);
     }
   };
 
@@ -226,63 +415,55 @@ export default function PostingDetailPage() {
     setIsApplying(true);
     setError(null);
 
-    const supabase = createClient();
-    const { data: application, error: applyError } = await supabase
-      .from("applications")
-      .insert({
-        posting_id: postingId,
-        applicant_id: currentUserId,
-        cover_message: coverMessage.trim() || null,
-      })
-      .select()
-      .single();
+    try {
+      const response = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          posting_id: postingId,
+          cover_message: coverMessage.trim() || undefined,
+        }),
+      });
 
-    if (applyError) {
-      setIsApplying(false);
-      setError("Failed to submit application. Please try again.");
-      return;
-    }
-
-    // Create notification for posting owner (if their preferences allow it)
-    if (posting) {
-      const { data: ownerProfile } = await supabase
-        .from("profiles")
-        .select("full_name, notification_preferences")
-        .eq("user_id", posting.creator_id)
-        .single();
-
-      const { data: applicantProfile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("user_id", currentUserId)
-        .single();
-
-      const applicantName = applicantProfile?.full_name || "Someone";
-      const ownerPrefs = ownerProfile?.notification_preferences as NotificationPreferences | null;
-
-      if (shouldNotify(ownerPrefs, "interest_received", "in_app")) {
-        await supabase.from("notifications").insert({
-          user_id: posting.creator_id,
-          type: "application_received",
-          title: "New Application Received",
-          body: `${applicantName} has applied to your posting "${posting.title}"`,
-          related_posting_id: postingId,
-          related_application_id: application.id,
-          related_user_id: currentUserId,
-        });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error?.message || "Failed to submit request");
       }
-    }
 
-    setLocalHasApplied(true);
-    setLocalMyApplication(application);
-    setShowApplyForm(false);
-    setCoverMessage("");
-    setIsApplying(false);
+      const {
+        application,
+        status,
+        waitlistPosition: wlPos,
+      } = await response.json();
+
+      setLocalHasApplied(true);
+      setLocalMyApplication(application);
+      setShowApplyForm(false);
+      setCoverMessage("");
+
+      if (status === "waitlisted" && wlPos != null) {
+        setLocalWaitlistPosition(wlPos);
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to submit request. Please try again.",
+      );
+    } finally {
+      setIsApplying(false);
+    }
   };
 
   const handleWithdrawApplication = async () => {
     if (!myApplication) return;
-    if (!confirm("Are you sure you want to withdraw your application?")) return;
+    const confirmMsg =
+      myApplication.status === "waitlisted"
+        ? "Are you sure you want to leave the waitlist?"
+        : "Are you sure you want to withdraw your request?";
+    if (!confirm(confirmMsg)) return;
+
+    const wasAccepted = myApplication.status === "accepted";
 
     const supabase = createClient();
     const { error: withdrawError } = await supabase
@@ -291,11 +472,16 @@ export default function PostingDetailPage() {
       .eq("id", myApplication.id);
 
     if (withdrawError) {
-      setError("Failed to withdraw application. Please try again.");
+      setError("Failed to withdraw request. Please try again.");
       return;
     }
 
     setLocalMyApplication({ ...myApplication, status: "withdrawn" });
+
+    // If an accepted user withdraws, trigger waitlist promotion
+    if (wasAccepted && posting) {
+      await promoteFromWaitlist(supabase, postingId, posting);
+    }
   };
 
   const handleUpdateApplicationStatus = async (
@@ -311,7 +497,7 @@ export default function PostingDetailPage() {
       .eq("id", applicationId);
 
     if (updateError) {
-      setError("Failed to update application. Please try again.");
+      setError("Failed to update request. Please try again.");
       setIsUpdatingApplication(null);
       return;
     }
@@ -333,7 +519,8 @@ export default function PostingDetailPage() {
         .eq("user_id", application.applicant_id)
         .single();
 
-      const recipientPrefs = recipientProfile?.notification_preferences as NotificationPreferences | null;
+      const recipientPrefs =
+        recipientProfile?.notification_preferences as NotificationPreferences | null;
 
       if (shouldNotify(recipientPrefs, notifType, "in_app")) {
         await supabase.from("notifications").insert({
@@ -341,16 +528,32 @@ export default function PostingDetailPage() {
           type: notifType,
           title:
             newStatus === "accepted"
-              ? "Application Accepted! \uD83C\uDF89"
-              : "Application Update",
+              ? "Request Accepted! \uD83C\uDF89"
+              : "Request Update",
           body:
             newStatus === "accepted"
-              ? `Your application to "${posting.title}" has been accepted!`
-              : `Your application to "${posting.title}" was not selected.`,
+              ? `Your request to join "${posting.title}" has been accepted!`
+              : `Your request to join "${posting.title}" was not selected.`,
           related_posting_id: postingId,
           related_application_id: applicationId,
           related_user_id: posting.creator_id,
         });
+      }
+    }
+
+    // If accepting a new member, check if posting should be marked as filled
+    if (newStatus === "accepted" && posting) {
+      const { count } = await supabase
+        .from("applications")
+        .select("*", { count: "exact", head: true })
+        .eq("posting_id", postingId)
+        .eq("status", "accepted");
+
+      if (count && count >= posting.team_size_max) {
+        await supabase
+          .from("postings")
+          .update({ status: "filled" })
+          .eq("id", postingId);
       }
     }
 
@@ -360,6 +563,7 @@ export default function PostingDetailPage() {
       ),
     );
     setIsUpdatingApplication(null);
+    mutate();
   };
 
   const handleStartConversation = async (otherUserId: string) => {
@@ -445,30 +649,55 @@ export default function PostingDetailPage() {
         isEditing={isEditing}
         isSaving={isSaving}
         isDeleting={isDeleting}
-        isReactivating={isReactivating}
+        isExtending={isExtending}
+        isReposting={isReposting}
         editTitle={form.title}
         onEditTitleChange={(value) => handleFormChange("title", value)}
         onSave={handleSave}
         onCancelEdit={() => setIsEditing(false)}
         onStartEdit={handleStartEdit}
         onDelete={handleDelete}
-        onReactivate={handleReactivate}
+        onExtendDeadline={handleExtendDeadline}
+        onRepost={handleRepost}
         hasApplied={hasApplied}
         myApplication={myApplication}
+        waitlistPosition={waitlistPosition}
         showApplyForm={showApplyForm}
         coverMessage={coverMessage}
         isApplying={isApplying}
         onShowApplyForm={() => setShowApplyForm(true)}
-        onHideApplyForm={() => setShowApplyForm(false)}
+        onHideApplyForm={() => {
+          setShowApplyForm(false);
+          setError(null);
+        }}
         onCoverMessageChange={setCoverMessage}
         onApply={handleApply}
         onWithdraw={handleWithdrawApplication}
         error={error}
+        hideApplySection={!isOwner && posting.mode === "friend_ask"}
       />
+
+      {!isOwner && posting.mode === "friend_ask" && currentUserId && (
+        <SequentialInviteResponseCard
+          postingId={postingId}
+          currentUserId={currentUserId}
+        />
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main content */}
         <div className="space-y-6 lg:col-span-2">
+          {isOwner && !isEditing && (
+            <FreeFormPostingUpdate
+              postingId={postingId}
+              sourceText={posting.source_text ?? null}
+              canUndo={!!posting.previous_source_text}
+              isApplying={isApplyingUpdate}
+              onUpdate={applyFreeFormUpdate}
+              onUndo={undoLastUpdate}
+            />
+          )}
+
           <PostingAboutCard
             posting={posting}
             isEditing={isEditing}
@@ -482,6 +711,13 @@ export default function PostingDetailPage() {
               isUpdatingApplication={isUpdatingApplication}
               onUpdateStatus={handleUpdateApplicationStatus}
               onMessage={handleStartConversation}
+            />
+          )}
+
+          {isOwner && posting.mode === "friend_ask" && currentUserId && (
+            <SequentialInviteCard
+              postingId={postingId}
+              currentUserId={currentUserId}
             />
           )}
 

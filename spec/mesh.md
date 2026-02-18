@@ -10,7 +10,7 @@ Idea-based social platform for quickly finding people to do things with — proj
 
 ## Problem
 
-- Finding people to do things with requires high effort (scanning Slack/WhatsApp channels, messaging friends one by one)
+- Finding people to do things with requires high effort (scanning Slack/WhatsApp channels, messaging connections one by one)
 - Large communities don't scale for individual matching
 - Skill levels and personal compatibility are rarely explicit
 
@@ -37,7 +37,7 @@ Idea-based social platform for quickly finding people to do things with — proj
 - **Professional upskilling / mentorship**: Matching mentors and mentees (e.g., AI safety orgs)
 - **Hobbyists**: Game dev, writing, art, theater — finding collaborators
 - **Hackathons**: Finding aligned teammates; channels as shared context with QR codes
-- **Spontaneous activities**: Asking friends for quick plans with fast expiry and cascading invites
+- **Spontaneous activities**: Asking connections for quick plans with fast deadlines and sequential invites
 
 See [vision.md](vision.md) for detailed analysis of each audience.
 
@@ -47,7 +47,7 @@ See [vision.md](vision.md) for detailed analysis of each audience.
 - Course project partners
 - Social activities (concert companion, tennis partner, board game night)
 - Spontaneous plans ("negotiation practice partner, online, today")
-- Sequential friend-asking: order friends by preference, send requests one-by-one until someone accepts
+- Sequential Invite: order connections by preference, send invites one-by-one until enough accept
 - Finding someone from a larger group (classmates, community) without a specific person in mind
 
 ## Features
@@ -58,7 +58,7 @@ See [ux.md](ux.md) for design principles, pages, and interaction patterns.
 
 - Find people for a project
 - Find people for a social activity
-- Find a specific person from your friend list for a plan (sequential friend-ask)
+- Find a specific person from your connections for a plan (sequential invite)
 - Find someone suitable from a larger group without a specific person in mind
 
 See [use-cases.md](use-cases.md) for detailed examples and scenarios.
@@ -73,7 +73,7 @@ See [matching.md](matching.md) for the matching algorithm.
 - Posting keywords for similarity matching
 - One-click OAuth login, no setup required
 - Notifications: daily digest + instant for high matches
-- _Cascading invites_: Friend-ask mode for sequential 1:1 requests
+- _Sequential Invite_: ordered invite mode for 1:1 invites until enough accept
 
 ### Future
 

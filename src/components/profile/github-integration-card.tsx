@@ -34,7 +34,7 @@ export function GitHubIntegrationCard({
   onSync: () => void;
   onApplySuggestion: (
     field: "skills" | "interests" | "bio",
-    values: string | string[]
+    values: string | string[],
   ) => void;
 }) {
   return (
@@ -43,9 +43,7 @@ export function GitHubIntegrationCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Github className="h-5 w-5" />
-            <CardTitle className="text-lg">
-              GitHub Profile Enrichment
-            </CardTitle>
+            <CardTitle className="text-lg">GitHub Profile Enrichment</CardTitle>
           </div>
           {isGithubProvider && (
             <Button
@@ -83,7 +81,7 @@ export function GitHubIntegrationCard({
               profile with AI-powered insights.
             </p>
             <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-              Sign out and sign back in with GitHub to enable this feature.
+              Connect your GitHub account from the Integrations section below.
             </p>
           </div>
         )}
@@ -102,7 +100,9 @@ export function GitHubIntegrationCard({
                 <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
                   <Check className="h-4 w-4" />
                   Last synced:{" "}
-                  {new Date(githubSync.lastSyncedAt!).toLocaleDateString()} at{" "}
+                  {new Date(
+                    githubSync.lastSyncedAt!,
+                  ).toLocaleDateString()} at{" "}
                   {new Date(githubSync.lastSyncedAt!).toLocaleTimeString()}
                 </div>
 
@@ -208,7 +208,7 @@ export function GitHubIntegrationCard({
                               onClick={() =>
                                 onApplySuggestion(
                                   "skills",
-                                  githubSync.suggestions!.suggestedSkills || []
+                                  githubSync.suggestions!.suggestedSkills || [],
                                 )
                               }
                             >
@@ -249,7 +249,7 @@ export function GitHubIntegrationCard({
                                 onApplySuggestion(
                                   "interests",
                                   githubSync.suggestions!.suggestedInterests ||
-                                    []
+                                    [],
                                 )
                               }
                             >
@@ -288,7 +288,7 @@ export function GitHubIntegrationCard({
                               onClick={() =>
                                 onApplySuggestion(
                                   "bio",
-                                  githubSync.suggestions!.suggestedBio!
+                                  githubSync.suggestions!.suggestedBio!,
                                 )
                               }
                             >

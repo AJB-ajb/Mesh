@@ -88,8 +88,16 @@ describe("useProfileSave", () => {
     mockGetUser.mockResolvedValue({ data: { user: fakeUser } });
 
     const upsertMock = vi.fn().mockResolvedValue({ error: null });
-    mockFrom.mockReturnValue({
-      upsert: upsertMock,
+    const deleteMock = vi.fn().mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ error: null }),
+    });
+    const insertMock = vi.fn().mockResolvedValue({ error: null });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "profiles") return { upsert: upsertMock };
+      if (table === "profile_skills")
+        return { delete: deleteMock, insert: insertMock };
+      return {};
     });
 
     const mutate = vi.fn().mockResolvedValue(undefined);
@@ -122,8 +130,9 @@ describe("useProfileSave", () => {
     const upsertMock = vi
       .fn()
       .mockResolvedValue({ error: { message: "DB error" } });
-    mockFrom.mockReturnValue({
-      upsert: upsertMock,
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "profiles") return { upsert: upsertMock };
+      return {};
     });
 
     const mutate = vi.fn();

@@ -10,6 +10,7 @@ import {
   type LocationMode,
   defaultFormState,
 } from "@/lib/types/profile";
+import type { SelectedProfileSkill } from "@/lib/types/skill";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -108,6 +109,48 @@ async function fetchProfile(): Promise<ProfileFetchResult> {
     .eq("user_id", user.id)
     .single();
 
+  // Load profile_skills with skill node info
+  let selectedSkills: SelectedProfileSkill[] = [];
+  const { data: profileSkillRows } = await supabase
+    .from("profile_skills")
+    .select("skill_id, level, skill_nodes(id, name, parent_id, depth)")
+    .eq("profile_id", user.id);
+
+  if (profileSkillRows && profileSkillRows.length > 0) {
+    // Load all nodes to build ancestry paths
+    const { data: allNodes } = await supabase
+      .from("skill_nodes")
+      .select("id, name, parent_id");
+
+    const nodeMap = new Map((allNodes ?? []).map((n) => [n.id, n]));
+
+    selectedSkills = profileSkillRows
+      .filter((row) => row.skill_nodes)
+      .map((row) => {
+        const node = row.skill_nodes as unknown as {
+          id: string;
+          name: string;
+          parent_id: string | null;
+          depth: number;
+        };
+        // Build ancestry path
+        const path: string[] = [];
+        let current = node.parent_id ? nodeMap.get(node.parent_id) : undefined;
+        while (current) {
+          path.unshift(current.name);
+          current = current.parent_id
+            ? nodeMap.get(current.parent_id)
+            : undefined;
+        }
+        return {
+          skillId: node.id,
+          name: node.name,
+          path,
+          level: row.level ?? 5,
+        };
+      });
+  }
+
   let form = defaultFormState;
   let sourceText: string | null = null;
   let canUndo = false;
@@ -130,6 +173,7 @@ async function fetchProfile(): Promise<ProfileFetchResult> {
       skillLevels: parseSkillLevels(data.skill_levels),
       locationMode: parseLocationMode(data.location_mode),
       availabilitySlots: parseAvailabilitySlots(data.availability_slots),
+      selectedSkills,
     };
   }
 

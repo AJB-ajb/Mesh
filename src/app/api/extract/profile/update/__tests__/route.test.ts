@@ -68,20 +68,60 @@ describe("POST /api/extract/profile/update", () => {
     expect(res.status).toBe(401);
   });
 
-  it("returns 400 when sourceText is missing", async () => {
+  it("succeeds when sourceText is missing (fetches from DB)", async () => {
     authedUser();
+    const mockSelect = vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: {
+            full_name: "Test User",
+            headline: "Developer",
+            bio: "I code things",
+            skills: ["React"],
+            interests: [],
+            location: null,
+            languages: null,
+            portfolio_url: null,
+            github_url: null,
+          },
+        }),
+      }),
+    });
+    mockFrom.mockReturnValue({ select: mockSelect });
+
+    const result = {
+      updated_text: "I code things and know Python",
+      skills: ["React", "Python"],
+    };
+    mockGenerateStructuredJSON.mockResolvedValue(result);
+
     const res = await POST(makeReq({ updateInstruction: "add Python" }));
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.error).toContain("source text");
+    expect(body.success).toBe(true);
   });
 
-  it("returns 400 when sourceText is too short", async () => {
+  it("succeeds when sourceText is too short (fetches from DB)", async () => {
     authedUser();
+    const mockSelect = vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+      }),
+    });
+    mockFrom.mockReturnValue({ select: mockSelect });
+
+    const result = {
+      updated_text: "I know Python",
+      skills: ["Python"],
+    };
+    mockGenerateStructuredJSON.mockResolvedValue(result);
+
     const res = await POST(
       makeReq({ sourceText: "hi", updateInstruction: "add Python" }),
     );
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
   });
 
   it("returns 400 when updateInstruction is missing", async () => {

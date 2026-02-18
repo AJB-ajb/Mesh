@@ -134,6 +134,43 @@ function InboxPageContent() {
     }
   };
 
+  const handleSequentialInviteRespond = async ({
+    postingId,
+    action,
+    notificationId,
+  }: {
+    postingId: string;
+    action: "accept" | "decline";
+    notificationId: string;
+  }) => {
+    const supabase = createClient();
+
+    // Look up the sequential invite by posting_id where user is in the ordered list
+    const { data: friendAsks } = await supabase
+      .from("friend_asks")
+      .select("id, ordered_friend_list, current_request_index")
+      .eq("posting_id", postingId)
+      .eq("status", "pending");
+
+    const friendAsk = friendAsks?.find(
+      (fa) =>
+        fa.ordered_friend_list[fa.current_request_index] === currentUserId,
+    );
+
+    if (!friendAsk) return;
+
+    const res = await fetch(`/api/friend-ask/${friendAsk.id}/respond`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+
+    if (res.ok) {
+      handleMarkAsRead(notificationId);
+      mutateInbox();
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -211,6 +248,7 @@ function InboxPageContent() {
           onMarkAllAsRead={handleMarkAllAsRead}
           onDelete={handleDeleteNotification}
           onClick={handleNotificationClick}
+          onSequentialInviteRespond={handleSequentialInviteRespond}
         />
       ) : (
         <div className="grid gap-6 lg:grid-cols-3">

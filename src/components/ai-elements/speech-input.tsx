@@ -106,7 +106,7 @@ export const SpeechInput = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [mode, setMode] = useState<SpeechInputMode>("none");
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(
-    null
+    null,
   );
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -173,7 +173,7 @@ export const SpeechInput = ({
   const startMediaRecorder = useCallback(async () => {
     if (!onAudioRecorded) {
       console.warn(
-        "SpeechInput: onAudioRecorded callback is required for MediaRecorder fallback"
+        "SpeechInput: onAudioRecorded callback is required for MediaRecorder fallback",
       );
       return;
     }
@@ -264,37 +264,21 @@ export const SpeechInput = ({
     isProcessing;
 
   return (
-    <div className="relative inline-flex items-center justify-center">
-      {/* Animated pulse rings */}
-      {isListening &&
-        [0, 1, 2].map((index) => (
-          <div
-            className="absolute inset-0 animate-ping rounded-full border-2 border-red-400/30"
-            key={index}
-            style={{
-              animationDelay: `${index * 0.3}s`,
-              animationDuration: "2s",
-            }}
-          />
-        ))}
-
-      {/* Main record button */}
-      <Button
-        className={cn(
-          "relative z-10 rounded-full transition-all duration-300",
-          isListening
-            ? "bg-destructive text-white hover:bg-destructive/80 hover:text-white"
-            : "bg-primary text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground",
-          className
-        )}
-        disabled={isDisabled}
-        onClick={toggleListening}
-        {...props}
-      >
-        {isProcessing && <LoaderIcon className="size-4 animate-spin" />}
-        {!isProcessing && isListening && <SquareIcon className="size-4" />}
-        {!(isProcessing || isListening) && <MicIcon className="size-4" />}
-      </Button>
-    </div>
+    <Button
+      className={cn(
+        "bg-transparent hover:bg-transparent text-muted-foreground hover:text-foreground transition-colors duration-200",
+        isListening && "text-destructive hover:text-destructive",
+        className,
+      )}
+      disabled={isDisabled}
+      onClick={toggleListening}
+      {...props}
+    >
+      {isProcessing && <LoaderIcon className="size-[1em] animate-spin" />}
+      {!isProcessing && isListening && (
+        <SquareIcon className="size-[1em] animate-pulse" />
+      )}
+      {!(isProcessing || isListening) && <MicIcon className="size-[1em]" />}
+    </Button>
   );
 };

@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   FolderKanban,
   Users,
+  Bookmark,
   Inbox,
   Plus,
   Menu,
@@ -24,6 +25,7 @@ const navigation = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/postings", icon: FolderKanban, label: "Postings" },
   { href: "/matches", icon: Users, label: "Matches" },
+  { href: "/bookmarks", icon: Bookmark, label: "Bookmarks" },
   { href: "/inbox", icon: Inbox, label: "Inbox" },
 ];
 
@@ -86,7 +88,7 @@ export function Sidebar({ className }: SidebarProps) {
         className={cn(
           "fixed inset-y-0 left-0 z-40 flex flex-col border-r border-sidebar-border bg-sidebar",
           "transition-all duration-300 ease-in-out",
-          "md:static",
+          "md:sticky md:top-0 md:h-screen md:overflow-y-auto",
           // Desktop: collapsed or expanded
           isCollapsed ? "md:w-16" : "md:w-64",
           // Mobile: slide in/out

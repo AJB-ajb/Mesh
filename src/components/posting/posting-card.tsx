@@ -35,7 +35,7 @@ function getLocationDisplay(
     case "in_person":
       return locationName || "In-person";
     case "either":
-      return locationName || "Either";
+      return locationName || "Flexible";
     default:
       return null;
   }
@@ -72,6 +72,9 @@ export interface PostingCardProps {
     avatarUrl?: string;
   };
   createdAt: string;
+  tags?: string[];
+  mode?: string;
+  contextIdentifier?: string;
   className?: string;
   onApply?: () => void;
 }
@@ -86,6 +89,9 @@ export function PostingCard({
   category,
   matchScore,
   expiresAt,
+  tags,
+  mode,
+  contextIdentifier,
   locationMode,
   locationName,
   creator,
@@ -111,6 +117,19 @@ export function PostingCard({
             <div className="flex items-center gap-3 flex-wrap">
               <CardTitle className="text-xl">{title}</CardTitle>
               {category && <Badge className={categoryStyle}>{category}</Badge>}
+              {contextIdentifier && (
+                <Badge variant="secondary" className="text-xs">
+                  {contextIdentifier}
+                </Badge>
+              )}
+              {mode === "friend_ask" && (
+                <Badge
+                  variant="outline"
+                  className="border-amber-500/30 text-amber-600 dark:text-amber-400"
+                >
+                  Sequential Invite
+                </Badge>
+              )}
               {matchScore !== undefined && (
                 <Badge variant="success">{matchScore}% match</Badge>
               )}
@@ -126,7 +145,7 @@ export function PostingCard({
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
-            {onApply && <Button onClick={onApply}>Apply</Button>}
+            {onApply && <Button onClick={onApply}>Request to join</Button>}
           </div>
         </div>
       </CardHeader>
@@ -146,6 +165,22 @@ export function PostingCard({
             <Badge variant="outline">+{skills.length - 5}</Badge>
           )}
         </div>
+
+        {/* Tags */}
+        {tags && tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {tags.slice(0, 4).map((tag) => (
+              <Badge key={tag} variant="outline" className="text-xs">
+                #{tag}
+              </Badge>
+            ))}
+            {tags.length > 4 && (
+              <Badge variant="outline" className="text-xs">
+                +{tags.length - 4}
+              </Badge>
+            )}
+          </div>
+        )}
 
         {/* Meta */}
         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">

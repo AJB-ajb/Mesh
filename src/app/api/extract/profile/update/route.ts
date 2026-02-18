@@ -98,17 +98,6 @@ export async function POST(request: Request) {
     const { sourceText, updateInstruction } = await request.json();
 
     if (
-      !sourceText ||
-      typeof sourceText !== "string" ||
-      sourceText.trim().length < 5
-    ) {
-      return NextResponse.json(
-        { error: "Please provide source text to update" },
-        { status: 400 },
-      );
-    }
-
-    if (
       !updateInstruction ||
       typeof updateInstruction !== "string" ||
       updateInstruction.trim().length < 3
@@ -117,6 +106,46 @@ export async function POST(request: Request) {
         { error: "Please provide an update instruction" },
         { status: 400 },
       );
+    }
+
+    // If sourceText is provided, use it. Otherwise, build from DB profile.
+    let effectiveSourceText = "";
+    if (
+      sourceText &&
+      typeof sourceText === "string" &&
+      sourceText.trim().length >= 5
+    ) {
+      effectiveSourceText = sourceText.trim();
+    } else {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select(
+          "full_name, headline, bio, skills, interests, location, languages, portfolio_url, github_url",
+        )
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (profile) {
+        const parts: string[] = [];
+        if (profile.full_name) parts.push(`Name: ${profile.full_name}`);
+        if (profile.headline) parts.push(`Headline: ${profile.headline}`);
+        if (profile.bio) parts.push(`Bio: ${profile.bio}`);
+        if (profile.skills?.length)
+          parts.push(`Skills: ${profile.skills.join(", ")}`);
+        if (profile.interests?.length)
+          parts.push(`Interests: ${profile.interests.join(", ")}`);
+        if (profile.location) parts.push(`Location: ${profile.location}`);
+        if (profile.languages?.length)
+          parts.push(`Languages: ${profile.languages.join(", ")}`);
+        if (profile.portfolio_url)
+          parts.push(`Portfolio: ${profile.portfolio_url}`);
+        if (profile.github_url) parts.push(`GitHub: ${profile.github_url}`);
+        effectiveSourceText = parts.join("\n");
+      }
+
+      if (!effectiveSourceText) {
+        effectiveSourceText = "New profile with no existing information.";
+      }
     }
 
     const result = await generateStructuredJSON<Record<string, unknown>>({
@@ -129,7 +158,7 @@ You will receive a current profile description and an update instruction. Your j
 For the skill_levels field, output a JSON-encoded string mapping domain names to numeric skill levels (0-10).
 
 Return both the updated text and extracted fields.`,
-      userPrompt: `Current profile description:\n\n${sourceText.trim()}\n\nUpdate instruction: ${updateInstruction.trim()}`,
+      userPrompt: `Current profile description:\n\n${effectiveSourceText}\n\nUpdate instruction: ${updateInstruction.trim()}`,
       schema: profileSchemaV2,
       temperature: 0.3,
     });

@@ -60,7 +60,7 @@ export default async function DashboardPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="mt-1 text-muted-foreground">
-            Welcome back! Heres whats happening with your postings.
+            Welcome back! Here&apos;s what&apos;s happening with your postings.
           </p>
         </div>
         <Button asChild>
@@ -84,7 +84,7 @@ export default async function DashboardPage() {
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
           <CardDescription>
-            Your latest matches, applications, and messages
+            Your latest matches, join requests, and messages
           </CardDescription>
         </CardHeader>
         <CardContent>

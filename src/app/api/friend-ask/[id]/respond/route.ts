@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
 import { apiError } from "@/lib/errors";
+import {
+  type NotificationPreferences,
+  shouldNotify,
+} from "@/lib/notifications/preferences";
 
 /**
  * POST /api/friend-ask/[id]/respond
- * Respond to a friend-ask (accept or decline).
+ * Respond to a sequential invite (accept or decline).
  * Body: { action: "accept" | "decline" }
- * Only the currently-asked friend can respond.
+ * Only the currently-invited connection can respond.
  */
 export const POST = withAuth(async (req, { user, supabase, params }) => {
   const { id } = params;
@@ -31,24 +35,97 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     .single();
 
   if (fetchError || !friendAsk) {
-    return apiError("NOT_FOUND", "Friend-ask not found", 404);
+    return apiError("NOT_FOUND", "Sequential invite not found", 404);
   }
 
   if (friendAsk.status !== "pending") {
     return apiError(
       "VALIDATION",
-      `Cannot respond: friend-ask status is ${friendAsk.status}`,
+      `Cannot respond: sequential invite status is ${friendAsk.status}`,
       400,
     );
   }
 
-  // Verify the user is the current friend being asked
+  // Verify the user is the currently-invited connection
   const currentFriendId =
     friendAsk.ordered_friend_list[friendAsk.current_request_index];
 
   if (user.id !== currentFriendId) {
-    return apiError("FORBIDDEN", "You are not the currently-asked friend", 403);
+    return apiError(
+      "FORBIDDEN",
+      "You are not the currently-invited connection",
+      403,
+    );
   }
+
+  // Fetch responder profile name and posting title for notifications
+  const [{ data: responderProfile }, { data: posting }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", user.id)
+      .single(),
+    supabase
+      .from("postings")
+      .select("title")
+      .eq("id", friendAsk.posting_id)
+      .single(),
+  ]);
+
+  const responderName = responderProfile?.full_name || "Someone";
+  const postingTitle = posting?.title || "a posting";
+
+  // Helper: notify the creator
+  const notifyCreator = async (title: string, body: string) => {
+    const { data: creatorProfile } = await supabase
+      .from("profiles")
+      .select("notification_preferences")
+      .eq("user_id", friendAsk.creator_id)
+      .single();
+
+    const creatorPrefs =
+      creatorProfile?.notification_preferences as NotificationPreferences | null;
+
+    if (shouldNotify(creatorPrefs, "sequential_invite", "in_app")) {
+      await supabase.from("notifications").insert({
+        user_id: friendAsk.creator_id,
+        type: "sequential_invite",
+        title,
+        body,
+        related_posting_id: friendAsk.posting_id,
+        related_user_id: user.id,
+      });
+    }
+  };
+
+  // Helper: send invite notification to the next connection
+  const notifyNextFriend = async (friendId: string) => {
+    const { data: recipientProfile } = await supabase
+      .from("profiles")
+      .select("notification_preferences")
+      .eq("user_id", friendId)
+      .single();
+
+    const recipientPrefs =
+      recipientProfile?.notification_preferences as NotificationPreferences | null;
+
+    if (shouldNotify(recipientPrefs, "sequential_invite", "in_app")) {
+      const { data: creatorName } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", friendAsk.creator_id)
+        .single();
+
+      await supabase.from("notifications").insert({
+        user_id: friendId,
+        type: "sequential_invite",
+        title: "Sequential Invite Received",
+        body: `${creatorName?.full_name || "Someone"} wants you to join "${postingTitle}"`,
+        related_posting_id: friendAsk.posting_id,
+        related_user_id: friendAsk.creator_id,
+      });
+    }
+  };
 
   if (action === "accept") {
     const { data, error } = await supabase
@@ -60,17 +137,29 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
     if (error) return apiError("INTERNAL", error.message, 500);
 
+    // Notify the creator
+    await notifyCreator(
+      "Invite Accepted!",
+      `${responderName} has joined "${postingTitle}"`,
+    );
+
     return NextResponse.json({
       friend_ask: data,
-      message: "Friend-ask accepted",
+      message: "Sequential invite accepted",
     });
   }
 
-  // Decline: auto-advance to next friend
+  // Decline: auto-advance to next connection
   const nextIndex = friendAsk.current_request_index + 1;
 
+  // Notify the creator about the decline
+  await notifyCreator(
+    "Invite Declined",
+    `${responderName} declined the invite for "${postingTitle}"`,
+  );
+
   if (nextIndex >= friendAsk.ordered_friend_list.length) {
-    // No more friends to ask
+    // No more connections to ask
     const { data, error } = await supabase
       .from("friend_asks")
       .update({ status: "completed", current_request_index: nextIndex })
@@ -82,11 +171,12 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
     return NextResponse.json({
       friend_ask: data,
-      message: "Declined. No more friends in the list — sequence completed.",
+      message:
+        "Declined. No more connections in the list — sequence completed.",
     });
   }
 
-  // Advance to next friend
+  // Advance to next connection
   const { data, error } = await supabase
     .from("friend_asks")
     .update({ current_request_index: nextIndex })
@@ -96,9 +186,13 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
   if (error) return apiError("INTERNAL", error.message, 500);
 
+  // Auto-send invite to the next connection
+  const nextFriendId = friendAsk.ordered_friend_list[nextIndex];
+  await notifyNextFriend(nextFriendId);
+
   return NextResponse.json({
     friend_ask: data,
-    message: "Declined. Next friend will be asked.",
-    next_friend_id: friendAsk.ordered_friend_list[nextIndex],
+    message: "Declined. Next connection will be asked.",
+    next_friend_id: nextFriendId,
   });
 });

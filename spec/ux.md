@@ -27,15 +27,16 @@
 | Dashboard            | `/dashboard`            | Stats, activity, recommendations (persona-specific) |
 | Browse postings      | `/postings`             | Discover + My Postings tabs                         |
 | Create posting       | `/postings/new`         | Free-form input + AI extraction                     |
-| Posting detail       | `/postings/[id]`        | Detail view, apply, edit                            |
-| Matches              | `/matches`              | AI-matched postings with compatibility scores       |
+| Posting detail       | `/postings/[id]`        | Detail view, join / request to join, edit           |
+| Matches              | `/matches`              | AI-recommended postings with compatibility scores   |
+| Bookmarks            | `/bookmarks`            | Saved postings for later review                     |
 | Inbox                | `/inbox`                | Notifications + Messages tabs                       |
 | Profile              | `/profile`              | User profile                                        |
 | Settings             | `/settings`             | User settings                                       |
 
 ### Navigation structure
 
-- **Sidebar main:** Dashboard, Postings, Matches, Inbox
+- **Sidebar main:** Dashboard, Postings, Matches, Bookmarks, Inbox
 - **Sidebar secondary:** Profile, Settings
 - **Sidebar CTA:** New Posting button
 - **Header:** Global search, theme toggle, notifications bell, user menu
@@ -54,10 +55,11 @@ Personal profile configuration is **not required** to create a posting. It can b
 ## Interaction Patterns
 
 - **Persona-driven views:** developer vs posting creator see different dashboards, stats, and quick actions
-- **AI compatibility scores** shown prominently on posting cards (semantic, availability, skill, location breakdown)
+- **AI compatibility scores** shown prominently on posting cards (relevance, availability, skill, location breakdown)
 - **Real-time messaging** with typing indicators and presence status
 - **Progressive disclosure:** empty states guide the user to their next action
-- `[planned]` **Cascading invites:** sequential 1:1 invite flow — order friends by preference, send requests one-by-one
+- `[in progress]` **Sequential Invite:** ordered invite flow — rank connections by preference, send invites one-by-one until someone accepts. **Owner flow:** on a `friend_ask` mode posting, the owner sees a Sequential Invite card with a connection selector (drag to reorder), a "Start Sequential Invite" button, and a progress timeline. **Invitee flow:** the invited user receives a `sequential_invite` notification with inline "Join / Do not join" buttons in the inbox, and also sees a response card on the posting detail page. The normal apply flow is hidden for `friend_ask` mode postings. **Notification types:** `sequential_invite` for invite received, accepted, and declined. Creator is notified when invitees respond. On decline, the next connection is auto-invited.
+- `[planned]` **Waitlist**: When a posting is filled, the CTA changes to "Join waitlist" (auto-accept) or "Request to join waitlist" (manual review). Users see their waitlist position. Poster sees waitlisted people in the Join Requests card.
 - `[planned]` **Voice input** for posting creation and natural language filtering
 - `[planned]` **AI-generated daily digest** notifications
 - `[planned]` **Markdown-first interface**: Markdown input/output for postings, conversations, and configuration. Copy posting as markdown. Auto-clean/format options. Handoff document export (full context including platform metadata).

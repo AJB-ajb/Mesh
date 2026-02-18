@@ -7,6 +7,7 @@ const PROTECTED_ROUTES = [
   "/profile",
   "/postings",
   "/matches",
+  "/bookmarks",
   "/inbox",
   "/settings",
   "/onboarding",

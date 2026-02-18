@@ -39,6 +39,35 @@ function chain(finalValue: { data: unknown; error: unknown }) {
   return self;
 }
 
+/** Chain that records inserted data for later assertions */
+function trackingChain(insertLog: unknown[]) {
+  const self: Record<string, unknown> = {};
+  const methods = [
+    "select",
+    "update",
+    "delete",
+    "eq",
+    "or",
+    "in",
+    "limit",
+    "order",
+    "single",
+    "maybeSingle",
+  ];
+  for (const m of methods) {
+    self[m] = vi.fn(() => self);
+  }
+  self.insert = vi.fn((data: unknown) => {
+    insertLog.push(data);
+    return self;
+  });
+  self.single = vi.fn(() => Promise.resolve({ data: null, error: null }));
+  self.maybeSingle = vi.fn(() => Promise.resolve({ data: null, error: null }));
+  self.then = (resolve: (v: unknown) => void) =>
+    resolve({ data: null, error: null });
+  return self;
+}
+
 function authedUser() {
   mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
 }
@@ -89,6 +118,7 @@ describe("POST /api/friend-ask/[id]/respond", () => {
     const fa = {
       id: "fa1",
       creator_id: "creator",
+      posting_id: "p1",
       ordered_friend_list: ["other-user", "user-1"],
       current_request_index: 0, // "other-user" is current
       status: "pending",
@@ -108,20 +138,25 @@ describe("POST /api/friend-ask/[id]/respond", () => {
     expect(body.error.code).toBe("FORBIDDEN");
   });
 
-  it("accepts the friend-ask when current friend accepts", async () => {
+  it("accepts the friend-ask and notifies creator", async () => {
     authedUser();
     const fa = {
       id: "fa1",
       creator_id: "creator",
+      posting_id: "p1",
       ordered_friend_list: ["user-1", "u2"],
       current_request_index: 0,
       status: "pending",
     };
     const updated = { ...fa, status: "accepted" };
 
+    const notificationInserts: unknown[] = [];
     let callCount = 0;
-    mockFrom.mockImplementation(() => {
+    mockFrom.mockImplementation((table: string) => {
       callCount++;
+      if (table === "notifications") {
+        return trackingChain(notificationInserts);
+      }
       if (callCount === 1) return chain({ data: fa, error: null });
       return chain({ data: updated, error: null });
     });
@@ -137,22 +172,35 @@ describe("POST /api/friend-ask/[id]/respond", () => {
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.friend_ask.status).toBe("accepted");
+
+    // Creator should be notified
+    const creatorNotif = notificationInserts.find(
+      (n: unknown) =>
+        (n as Record<string, unknown>).user_id === "creator" &&
+        (n as Record<string, string>).title === "Invite Accepted!",
+    );
+    expect(creatorNotif).toBeTruthy();
   });
 
-  it("declines and advances to next friend", async () => {
+  it("declines, notifies creator, and auto-sends to next friend", async () => {
     authedUser();
     const fa = {
       id: "fa1",
       creator_id: "creator",
+      posting_id: "p1",
       ordered_friend_list: ["user-1", "u2", "u3"],
       current_request_index: 0,
       status: "pending",
     };
     const updated = { ...fa, current_request_index: 1 };
 
+    const notificationInserts: unknown[] = [];
     let callCount = 0;
-    mockFrom.mockImplementation(() => {
+    mockFrom.mockImplementation((table: string) => {
       callCount++;
+      if (table === "notifications") {
+        return trackingChain(notificationInserts);
+      }
       if (callCount === 1) return chain({ data: fa, error: null });
       return chain({ data: updated, error: null });
     });
@@ -168,7 +216,23 @@ describe("POST /api/friend-ask/[id]/respond", () => {
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.next_friend_id).toBe("u2");
-    expect(body.message).toContain("Next friend");
+    expect(body.message).toContain("Next connection");
+
+    // Creator should be notified about decline
+    const declineNotif = notificationInserts.find(
+      (n: unknown) =>
+        (n as Record<string, unknown>).user_id === "creator" &&
+        (n as Record<string, string>).title === "Invite Declined",
+    );
+    expect(declineNotif).toBeTruthy();
+
+    // Next friend should receive invite notification
+    const nextFriendNotif = notificationInserts.find(
+      (n: unknown) =>
+        (n as Record<string, unknown>).user_id === "u2" &&
+        (n as Record<string, string>).type === "sequential_invite",
+    );
+    expect(nextFriendNotif).toBeTruthy();
   });
 
   it("declines and completes when last friend in list", async () => {
@@ -176,6 +240,7 @@ describe("POST /api/friend-ask/[id]/respond", () => {
     const fa = {
       id: "fa1",
       creator_id: "creator",
+      posting_id: "p1",
       ordered_friend_list: ["user-1"],
       current_request_index: 0,
       status: "pending",
@@ -183,8 +248,11 @@ describe("POST /api/friend-ask/[id]/respond", () => {
     const updated = { ...fa, status: "completed", current_request_index: 1 };
 
     let callCount = 0;
-    mockFrom.mockImplementation(() => {
+    mockFrom.mockImplementation((table: string) => {
       callCount++;
+      if (table === "notifications") {
+        return trackingChain([]);
+      }
       if (callCount === 1) return chain({ data: fa, error: null });
       return chain({ data: updated, error: null });
     });
@@ -208,6 +276,7 @@ describe("POST /api/friend-ask/[id]/respond", () => {
     const fa = {
       id: "fa1",
       creator_id: "creator",
+      posting_id: "p1",
       ordered_friend_list: ["user-1"],
       current_request_index: 0,
       status: "accepted",

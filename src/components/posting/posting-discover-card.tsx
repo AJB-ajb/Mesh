@@ -5,7 +5,8 @@ import {
   MapPin,
   Loader2,
   Sparkles,
-  Heart,
+  Send,
+  Check,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -42,7 +43,7 @@ function getLocationLabel(
     case "in_person":
       return `📍 ${locationName || "In-person"}`;
     case "either":
-      return `🌐 ${locationName || "Either"}`;
+      return `🌐 ${locationName || "Flexible"}`;
     default:
       return null;
   }
@@ -110,6 +111,14 @@ export function PostingDiscoverCard({
                   {posting.context_identifier}
                 </Badge>
               )}
+              {posting.mode === "friend_ask" && (
+                <Badge
+                  variant="outline"
+                  className="border-amber-500/30 text-amber-600 dark:text-amber-400"
+                >
+                  Sequential Invite
+                </Badge>
+              )}
               {posting.status !== "open" && (
                 <Badge
                   variant={
@@ -140,15 +149,15 @@ export function PostingDiscoverCard({
                 {isInteresting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Heart className="h-4 w-4" />
+                  <Send className="h-4 w-4" />
                 )}
-                {isInteresting ? "Expressing Interest..." : "I'm Interested"}
+                {isInteresting ? "Requesting..." : "Request to join"}
               </Button>
             )}
             {!isOwner && activeTab === "discover" && isAlreadyInterested && (
               <Button variant="secondary" disabled>
-                <Heart className="h-4 w-4 fill-current" />
-                Interested
+                <Check className="h-4 w-4" />
+                Pending
               </Button>
             )}
             <Button variant="outline" asChild>
@@ -156,10 +165,6 @@ export function PostingDiscoverCard({
                 {isOwner ? "Edit" : "View Details"}
               </Link>
             </Button>
-            {!isOwner &&
-              posting.status === "open" &&
-              !isAlreadyInterested &&
-              posting.mode !== "open" && <Button>Apply</Button>}
           </div>
         </div>
       </CardHeader>
@@ -177,7 +182,7 @@ export function PostingDiscoverCard({
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
               <div className="flex flex-col">
-                <span className="text-muted-foreground">Semantic</span>
+                <span className="text-muted-foreground">Relevance</span>
                 <span className="font-medium text-foreground">
                   {formatScore(posting.score_breakdown.semantic)}
                 </span>
@@ -218,6 +223,22 @@ export function PostingDiscoverCard({
           </div>
         )}
 
+        {/* Tags */}
+        {posting.tags && posting.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {posting.tags.slice(0, 4).map((tag: string) => (
+              <Badge key={tag} variant="outline" className="text-xs">
+                #{tag}
+              </Badge>
+            ))}
+            {posting.tags.length > 4 && (
+              <Badge variant="outline" className="text-xs">
+                +{posting.tags.length - 4}
+              </Badge>
+            )}
+          </div>
+        )}
+
         {/* Meta */}
         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
           <span className="flex items-center gap-1.5">
@@ -245,8 +266,20 @@ export function PostingDiscoverCard({
             {getInitials(creatorName)}
           </div>
           <span className="text-sm text-muted-foreground">
-            {isOwner ? "Created by you" : `Posted by ${creatorName}`} •{" "}
-            {formatDate(posting.created_at)}
+            {isOwner ? (
+              "Posted by you"
+            ) : (
+              <>
+                Posted by{" "}
+                <Link
+                  href={`/profile/${posting.profiles?.user_id}`}
+                  className="hover:underline text-foreground"
+                >
+                  {creatorName}
+                </Link>
+              </>
+            )}{" "}
+            • {formatDate(posting.created_at)}
           </span>
         </div>
       </CardContent>

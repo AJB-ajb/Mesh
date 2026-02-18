@@ -14,7 +14,7 @@ const statusColors: Record<string, string> = {
 
 const statusLabels: Record<string, string> = {
   pending: "Pending",
-  applied: "Applied",
+  applied: "Requested",
   accepted: "Accepted",
   declined: "Declined",
 };
@@ -123,12 +123,12 @@ export function AiMatchCard({ match, isApplying, onApply }: AiMatchCardProps) {
               ) : (
                 <Check className="h-4 w-4" />
               )}
-              Apply
+              Request to join
             </Button>
           )}
           {match.status === "applied" && (
             <Button variant="secondary" disabled>
-              Application Sent
+              Request sent
             </Button>
           )}
           {match.status === "accepted" && (

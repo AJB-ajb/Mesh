@@ -16,11 +16,11 @@ export function AppShell({ children, className }: AppShellProps) {
       <div className="flex min-h-screen">
         <SkipLink />
         <Sidebar />
-        <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col overflow-y-auto">
           <TestModeBanner />
           <Header />
-          <main 
-            id="main-content" 
+          <main
+            id="main-content"
             className={cn("flex-1 p-6", className)}
             role="main"
             tabIndex={-1}

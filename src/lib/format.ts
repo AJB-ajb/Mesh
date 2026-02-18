@@ -36,6 +36,12 @@ export function formatTimeAgo(dateString: string): string {
 }
 
 /**
+ * Default placeholder for unset/empty values.
+ * Style convention: lowercase "s" in "specified".
+ */
+export const NOT_SPECIFIED = "Not specified";
+
+/**
  * Get up to 2 uppercase initials from a full name.
  */
 export function getInitials(name: string | null): string {

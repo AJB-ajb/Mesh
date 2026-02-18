@@ -38,6 +38,13 @@ vi.mock("@/components/ui/slider", () => ({
   ),
 }));
 
+// Mock SkillPicker
+vi.mock("@/components/skill/skill-picker", () => ({
+  SkillPicker: (props: { placeholder?: string }) => (
+    <div data-testid="skill-picker">{props.placeholder}</div>
+  ),
+}));
+
 function buildForm(
   overrides: Partial<ProfileFormState> = {},
 ): ProfileFormState {
@@ -89,9 +96,9 @@ describe("ProfileForm", () => {
     expect(screen.getByText("General Information")).toBeInTheDocument();
   });
 
-  it("renders Skill Levels section", () => {
+  it("renders Skills section", () => {
     renderForm();
-    expect(screen.getByText("Skill Levels")).toBeInTheDocument();
+    expect(screen.getByText("Skills")).toBeInTheDocument();
   });
 
   it("renders Location Mode section", () => {
@@ -135,33 +142,16 @@ describe("ProfileForm", () => {
     expect(onChange).toHaveBeenCalledWith("headline", "New Headline");
   });
 
-  it("renders empty skills message when no skills", () => {
-    renderForm({ skillLevels: [] });
-    expect(screen.getByText(/No skills added yet/)).toBeInTheDocument();
-  });
-
-  it("renders skill entries when present", () => {
-    renderForm({
-      skillLevels: [
-        { name: "React", level: 7 },
-        { name: "Python", level: 4 },
-      ],
-    });
-    expect(screen.getByDisplayValue("React")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Python")).toBeInTheDocument();
-  });
-
-  it("calls setForm when Add skill is clicked", () => {
+  it("renders skill picker", () => {
     renderForm();
-    fireEvent.click(screen.getByText("Add skill"));
-    expect(setForm).toHaveBeenCalled();
+    expect(screen.getByTestId("skill-picker")).toBeInTheDocument();
   });
 
   it("renders location mode buttons", () => {
     renderForm();
     expect(screen.getByText("Remote")).toBeInTheDocument();
     expect(screen.getByText("In-person")).toBeInTheDocument();
-    expect(screen.getByText("Either")).toBeInTheDocument();
+    expect(screen.getByText("Flexible")).toBeInTheDocument();
   });
 
   it("renders Use current location button", () => {

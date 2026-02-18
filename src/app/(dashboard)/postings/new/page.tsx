@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -30,6 +30,19 @@ export default function NewPostingPage() {
   const [aiText, setAiText] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionSuccess, setExtractionSuccess] = useState(false);
+  const errorRef = useRef<HTMLParagraphElement>(null);
+
+  // Scroll to error when it appears
+  useEffect(() => {
+    if (error && errorRef.current) {
+      queueMicrotask(() => {
+        errorRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      });
+    }
+  }, [error]);
 
   const handleChange = (field: keyof PostingFormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -76,6 +89,15 @@ export default function NewPostingPage() {
         lookingFor: extractedMax,
         category: extracted.category || prev.category,
         mode: extracted.mode || prev.mode,
+        tags: Array.isArray(extracted.tags)
+          ? extracted.tags.join(", ")
+          : prev.tags,
+        contextIdentifier:
+          extracted.context_identifier || prev.contextIdentifier,
+        skillLevelMin:
+          extracted.skill_level_min != null
+            ? extracted.skill_level_min.toString()
+            : prev.skillLevelMin,
       }));
 
       setExtractionSuccess(true);
@@ -165,13 +187,20 @@ export default function NewPostingPage() {
     const locationLng = parseFloat(form.locationLng);
     const maxDistanceKm = parseInt(form.maxDistanceKm, 10);
 
+    // Derive backward-compat skills array from selectedSkills (+ any free-form text)
+    const selectedSkillNames = form.selectedSkills.map((s) => s.name);
+    const freeFormSkills = parseList(form.skills);
+    const allSkillNames = [
+      ...new Set([...selectedSkillNames, ...freeFormSkills]),
+    ];
+
     const { data: posting, error: insertError } = await supabase
       .from("postings")
       .insert({
         creator_id: user.id,
         title,
         description: form.description.trim(),
-        skills: parseList(form.skills),
+        skills: allSkillNames,
         estimated_time: form.estimatedTime || null,
         team_size_min: 1,
         team_size_max: lookingFor,
@@ -187,6 +216,17 @@ export default function NewPostingPage() {
           Number.isFinite(maxDistanceKm) && maxDistanceKm > 0
             ? maxDistanceKm
             : null,
+        tags: form.tags
+          ? form.tags
+              .split(",")
+              .map((t) => t.trim())
+              .filter(Boolean)
+          : [],
+        context_identifier: form.contextIdentifier.trim() || null,
+        skill_level_min: form.skillLevelMin
+          ? parseInt(form.skillLevelMin, 10)
+          : null,
+        auto_accept: form.autoAccept === "true",
       })
       .select()
       .single();
@@ -215,6 +255,16 @@ export default function NewPostingPage() {
 
       setError(errorMessage);
       return;
+    }
+
+    // Insert posting_skills join table rows
+    if (form.selectedSkills.length > 0) {
+      const postingSkillRows = form.selectedSkills.map((s) => ({
+        posting_id: posting.id,
+        skill_id: s.skillId,
+        level_min: s.levelMin,
+      }));
+      await supabase.from("posting_skills").insert(postingSkillRows);
     }
 
     // Trigger embedding generation (fire-and-forget, non-blocking)
@@ -247,7 +297,10 @@ export default function NewPostingPage() {
       </div>
 
       {error && (
-        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <p
+          ref={errorRef}
+          className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
           {error}
         </p>
       )}
@@ -268,6 +321,7 @@ export default function NewPostingPage() {
       {inputMode === "form" && (
         <PostingFormCard
           form={form}
+          setForm={setForm}
           onChange={handleChange}
           onSubmit={handleSubmit}
           isSaving={isSaving}

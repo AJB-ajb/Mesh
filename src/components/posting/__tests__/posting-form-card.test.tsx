@@ -38,6 +38,13 @@ vi.mock("next/link", () => ({
   }) => <a href={href}>{children}</a>,
 }));
 
+// Mock SkillPicker
+vi.mock("@/components/skill/skill-picker", () => ({
+  SkillPicker: (props: { placeholder?: string }) => (
+    <div data-testid="skill-picker">{props.placeholder}</div>
+  ),
+}));
+
 function buildForm(
   overrides: Partial<PostingFormState> = {},
 ): PostingFormState {
@@ -47,11 +54,13 @@ function buildForm(
 describe("PostingFormCard", () => {
   const onChange = vi.fn();
   const onSubmit = vi.fn((e) => e.preventDefault());
+  const setForm = vi.fn();
 
   const renderCard = (formOverrides: Partial<PostingFormState> = {}) =>
     render(
       <PostingFormCard
         form={buildForm(formOverrides)}
+        setForm={setForm}
         onChange={onChange}
         onSubmit={onSubmit}
         isSaving={false}
@@ -80,9 +89,9 @@ describe("PostingFormCard", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders skills input", () => {
-    renderCard({ skills: "React, TypeScript" });
-    expect(screen.getByDisplayValue("React, TypeScript")).toBeInTheDocument();
+  it("renders skill picker", () => {
+    renderCard();
+    expect(screen.getByTestId("skill-picker")).toBeInTheDocument();
   });
 
   it("calls onChange when title changes", () => {
@@ -99,11 +108,9 @@ describe("PostingFormCard", () => {
     expect(onChange).toHaveBeenCalledWith("description", "New desc");
   });
 
-  it("calls onChange when skills changes", () => {
+  it("renders Required Skills label", () => {
     renderCard();
-    const input = screen.getByLabelText("Skills (comma-separated)");
-    fireEvent.change(input, { target: { value: "Go, Rust" } });
-    expect(onChange).toHaveBeenCalledWith("skills", "Go, Rust");
+    expect(screen.getByText("Required Skills")).toBeInTheDocument();
   });
 
   it("renders category selector", () => {
@@ -155,6 +162,7 @@ describe("PostingFormCard", () => {
     render(
       <PostingFormCard
         form={buildForm()}
+        setForm={setForm}
         onChange={onChange}
         onSubmit={onSubmit}
         isSaving={true}
@@ -168,6 +176,7 @@ describe("PostingFormCard", () => {
     render(
       <PostingFormCard
         form={buildForm()}
+        setForm={setForm}
         onChange={onChange}
         onSubmit={onSubmit}
         isSaving={true}
@@ -182,6 +191,7 @@ describe("PostingFormCard", () => {
     render(
       <PostingFormCard
         form={buildForm()}
+        setForm={setForm}
         onChange={onChange}
         onSubmit={onSubmit}
         isSaving={false}
@@ -203,5 +213,34 @@ describe("PostingFormCard", () => {
     const form = screen.getByText("Create Posting").closest("form");
     if (form) fireEvent.submit(form);
     expect(onSubmit).toHaveBeenCalled();
+  });
+
+  it("renders tags input", () => {
+    renderCard({ tags: "remote, weekend" });
+    expect(screen.getByDisplayValue("remote, weekend")).toBeInTheDocument();
+  });
+
+  it("calls onChange when tags changes", () => {
+    renderCard();
+    const input = screen.getByLabelText("Tags (comma-separated)");
+    fireEvent.change(input, { target: { value: "beginner-friendly" } });
+    expect(onChange).toHaveBeenCalledWith("tags", "beginner-friendly");
+  });
+
+  it("renders context identifier input", () => {
+    renderCard({ contextIdentifier: "CS101" });
+    expect(screen.getByDisplayValue("CS101")).toBeInTheDocument();
+  });
+
+  it("calls onChange when context identifier changes", () => {
+    renderCard();
+    const input = screen.getByLabelText("Context (optional)");
+    fireEvent.change(input, { target: { value: "HackMIT 2026" } });
+    expect(onChange).toHaveBeenCalledWith("contextIdentifier", "HackMIT 2026");
+  });
+
+  it("renders the skill picker for posting mode", () => {
+    renderCard();
+    expect(screen.getByTestId("skill-picker")).toBeInTheDocument();
   });
 });

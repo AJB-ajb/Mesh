@@ -19,9 +19,9 @@ function wrapper({ children }: { children: ReactNode }) {
   );
 }
 
-import { useFriendAsks } from "../use-friend-ask";
+import { useSequentialInvites } from "../use-sequential-invites";
 
-const fakeFriendAsks = [
+const fakeSequentialInvites = [
   {
     id: "fa1",
     posting_id: "p1",
@@ -35,7 +35,7 @@ const fakeFriendAsks = [
   },
 ];
 
-describe("useFriendAsks", () => {
+describe("useSequentialInvites", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -43,47 +43,49 @@ describe("useFriendAsks", () => {
   it("starts in loading state", () => {
     fetchMock.mockReturnValue(new Promise(() => {}));
 
-    const { result } = renderHook(() => useFriendAsks(), { wrapper });
+    const { result } = renderHook(() => useSequentialInvites(), { wrapper });
 
     expect(result.current.isLoading).toBe(true);
-    expect(result.current.friendAsks).toEqual([]);
+    expect(result.current.sequentialInvites).toEqual([]);
   });
 
-  it("fetches friend asks successfully", async () => {
-    fetchMock.mockResolvedValue({ friend_asks: fakeFriendAsks });
+  it("fetches sequential invites successfully", async () => {
+    fetchMock.mockResolvedValue({ friend_asks: fakeSequentialInvites });
 
-    const { result } = renderHook(() => useFriendAsks(), { wrapper });
+    const { result } = renderHook(() => useSequentialInvites(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    expect(result.current.friendAsks).toHaveLength(1);
-    expect(result.current.friendAsks[0].posting?.title).toBe("Study Group");
+    expect(result.current.sequentialInvites).toHaveLength(1);
+    expect(result.current.sequentialInvites[0].posting?.title).toBe(
+      "Study Group",
+    );
     expect(result.current.error).toBeUndefined();
   });
 
   it("handles fetch error", async () => {
     fetchMock.mockRejectedValue(new Error("Server error"));
 
-    const { result } = renderHook(() => useFriendAsks(), { wrapper });
+    const { result } = renderHook(() => useSequentialInvites(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.error).toBeTruthy();
     });
 
-    expect(result.current.friendAsks).toEqual([]);
+    expect(result.current.sequentialInvites).toEqual([]);
   });
 
   it("defaults to empty array when no data", async () => {
     fetchMock.mockResolvedValue({});
 
-    const { result } = renderHook(() => useFriendAsks(), { wrapper });
+    const { result } = renderHook(() => useSequentialInvites(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    expect(result.current.friendAsks).toEqual([]);
+    expect(result.current.sequentialInvites).toEqual([]);
   });
 });

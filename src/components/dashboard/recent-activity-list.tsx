@@ -15,13 +15,11 @@ type Activity = {
 type RecentActivityListProps = {
   supabase: Awaited<ReturnType<typeof createClient>>;
   userId: string;
-  persona?: string;
 };
 
 export async function RecentActivityList({
   supabase,
   userId,
-  persona,
 }: RecentActivityListProps) {
   const activities: Activity[] = [];
 
@@ -64,8 +62,8 @@ export async function RecentActivityList({
           const postings = a.postings as Record<string, unknown> | null;
           activities.push({
             type: "application",
-            title: `New application from ${profiles?.full_name || "Someone"}`,
-            description: `Applied to "${postings?.title || "Posting"}"`,
+            title: `New join request from ${profiles?.full_name || "Someone"}`,
+            description: `Requested to join "${postings?.title || "Posting"}"`,
             time: formatTimeAgo(a.created_at as string),
             href: `/postings/${postings?.id}`,
           });
@@ -136,7 +134,7 @@ export async function RecentActivityList({
         const postings = a.postings as Record<string, unknown> | null;
         activities.push({
           type: "application",
-          title: `Application to "${postings?.title || "Posting"}"`,
+          title: `Requested to join "${postings?.title || "Posting"}"`,
           description: `Status: ${a.status}`,
           time: formatTimeAgo(a.created_at as string),
           href: `/postings/${postings?.id}`,

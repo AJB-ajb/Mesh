@@ -31,6 +31,7 @@ const fakeProfileData: ProfileFetchResult = {
     skillLevels: [{ name: "React", level: 8 }],
     locationMode: "remote",
     availabilitySlots: { mon: ["morning"] },
+    selectedSkills: [],
   },
   userEmail: "user@test.com",
   connectedProviders: { github: true, google: false, linkedin: false },

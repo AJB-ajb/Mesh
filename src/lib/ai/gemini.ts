@@ -1,13 +1,17 @@
 /**
  * Shared Gemini client for AI extraction tasks.
- * Uses Gemini 2.0 Flash with structured JSON output.
+ * Includes automatic fallback across models on 429 rate-limit errors.
  */
 
 import {
   GoogleGenerativeAI,
+  type Content,
+  type GenerateContentResult,
+  type GenerationConfig,
   type GenerativeModel,
   type Schema,
 } from "@google/generative-ai";
+import { GEMINI_MODELS } from "@/lib/constants";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -23,15 +27,23 @@ function getGenAI(): GoogleGenerativeAI {
   return genAI;
 }
 
-export function getGeminiModel(
-  modelName = "gemini-2.0-flash",
-): GenerativeModel {
+function getGeminiModel(modelName = "gemini-2.0-flash"): GenerativeModel {
   return getGenAI().getGenerativeModel({ model: modelName });
+}
+
+function isRateLimitError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const msg = error.message;
+  return (
+    msg.includes("429") ||
+    msg.includes("Too Many Requests") ||
+    msg.includes("RESOURCE_EXHAUSTED")
+  );
 }
 
 /**
  * Generate structured JSON from Gemini using responseSchema.
- * Returns the parsed JSON object.
+ * Automatically falls back to next model on 429 rate-limit errors.
  */
 export async function generateStructuredJSON<T>(opts: {
   systemPrompt: string;
@@ -40,20 +52,62 @@ export async function generateStructuredJSON<T>(opts: {
   temperature?: number;
   model?: string;
 }): Promise<T> {
-  const model = getGeminiModel(opts.model);
+  let lastError: unknown;
 
-  const result = await model.generateContent({
-    contents: [{ role: "user", parts: [{ text: opts.userPrompt }] }],
-    systemInstruction: opts.systemPrompt,
-    generationConfig: {
-      temperature: opts.temperature ?? 0.3,
-      responseMimeType: "application/json",
-      responseSchema: opts.schema,
-    },
-  });
+  for (const modelName of GEMINI_MODELS) {
+    try {
+      const model = getGeminiModel(modelName);
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: opts.userPrompt }] }],
+        systemInstruction: opts.systemPrompt,
+        generationConfig: {
+          temperature: opts.temperature ?? 0.3,
+          responseMimeType: "application/json",
+          responseSchema: opts.schema,
+        },
+      });
 
-  const text = result.response.text();
-  return JSON.parse(text) as T;
+      const text = result.response.text();
+      return JSON.parse(text) as T;
+    } catch (error) {
+      lastError = error;
+      if (!isRateLimitError(error)) throw error;
+      console.warn(
+        `Gemini model ${modelName} rate-limited (429), trying next model...`,
+      );
+    }
+  }
+
+  throw lastError;
+}
+
+/**
+ * Generate content with automatic model fallback on 429 rate-limit errors.
+ * For non-structured calls (e.g. match explanations).
+ */
+export async function generateContentWithFallback(opts: {
+  contents: Content[];
+  generationConfig?: GenerationConfig;
+}): Promise<GenerateContentResult> {
+  let lastError: unknown;
+
+  for (const modelName of GEMINI_MODELS) {
+    try {
+      const model = getGeminiModel(modelName);
+      return await model.generateContent({
+        contents: opts.contents,
+        generationConfig: opts.generationConfig,
+      });
+    } catch (error) {
+      lastError = error;
+      if (!isRateLimitError(error)) throw error;
+      console.warn(
+        `Gemini model ${modelName} rate-limited (429), trying next model...`,
+      );
+    }
+  }
+
+  throw lastError;
 }
 
 export function isGeminiConfigured(): boolean {

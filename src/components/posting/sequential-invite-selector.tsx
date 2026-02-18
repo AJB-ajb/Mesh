@@ -6,34 +6,34 @@ import { GripVertical, X, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { useFriendships } from "@/lib/hooks/use-friendships";
+import { useConnections } from "@/lib/hooks/use-connections";
 
-type FriendItem = {
+type ConnectionItem = {
   user_id: string;
   full_name: string;
 };
 
-interface FriendAskSelectorProps {
+interface SequentialInviteSelectorProps {
   currentUserId: string;
-  selectedFriends: FriendItem[];
-  onChange: (friends: FriendItem[]) => void;
+  selectedConnections: ConnectionItem[];
+  onChange: (connections: ConnectionItem[]) => void;
 }
 
 /**
- * Select friends and drag to reorder for a friend-ask sequence.
+ * Select connections and drag to reorder for a sequential invite.
  * The order determines who gets asked first, second, etc.
  */
-export function FriendAskSelector({
+export function SequentialInviteSelector({
   currentUserId,
-  selectedFriends,
+  selectedConnections,
   onChange,
-}: FriendAskSelectorProps) {
-  const { friendships, isLoading } = useFriendships();
+}: SequentialInviteSelectorProps) {
+  const { connections, isLoading } = useConnections();
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
-  // Only accepted friends are selectable
-  const acceptedFriends: FriendItem[] = friendships
+  // Only accepted connections are selectable
+  const acceptedConnections: ConnectionItem[] = connections
     .filter((f) => f.status === "accepted")
     .map((f) => {
       if (f.user_id === currentUserId) {
@@ -48,21 +48,23 @@ export function FriendAskSelector({
       };
     });
 
-  const selectedIds = new Set(selectedFriends.map((f) => f.user_id));
-  const available = acceptedFriends.filter((f) => !selectedIds.has(f.user_id));
-
-  const addFriend = useCallback(
-    (friend: FriendItem) => {
-      onChange([...selectedFriends, friend]);
-    },
-    [selectedFriends, onChange],
+  const selectedIds = new Set(selectedConnections.map((c) => c.user_id));
+  const available = acceptedConnections.filter(
+    (c) => !selectedIds.has(c.user_id),
   );
 
-  const removeFriend = useCallback(
-    (userId: string) => {
-      onChange(selectedFriends.filter((f) => f.user_id !== userId));
+  const addConnection = useCallback(
+    (connection: ConnectionItem) => {
+      onChange([...selectedConnections, connection]);
     },
-    [selectedFriends, onChange],
+    [selectedConnections, onChange],
+  );
+
+  const removeConnection = useCallback(
+    (userId: string) => {
+      onChange(selectedConnections.filter((c) => c.user_id !== userId));
+    },
+    [selectedConnections, onChange],
   );
 
   const handleDragStart = (index: number) => {
@@ -81,7 +83,7 @@ export function FriendAskSelector({
       return;
     }
 
-    const reordered = [...selectedFriends];
+    const reordered = [...selectedConnections];
     const [moved] = reordered.splice(dragIndex, 1);
     reordered.splice(dropIndex, 0, moved);
     onChange(reordered);
@@ -102,16 +104,16 @@ export function FriendAskSelector({
 
   return (
     <div className="space-y-4">
-      {/* Selected friends (ordered) */}
-      {selectedFriends.length > 0 && (
+      {/* Selected connections (ordered) */}
+      {selectedConnections.length > 0 && (
         <div className="space-y-1">
           <p className="text-sm font-medium text-muted-foreground">
             Ask order (drag to reorder)
           </p>
           <div className="space-y-1">
-            {selectedFriends.map((friend, index) => (
+            {selectedConnections.map((connection, index) => (
               <div
-                key={friend.user_id}
+                key={connection.user_id}
                 draggable
                 onDragStart={() => handleDragStart(index)}
                 onDragOver={(e) => handleDragOver(e, index)}
@@ -130,13 +132,13 @@ export function FriendAskSelector({
                   {index + 1}.
                 </span>
                 <span className="text-sm truncate flex-1">
-                  {friend.full_name}
+                  {connection.full_name}
                 </span>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 shrink-0"
-                  onClick={() => removeFriend(friend.user_id)}
+                  onClick={() => removeConnection(connection.user_id)}
                 >
                   <X className="h-3 w-3" />
                 </Button>
@@ -146,32 +148,33 @@ export function FriendAskSelector({
         </div>
       )}
 
-      {/* Available friends to add */}
+      {/* Available connections to add */}
       {available.length > 0 ? (
         <div className="space-y-1">
           <p className="text-sm font-medium text-muted-foreground">
-            Add friends
+            Add connections
           </p>
           <div className="space-y-1">
-            {available.map((friend) => (
+            {available.map((connection) => (
               <button
-                key={friend.user_id}
+                key={connection.user_id}
                 type="button"
-                onClick={() => addFriend(friend)}
+                onClick={() => addConnection(connection)}
                 className="flex w-full items-center gap-2 rounded-md border border-dashed border-border p-2 text-left transition-colors hover:border-primary hover:bg-primary/5"
               >
                 <UserPlus className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span className="text-sm truncate">{friend.full_name}</span>
+                <span className="text-sm truncate">{connection.full_name}</span>
               </button>
             ))}
           </div>
         </div>
       ) : (
-        selectedFriends.length === 0 && (
+        selectedConnections.length === 0 && (
           <Card>
             <CardContent className="py-6 text-center">
               <p className="text-sm text-muted-foreground">
-                No friends available. Add friends first to use Friend-Ask mode.
+                No connections available. Connect with others first to use
+                Sequential Invite mode.
               </p>
             </CardContent>
           </Card>

@@ -25,7 +25,10 @@ export async function loginAsUser(
   await page.fill('input[type="password"]', user.password);
   await page.click('button[type="submit"]');
 
-  await page.waitForURL("**/dashboard", { timeout: 10000 });
+  await page.waitForURL("**/dashboard", {
+    timeout: 10000,
+    waitUntil: "domcontentloaded",
+  });
 
   return user;
 }
@@ -69,7 +72,10 @@ export async function setupAuthenticatedUser(
   await page.fill('input[type="email"]', user.email);
   await page.fill('input[type="password"]', user.password);
   await page.click('button[type="submit"]');
-  await page.waitForURL("**/dashboard", { timeout: 10000 });
+  await page.waitForURL("**/dashboard", {
+    timeout: 10000,
+    waitUntil: "domcontentloaded",
+  });
 
   return { ...user, id: userId };
 }
@@ -78,14 +84,15 @@ export async function setupAuthenticatedUser(
  * Logout via UI.
  */
 export async function logout(page: Page): Promise<void> {
-  await page.goto("/settings");
-  const signOutButton = page.locator(
-    'button:has-text("Sign out"), [data-testid="settings-signout-button"]',
-  );
-  if (await signOutButton.isVisible({ timeout: 3000 }).catch(() => false)) {
-    await signOutButton.click();
-    await page.waitForURL("**/login", { timeout: 5000 });
-  }
+  await page.goto("/settings", { waitUntil: "domcontentloaded" });
+  const signOutButton = page
+    .locator("main")
+    .locator('button:has-text("Sign out")');
+  await signOutButton.click({ timeout: 10000 });
+  await page.waitForURL("**/login", {
+    timeout: 5000,
+    waitUntil: "domcontentloaded",
+  });
 }
 
 /**

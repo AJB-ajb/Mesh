@@ -41,13 +41,24 @@ export function useProfileSave(
       const locationLat = Number(form.locationLat);
       const locationLng = Number(form.locationLng);
 
-      // Convert skillLevels array to DB format { domain: level }
+      // Derive backward-compat fields from selectedSkills
       const skillLevelsObj: Record<string, number> = {};
       for (const sl of form.skillLevels) {
         if (sl.name.trim()) {
           skillLevelsObj[sl.name.trim()] = sl.level;
         }
       }
+      // Also add selectedSkills to the skill_levels object for backward compat
+      for (const ss of form.selectedSkills) {
+        skillLevelsObj[ss.name] = ss.level;
+      }
+
+      // Merge selectedSkills names into the free-form skills array
+      const selectedSkillNames = form.selectedSkills.map((s) => s.name);
+      const freeFormSkills = parseList(form.skills);
+      const allSkillNames = [
+        ...new Set([...selectedSkillNames, ...freeFormSkills]),
+      ];
 
       const { error: upsertError } = await supabase.from("profiles").upsert(
         {
@@ -58,7 +69,7 @@ export function useProfileSave(
           location: form.location.trim(),
           location_lat: Number.isFinite(locationLat) ? locationLat : null,
           location_lng: Number.isFinite(locationLng) ? locationLng : null,
-          skills: parseList(form.skills),
+          skills: allSkillNames,
           interests: parseList(form.interests),
           languages: parseList(form.languages),
           portfolio_url: form.portfolioUrl.trim(),
@@ -71,12 +82,35 @@ export function useProfileSave(
         { onConflict: "user_id" },
       );
 
-      setIsSaving(false);
-
       if (upsertError) {
+        setIsSaving(false);
         setError("We couldn't save your profile. Please try again.");
         return;
       }
+
+      // Sync profile_skills join table
+      if (form.selectedSkills.length > 0) {
+        // Delete existing rows and re-insert
+        await supabase
+          .from("profile_skills")
+          .delete()
+          .eq("profile_id", user.id);
+
+        const profileSkillRows = form.selectedSkills.map((s) => ({
+          profile_id: user.id,
+          skill_id: s.skillId,
+          level: s.level,
+        }));
+        await supabase.from("profile_skills").insert(profileSkillRows);
+      } else {
+        // Clear all profile skills if none selected
+        await supabase
+          .from("profile_skills")
+          .delete()
+          .eq("profile_id", user.id);
+      }
+
+      setIsSaving(false);
 
       triggerEmbeddingGeneration();
 

@@ -45,7 +45,8 @@ const postingSchema: Schema = {
     },
     skill_level_min: {
       type: SchemaType.NUMBER,
-      description: "Minimum skill level required (1=beginner, 5=expert)",
+      description:
+        "Minimum skill level required (0=absolute beginner, 10=expert). Only include when explicitly stated or strongly implied.",
     },
     tags: {
       type: SchemaType.ARRAY,
@@ -53,10 +54,17 @@ const postingSchema: Schema = {
       description:
         "Tags or keywords describing the posting (e.g., 'hackathon', 'open-source', 'MVP')",
     },
-    goals: {
-      type: SchemaType.ARRAY,
-      items: { type: SchemaType.STRING },
-      description: "Key goals or milestones for the posting",
+    context_identifier: {
+      type: SchemaType.STRING,
+      description:
+        "Course code, hackathon name, or group identifier if mentioned (e.g., 'CS101', 'HackMIT 2026')",
+    },
+    mode: {
+      type: SchemaType.STRING,
+      format: "enum",
+      enum: ["open", "friend_ask"],
+      description:
+        "Posting mode: 'open' for public discovery (default), 'friend_ask' for sequential connection-by-connection invites",
     },
   },
   required: ["title", "description", "skills"],

@@ -1,19 +1,33 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  RefreshCw,
+  CalendarPlus,
   Check,
   Sparkles,
   Loader2,
   Pencil,
   Trash2,
   Send,
+  Clock,
+  RefreshCw,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { formatScore } from "@/lib/matching/scoring";
 import type {
   PostingDetail,
@@ -65,6 +79,50 @@ function computeOverallScore(breakdown: ScoreBreakdown): number {
 }
 
 // ---------------------------------------------------------------------------
+// Extend Deadline Picker
+// ---------------------------------------------------------------------------
+
+const EXTEND_OPTIONS = [
+  { label: "7 days", days: 7 },
+  { label: "14 days", days: 14 },
+  { label: "30 days", days: 30 },
+] as const;
+
+function ExtendDeadlineButtons({
+  isExtending,
+  onExtend,
+}: {
+  isExtending: boolean;
+  onExtend: (days: number) => void;
+}) {
+  const [selectedDays, setSelectedDays] = useState<number | null>(null);
+
+  return (
+    <div className="flex items-center gap-1 flex-wrap">
+      {EXTEND_OPTIONS.map((opt) => (
+        <Button
+          key={opt.days}
+          size="sm"
+          variant={selectedDays === opt.days ? "default" : "outline"}
+          disabled={isExtending}
+          onClick={() => {
+            setSelectedDays(opt.days);
+            onExtend(opt.days);
+          }}
+        >
+          {isExtending && selectedDays === opt.days ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <CalendarPlus className="h-3 w-3" />
+          )}
+          +{opt.label}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Owner Actions
 // ---------------------------------------------------------------------------
 
@@ -73,12 +131,14 @@ type OwnerActionsProps = {
   isEditing: boolean;
   isSaving: boolean;
   isDeleting: boolean;
-  isReactivating: boolean;
+  isExtending: boolean;
+  isReposting: boolean;
   onSave: () => void;
   onCancelEdit: () => void;
   onStartEdit: () => void;
   onDelete: () => void;
-  onReactivate: () => void;
+  onExtendDeadline: (days: number) => void;
+  onRepost: () => void;
 };
 
 function OwnerActions({
@@ -86,12 +146,14 @@ function OwnerActions({
   isEditing,
   isSaving,
   isDeleting,
-  isReactivating,
+  isExtending,
+  isReposting,
   onSave,
   onCancelEdit,
   onStartEdit,
   onDelete,
-  onReactivate,
+  onExtendDeadline,
+  onRepost,
 }: OwnerActionsProps) {
   if (isEditing) {
     return (
@@ -117,28 +179,53 @@ function OwnerActions({
   }
 
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-col gap-2 items-end">
       {isExpired(posting.expires_at) && (
-        <Button onClick={onReactivate} disabled={isReactivating}>
-          {isReactivating ? (
+        <div className="flex gap-2 items-center flex-wrap justify-end">
+          <ExtendDeadlineButtons
+            isExtending={isExtending}
+            onExtend={onExtendDeadline}
+          />
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" disabled={isReposting}>
+                {isReposting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Repost
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Repost this posting?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will remove all existing join requests and repost the
+                  posting as fresh. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={onRepost}>Repost</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      )}
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={onStartEdit}>
+          <Pencil className="h-4 w-4" />
+          Edit
+        </Button>
+        <Button variant="destructive" onClick={onDelete} disabled={isDeleting}>
+          {isDeleting ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <RefreshCw className="h-4 w-4" />
+            <Trash2 className="h-4 w-4" />
           )}
-          Reactivate
         </Button>
-      )}
-      <Button variant="outline" onClick={onStartEdit}>
-        <Pencil className="h-4 w-4" />
-        Edit
-      </Button>
-      <Button variant="destructive" onClick={onDelete} disabled={isDeleting}>
-        {isDeleting ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Trash2 className="h-4 w-4" />
-        )}
-      </Button>
+      </div>
     </div>
   );
 }
@@ -151,6 +238,7 @@ type ApplySectionProps = {
   posting: PostingDetail;
   hasApplied: boolean;
   myApplication: Application | null;
+  waitlistPosition: number | null;
   showApplyForm: boolean;
   coverMessage: string;
   isApplying: boolean;
@@ -165,6 +253,7 @@ function ApplySection({
   posting,
   hasApplied,
   myApplication,
+  waitlistPosition,
   showApplyForm,
   coverMessage,
   isApplying,
@@ -189,22 +278,111 @@ function ApplySection({
           }
           className="px-3 py-1"
         >
-          {myApplication?.status === "pending" && "Application Pending"}
+          {myApplication?.status === "pending" && "Request pending"}
           {myApplication?.status === "accepted" && "\u2713 Accepted"}
           {myApplication?.status === "rejected" && "Not Selected"}
           {myApplication?.status === "withdrawn" && "Withdrawn"}
+          {myApplication?.status === "waitlisted" && (
+            <span className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              Waitlisted
+              {waitlistPosition ? ` — #${waitlistPosition} in line` : ""}
+            </span>
+          )}
         </Badge>
-        {myApplication?.status === "pending" && (
+        {(myApplication?.status === "pending" ||
+          myApplication?.status === "waitlisted") && (
           <Button variant="outline" size="sm" onClick={onWithdraw}>
-            Withdraw
+            Withdraw request
           </Button>
         )}
       </div>
     );
   }
 
+  // Filled posting: show waitlist CTA
+  if (posting.status === "filled") {
+    if (posting.auto_accept) {
+      return (
+        <Button onClick={onApply} disabled={isApplying}>
+          {isApplying ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Joining waitlist...
+            </>
+          ) : (
+            <>
+              <Clock className="h-4 w-4" />
+              Join waitlist
+            </>
+          )}
+        </Button>
+      );
+    }
+
+    // Manual review: show cover message form for waitlist
+    if (showApplyForm) {
+      return (
+        <div className="flex flex-col gap-2 w-full max-w-md">
+          <textarea
+            value={coverMessage}
+            onChange={(e) => onCoverMessageChange(e.target.value)}
+            placeholder="Tell the posting creator why you'd like to join... (optional)"
+            rows={3}
+            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          />
+          <div className="flex gap-2">
+            <Button onClick={onApply} disabled={isApplying}>
+              {isApplying ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Requesting...
+                </>
+              ) : (
+                <>
+                  <Clock className="h-4 w-4" />
+                  Request to join waitlist
+                </>
+              )}
+            </Button>
+            <Button variant="outline" onClick={onHideApplyForm}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <Button onClick={onShowApplyForm}>
+        <Clock className="h-4 w-4" />
+        Request to join waitlist
+      </Button>
+    );
+  }
+
+  // Non-open, non-filled (e.g. closed, expired)
   if (posting.status !== "open") {
     return <Badge variant="secondary">Posting {posting.status}</Badge>;
+  }
+
+  // Auto-accept: instant join, no cover message form
+  if (posting.auto_accept) {
+    return (
+      <Button onClick={onApply} disabled={isApplying}>
+        {isApplying ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Joining...
+          </>
+        ) : (
+          <>
+            <Send className="h-4 w-4" />
+            Join
+          </>
+        )}
+      </Button>
+    );
   }
 
   if (showApplyForm) {
@@ -213,7 +391,7 @@ function ApplySection({
         <textarea
           value={coverMessage}
           onChange={(e) => onCoverMessageChange(e.target.value)}
-          placeholder="Tell the posting creator why you're interested... (optional)"
+          placeholder="Tell the posting creator why you'd like to join... (optional)"
           rows={3}
           className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         />
@@ -222,12 +400,12 @@ function ApplySection({
             {isApplying ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Applying...
+                Requesting to join...
               </>
             ) : (
               <>
                 <Send className="h-4 w-4" />
-                Submit Application
+                Request to join
               </>
             )}
           </Button>
@@ -242,7 +420,7 @@ function ApplySection({
   return (
     <Button onClick={onShowApplyForm}>
       <Send className="h-4 w-4" />
-      Apply to Posting
+      Request to join
     </Button>
   );
 }
@@ -258,17 +436,20 @@ type PostingDetailHeaderProps = {
   isEditing: boolean;
   isSaving: boolean;
   isDeleting: boolean;
-  isReactivating: boolean;
+  isExtending: boolean;
+  isReposting: boolean;
   editTitle: string;
   onEditTitleChange: (value: string) => void;
   onSave: () => void;
   onCancelEdit: () => void;
   onStartEdit: () => void;
   onDelete: () => void;
-  onReactivate: () => void;
+  onExtendDeadline: (days: number) => void;
+  onRepost: () => void;
   // Apply props (non-owner)
   hasApplied: boolean;
   myApplication: Application | null;
+  waitlistPosition: number | null;
   showApplyForm: boolean;
   coverMessage: string;
   isApplying: boolean;
@@ -278,6 +459,7 @@ type PostingDetailHeaderProps = {
   onApply: () => void;
   onWithdraw: () => void;
   error: string | null;
+  hideApplySection?: boolean;
 };
 
 export function PostingDetailHeader({
@@ -287,16 +469,19 @@ export function PostingDetailHeader({
   isEditing,
   isSaving,
   isDeleting,
-  isReactivating,
+  isExtending,
+  isReposting,
   editTitle,
   onEditTitleChange,
   onSave,
   onCancelEdit,
   onStartEdit,
   onDelete,
-  onReactivate,
+  onExtendDeadline,
+  onRepost,
   hasApplied,
   myApplication,
+  waitlistPosition,
   showApplyForm,
   coverMessage,
   isApplying,
@@ -306,6 +491,7 @@ export function PostingDetailHeader({
   onApply,
   onWithdraw,
   error,
+  hideApplySection,
 }: PostingDetailHeaderProps) {
   const creatorName = posting.profiles?.full_name || "Unknown";
 
@@ -370,7 +556,14 @@ export function PostingDetailHeader({
             )}
           </div>
           <p className="text-muted-foreground">
-            Created by {creatorName} &bull; {formatDate(posting.created_at)}
+            Posted by{" "}
+            <Link
+              href={`/profile/${posting.profiles?.user_id}`}
+              className="hover:underline text-foreground"
+            >
+              {creatorName}
+            </Link>{" "}
+            &bull; {formatDate(posting.created_at)}
           </p>
         </div>
 
@@ -380,29 +573,34 @@ export function PostingDetailHeader({
             isEditing={isEditing}
             isSaving={isSaving}
             isDeleting={isDeleting}
-            isReactivating={isReactivating}
+            isExtending={isExtending}
+            isReposting={isReposting}
             onSave={onSave}
             onCancelEdit={onCancelEdit}
             onStartEdit={onStartEdit}
             onDelete={onDelete}
-            onReactivate={onReactivate}
+            onExtendDeadline={onExtendDeadline}
+            onRepost={onRepost}
           />
         ) : (
-          <div className="flex gap-2">
-            <ApplySection
-              posting={posting}
-              hasApplied={hasApplied}
-              myApplication={myApplication}
-              showApplyForm={showApplyForm}
-              coverMessage={coverMessage}
-              isApplying={isApplying}
-              onShowApplyForm={onShowApplyForm}
-              onHideApplyForm={onHideApplyForm}
-              onCoverMessageChange={onCoverMessageChange}
-              onApply={onApply}
-              onWithdraw={onWithdraw}
-            />
-          </div>
+          !hideApplySection && (
+            <div className="flex gap-2">
+              <ApplySection
+                posting={posting}
+                hasApplied={hasApplied}
+                myApplication={myApplication}
+                waitlistPosition={waitlistPosition}
+                showApplyForm={showApplyForm}
+                coverMessage={coverMessage}
+                isApplying={isApplying}
+                onShowApplyForm={onShowApplyForm}
+                onHideApplyForm={onHideApplyForm}
+                onCoverMessageChange={onCoverMessageChange}
+                onApply={onApply}
+                onWithdraw={onWithdraw}
+              />
+            </div>
+          )
         )}
       </div>
     </>

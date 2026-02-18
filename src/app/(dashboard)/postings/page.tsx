@@ -121,8 +121,8 @@ export default function PostingsPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
                 tab.id === activeTab
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
               {tab.label}
@@ -153,7 +153,7 @@ export default function PostingsPage() {
               <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
             ) : (
               <SpeechInput
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
                 size="icon"
                 variant="ghost"
                 onAudioRecorded={transcribeAudio}
@@ -256,7 +256,7 @@ export default function PostingsPage() {
               >
                 <option value="all">Any mode</option>
                 <option value="open">Open</option>
-                <option value="friend_ask">Friend Ask</option>
+                <option value="friend_ask">Sequential Invite</option>
               </select>
             </div>
           </CardContent>

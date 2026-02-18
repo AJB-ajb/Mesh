@@ -87,7 +87,7 @@ export function IntegrationsSection({
                 <Check className="h-4 w-4" />
                 <span className="text-sm font-medium">Connected</span>
               </div>
-            ) : isEditing && onLinkProvider ? (
+            ) : onLinkProvider ? (
               <Button
                 onClick={() => onLinkProvider(provider.linkProvider)}
                 variant="outline"
