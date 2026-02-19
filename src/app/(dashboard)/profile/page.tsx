@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
@@ -13,6 +13,10 @@ import { ProfileView } from "@/components/profile/profile-view";
 import { GitHubIntegrationCard } from "@/components/profile/github-integration-card";
 import { IntegrationsSection } from "@/components/profile/integrations-section";
 import { FreeFormProfileUpdate } from "@/components/profile/free-form-profile-update";
+import { InputModeToggle } from "@/components/posting/input-mode-toggle";
+import { AiExtractionCard } from "@/components/posting/ai-extraction-card";
+import type { InputMode } from "@/components/posting/input-mode-toggle";
+import { mapExtractedToFormState } from "@/lib/types/profile";
 
 export default function ProfilePage() {
   const {
@@ -47,6 +51,48 @@ export default function ProfilePage() {
   } = useGithubSync(setForm, setIsEditing);
 
   const location = useLocation(setForm, () => {});
+
+  // AI extraction state
+  const [inputMode, setInputMode] = useState<InputMode>("form");
+  const [aiText, setAiText] = useState("");
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractionSuccess, setExtractionSuccess] = useState(false);
+
+  const handleAiExtract = async () => {
+    if (!aiText.trim()) {
+      return;
+    }
+
+    setIsExtracting(true);
+    setExtractionSuccess(false);
+
+    try {
+      const response = await fetch("/api/extract/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: aiText }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to extract profile");
+      }
+
+      const extracted = data.profile;
+      setForm((prev) => mapExtractedToFormState(extracted, prev));
+
+      setExtractionSuccess(true);
+      setTimeout(() => {
+        setInputMode("form");
+        setExtractionSuccess(false);
+      }, 1500);
+    } catch {
+      // Error is shown via the profile hook's error state
+    } finally {
+      setIsExtracting(false);
+    }
+  };
 
   // Fetch GitHub sync status once we know the user has a GitHub provider
   useEffect(() => {
@@ -106,20 +152,36 @@ export default function ProfilePage() {
 
       {isEditing ? (
         <>
-          <ProfileForm
-            form={form}
-            setForm={setForm}
-            isSaving={isSaving}
-            onSubmit={handleSubmit}
-            onChange={handleChange}
-            onCancel={() => setIsEditing(false)}
-            location={location}
-          />
-          <IntegrationsSection
-            connectedProviders={connectedProviders}
-            isEditing={true}
-            onLinkProvider={handleLinkProvider}
-          />
+          <InputModeToggle inputMode={inputMode} onModeChange={setInputMode} />
+
+          {inputMode === "ai" ? (
+            <AiExtractionCard
+              aiText={aiText}
+              onAiTextChange={setAiText}
+              isExtracting={isExtracting}
+              extractionSuccess={extractionSuccess}
+              onExtract={handleAiExtract}
+              onSwitchToForm={() => setInputMode("form")}
+              variant="profile"
+            />
+          ) : (
+            <>
+              <ProfileForm
+                form={form}
+                setForm={setForm}
+                isSaving={isSaving}
+                onSubmit={handleSubmit}
+                onChange={handleChange}
+                onCancel={() => setIsEditing(false)}
+                location={location}
+              />
+              <IntegrationsSection
+                connectedProviders={connectedProviders}
+                isEditing={true}
+                onLinkProvider={handleLinkProvider}
+              />
+            </>
+          )}
         </>
       ) : (
         <>

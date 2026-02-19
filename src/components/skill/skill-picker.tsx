@@ -143,7 +143,6 @@ export function SkillPicker(props: SkillPickerProps) {
   const handleSelectSkill = useCallback(
     (node: SkillNode) => {
       if (selectedIds.has(node.id)) return;
-      if (!node.isLeaf) return; // Can't select grouping nodes
 
       if (mode === "profile") {
         (onAdd as SkillPickerProfileProps["onAdd"])({
@@ -221,10 +220,13 @@ export function SkillPicker(props: SkillPickerProps) {
         e.preventDefault();
         setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
         break;
-      case "Enter":
+      case "Enter": {
         e.preventDefault();
-        if (selectedIndex >= 0 && selectedIndex < dropdownItems.length) {
-          const item = dropdownItems[selectedIndex];
+        // When no arrow navigation has occurred, auto-select the first item
+        const effectiveIndex =
+          selectedIndex === -1 && dropdownItems.length > 0 ? 0 : selectedIndex;
+        if (effectiveIndex >= 0 && effectiveIndex < dropdownItems.length) {
+          const item = dropdownItems[effectiveIndex];
           if (showSearchResults) {
             handleSelectSkill(item as SkillNode);
           } else {
@@ -237,10 +239,15 @@ export function SkillPicker(props: SkillPickerProps) {
               handleBrowseInto(browseItem.id);
             }
           }
-        } else if (hasAddCustom && selectedIndex === dropdownItems.length) {
+        } else if (
+          hasAddCustom &&
+          (selectedIndex === dropdownItems.length ||
+            (selectedIndex === -1 && dropdownItems.length === 0))
+        ) {
           handleAddCustom();
         }
         break;
+      }
       case "Escape":
         setShowDropdown(false);
         setSelectedIndex(-1);

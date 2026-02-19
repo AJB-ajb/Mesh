@@ -114,6 +114,7 @@ export type ExtractedProfileV2 = {
   headline?: string;
   bio?: string;
   location?: string;
+  skills?: string[];
   interests?: string[];
   languages?: string[];
   portfolio_url?: string;
@@ -152,6 +153,9 @@ export function mapExtractedToFormState(
     ...(extracted.headline != null && { headline: extracted.headline }),
     ...(extracted.bio != null && { bio: extracted.bio }),
     ...(extracted.location != null && { location: extracted.location }),
+    ...(extracted.skills != null && {
+      skills: extracted.skills.join(", "),
+    }),
     ...(extracted.interests != null && {
       interests: extracted.interests.join(", "),
     }),
