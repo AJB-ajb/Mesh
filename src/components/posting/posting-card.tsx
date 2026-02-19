@@ -112,7 +112,7 @@ export function PostingCard({
       )}
     >
       <CardHeader className="pb-4">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-3 flex-wrap">
               <CardTitle className="text-xl">{title}</CardTitle>
@@ -138,7 +138,7 @@ export function PostingCard({
               )}
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             <Button variant="outline" asChild>
               <Link href={`/postings/${id}`}>
                 View Details

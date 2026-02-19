@@ -91,7 +91,7 @@ export function PostingDiscoverCard({
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-4">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="space-y-1 flex-1">
             <div className="flex items-center gap-3 flex-wrap">
               <CardTitle className="text-xl">
@@ -140,7 +140,7 @@ export function PostingDiscoverCard({
               )}
             </div>
           </div>
-          <div className="flex gap-2 shrink-0">
+          <div className="flex gap-2 w-full sm:w-auto">
             {showInterestButton && (
               <Button
                 variant="outline"
