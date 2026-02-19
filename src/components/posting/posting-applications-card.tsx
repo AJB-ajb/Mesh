@@ -150,8 +150,8 @@ export function PostingApplicationsCard({
                 </div>
 
                 {/* Action buttons */}
-                <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
-                  <div className="flex gap-2">
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-border pt-4">
+                  <div className="flex gap-2 w-full sm:w-auto">
                     <Button
                       size="sm"
                       variant="outline"
@@ -161,7 +161,7 @@ export function PostingApplicationsCard({
                       Message
                     </Button>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
                     {application.status === "pending" ? (
                       <>
                         <Button
@@ -236,7 +236,7 @@ export function PostingApplicationsCard({
                         key={application.id}
                         className="rounded-lg border border-border p-3"
                       >
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium shrink-0">
                               #{index + 1}
@@ -252,7 +252,7 @@ export function PostingApplicationsCard({
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
                             <Button
                               size="sm"
                               variant="outline"

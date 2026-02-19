@@ -151,7 +151,7 @@ function OwnerActions({
 }: OwnerActionsProps) {
   if (isEditing) {
     return (
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button onClick={onSave} disabled={isSaving}>
           {isSaving ? (
             <>
@@ -207,7 +207,7 @@ function OwnerActions({
           </AlertDialog>
         </div>
       )}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button variant="outline" onClick={onStartEdit}>
           <Pencil className="h-4 w-4" />
           Edit
@@ -582,7 +582,7 @@ export function PostingDetailHeader({
           />
         ) : (
           !hideApplySection && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <ApplySection
                 posting={posting}
                 hasApplied={hasApplied}
