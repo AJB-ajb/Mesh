@@ -161,11 +161,46 @@ export function PostingDiscoverCard({
                 {labels.joinRequest.action.requested}
               </Button>
             )}
-            <Button variant="outline" asChild>
-              <Link href={`/postings/${posting.id}`}>
-                {isOwner ? "Edit" : "View Details"}
-              </Link>
-            </Button>
+            {isOwner && activeTab === "my-postings" ? (
+              <div className="flex rounded-md border border-input">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  asChild
+                  className="rounded-r-none border-r border-input"
+                >
+                  <Link href={`/postings/${posting.id}?tab=edit`}>
+                    {labels.postingDetail.tabs.edit}
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  asChild
+                  className="rounded-none border-r border-input"
+                >
+                  <Link href={`/postings/${posting.id}?tab=manage`}>
+                    {labels.postingDetail.tabs.manage}
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  asChild
+                  className="rounded-l-none"
+                >
+                  <Link href={`/postings/${posting.id}?tab=activity`}>
+                    {labels.postingDetail.tabs.activity}
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <Button variant="outline" asChild>
+                <Link href={`/postings/${posting.id}`}>
+                  {isOwner ? "Edit" : "View Details"}
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
