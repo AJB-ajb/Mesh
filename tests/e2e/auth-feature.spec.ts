@@ -233,7 +233,6 @@ test.describe("Feature: Authentication Flow", () => {
       "/active",
       "/connections",
       "/profile",
-      "/inbox",
     ];
 
     for (const route of protectedRoutes) {

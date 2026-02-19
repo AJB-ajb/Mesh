@@ -214,7 +214,7 @@ export async function RecentActivityList({
           description:
             content.slice(0, 50) + (content.length > 50 ? "..." : ""),
           time: formatTimeAgo(m.created_at as string),
-          href: `/inbox?conversation=${conversations?.id}`,
+          href: `/connections?conversation=${conversations?.id}`,
         });
       });
     }

@@ -155,7 +155,7 @@ export default async function LandingPage() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" className="px-8" asChild>
-              <Link href="/postings">
+              <Link href="/my-postings">
                 {labels.landing.explorePostingsButton}
               </Link>
             </Button>

@@ -89,7 +89,7 @@ export async function fetchOwnerStats(
       value: String(livePostingsCount || 0),
       description: "Postings currently open",
       icon: FolderKanban,
-      href: "/postings",
+      href: "/my-postings",
     },
     {
       title: "New Applicants",
@@ -103,7 +103,7 @@ export async function fetchOwnerStats(
       value: String(conversationsCount || 0),
       description: `${unreadMessagesCount || 0} unread messages`,
       icon: MessageSquare,
-      href: "/inbox",
+      href: "/connections",
     },
     {
       title: "Match Quality",
@@ -234,7 +234,7 @@ export const defaultStats: StatItem[] = [
     value: "0",
     description: "Postings you're involved in",
     icon: FolderKanban,
-    href: "/postings",
+    href: "/my-postings",
   },
   {
     title: "New Matches",
@@ -248,7 +248,7 @@ export const defaultStats: StatItem[] = [
     value: "0",
     description: "Total conversations",
     icon: MessageSquare,
-    href: "/inbox",
+    href: "/connections",
   },
   {
     title: "Match Rate",

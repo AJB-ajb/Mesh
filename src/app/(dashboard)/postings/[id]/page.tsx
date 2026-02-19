@@ -365,7 +365,7 @@ function PostingDetailInner() {
       return;
     }
 
-    router.push("/postings");
+    router.push("/my-postings");
   };
 
   const handleExtendDeadline = async (days: number) => {
@@ -595,7 +595,7 @@ function PostingDetailInner() {
       .single();
 
     if (existingConv) {
-      router.push(`/inbox?conversation=${existingConv.id}`);
+      router.push(`/connections?conversation=${existingConv.id}`);
       return;
     }
 
@@ -614,7 +614,7 @@ function PostingDetailInner() {
       return;
     }
 
-    router.push(`/inbox?conversation=${newConv.id}`);
+    router.push(`/connections?conversation=${newConv.id}`);
   };
 
   const handleContactCreator = () => {
@@ -637,7 +637,7 @@ function PostingDetailInner() {
     return (
       <div className="space-y-6">
         <Link
-          href="/postings"
+          href="/my-postings"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           Back to postings
@@ -646,7 +646,7 @@ function PostingDetailInner() {
           <CardContent className="flex min-h-[200px] flex-col items-center justify-center py-12">
             <p className="text-muted-foreground">Posting not found.</p>
             <Button asChild className="mt-4">
-              <Link href="/postings">Browse Postings</Link>
+              <Link href="/my-postings">Browse Postings</Link>
             </Button>
           </CardContent>
         </Card>

@@ -426,7 +426,7 @@ export function PostingFormCard({
               )}
             </Button>
             <Button type="button" variant="outline" asChild>
-              <Link href="/postings">{labels.postingForm.cancelButton}</Link>
+              <Link href="/my-postings">{labels.postingForm.cancelButton}</Link>
             </Button>
           </div>
         </CardContent>

@@ -59,7 +59,7 @@ export function QuickActions() {
           className="justify-start gap-3 h-auto py-4"
           asChild
         >
-          <Link href="/postings">
+          <Link href="/my-postings">
             <TrendingUp className="h-5 w-5" />
             <div className="text-left">
               <div className="font-medium">

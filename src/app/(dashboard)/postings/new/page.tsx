@@ -270,7 +270,7 @@ export default function NewPostingPage() {
     <div className="mx-auto max-w-2xl space-y-6">
       {/* Back link */}
       <Link
-        href="/postings"
+        href="/my-postings"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />

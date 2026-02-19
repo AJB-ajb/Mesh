@@ -137,7 +137,9 @@ function ConnectionActions({
 
   if (status === "pending_sent") {
     return (
-      <Badge variant="secondary">{labels.connectionAction.requestPending}</Badge>
+      <Badge variant="secondary">
+        {labels.connectionAction.requestPending}
+      </Badge>
     );
   }
 
@@ -214,7 +216,7 @@ export default function PublicProfilePage() {
     return (
       <div className="space-y-6">
         <Link
-          href="/postings"
+          href="/my-postings"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -236,7 +238,7 @@ export default function PublicProfilePage() {
   return (
     <div className="space-y-6">
       <Link
-        href="/postings"
+        href="/my-postings"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />

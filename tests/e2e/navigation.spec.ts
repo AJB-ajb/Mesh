@@ -13,7 +13,7 @@ test.describe("Navigation", () => {
       page.locator('a[href*="/login"]:has-text("Post something")').first(),
     ).toBeVisible();
     await expect(
-      page.locator('a[href="/postings"]:has-text("Explore postings")'),
+      page.locator('a[href="/my-postings"]:has-text("Explore postings")'),
     ).toBeVisible();
   });
 
