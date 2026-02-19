@@ -25,7 +25,7 @@ export async function loginAsUser(
   await page.fill('input[type="password"]', user.password);
   await page.click('button[type="submit"]');
 
-  await page.waitForURL("**/dashboard", {
+  await page.waitForURL("**/active", {
     timeout: 10000,
     waitUntil: "domcontentloaded",
   });
@@ -72,7 +72,7 @@ export async function setupAuthenticatedUser(
   await page.fill('input[type="email"]', user.email);
   await page.fill('input[type="password"]', user.password);
   await page.click('button[type="submit"]');
-  await page.waitForURL("**/dashboard", {
+  await page.waitForURL("**/active", {
     timeout: 10000,
     waitUntil: "domcontentloaded",
   });

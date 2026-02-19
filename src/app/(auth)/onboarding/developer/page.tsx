@@ -266,7 +266,7 @@ function DeveloperOnboardingContent() {
       data: { profile_completed: true },
     });
 
-    const destination = next || "/dashboard";
+    const destination = next || "/active";
     router.replace(destination);
   };
 
@@ -753,7 +753,7 @@ function DeveloperOnboardingContent() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.replace(next || "/dashboard")}
+              onClick={() => router.replace(next || "/active")}
             >
               {labels.onboarding.skipButton}
             </Button>

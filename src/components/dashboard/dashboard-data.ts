@@ -96,7 +96,7 @@ export async function fetchOwnerStats(
       value: String(applicantsCount || 0),
       description: "Applications + matches pending",
       icon: Users,
-      href: "/matches",
+      href: "/discover",
     },
     {
       title: "Conversations",
@@ -110,7 +110,7 @@ export async function fetchOwnerStats(
       value: `${avgMatchQuality}%`,
       description: "Average match strength",
       icon: TrendingUp,
-      href: "/matches",
+      href: "/discover",
     },
   ];
 }
@@ -241,7 +241,7 @@ export const defaultStats: StatItem[] = [
     value: "0",
     description: "Postings waiting for your review",
     icon: Users,
-    href: "/matches",
+    href: "/discover",
   },
   {
     title: "Messages",
@@ -255,6 +255,6 @@ export const defaultStats: StatItem[] = [
     value: "0%",
     description: "Average compatibility",
     icon: TrendingUp,
-    href: "/matches",
+    href: "/discover",
   },
 ];

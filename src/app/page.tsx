@@ -99,9 +99,9 @@ export default async function LandingPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // If logged in, redirect to dashboard
+  // If logged in, redirect to active page
   if (user) {
-    redirect("/dashboard");
+    redirect("/active");
   }
 
   return (

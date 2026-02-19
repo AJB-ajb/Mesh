@@ -48,7 +48,7 @@ test.describe("Feature: Authentication Flow", () => {
   });
 
   // Test 2: Email/password login success (requires seeded test user)
-  test("2. Email/password login redirects to dashboard on success", async ({
+  test("2. Email/password login redirects to active page on success", async ({
     page,
   }) => {
     const password = process.env.TEST_USER_PASSWORD;
@@ -59,8 +59,8 @@ test.describe("Feature: Authentication Flow", () => {
       password: password!,
     });
 
-    // loginAsUser waits for /dashboard — verify we arrived
-    expect(page.url()).toContain("/dashboard");
+    // loginAsUser waits for /active — verify we arrived
+    expect(page.url()).toContain("/active");
   });
 
   // Test 3: Email/password login with invalid credentials
@@ -228,10 +228,11 @@ test.describe("Feature: Authentication Flow", () => {
     await page.context().clearCookies();
 
     const protectedRoutes = [
-      "/dashboard",
+      "/discover",
+      "/my-postings",
+      "/active",
+      "/connections",
       "/profile",
-      "/postings",
-      "/matches",
       "/inbox",
     ];
 
@@ -261,8 +262,8 @@ test.describe("Feature: Authentication Flow", () => {
     // Verify we landed on /login
     expect(page.url()).toContain("/login");
 
-    // Verify dashboard is no longer accessible
-    await page.goto("/dashboard");
+    // Verify active page is no longer accessible
+    await page.goto("/active");
     await page.waitForURL(/\/login/, { timeout: 10000 });
     expect(page.url()).toContain("/login");
   });
