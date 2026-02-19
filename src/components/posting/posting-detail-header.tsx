@@ -29,6 +29,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { computeWeightedScore, formatScore } from "@/lib/matching/scoring";
+import { labels } from "@/lib/labels";
 import type {
   PostingDetail,
   Application,
@@ -271,10 +272,14 @@ function ApplySection({
           }
           className="px-3 py-1"
         >
-          {myApplication?.status === "pending" && "Request pending"}
-          {myApplication?.status === "accepted" && "\u2713 Accepted"}
-          {myApplication?.status === "rejected" && "Not Selected"}
-          {myApplication?.status === "withdrawn" && "Withdrawn"}
+          {myApplication?.status === "pending" &&
+            labels.joinRequest.applicantStatus.pending}
+          {myApplication?.status === "accepted" &&
+            `\u2713 ${labels.joinRequest.applicantStatus.accepted}`}
+          {myApplication?.status === "rejected" &&
+            labels.joinRequest.applicantStatus.rejected}
+          {myApplication?.status === "withdrawn" &&
+            labels.joinRequest.applicantStatus.withdrawn}
           {myApplication?.status === "waitlisted" && (
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
@@ -286,7 +291,7 @@ function ApplySection({
         {(myApplication?.status === "pending" ||
           myApplication?.status === "waitlisted") && (
           <Button variant="outline" size="sm" onClick={onWithdraw}>
-            Withdraw request
+            {labels.joinRequest.action.withdraw}
           </Button>
         )}
       </div>
@@ -306,7 +311,7 @@ function ApplySection({
           ) : (
             <>
               <Clock className="h-4 w-4" />
-              Join waitlist
+              {labels.joinRequest.action.joinWaitlist}
             </>
           )}
         </Button>
@@ -334,7 +339,7 @@ function ApplySection({
               ) : (
                 <>
                   <Clock className="h-4 w-4" />
-                  Request to join waitlist
+                  {labels.joinRequest.action.requestWaitlist}
                 </>
               )}
             </Button>
@@ -349,7 +354,7 @@ function ApplySection({
     return (
       <Button onClick={onShowApplyForm}>
         <Clock className="h-4 w-4" />
-        Request to join waitlist
+        {labels.joinRequest.action.requestWaitlist}
       </Button>
     );
   }
@@ -371,7 +376,7 @@ function ApplySection({
         ) : (
           <>
             <Send className="h-4 w-4" />
-            Join
+            {labels.joinRequest.action.join}
           </>
         )}
       </Button>
@@ -398,7 +403,7 @@ function ApplySection({
             ) : (
               <>
                 <Send className="h-4 w-4" />
-                Request to join
+                {labels.joinRequest.action.requestToJoin}
               </>
             )}
           </Button>
@@ -413,7 +418,7 @@ function ApplySection({
   return (
     <Button onClick={onShowApplyForm}>
       <Send className="h-4 w-4" />
-      Request to join
+      {labels.joinRequest.action.requestToJoin}
     </Button>
   );
 }

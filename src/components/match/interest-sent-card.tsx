@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { getInitials } from "@/lib/format";
 import { formatTimeAgo } from "@/lib/format";
+import { labels } from "@/lib/labels";
 import type { MyInterest } from "@/lib/hooks/use-interests";
 
 export interface InterestSentCardProps {
@@ -38,7 +39,7 @@ export function InterestSentCard({ interest }: InterestSentCardProps) {
                 <Badge variant="secondary">{posting.category}</Badge>
               )}
               <Badge variant="outline" className="text-xs">
-                Pending
+                {labels.joinRequest.action.requested}
               </Badge>
             </div>
           </div>

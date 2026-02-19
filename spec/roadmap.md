@@ -131,7 +131,7 @@ These are ideas without a target milestone. They'll be prioritized as the produc
 - Posting templates for common categories
 - Analytics dashboard for posting owners
 - Public posting embed / share links
-- Multi-language support (i18n)
+- Multi-language support (i18n) — recommended: `next-intl`; start by migrating `src/lib/labels.ts`
 - Mobile app (React Native or PWA enhancement)
 - Improve mic button visibility in textareas (#43)
 - Standardize date formatting across the app (#44)

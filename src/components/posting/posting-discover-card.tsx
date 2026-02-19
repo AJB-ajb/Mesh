@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/card";
 import { formatScore } from "@/lib/matching/scoring";
 import { getInitials } from "@/lib/format";
+import { labels } from "@/lib/labels";
 import type { PostingWithScore } from "@/lib/hooks/use-postings";
 
 const categoryStyles: Record<string, string> = {
@@ -157,7 +158,7 @@ export function PostingDiscoverCard({
             {!isOwner && activeTab === "discover" && isAlreadyInterested && (
               <Button variant="secondary" disabled>
                 <Check className="h-4 w-4" />
-                Pending
+                {labels.joinRequest.action.requested}
               </Button>
             )}
             <Button variant="outline" asChild>

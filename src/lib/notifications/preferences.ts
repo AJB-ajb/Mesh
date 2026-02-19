@@ -2,6 +2,8 @@
  * Notification preference types and utility functions.
  */
 
+import { labels } from "@/lib/labels";
+
 export type NotificationType =
   | "interest_received"
   | "application_accepted"
@@ -58,15 +60,8 @@ export function shouldNotify(
 }
 
 /** Human-readable labels for notification types. */
-export const notificationTypeLabels: Record<NotificationType, string> = {
-  interest_received: "Interest Received",
-  application_accepted: "Application Accepted",
-  application_rejected: "Application Rejected",
-  friend_request: "Connection Request",
-  sequential_invite: "Sequential Invite",
-  new_message: "New Message",
-  match_found: "Match Found",
-};
+export const notificationTypeLabels: Record<NotificationType, string> =
+  labels.notification.typeLabels;
 
 /** All notification types in display order. */
 export const allNotificationTypes: NotificationType[] = [
