@@ -7,6 +7,7 @@ import { categoryStyles } from "@/lib/posting/styles";
 import { getLocationDisplay, getLocationIcon } from "@/lib/posting/location";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { BadgeList } from "@/components/ui/badge-list";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Card,
@@ -117,16 +118,7 @@ export function PostingCard({
         </CardDescription>
 
         {/* Skills */}
-        <div className="flex flex-wrap gap-2">
-          {skills.slice(0, 5).map((skill) => (
-            <Badge key={skill} variant="secondary">
-              {skill}
-            </Badge>
-          ))}
-          {skills.length > 5 && (
-            <Badge variant="outline">+{skills.length - 5}</Badge>
-          )}
-        </div>
+        <BadgeList items={skills} />
 
         {/* Tags */}
         {tags && tags.length > 0 && (

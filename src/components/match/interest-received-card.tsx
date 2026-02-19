@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BadgeList } from "@/components/ui/badge-list";
 import { getInitials, formatTimeAgo } from "@/lib/format";
 import type { InterestReceived } from "@/lib/hooks/use-interests";
 
@@ -65,21 +66,7 @@ export function InterestReceivedCard({ interest }: InterestReceivedCardProps) {
 
         {/* Interested user skills */}
         {profile?.skills && profile.skills.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {profile.skills.slice(0, 5).map((skill) => (
-              <span
-                key={skill}
-                className="rounded-md border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium"
-              >
-                {skill}
-              </span>
-            ))}
-            {profile.skills.length > 5 && (
-              <span className="rounded-md border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium">
-                +{profile.skills.length - 5}
-              </span>
-            )}
-          </div>
+          <BadgeList items={profile.skills} />
         )}
 
         {/* Actions */}

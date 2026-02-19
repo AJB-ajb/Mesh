@@ -11,6 +11,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { BadgeList } from "@/components/ui/badge-list";
 import {
   Card,
   CardContent,
@@ -165,16 +166,7 @@ export function PostingDiscoverCard({
 
         {/* Skills */}
         {posting.skills.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {posting.skills.slice(0, 5).map((skill: string) => (
-              <Badge key={skill} variant="secondary">
-                {skill}
-              </Badge>
-            ))}
-            {posting.skills.length > 5 && (
-              <Badge variant="outline">+{posting.skills.length - 5}</Badge>
-            )}
-          </div>
+          <BadgeList items={posting.skills} />
         )}
 
         {/* Tags */}
