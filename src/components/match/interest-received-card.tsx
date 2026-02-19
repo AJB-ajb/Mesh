@@ -40,9 +40,9 @@ export function InterestReceivedCard({ interest }: InterestReceivedCardProps) {
   return (
     <Card>
       <CardHeader className="pb-4">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <CardTitle className="text-lg">
                 {profileName} is interested in your posting
               </CardTitle>
@@ -102,7 +102,7 @@ export function InterestReceivedCard({ interest }: InterestReceivedCardProps) {
         )}
 
         {/* Actions */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {posting && (
             <Button variant="outline" asChild>
               <Link href={`/postings/${posting.id}`}>View Posting</Link>

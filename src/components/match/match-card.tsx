@@ -39,7 +39,7 @@ export function MatchCard({
   return (
     <Card className={cn("overflow-hidden", className)}>
       <CardHeader className="pb-4">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="flex items-center gap-3">
             <Avatar className="h-12 w-12">
               {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
@@ -57,7 +57,7 @@ export function MatchCard({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             {status === "pending" && onAccept && (
               <>
                 <Button size="sm" onClick={onAccept}>

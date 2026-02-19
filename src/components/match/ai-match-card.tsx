@@ -57,9 +57,9 @@ export function AiMatchCard({ match, isApplying, onApply }: AiMatchCardProps) {
   return (
     <Card>
       <CardHeader className="pb-4">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <CardTitle className="text-xl">
                 <Link href={`/matches/${match.id}`} className="hover:underline">
                   {posting.title}
@@ -116,7 +116,7 @@ export function AiMatchCard({ match, isApplying, onApply }: AiMatchCardProps) {
         )}
 
         {/* Actions */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {match.status === "pending" && (
             <Button
               className="flex-1 sm:flex-none"
