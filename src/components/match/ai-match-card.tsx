@@ -3,6 +3,7 @@ import { Check, MessageSquare, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatTimeAgo } from "@/lib/format";
 import type {
   MatchResponse,
   Posting as BasePosting,
@@ -23,25 +24,6 @@ const statusLabels: Record<string, string> = {
   accepted: "Accepted",
   declined: "Declined",
 };
-
-function formatTimeAgo(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (diffInSeconds < 60) {
-    return "just now";
-  } else if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60);
-    return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`;
-  } else if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600);
-    return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
-  } else {
-    const days = Math.floor(diffInSeconds / 86400);
-    return `${days} ${days === 1 ? "day" : "days"} ago`;
-  }
-}
 
 export interface AiMatchCardProps {
   match: MatchResponse;

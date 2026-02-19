@@ -19,7 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatScore } from "@/lib/matching/scoring";
-import { getInitials } from "@/lib/format";
+import { getInitials, formatDateAgo } from "@/lib/format";
 import { labels } from "@/lib/labels";
 import type { PostingWithScore } from "@/lib/hooks/use-postings";
 
@@ -49,19 +49,6 @@ function getLocationLabel(
       return null;
   }
 }
-
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-  return date.toLocaleDateString();
-};
 
 export interface PostingDiscoverCardProps {
   posting: PostingWithScore;
@@ -271,7 +258,7 @@ export function PostingDiscoverCard({
                 </Link>
               </>
             )}{" "}
-            • {formatDate(posting.created_at)}
+            • {formatDateAgo(posting.created_at)}
           </span>
         </div>
       </CardContent>

@@ -17,27 +17,12 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { useNotifications } from "@/lib/hooks/use-notifications";
+import { formatTimeAgoShort } from "@/lib/format";
 import type { Notification } from "@/lib/supabase/realtime";
 
 // ---------------------------------------------------------------------------
 // Helpers (reused from notifications-list.tsx)
 // ---------------------------------------------------------------------------
-
-function formatDate(dateString: string) {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-}
 
 function getNotificationIcon(type: string) {
   switch (type) {
@@ -249,7 +234,7 @@ export function NotificationsDropdown() {
                             {notification.title}
                           </p>
                           <span className="shrink-0 text-xs text-muted-foreground">
-                            {formatDate(notification.created_at)}
+                            {formatTimeAgoShort(notification.created_at)}
                           </span>
                         </div>
                         {notification.body && (

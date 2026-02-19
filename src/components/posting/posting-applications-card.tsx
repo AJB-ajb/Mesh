@@ -18,22 +18,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getInitials } from "@/lib/format";
+import { getInitials, formatDateAgo } from "@/lib/format";
 import { labels } from "@/lib/labels";
 import type { Application } from "@/lib/hooks/use-posting-detail";
-
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-  return date.toLocaleDateString();
-};
 
 type PostingApplicationsCardProps = {
   applications: Application[];
@@ -143,7 +130,7 @@ export function PostingApplicationsCard({
                         </div>
                       )}
                       <p className="mt-2 text-xs text-muted-foreground">
-                        Requested {formatDate(application.created_at)}
+                        Requested {formatDateAgo(application.created_at)}
                       </p>
                     </div>
                   </div>

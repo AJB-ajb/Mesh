@@ -21,25 +21,9 @@ import { labels } from "@/lib/labels";
 import { useRealtimeChat } from "@/lib/hooks/use-realtime-chat";
 import { useSendMessage } from "@/lib/hooks/use-send-message";
 import { usePresenceContext } from "@/components/providers/presence-provider";
-import { getInitials } from "@/lib/format";
+import { getInitials, formatTimeAgoShort } from "@/lib/format";
 import { useConversationMessages } from "@/lib/hooks/use-inbox";
 import type { Conversation, Message } from "@/lib/hooks/use-inbox";
-
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-};
 
 // ---------------------------------------------------------------------------
 // Conversation List
@@ -105,7 +89,7 @@ export function ConversationList({
               </h4>
               {conversation.last_message && (
                 <span className="text-xs text-muted-foreground">
-                  {formatDate(conversation.last_message.created_at)}
+                  {formatTimeAgoShort(conversation.last_message.created_at)}
                 </span>
               )}
             </div>
@@ -286,7 +270,7 @@ export function ChatPanel({
                       : "text-muted-foreground",
                   )}
                 >
-                  {formatDate(message.created_at)}
+                  {formatTimeAgoShort(message.created_at)}
                 </p>
               </div>
             </div>

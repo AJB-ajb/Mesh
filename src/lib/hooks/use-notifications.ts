@@ -3,6 +3,7 @@
 import { useCallback, useEffect } from "react";
 import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
+import { getInitials } from "@/lib/format";
 import type { Notification } from "@/lib/supabase/realtime";
 
 // ---------------------------------------------------------------------------
@@ -15,20 +16,6 @@ type NotificationData = {
   userInitials: string;
   userId: string;
 };
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function extractInitials(fullName: string | null | undefined): string {
-  if (!fullName) return "U";
-  return fullName
-    .split(" ")
-    .map((n: string) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
 
 // ---------------------------------------------------------------------------
 // Fetcher
@@ -66,7 +53,7 @@ async function fetchNotificationData(): Promise<NotificationData> {
     ]);
 
   return {
-    userInitials: extractInitials(profile?.full_name),
+    userInitials: getInitials(profile?.full_name),
     unreadCount: count || 0,
     notifications: (notifications ?? []) as Notification[],
     userId: user.id,
