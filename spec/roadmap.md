@@ -83,33 +83,33 @@
 
 Restructure the top-level UI around four primary pages reflecting the posting lifecycle: discover → recruit → coordinate → connect. See [ux.md](ux.md) for full page layouts.
 
-| Feature                              | Issue | Effort       | Description                                                                                                            |
-| ------------------------------------ | ----- | ------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| Discover page                        | —     | Medium       | New `/discover` — single feed merging old Postings (Discover), Matches, Bookmarks. Sorted by match score, saved filter |
-| My Postings page                     | —     | Small-Medium | Refactor `/postings` to flat list of own postings only. Cards show team fill `current / min (max)`, pending actions    |
-| Posting detail tabs                  | —     | Medium       | Refactor `/postings/[id]` into Edit · Manage · Project tabs. Manage: applicants, sequential invites. Project: group chat, team. Disabled states for inactive tabs |
-| Active page                          | —     | Medium       | New `/active` — list of projects at min team size (created + joined). Cards show unread messages, role, team fill      |
-| Project group chat                   | —     | Medium-Large | Group messaging per posting (Project tab). Distinct from 1:1 DMs in Connections                                        |
-| [x] Connections page                 | —     | Medium       | New `/connections` — split layout: connection list with DMs, pending requests (collapsible), add/QR/share actions      |
-| Notifications → header bell          | —     | Small-Medium | Move notifications out of Inbox page into header bell dropdown. Remove `/inbox` route                                  |
-| Sidebar & routing update             | —     | Small        | Update sidebar nav items, default landing page → Active, remove old routes (dashboard, matches, bookmarks, inbox)      |
-| [x] Connection improvements          | —     | Medium       | QR code for connecting, share profile link, connect button on profiles, search by name/email                           |
-| Remove Dashboard page                | —     | Small        | Remove `/dashboard` route and components                                                                               |
+| Feature                     | Issue | Effort       | Description                                                                                                                                                       |
+| --------------------------- | ----- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Discover page               | —     | Medium       | New `/discover` — single feed merging old Postings (Discover), Matches, Bookmarks. Sorted by match score, saved filter                                            |
+| My Postings page            | —     | Small-Medium | Refactor `/postings` to flat list of own postings only. Cards show team fill `current / min (max)`, pending actions                                               |
+| Posting detail tabs         | —     | Medium       | Refactor `/postings/[id]` into Edit · Manage · Project tabs. Manage: applicants, sequential invites. Project: group chat, team. Disabled states for inactive tabs |
+| Active page                 | —     | Medium       | New `/active` — list of projects at min team size (created + joined). Cards show unread messages, role, team fill                                                 |
+| Project group chat          | —     | Medium-Large | Group messaging per posting (Project tab). Distinct from 1:1 DMs in Connections                                                                                   |
+| [x] Connections page        | —     | Medium       | New `/connections` — split layout: connection list with DMs, pending requests (collapsible), add/QR/share actions                                                 |
+| Notifications → header bell | —     | Small-Medium | Move notifications out of Inbox page into header bell dropdown. Remove `/inbox` route                                                                             |
+| Sidebar & routing update    | —     | Small        | Update sidebar nav items, default landing page → Active, remove old routes (dashboard, matches, bookmarks, inbox)                                                 |
+| [x] Connection improvements | —     | Medium       | QR code for connecting, share profile link, connect button on profiles, search by name/email                                                                      |
+| Remove Dashboard page       | —     | Small        | Remove `/dashboard` route and components                                                                                                                          |
 
 ### v0.4 — Matching & Filtering
 
-| Feature                           | Issue | Effort       | Description                                                                                                                      |
-| --------------------------------- | ----- | ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| Hard filter enforcement           | —     | Medium       | Two-stage matching: hard filters (context, category, skill, location) then soft scoring                                          |
-| Tree-aware skill filtering        | —     | Medium       | Selecting a parent skill node includes all descendants via recursive CTE (e.g., "Programming" matches Python)                    |
-| Per-skill matching scoring        | —     | Medium       | Replace averaged `skill_level_min` with per-skill level comparison from `posting_skills` join table                              |
-| Drop old skill columns (contract) | —     | Small        | Drop `skills text[]`, `skill_levels jsonb`, `skill_level_min integer` columns (expand phase done — code reads join tables)       |
-| Existing data migration (skills)  | —     | Medium       | Batch-process existing free-form skills through LLM normalization (pipeline exists at `/api/skills/normalize`, batch run needed) |
-| Max distance matching             | #31   | Medium       | Location-based distance as a matching dimension                                                                                  |
-| Availability input & matching     | —     | Medium-Large | Weekly time grid / slot picker UI; posting-level scheduling; overlap scoring                                                     |
-| Auto-location detection           | #16   | Small        | Detect user location from IP for matching defaults                                                                               |
-| Configurable matching weights     | —     | Small-Medium | Weight sliders on posting creation; stored per posting; passed to scoring                                                        |
-| Fix 0% match score display        | #46   | Small        | Investigate and fix 0% matches showing as "new match" on dashboard                                                               |
+| Feature                           | Issue | Effort       | Description                                                                                                                                            |
+| --------------------------------- | ----- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Hard filter enforcement           | —     | Medium       | Two-stage matching: hard filters (context, category, skill, location) then soft scoring                                                                |
+| Tree-aware skill filtering        | —     | Medium       | Selecting a parent skill node includes all descendants via recursive CTE (e.g., "Programming" matches Python)                                          |
+| Per-skill matching scoring        | —     | Medium       | Replace averaged `skill_level_min` with per-skill level comparison from `posting_skills` join table                                                    |
+| Drop old skill columns (contract) | —     | Small        | Drop `skills text[]`, `skill_levels jsonb`, `skill_level_min integer` columns (expand phase done — code reads join tables)                             |
+| Existing data migration (skills)  | —     | Medium       | Batch-process existing free-form skills through LLM normalization (pipeline exists at `/api/skills/normalize`, batch run needed)                       |
+| Max distance matching             | #31   | Medium       | Location-based distance as a matching dimension                                                                                                        |
+| Availability input & matching     | —     | Medium-Large | Minute-level windows, quick/detailed mode, posting availability, overlap scoring. Phases 1-2 of [availability-calendar spec](availability-calendar.md) |
+| Auto-location detection           | #16   | Small        | Detect user location from IP for matching defaults                                                                                                     |
+| Configurable matching weights     | —     | Small-Medium | Weight sliders on posting creation; stored per posting; passed to scoring                                                                              |
+| Fix 0% match score display        | #46   | Small        | Investigate and fix 0% matches showing as "new match" on dashboard                                                                                     |
 
 ### v0.5 — Engagement & Discovery
 
@@ -130,13 +130,13 @@ Restructure the top-level UI around four primary pages reflecting the posting li
 
 ### v1.0 — Launch
 
-| Feature                   | Issue | Effort       | Description                                                                    |
-| ------------------------- | ----- | ------------ | ------------------------------------------------------------------------------ |
-| Match pre-computation     | #13   | Large        | Background pre-computation for instant match results at scale                  |
-| Calendar sync             | #10   | Medium       | Integration with Google Calendar / iCal for availability                       |
-| Real-time voice upgrade   | —     | Large        | Upgrade from turn-based to streaming (OpenAI Realtime, Gemini Live, or custom) |
-| Auto-generated thumbnails | —     | Small-Medium | Generate posting thumbnails from transcript via Gemini                         |
-| Production hardening      | —     | Large        | Performance audit, error monitoring, rate limiting, security review            |
+| Feature                   | Issue | Effort       | Description                                                                                                                                                      |
+| ------------------------- | ----- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Match pre-computation     | #13   | Large        | Background pre-computation for instant match results at scale                                                                                                    |
+| Calendar sync             | #10   | Medium-Large | Google Calendar OAuth + iCal feed sync, busy block overlay, AI extraction, team scheduling. Phases 3-5 of [availability-calendar spec](availability-calendar.md) |
+| Real-time voice upgrade   | —     | Large        | Upgrade from turn-based to streaming (OpenAI Realtime, Gemini Live, or custom)                                                                                   |
+| Auto-generated thumbnails | —     | Small-Medium | Generate posting thumbnails from transcript via Gemini                                                                                                           |
+| Production hardening      | —     | Large        | Performance audit, error monitoring, rate limiting, security review                                                                                              |
 
 ---
 

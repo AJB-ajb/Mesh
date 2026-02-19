@@ -68,12 +68,7 @@ Where collaboration or activity happens (person-level default, can be overridden
 
 #### Availability
 
-Two input systems:
-
-- **Week-based**: Weekly pattern (e.g., "Mondays 6-9pm", "weekends")
-- **Block-based**: Specific dates (e.g., "Jan 15-20", "this Saturday afternoon")
-
-Binary available/unavailable per time slot. The posting specifies when the activity happens; matching checks overlap with the person's availability.
+See [availability-calendar.md](availability-calendar.md) for the full availability spec including minute-level windows, calendar sync, and overlap scoring.
 
 ---
 
