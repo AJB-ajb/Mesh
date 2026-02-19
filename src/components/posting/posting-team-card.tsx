@@ -4,6 +4,7 @@ import { Users } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { getInitials } from "@/lib/format";
 import type { Application } from "@/lib/hooks/use-posting-detail";
 
 type PostingTeamCardProps = {
@@ -12,16 +13,6 @@ type PostingTeamCardProps = {
   teamSizeMin: number;
   teamSizeMax: number;
 };
-
-function extractInitials(fullName: string | null | undefined): string {
-  if (!fullName) return "U";
-  return fullName
-    .split(" ")
-    .map((n: string) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
 
 export function PostingTeamCard({
   applications,
@@ -47,7 +38,7 @@ export function PostingTeamCard({
           {/* Creator */}
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">
-              {extractInitials(creatorName)}
+              {getInitials(creatorName)}
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium truncate">
@@ -61,7 +52,7 @@ export function PostingTeamCard({
           {accepted.map((app) => (
             <div key={app.id} className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-sm font-medium">
-                {extractInitials(app.profiles?.full_name)}
+                {getInitials(app.profiles?.full_name)}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium truncate">

@@ -2,31 +2,12 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getInitials } from "@/lib/format";
+import { getInitials, formatTimeAgo } from "@/lib/format";
 import type { InterestReceived } from "@/lib/hooks/use-interests";
 
 const statusColors = {
   interested: "bg-pink-500/10 text-pink-600",
 };
-
-function formatTimeAgo(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (diffInSeconds < 60) {
-    return "just now";
-  } else if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60);
-    return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`;
-  } else if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600);
-    return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
-  } else {
-    const days = Math.floor(diffInSeconds / 86400);
-    return `${days} ${days === 1 ? "day" : "days"} ago`;
-  }
-}
 
 export interface InterestReceivedCardProps {
   interest: InterestReceived;
