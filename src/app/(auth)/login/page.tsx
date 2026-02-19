@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
-import { Logo } from "@/components/layout/logo";
+import { AuthLayout } from "@/components/auth/auth-layout";
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -105,14 +105,21 @@ function LoginForm() {
   const isOAuthLoading = loadingProvider !== null;
 
   return (
-    <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
-      <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-semibold">{labels.auth.login.title}</h1>
-        <p className="text-sm text-muted-foreground">
-          {labels.auth.login.subtitle}
-        </p>
-      </div>
-
+    <AuthLayout
+      title={labels.auth.login.title}
+      subtitle={labels.auth.login.subtitle}
+      footer={
+        <>
+          {labels.auth.login.noAccount}{" "}
+          <Link
+            href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"}
+            className="text-primary hover:underline"
+          >
+            {labels.common.signUp}
+          </Link>
+        </>
+      }
+    >
       {error || formError ? (
         <p className="mt-6 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error || formError}
@@ -217,50 +224,27 @@ function LoginForm() {
           )}
         </Button>
       </div>
-
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        {labels.auth.login.noAccount}{" "}
-        <Link
-          href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"}
-          className="text-primary hover:underline"
-        >
-          {labels.common.signUp}
-        </Link>
-      </p>
-    </div>
+    </AuthLayout>
   );
 }
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <header className="flex h-16 items-center justify-between border-b border-border/50 px-6 lg:px-8">
-        <Logo />
-      </header>
-
-      <main className="flex flex-1 items-center justify-center px-6 py-16 lg:px-8">
-        <Suspense
-          fallback={
-            <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
-              <div className="space-y-2 text-center">
-                <h1 className="text-2xl font-semibold">
-                  {labels.auth.login.title}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  {labels.auth.login.subtitle}
-                </p>
-              </div>
-              <div className="mt-6 space-y-3">
-                <Button type="button" className="w-full" disabled>
-                  {labels.common.loading}
-                </Button>
-              </div>
-            </div>
-          }
+    <Suspense
+      fallback={
+        <AuthLayout
+          title={labels.auth.login.title}
+          subtitle={labels.auth.login.subtitle}
         >
-          <LoginForm />
-        </Suspense>
-      </main>
-    </div>
+          <div className="mt-6 space-y-3">
+            <Button type="button" className="w-full" disabled>
+              {labels.common.loading}
+            </Button>
+          </div>
+        </AuthLayout>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

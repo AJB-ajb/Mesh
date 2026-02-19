@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
-import { Logo } from "@/components/layout/logo";
+import { AuthLayout } from "@/components/auth/auth-layout";
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -119,153 +119,140 @@ function SignUpForm() {
   const isOAuthLoading = loadingProvider !== null;
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <header className="flex h-16 items-center justify-between border-b border-border/50 px-6 lg:px-8">
-        <Logo />
-      </header>
+    <AuthLayout
+      title={labels.auth.signup.title}
+      subtitle={labels.auth.signup.subtitle}
+      footer={
+        <>
+          {labels.auth.signup.alreadyHaveAccount}{" "}
+          <Link
+            href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}
+            className="text-primary hover:underline"
+          >
+            {labels.common.signIn}
+          </Link>
+        </>
+      }
+    >
+      {error ? (
+        <p className="mt-6 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
 
-      <main className="flex flex-1 items-center justify-center px-6 py-16 lg:px-8">
-        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
-          <div className="space-y-2 text-center">
-            <h1 className="text-2xl font-semibold">
-              {labels.auth.signup.title}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {labels.auth.signup.subtitle}
-            </p>
-          </div>
+      {message ? (
+        <p className="mt-6 rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-600 dark:text-green-400">
+          {message}
+        </p>
+      ) : null}
 
-          {error ? (
-            <p className="mt-6 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              {error}
-            </p>
-          ) : null}
-
-          {message ? (
-            <p className="mt-6 rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-600 dark:text-green-400">
-              {message}
-            </p>
-          ) : null}
-
-          <form onSubmit={handleSignUp} className="mt-6 space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
-                {labels.common.emailLabel}
-              </label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isLoading || isOAuthLoading}
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
-                {labels.common.passwordLabel}
-              </label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading || isOAuthLoading}
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="text-sm font-medium">
-                {labels.auth.signup.confirmPasswordLabel}
-              </label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                disabled={isLoading || isOAuthLoading}
-              />
-            </div>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading || isOAuthLoading}
-            >
-              {isLoading
-                ? labels.auth.signup.creatingAccount
-                : labels.common.signUp}
-            </Button>
-          </form>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">
-                {labels.common.orContinueWith}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={handleGoogleSignIn}
-              disabled={isLoading || isOAuthLoading}
-            >
-              {loadingProvider === "google" ? (
-                <LoaderIcon className="h-5 w-5" />
-              ) : (
-                <GoogleIcon className="h-5 w-5" />
-              )}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={handleGitHubSignIn}
-              disabled={isLoading || isOAuthLoading}
-            >
-              {loadingProvider === "github" ? (
-                <LoaderIcon className="h-5 w-5" />
-              ) : (
-                <GitHubIcon className="h-5 w-5" />
-              )}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={handleLinkedInSignIn}
-              disabled={isLoading || isOAuthLoading}
-            >
-              {loadingProvider === "linkedin" ? (
-                <LoaderIcon className="h-5 w-5" />
-              ) : (
-                <LinkedInIcon className="h-5 w-5" />
-              )}
-            </Button>
-          </div>
-
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            {labels.auth.signup.alreadyHaveAccount}{" "}
-            <Link
-              href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}
-              className="text-primary hover:underline"
-            >
-              {labels.common.signIn}
-            </Link>
-          </p>
+      <form onSubmit={handleSignUp} className="mt-6 space-y-4">
+        <div className="space-y-2">
+          <label htmlFor="email" className="text-sm font-medium">
+            {labels.common.emailLabel}
+          </label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            disabled={isLoading || isOAuthLoading}
+          />
         </div>
-      </main>
-    </div>
+        <div className="space-y-2">
+          <label htmlFor="password" className="text-sm font-medium">
+            {labels.common.passwordLabel}
+          </label>
+          <Input
+            id="password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            disabled={isLoading || isOAuthLoading}
+          />
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="confirmPassword" className="text-sm font-medium">
+            {labels.auth.signup.confirmPasswordLabel}
+          </label>
+          <Input
+            id="confirmPassword"
+            type="password"
+            placeholder="••••••••"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            disabled={isLoading || isOAuthLoading}
+          />
+        </div>
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={isLoading || isOAuthLoading}
+        >
+          {isLoading
+            ? labels.auth.signup.creatingAccount
+            : labels.common.signUp}
+        </Button>
+      </form>
+
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-card px-2 text-muted-foreground">
+            {labels.common.orContinueWith}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          className="flex-1"
+          onClick={handleGoogleSignIn}
+          disabled={isLoading || isOAuthLoading}
+        >
+          {loadingProvider === "google" ? (
+            <LoaderIcon className="h-5 w-5" />
+          ) : (
+            <GoogleIcon className="h-5 w-5" />
+          )}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="flex-1"
+          onClick={handleGitHubSignIn}
+          disabled={isLoading || isOAuthLoading}
+        >
+          {loadingProvider === "github" ? (
+            <LoaderIcon className="h-5 w-5" />
+          ) : (
+            <GitHubIcon className="h-5 w-5" />
+          )}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="flex-1"
+          onClick={handleLinkedInSignIn}
+          disabled={isLoading || isOAuthLoading}
+        >
+          {loadingProvider === "linkedin" ? (
+            <LoaderIcon className="h-5 w-5" />
+          ) : (
+            <LinkedInIcon className="h-5 w-5" />
+          )}
+        </Button>
+      </div>
+    </AuthLayout>
   );
 }
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-import { Logo } from "@/components/layout/logo";
+import { AuthLayout } from "@/components/auth/auth-layout";
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,71 +62,57 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <header className="flex h-16 items-center justify-between border-b border-border/50 px-6 lg:px-8">
-        <Logo />
-      </header>
+    <AuthLayout
+      title={labels.auth.resetPassword.title}
+      subtitle={labels.auth.resetPassword.subtitle}
+    >
+      {error ? (
+        <p className="mt-6 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
 
-      <main className="flex flex-1 items-center justify-center px-6 py-16 lg:px-8">
-        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
-          <div className="space-y-2 text-center">
-            <h1 className="text-2xl font-semibold">
-              {labels.auth.resetPassword.title}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {labels.auth.resetPassword.subtitle}
-            </p>
-          </div>
+      {message ? (
+        <p className="mt-6 rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-600 dark:text-green-400">
+          {message}
+        </p>
+      ) : null}
 
-          {error ? (
-            <p className="mt-6 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              {error}
-            </p>
-          ) : null}
-
-          {message ? (
-            <p className="mt-6 rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-600 dark:text-green-400">
-              {message}
-            </p>
-          ) : null}
-
-          <form onSubmit={handleUpdatePassword} className="mt-6 space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
-                {labels.auth.resetPassword.newPasswordLabel}
-              </label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading}
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="text-sm font-medium">
-                {labels.auth.resetPassword.confirmPasswordLabel}
-              </label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                disabled={isLoading}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading
-                ? labels.auth.resetPassword.updating
-                : labels.auth.resetPassword.updatePassword}
-            </Button>
-          </form>
+      <form onSubmit={handleUpdatePassword} className="mt-6 space-y-4">
+        <div className="space-y-2">
+          <label htmlFor="password" className="text-sm font-medium">
+            {labels.auth.resetPassword.newPasswordLabel}
+          </label>
+          <Input
+            id="password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            disabled={isLoading}
+          />
         </div>
-      </main>
-    </div>
+        <div className="space-y-2">
+          <label htmlFor="confirmPassword" className="text-sm font-medium">
+            {labels.auth.resetPassword.confirmPasswordLabel}
+          </label>
+          <Input
+            id="confirmPassword"
+            type="password"
+            placeholder="••••••••"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            disabled={isLoading}
+          />
+        </div>
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading
+            ? labels.auth.resetPassword.updating
+            : labels.auth.resetPassword.updatePassword}
+        </Button>
+      </form>
+    </AuthLayout>
   );
 }
