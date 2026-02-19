@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { createClient } from "@/lib/supabase/client";
+import { getUserOrThrow } from "@/lib/supabase/auth";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -35,15 +35,7 @@ type ActivePostingsData = {
 // ---------------------------------------------------------------------------
 
 async function fetchActivePostings(): Promise<ActivePostingsData> {
-  const supabase = createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("Not authenticated");
-  }
+  const { supabase, user } = await getUserOrThrow();
 
   // 1. Fetch postings I created
   const { data: created } = await supabase

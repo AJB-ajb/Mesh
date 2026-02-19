@@ -4,6 +4,7 @@ import { useCallback, useEffect } from "react";
 import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { getInitials } from "@/lib/format";
+import { getUserOrThrow } from "@/lib/supabase/auth";
 import type { Notification } from "@/lib/supabase/realtime";
 
 // ---------------------------------------------------------------------------
@@ -22,15 +23,7 @@ type NotificationData = {
 // ---------------------------------------------------------------------------
 
 async function fetchNotificationData(): Promise<NotificationData> {
-  const supabase = createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("Not authenticated");
-  }
+  const { supabase, user } = await getUserOrThrow();
 
   const [{ data: profile }, { count }, { data: notifications }] =
     await Promise.all([

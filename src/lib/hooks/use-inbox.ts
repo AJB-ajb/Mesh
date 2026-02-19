@@ -1,5 +1,6 @@
 import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
+import { getUserOrThrow } from "@/lib/supabase/auth";
 import type {
   Notification as RealtimeNotification,
   Conversation as RealtimeConversation,
@@ -41,15 +42,7 @@ type InboxData = {
 };
 
 async function fetchInboxData(): Promise<InboxData> {
-  const supabase = createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("Not authenticated");
-  }
+  const { supabase, user } = await getUserOrThrow();
 
   // Fetch notifications and conversations in parallel
   const [{ data: notificationsData }, { data: conversationsData }] =

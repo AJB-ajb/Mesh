@@ -1,20 +1,13 @@
 import { useCallback } from "react";
 import useSWR from "swr";
-import { createClient } from "@/lib/supabase/client";
+import { getUserOrThrow } from "@/lib/supabase/auth";
 import {
   type NotificationPreferences,
   defaultNotificationPreferences,
 } from "@/lib/notifications/preferences";
 
 async function fetchNotificationPreferences(): Promise<NotificationPreferences> {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("Not authenticated");
-  }
+  const { supabase, user } = await getUserOrThrow();
 
   const { data, error } = await supabase
     .from("profiles")
@@ -42,21 +35,16 @@ export function useNotificationPreferences() {
 
   const updatePreferences = useCallback(
     async (prefs: NotificationPreferences) => {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("Not authenticated");
-      }
+      const { supabase, user } = await getUserOrThrow();
 
       // Optimistic update
       mutate(prefs, false);
 
       const { error: updateError } = await supabase
         .from("profiles")
-        .update({ notification_preferences: prefs as unknown as Record<string, unknown> })
+        .update({
+          notification_preferences: prefs as unknown as Record<string, unknown>,
+        })
         .eq("user_id", user.id);
 
       if (updateError) {
