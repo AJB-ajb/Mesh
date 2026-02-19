@@ -1,15 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import { RealtimeChannel, RealtimePresenceState } from "@supabase/supabase-js";
+import { useEffect, useRef } from "react";
+import { RealtimeChannel } from "@supabase/supabase-js";
 import {
   subscribeToGroupMessages,
-  createPresenceChannel,
-  updateTypingStatus,
   unsubscribeChannel,
-  type PresenceState,
   type GroupMessage,
 } from "@/lib/supabase/realtime";
+import { useRealtimePresence } from "./use-realtime-presence";
 
 type UseRealtimeGroupChatOptions = {
   postingId: string | null;
@@ -33,44 +31,20 @@ export function useRealtimeGroupChat({
   currentUserId,
   onNewMessage,
 }: UseRealtimeGroupChatOptions): UseRealtimeGroupChatReturn {
-  const [typingUsers, setTypingUsers] = useState<string[]>([]);
-  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
-  const [isConnected, setIsConnected] = useState(false);
-
   const messageChannelRef = useRef<RealtimeChannel | null>(null);
-  const presenceChannelRef = useRef<RealtimeChannel | null>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // The presence "room" uses postingId as the identifier
-  const presenceRoomId = postingId ? `group-chat:${postingId}` : null;
+  const { typingUsers, onlineUsers, setIsTyping, isConnected } =
+    useRealtimePresence({
+      roomId: postingId ? `group-chat:${postingId}` : null,
+      currentUserId,
+      // typing_in holds the posting_id when typing in group chat
+      typingContextId: postingId,
+    });
 
-  const handlePresenceSync = useCallback(
-    (state: RealtimePresenceState<PresenceState>) => {
-      const online: string[] = [];
-      const typing: string[] = [];
-
-      Object.values(state).forEach((presences) => {
-        presences.forEach((presence) => {
-          if (presence.user_id && presence.user_id !== currentUserId) {
-            online.push(presence.user_id);
-            // typing_in holds the posting_id when typing in group chat
-            if (presence.typing_in === postingId) {
-              typing.push(presence.user_id);
-            }
-          }
-        });
-      });
-
-      setOnlineUsers([...new Set(online)]);
-      setTypingUsers([...new Set(typing)]);
-    },
-    [postingId, currentUserId],
-  );
-
+  // Subscribe to group message inserts
   useEffect(() => {
-    if (!postingId || !currentUserId || !presenceRoomId) return;
+    if (!postingId || !currentUserId) return;
 
-    // Subscribe to group message inserts
     messageChannelRef.current = subscribeToGroupMessages(
       postingId,
       (message) => {
@@ -81,72 +55,13 @@ export function useRealtimeGroupChat({
       },
     );
 
-    // Create presence channel for typing indicators
-    presenceChannelRef.current = createPresenceChannel(
-      presenceRoomId,
-      currentUserId,
-      handlePresenceSync,
-      () => {
-        queueMicrotask(() => setIsConnected(true));
-      },
-      () => {
-        // User left — presence sync handles state
-      },
-    );
-
-    queueMicrotask(() => setIsConnected(true));
-
     return () => {
       if (messageChannelRef.current) {
         unsubscribeChannel(messageChannelRef.current);
         messageChannelRef.current = null;
       }
-      if (presenceChannelRef.current) {
-        unsubscribeChannel(presenceChannelRef.current);
-        presenceChannelRef.current = null;
-      }
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-        typingTimeoutRef.current = null;
-      }
-      setIsConnected(false);
-      setTypingUsers([]);
     };
-  }, [
-    postingId,
-    currentUserId,
-    presenceRoomId,
-    onNewMessage,
-    handlePresenceSync,
-  ]);
-
-  const setIsTyping = useCallback(
-    (isTyping: boolean) => {
-      if (!presenceChannelRef.current || !currentUserId) return;
-
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-        typingTimeoutRef.current = null;
-      }
-
-      if (isTyping) {
-        updateTypingStatus(
-          presenceChannelRef.current,
-          currentUserId,
-          postingId,
-        );
-
-        typingTimeoutRef.current = setTimeout(() => {
-          if (presenceChannelRef.current && currentUserId) {
-            updateTypingStatus(presenceChannelRef.current, currentUserId, null);
-          }
-        }, 3000);
-      } else {
-        updateTypingStatus(presenceChannelRef.current, currentUserId, null);
-      }
-    },
-    [postingId, currentUserId],
-  );
+  }, [postingId, currentUserId, onNewMessage]);
 
   return {
     typingUsers,
