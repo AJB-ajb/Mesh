@@ -16,7 +16,7 @@ export function AppShell({ children, className }: AppShellProps) {
       <div className="flex min-h-screen">
         <SkipLink />
         <Sidebar />
-        <div className="flex flex-1 flex-col min-w-0 overflow-y-auto">
+        <div className="flex flex-1 flex-col min-w-0 overflow-x-hidden overflow-y-auto">
           <TestModeBanner />
           <Header />
           <main

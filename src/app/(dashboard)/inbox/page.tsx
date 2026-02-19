@@ -253,7 +253,7 @@ function InboxPageContent() {
       ) : (
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Conversations list */}
-          <div className="space-y-2 lg:col-span-1">
+          <div className="space-y-2 lg:col-span-1 min-w-0">
             <ConversationList
               conversations={conversations}
               selectedConversationId={selectedConversation?.id ?? null}
@@ -263,7 +263,7 @@ function InboxPageContent() {
           </div>
 
           {/* Chat area */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 min-w-0">
             {selectedConversation ? (
               <ChatPanel
                 key={selectedConversation.id}
