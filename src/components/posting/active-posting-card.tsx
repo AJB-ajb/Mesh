@@ -32,7 +32,7 @@ export function ActivePostingCard({ posting }: ActivePostingCardProps) {
       : labels.active.youJoined;
 
   return (
-    <Link href={`/postings/${posting.id}?tab=project`}>
+    <Link href={`/postings/${posting.id}?tab=activity`}>
       <Card className="transition-colors hover:bg-muted/50">
         <CardContent className="p-4 sm:p-6">
           <div className="flex items-start justify-between gap-3">

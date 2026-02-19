@@ -732,10 +732,10 @@ export const labels = {
     tabs: {
       edit: "Edit",
       manage: "Manage",
-      project: "Project",
+      activity: "Activity",
     } as const,
-    projectComingSoon: "Group chat coming soon",
-    projectDisabled: "Available when minimum team size is reached",
+    activityComingSoon: "Group chat coming soon",
+    activityDisabled: "Available when minimum team size is reached",
     saving: "Saving...",
     joiningWaitlist: "Joining waitlist...",
     requesting: "Requesting...",

@@ -56,7 +56,7 @@ function PostingDetailInner() {
   // Determine default tab from URL or context
   const tabParam = searchParams.get("tab");
   const defaultTab =
-    tabParam === "edit" || tabParam === "manage" || tabParam === "project"
+    tabParam === "edit" || tabParam === "manage" || tabParam === "activity"
       ? tabParam
       : "manage";
 
@@ -728,7 +728,7 @@ function PostingDetailInner() {
                   <CardContent className="flex flex-col items-center justify-center py-8">
                     <MessageSquare className="h-8 w-8 text-muted-foreground/50" />
                     <p className="mt-2 text-sm text-muted-foreground">
-                      {labels.postingDetail.projectComingSoon}
+                      {labels.postingDetail.activityComingSoon}
                     </p>
                   </CardContent>
                 </Card>
@@ -793,13 +793,15 @@ function PostingDetailInner() {
             {labels.postingDetail.tabs.manage}
           </TabsTrigger>
           <TabsTrigger
-            value="project"
+            value="activity"
             disabled={!projectEnabled}
             title={
-              !projectEnabled ? labels.postingDetail.projectDisabled : undefined
+              !projectEnabled
+                ? labels.postingDetail.activityDisabled
+                : undefined
             }
           >
-            {labels.postingDetail.tabs.project}
+            {labels.postingDetail.tabs.activity}
           </TabsTrigger>
         </TabsList>
 
@@ -869,8 +871,8 @@ function PostingDetailInner() {
           </div>
         </TabsContent>
 
-        {/* Project tab */}
-        <TabsContent value="project">
+        {/* Activity tab */}
+        <TabsContent value="activity">
           <div className="grid gap-6 lg:grid-cols-3 mt-6">
             <div className="space-y-6 lg:col-span-2">
               <PostingTeamCard
@@ -892,7 +894,7 @@ function PostingDetailInner() {
                 <CardContent className="flex flex-col items-center justify-center py-8">
                   <MessageSquare className="h-8 w-8 text-muted-foreground/50" />
                   <p className="mt-2 text-sm text-muted-foreground">
-                    {labels.postingDetail.projectComingSoon}
+                    {labels.postingDetail.activityComingSoon}
                   </p>
                 </CardContent>
               </Card>
