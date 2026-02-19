@@ -201,6 +201,71 @@ Fields kept for backward compatibility but superseded by newer fields:
 
 ---
 
+## Group Chat
+
+Group chat is implemented with two separate tables, distinct from the 1:1 DM system (`conversations` / `messages`). One chat per posting — `posting_id` is the conversation identifier.
+
+### group_messages
+
+| Field        | Type        | Nullable | Default           | Description                                      |
+| ------------ | ----------- | -------- | ----------------- | ------------------------------------------------ |
+| `id`         | uuid        | NO       | gen_random_uuid() | Primary key                                      |
+| `posting_id` | uuid FK     | NO       | —                 | References `postings(id)` ON DELETE CASCADE      |
+| `sender_id`  | uuid FK     | NO       | —                 | References `profiles(user_id)` ON DELETE CASCADE |
+| `content`    | text        | NO       | —                 | Message body                                     |
+| `created_at` | timestamptz | NO       | now()             | Send timestamp                                   |
+
+**RLS Policies:**
+
+- SELECT: authenticated user is the posting creator OR has an `accepted` application on the posting
+- INSERT: same membership check + `sender_id = auth.uid()`
+
+**Indexes:** `(posting_id, created_at)`, `sender_id`
+
+**Realtime:** table is added to `supabase_realtime` publication; clients subscribe via `group-messages:{postingId}` channel.
+
+### group_message_reads
+
+Per-user read receipts for group messages. Replaces the single `read` boolean used in 1:1 messages.
+
+| Field        | Type        | Nullable                | Default           | Description                                       |
+| ------------ | ----------- | ----------------------- | ----------------- | ------------------------------------------------- |
+| `id`         | uuid        | NO                      | gen_random_uuid() | Primary key                                       |
+| `message_id` | uuid FK     | NO                      | —                 | References `group_messages(id)` ON DELETE CASCADE |
+| `user_id`    | uuid FK     | NO                      | —                 | References `profiles(user_id)` ON DELETE CASCADE  |
+| `read_at`    | timestamptz | NO                      | now()             | When the user read the message                    |
+|              | UNIQUE      | `(message_id, user_id)` |                   | Prevents duplicate reads                          |
+
+**RLS Policies:**
+
+- SELECT: `user_id = auth.uid()`
+- INSERT: `user_id = auth.uid()`
+
+**Indexes:** `message_id`, `user_id`
+
+### RPC Functions (group chat)
+
+| Function                      | Parameters                             | Returns                                       | Description                                   |
+| ----------------------------- | -------------------------------------- | --------------------------------------------- | --------------------------------------------- |
+| `unread_group_message_count`  | `p_posting_id uuid, p_user_id uuid`    | `bigint`                                      | Count of unread messages for a single posting |
+| `unread_group_message_counts` | `p_posting_ids uuid[], p_user_id uuid` | `TABLE(posting_id uuid, unread_count bigint)` | Batch unread counts for the Active page       |
+
+### Helper Function
+
+`is_team_member(p_posting_id uuid)` — returns `boolean`, checks if `auth.uid()` is the posting creator OR has an `accepted` application. Used internally by RLS policies.
+
+### Relationships
+
+```
+postings (id)
+    │
+    └── 1:N ── group_messages (posting_id)
+                    │
+                    └── 1:N ── group_message_reads (message_id)
+```
+
+---
+
 ## Data Isolation
 
 Data isolation is achieved through **separate Supabase projects** rather than in-database flags:

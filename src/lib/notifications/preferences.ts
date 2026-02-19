@@ -11,6 +11,7 @@ export type NotificationType =
   | "friend_request"
   | "sequential_invite"
   | "new_message"
+  | "new_group_message"
   | "match_found";
 
 export type NotificationChannel = "in_app" | "browser";
@@ -30,6 +31,7 @@ export const defaultNotificationPreferences: NotificationPreferences = {
     friend_request: true,
     sequential_invite: true,
     new_message: true,
+    new_group_message: true,
     match_found: true,
   },
   browser: {
@@ -39,6 +41,7 @@ export const defaultNotificationPreferences: NotificationPreferences = {
     friend_request: true,
     sequential_invite: true,
     new_message: true,
+    new_group_message: true,
     match_found: false,
   },
 };
@@ -71,5 +74,6 @@ export const allNotificationTypes: NotificationType[] = [
   "friend_request",
   "sequential_invite",
   "new_message",
+  "new_group_message",
   "match_found",
 ];

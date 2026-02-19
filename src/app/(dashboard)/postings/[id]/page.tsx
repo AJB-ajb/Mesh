@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2, MessageSquare } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,10 +27,7 @@ import { FreeFormUpdate } from "@/components/shared/free-form-update";
 import { usePostingAiUpdate } from "@/lib/hooks/use-posting-ai-update";
 import { SequentialInviteCard } from "@/components/posting/sequential-invite-card";
 import { SequentialInviteResponseCard } from "@/components/posting/sequential-invite-response-card";
-import {
-  InputModeToggle,
-  type InputMode,
-} from "@/components/posting/input-mode-toggle";
+import { GroupChatPanel } from "@/components/posting/group-chat-panel";
 
 // ---------------------------------------------------------------------------
 // Inner component that uses useSearchParams (needs Suspense boundary)
@@ -60,16 +57,12 @@ function PostingDetailInner() {
   // Determine default tab from URL or context
   const tabParam = searchParams.get("tab");
   const defaultTab =
-    tabParam === "edit" || tabParam === "manage" || tabParam === "activity"
+    tabParam === "edit" || tabParam === "manage" || tabParam === "project"
       ? tabParam
       : "manage";
 
-  // Tab & input mode state
-  const [activeTab, setActiveTab] = useState(defaultTab);
-  const [inputMode, setInputMode] = useState<InputMode>("form");
-
   // Local UI state
-  const [isEditing, setIsEditing] = useState(defaultTab === "edit");
+  const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExtending, setIsExtending] = useState(false);
@@ -264,34 +257,6 @@ function PostingDetailInner() {
     setIsEditing(true);
   };
 
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    if (tab === "edit" && inputMode === "form") {
-      handleStartEdit();
-    } else if (tab !== "edit") {
-      setIsEditing(false);
-    }
-  };
-
-  const handleInputModeChange = (mode: InputMode) => {
-    setInputMode(mode);
-    if (mode === "form") {
-      handleStartEdit();
-    } else {
-      setIsEditing(false);
-    }
-  };
-
-  // Populate form when posting data loads and we're on the edit tab in form mode
-  useEffect(() => {
-    if (posting && activeTab === "edit" && inputMode === "form") {
-      queueMicrotask(() => {
-        handleStartEdit();
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [posting?.id]);
-
   const handleSave = async () => {
     setError(null);
     setIsSaving(true);
@@ -376,7 +341,6 @@ function PostingDetailInner() {
 
     setIsSaving(false);
     setIsEditing(false);
-    setActiveTab("manage");
     mutate();
   };
 
@@ -753,7 +717,7 @@ function PostingDetailInner() {
             )}
 
             {/* Accepted members can see the Project section */}
-            {isAcceptedMember && projectEnabled && (
+            {isAcceptedMember && projectEnabled && currentUserId && (
               <>
                 <PostingTeamCard
                   applications={effectiveApplications}
@@ -761,14 +725,26 @@ function PostingDetailInner() {
                   teamSizeMin={posting.team_size_min}
                   teamSizeMax={posting.team_size_max}
                 />
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-8">
-                    <MessageSquare className="h-8 w-8 text-muted-foreground/50" />
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {labels.postingDetail.activityComingSoon}
-                    </p>
-                  </CardContent>
-                </Card>
+                <GroupChatPanel
+                  postingId={postingId}
+                  postingTitle={posting.title}
+                  currentUserId={currentUserId}
+                  currentUserName={currentUserProfile?.full_name ?? null}
+                  teamMembers={[
+                    {
+                      user_id: posting.creator_id,
+                      full_name: posting.profiles?.full_name ?? null,
+                      role: "creator",
+                    },
+                    ...effectiveApplications
+                      .filter((a) => a.status === "accepted")
+                      .map((a) => ({
+                        user_id: a.applicant_id,
+                        full_name: a.profiles?.full_name ?? null,
+                        role: "member",
+                      })),
+                  ]}
+                />
               </>
             )}
           </div>
@@ -798,12 +774,8 @@ function PostingDetailInner() {
         editTitle={form.title}
         onEditTitleChange={(value) => handleFormChange("title", value)}
         onSave={handleSave}
-        onCancelEdit={() => {
-          setIsEditing(false);
-          setActiveTab("manage");
-        }}
+        onCancelEdit={() => setIsEditing(false)}
         onStartEdit={handleStartEdit}
-        hideEditButton={activeTab === "edit"}
         onDelete={handleDelete}
         onExtendDeadline={handleExtendDeadline}
         onRepost={handleRepost}
@@ -825,7 +797,7 @@ function PostingDetailInner() {
         hideApplySection={false}
       />
 
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
+      <Tabs defaultValue={defaultTab}>
         <TabsList variant="line">
           <TabsTrigger value="edit">
             {labels.postingDetail.tabs.edit}
@@ -834,29 +806,21 @@ function PostingDetailInner() {
             {labels.postingDetail.tabs.manage}
           </TabsTrigger>
           <TabsTrigger
-            value="activity"
+            value="project"
             disabled={!projectEnabled}
             title={
-              !projectEnabled
-                ? labels.postingDetail.activityDisabled
-                : undefined
+              !projectEnabled ? labels.postingDetail.projectDisabled : undefined
             }
           >
-            {labels.postingDetail.tabs.activity}
+            {labels.postingDetail.tabs.project}
           </TabsTrigger>
         </TabsList>
 
         {/* Edit tab */}
         <TabsContent value="edit">
-          <div className="mt-4 mb-6">
-            <InputModeToggle
-              inputMode={inputMode}
-              onModeChange={handleInputModeChange}
-            />
-          </div>
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid gap-6 lg:grid-cols-3 mt-6">
             <div className="space-y-6 lg:col-span-2">
-              {inputMode === "ai" && (
+              {!isEditing && (
                 <FreeFormUpdate
                   entityType="posting"
                   entityId={postingId}
@@ -870,7 +834,7 @@ function PostingDetailInner() {
 
               <PostingAboutCard
                 posting={posting}
-                isEditing={inputMode === "form"}
+                isEditing={isEditing}
                 form={form}
                 onFormChange={handleFormChange}
               />
@@ -918,8 +882,8 @@ function PostingDetailInner() {
           </div>
         </TabsContent>
 
-        {/* Activity tab */}
-        <TabsContent value="activity">
+        {/* Project tab */}
+        <TabsContent value="project">
           <div className="grid gap-6 lg:grid-cols-3 mt-6">
             <div className="space-y-6 lg:col-span-2">
               <PostingTeamCard
@@ -936,15 +900,28 @@ function PostingDetailInner() {
                 onFormChange={handleFormChange}
               />
 
-              {/* Chat placeholder */}
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-8">
-                  <MessageSquare className="h-8 w-8 text-muted-foreground/50" />
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {labels.postingDetail.activityComingSoon}
-                  </p>
-                </CardContent>
-              </Card>
+              {currentUserId && (
+                <GroupChatPanel
+                  postingId={postingId}
+                  postingTitle={posting.title}
+                  currentUserId={currentUserId}
+                  currentUserName={currentUserProfile?.full_name ?? null}
+                  teamMembers={[
+                    {
+                      user_id: posting.creator_id,
+                      full_name: posting.profiles?.full_name ?? null,
+                      role: "creator",
+                    },
+                    ...effectiveApplications
+                      .filter((a) => a.status === "accepted")
+                      .map((a) => ({
+                        user_id: a.applicant_id,
+                        full_name: a.profiles?.full_name ?? null,
+                        role: "member",
+                      })),
+                  ]}
+                />
+              )}
             </div>
 
             <PostingSidebar

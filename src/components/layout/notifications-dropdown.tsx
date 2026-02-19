@@ -46,6 +46,7 @@ function getNotificationIcon(type: string) {
     case "application_rejected":
       return <FolderKanban className="h-4 w-4" />;
     case "new_message":
+    case "new_group_message":
       return <MessageSquare className="h-4 w-4" />;
     case "sequential_invite":
       return <ListOrdered className="h-4 w-4" />;
@@ -128,6 +129,11 @@ export function NotificationsDropdown() {
       }
       if (notification.type === "friend_request") {
         router.push("/connections");
+      } else if (
+        notification.type === "new_group_message" &&
+        notification.related_posting_id
+      ) {
+        router.push(`/postings/${notification.related_posting_id}?tab=project`);
       } else if (notification.related_posting_id) {
         router.push(`/postings/${notification.related_posting_id}`);
       }

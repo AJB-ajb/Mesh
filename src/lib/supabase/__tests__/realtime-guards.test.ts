@@ -7,8 +7,13 @@ vi.mock("../client", () => ({
 
 import { _typeGuards } from "../realtime";
 
-const { isMessage, isNotification, isConversation, isPresenceStateArray } =
-  _typeGuards;
+const {
+  isMessage,
+  isNotification,
+  isConversation,
+  isPresenceStateArray,
+  isGroupMessage,
+} = _typeGuards;
 
 // ---------------------------------------------------------------------------
 // isMessage
@@ -130,5 +135,65 @@ describe("isPresenceStateArray", () => {
     expect(isPresenceStateArray(null)).toBe(false);
     expect(isPresenceStateArray(42)).toBe(false);
     expect(isPresenceStateArray({})).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isGroupMessage
+// ---------------------------------------------------------------------------
+
+describe("isGroupMessage", () => {
+  it("returns true for a valid group message object", () => {
+    const msg = {
+      id: "gm-1",
+      posting_id: "posting-1",
+      sender_id: "user-1",
+      content: "Hello team!",
+      created_at: "2026-01-01T00:00:00Z",
+    };
+    expect(isGroupMessage(msg)).toBe(true);
+  });
+
+  it("returns false when posting_id is missing", () => {
+    expect(
+      isGroupMessage({
+        id: "gm-1",
+        sender_id: "user-1",
+        content: "Hello",
+        created_at: "2026-01-01T00:00:00Z",
+      }),
+    ).toBe(false);
+  });
+
+  it("returns false when id is missing", () => {
+    expect(
+      isGroupMessage({
+        posting_id: "posting-1",
+        sender_id: "user-1",
+        content: "Hello",
+        created_at: "2026-01-01T00:00:00Z",
+      }),
+    ).toBe(false);
+  });
+
+  it("returns false when content is missing", () => {
+    expect(
+      isGroupMessage({
+        id: "gm-1",
+        posting_id: "posting-1",
+        sender_id: "user-1",
+        created_at: "2026-01-01T00:00:00Z",
+      }),
+    ).toBe(false);
+  });
+
+  it("returns false for null", () => {
+    expect(isGroupMessage(null)).toBe(false);
+  });
+
+  it("returns false for non-object values", () => {
+    expect(isGroupMessage("string")).toBe(false);
+    expect(isGroupMessage(42)).toBe(false);
+    expect(isGroupMessage(undefined)).toBe(false);
   });
 });

@@ -61,6 +61,7 @@ export const labels = {
       friend_request: "Connection Request",
       sequential_invite: "Sequential Invite",
       new_message: "New Message",
+      new_group_message: "New Team Message",
       match_found: "Match Found",
     } as const,
     dropdownTitle: "Notifications",
@@ -732,10 +733,10 @@ export const labels = {
     tabs: {
       edit: "Edit",
       manage: "Manage",
-      activity: "Activity",
+      project: "Project",
     } as const,
-    activityComingSoon: "Group chat coming soon",
-    activityDisabled: "Available when minimum team size is reached",
+    projectComingSoon: "Group chat coming soon",
+    projectDisabled: "Available when minimum team size is reached",
     saving: "Saving...",
     joiningWaitlist: "Joining waitlist...",
     requesting: "Requesting...",
@@ -1000,9 +1001,22 @@ export const labels = {
     emptyDescription:
       "Postings appear here once the minimum team size is reached.",
     discoverCta: "Discover postings",
-    filterAll: "All",
-    filterCreated: "Created",
-    filterJoined: "Joined",
+    unreadMessages: (n: number) => `${n} unread message${n !== 1 ? "s" : ""}`,
+  },
+
+  // ---------------------------------------------------------------------------
+  // Group chat
+  // ---------------------------------------------------------------------------
+  groupChat: {
+    noMessages: "No messages yet. Start the conversation with your team!",
+    messagePlaceholder: "Message the team...",
+    isTyping: (name: string) => `${name} is typing\u2026`,
+    multipleTyping: (names: string[]) =>
+      `${names.join(" and ")} are typing\u2026`,
+    memberCount: (n: number) => `${n} member${n !== 1 ? "s" : ""}`,
+    onlineCount: (n: number) => `${n} online`,
+    sendMessage: "Send message",
+    teamChat: "Team Chat",
   },
 
   // ---------------------------------------------------------------------------

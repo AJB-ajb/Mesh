@@ -23,6 +23,7 @@ export type ActivePosting = {
   };
   role: "created" | "joined";
   acceptedCount: number;
+  unreadCount: number;
 };
 
 type ActivePostingsData = {
@@ -107,9 +108,11 @@ async function fetchActivePostings(): Promise<ActivePostingsData> {
 
   // 6. Filter where acceptedCount >= team_size_min
   const result: ActivePosting[] = [];
+  const activePostingIds: string[] = [];
   for (const [id, { posting, role }] of allPostings) {
     const acceptedCount = countByPosting.get(id) ?? 0;
     if (acceptedCount >= posting.team_size_min) {
+      activePostingIds.push(id);
       result.push({
         id: posting.id,
         title: posting.title,
@@ -123,7 +126,28 @@ async function fetchActivePostings(): Promise<ActivePostingsData> {
         profiles: posting.profiles as ActivePosting["profiles"],
         role,
         acceptedCount,
+        unreadCount: 0, // filled in below
       });
+    }
+  }
+
+  // 7. Fetch unread group message counts for active postings
+  if (activePostingIds.length > 0) {
+    const { data: unreadRows } = await supabase.rpc(
+      "unread_group_message_counts",
+      {
+        p_posting_ids: activePostingIds,
+        p_user_id: user.id,
+      },
+    );
+
+    const unreadByPosting = new Map<string, number>();
+    for (const row of unreadRows ?? []) {
+      unreadByPosting.set(row.posting_id, Number(row.unread_count));
+    }
+
+    for (const posting of result) {
+      posting.unreadCount = unreadByPosting.get(posting.id) ?? 0;
     }
   }
 
