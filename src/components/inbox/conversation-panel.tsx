@@ -202,11 +202,11 @@ export function ChatPanel({
       {/* Chat header */}
       <CardHeader className="border-b border-border py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden"
+              className="lg:hidden shrink-0"
               onClick={onBack}
             >
               <ArrowLeft className="h-4 w-4" />
@@ -214,13 +214,13 @@ export function ChatPanel({
             <OnlineStatusBadge
               isOnline={isUserOnline(conversation.other_user?.user_id || "")}
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-sm font-medium">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-sm font-medium shrink-0">
                 {getInitials(conversation.other_user?.full_name || null)}
               </div>
             </OnlineStatusBadge>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h4 className="font-medium">
+                <h4 className="font-medium truncate">
                   {conversation.other_user?.full_name || "Unknown"}
                 </h4>
                 <OnlineStatus
@@ -234,7 +234,7 @@ export function ChatPanel({
               {conversation.posting && (
                 <Link
                   href={`/postings/${conversation.posting_id}`}
-                  className="text-xs text-primary hover:underline"
+                  className="text-xs text-primary hover:underline truncate block"
                 >
                   Re: {conversation.posting.title}
                 </Link>
@@ -270,7 +270,7 @@ export function ChatPanel({
                     : "bg-muted",
                 )}
               >
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
                 <p
                   className={cn(
                     "text-xs mt-1",
