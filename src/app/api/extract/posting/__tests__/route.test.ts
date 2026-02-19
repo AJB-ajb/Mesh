@@ -24,6 +24,7 @@ vi.mock("@/lib/ai/gemini", () => ({
 import { POST } from "../route";
 
 const MOCK_USER = { id: "user-1", email: "a@b.com" };
+const routeCtx = { params: Promise.resolve({}) };
 
 function authedUser() {
   mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
@@ -45,10 +46,14 @@ describe("POST /api/extract/posting", () => {
 
   it("returns 503 when Gemini is not configured", async () => {
     mockIsGeminiConfigured.mockReturnValue(false);
-    const res = await POST(makeReq({ text: "some text here for testing" }));
+    authedUser();
+    const res = await POST(
+      makeReq({ text: "some text here for testing" }),
+      routeCtx,
+    );
     expect(res.status).toBe(503);
     const body = await res.json();
-    expect(body.error).toContain("Gemini");
+    expect(body.error.message).toContain("Gemini");
   });
 
   it("returns 401 when not authenticated", async () => {
@@ -56,25 +61,28 @@ describe("POST /api/extract/posting", () => {
       data: { user: null },
       error: { message: "No" },
     });
-    const res = await POST(makeReq({ text: "some text here for testing" }));
+    const res = await POST(
+      makeReq({ text: "some text here for testing" }),
+      routeCtx,
+    );
     expect(res.status).toBe(401);
   });
 
   it("returns 400 when text is missing", async () => {
     authedUser();
-    const res = await POST(makeReq({}));
+    const res = await POST(makeReq({}), routeCtx);
     expect(res.status).toBe(400);
   });
 
   it("returns 400 when text is too short", async () => {
     authedUser();
-    const res = await POST(makeReq({ text: "short" }));
+    const res = await POST(makeReq({ text: "short" }), routeCtx);
     expect(res.status).toBe(400);
   });
 
   it("returns 400 when text is not a string", async () => {
     authedUser();
-    const res = await POST(makeReq({ text: 12345 }));
+    const res = await POST(makeReq({ text: 12345 }), routeCtx);
     expect(res.status).toBe(400);
   });
 
@@ -89,6 +97,7 @@ describe("POST /api/extract/posting", () => {
 
     const res = await POST(
       makeReq({ text: "I want to build a React app with TypeScript" }),
+      routeCtx,
     );
     const body = await res.json();
 
@@ -104,10 +113,11 @@ describe("POST /api/extract/posting", () => {
 
     const res = await POST(
       makeReq({ text: "I want to build a React app with TypeScript" }),
+      routeCtx,
     );
     const body = await res.json();
 
     expect(res.status).toBe(500);
-    expect(body.error).toContain("Gemini failed");
+    expect(body.error.message).toContain("Gemini failed");
   });
 });

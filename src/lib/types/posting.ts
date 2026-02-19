@@ -32,10 +32,11 @@ function defaultExpiresAt(): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Extracted posting fields from AI update */
+/** Extracted posting fields from AI extraction/update */
 export type ExtractedPosting = {
   title?: string;
   description?: string;
+  skills?: string[];
   category?: string;
   estimated_time?: string;
   team_size_min?: number;

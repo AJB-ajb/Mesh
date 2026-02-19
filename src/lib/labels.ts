@@ -310,6 +310,8 @@ export const labels = {
     skillsPlaceholder: "e.g., React, TypeScript, Supabase",
     interestsLabel: "Interests (comma-separated)",
     interestsPlaceholder: "e.g., AI, fintech, education",
+    languagesLabel: "Spoken languages (comma-separated)",
+    languagesPlaceholder: "e.g., en, de, es",
     portfolioLabel: "Portfolio link (optional)",
     portfolioPlaceholder: "https://your-portfolio.com",
     githubLabel: "GitHub link (optional)",
@@ -906,6 +908,37 @@ export const labels = {
     successMessage: "Thank you for your feedback!",
     errorGeneric: "Something went wrong. Please try again.",
     errorEmptyMessage: "Please enter a message.",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Quick Update (free-form AI update card)
+  // ---------------------------------------------------------------------------
+  quickUpdate: {
+    profile: {
+      title: "Quick Update",
+      description:
+        "Describe what changed and your profile fields will update automatically.",
+      sourceLabel: "Profile description",
+      sourcePlaceholder:
+        "Paste or type your profile description here (e.g., a short bio, your skills, what you\u2019re looking for)...",
+      instructionLabel: "What changed?",
+      instructionPlaceholder:
+        "e.g., I also know Python now and am available 20 hours/week",
+    },
+    posting: {
+      title: "Quick Update",
+      description:
+        "Describe what changed and your posting fields will update automatically.",
+      sourceLabel: "Posting description",
+      sourcePlaceholder: "Paste or type your posting description here...",
+      instructionLabel: "What changed?",
+      instructionPlaceholder:
+        "e.g., change the title to X and add Python to skills",
+    },
+    applyButton: "Apply Update",
+    applyingButton: "Applying...",
+    undoButton: "Undo",
+    networkError: "Network error. Please try again.",
   },
 
   // ---------------------------------------------------------------------------

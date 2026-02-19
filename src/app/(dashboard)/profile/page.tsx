@@ -13,7 +13,7 @@ import { ProfileForm } from "@/components/profile/profile-form";
 import { ProfileView } from "@/components/profile/profile-view";
 import { GitHubIntegrationCard } from "@/components/profile/github-integration-card";
 import { IntegrationsSection } from "@/components/profile/integrations-section";
-import { FreeFormProfileUpdate } from "@/components/profile/free-form-profile-update";
+import { FreeFormUpdate } from "@/components/shared/free-form-update";
 import { InputModeToggle } from "@/components/posting/input-mode-toggle";
 import { AiExtractionCard } from "@/components/posting/ai-extraction-card";
 import type { InputMode } from "@/components/posting/input-mode-toggle";
@@ -196,7 +196,8 @@ export default function ProfilePage() {
             onSync={handleGithubSync}
             onApplySuggestion={applySuggestion}
           />
-          <FreeFormProfileUpdate
+          <FreeFormUpdate
+            entityType="profile"
             sourceText={sourceText}
             canUndo={canUndo}
             isApplying={isApplyingUpdate}

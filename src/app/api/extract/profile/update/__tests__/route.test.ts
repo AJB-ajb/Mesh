@@ -24,6 +24,7 @@ vi.mock("@/lib/ai/gemini", () => ({
 import { POST } from "../route";
 
 const MOCK_USER = { id: "user-1", email: "a@b.com" };
+const routeCtx = { params: Promise.resolve({}) };
 
 function authedUser() {
   mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
@@ -45,11 +46,13 @@ describe("POST /api/extract/profile/update", () => {
 
   it("returns 503 when Gemini is not configured", async () => {
     mockIsGeminiConfigured.mockReturnValue(false);
+    authedUser();
     const res = await POST(
       makeReq({
         sourceText: "some profile text",
         updateInstruction: "add Python",
       }),
+      routeCtx,
     );
     expect(res.status).toBe(503);
   });
@@ -64,6 +67,7 @@ describe("POST /api/extract/profile/update", () => {
         sourceText: "some profile text",
         updateInstruction: "add Python",
       }),
+      routeCtx,
     );
     expect(res.status).toBe(401);
   });
@@ -95,7 +99,10 @@ describe("POST /api/extract/profile/update", () => {
     };
     mockGenerateStructuredJSON.mockResolvedValue(result);
 
-    const res = await POST(makeReq({ updateInstruction: "add Python" }));
+    const res = await POST(
+      makeReq({ updateInstruction: "add Python" }),
+      routeCtx,
+    );
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.success).toBe(true);
@@ -118,6 +125,7 @@ describe("POST /api/extract/profile/update", () => {
 
     const res = await POST(
       makeReq({ sourceText: "hi", updateInstruction: "add Python" }),
+      routeCtx,
     );
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -126,10 +134,13 @@ describe("POST /api/extract/profile/update", () => {
 
   it("returns 400 when updateInstruction is missing", async () => {
     authedUser();
-    const res = await POST(makeReq({ sourceText: "some profile text here" }));
+    const res = await POST(
+      makeReq({ sourceText: "some profile text here" }),
+      routeCtx,
+    );
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toContain("update instruction");
+    expect(body.error.message).toContain("update instruction");
   });
 
   it("returns 400 when updateInstruction is too short", async () => {
@@ -139,6 +150,7 @@ describe("POST /api/extract/profile/update", () => {
         sourceText: "some profile text here",
         updateInstruction: "ab",
       }),
+      routeCtx,
     );
     expect(res.status).toBe(400);
   });
@@ -158,6 +170,7 @@ describe("POST /api/extract/profile/update", () => {
         sourceText: "I know React and Node.js",
         updateInstruction: "add Python to my skills",
       }),
+      routeCtx,
     );
     const body = await res.json();
 
@@ -187,6 +200,7 @@ describe("POST /api/extract/profile/update", () => {
         sourceText: "some profile text here",
         updateInstruction: "update skills",
       }),
+      routeCtx,
     );
     const body = await res.json();
 
@@ -203,10 +217,11 @@ describe("POST /api/extract/profile/update", () => {
         sourceText: "some profile text here",
         updateInstruction: "add Python",
       }),
+      routeCtx,
     );
     const body = await res.json();
 
     expect(res.status).toBe(500);
-    expect(body.error).toContain("Gemini API error");
+    expect(body.error.message).toContain("Gemini API error");
   });
 });

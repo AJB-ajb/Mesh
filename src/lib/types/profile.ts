@@ -119,6 +119,7 @@ export type ExtractedProfileV2 = {
   languages?: string[];
   portfolio_url?: string;
   github_url?: string;
+  skill_levels?: Record<string, number>;
   location_preference?: number;
   location_mode?: LocationMode;
   availability_slots?: Record<string, unknown>;

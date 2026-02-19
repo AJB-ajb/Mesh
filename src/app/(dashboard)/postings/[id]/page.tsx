@@ -20,7 +20,7 @@ import { PostingApplicationsCard } from "@/components/posting/posting-applicatio
 import { PostingCompatibilityCard } from "@/components/posting/posting-compatibility-card";
 import { PostingMatchedProfilesCard } from "@/components/posting/posting-matched-profiles-card";
 import { PostingSidebar } from "@/components/posting/posting-sidebar";
-import { FreeFormPostingUpdate } from "@/components/posting/free-form-posting-update";
+import { FreeFormUpdate } from "@/components/shared/free-form-update";
 import { usePostingAiUpdate } from "@/lib/hooks/use-posting-ai-update";
 import { SequentialInviteCard } from "@/components/posting/sequential-invite-card";
 import { SequentialInviteResponseCard } from "@/components/posting/sequential-invite-response-card";
@@ -671,8 +671,9 @@ export default function PostingDetailPage() {
         {/* Main content */}
         <div className="space-y-6 lg:col-span-2">
           {isOwner && !isEditing && (
-            <FreeFormPostingUpdate
-              postingId={postingId}
+            <FreeFormUpdate
+              entityType="posting"
+              entityId={postingId}
               sourceText={posting.source_text ?? null}
               canUndo={!!posting.previous_source_text}
               isApplying={isApplyingUpdate}
