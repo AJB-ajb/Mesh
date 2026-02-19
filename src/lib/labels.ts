@@ -789,6 +789,10 @@ export const labels = {
     matches: "Matches",
     bookmarks: "Bookmarks",
     inbox: "Inbox",
+    discover: "Discover",
+    myPostings: "My Postings",
+    active: "Active",
+    connections: "Connections",
     profile: "Profile",
     settings: "Settings",
     notifications: "Notifications",
@@ -910,5 +914,52 @@ export const labels = {
   a11y: {
     skipToMainContent: "Skip to main content",
     toggleTheme: "Toggle theme",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Discover page (merged postings discover + matches + bookmarks)
+  // ---------------------------------------------------------------------------
+  discover: {
+    title: "Discover",
+    subtitle: "Find postings that match your skills and interests",
+    savedFilter: "Saved",
+    sortByMatch: "Best match",
+    sortByRecent: "Most recent",
+    noResults: "No postings found.",
+    noSavedPostings:
+      "No saved postings yet. Express interest in postings to save them here.",
+  },
+
+  // ---------------------------------------------------------------------------
+  // My Postings page
+  // ---------------------------------------------------------------------------
+  myPostings: {
+    title: "My Postings",
+    subtitle: "Manage your postings and track applicants",
+    pendingRequests: (n: number) => `${n} pending request${n !== 1 ? "s" : ""}`,
+    noPostings: "You haven\u2019t created any postings yet.",
+    createFirst: "Create your first posting",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Active page (placeholder)
+  // ---------------------------------------------------------------------------
+  active: {
+    title: "Active",
+    subtitle: "Your active projects and collaborations",
+    comingSoon: "Coming soon",
+    comingSoonDescription:
+      "Track your active projects, team progress, and collaboration status \u2014 all in one place.",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Connections page (placeholder)
+  // ---------------------------------------------------------------------------
+  connectionsPage: {
+    title: "Connections",
+    subtitle: "Your network of collaborators",
+    comingSoon: "Coming soon",
+    comingSoonDescription:
+      "Manage your connections, view mutual interests, and start conversations with collaborators.",
   },
 } as const;

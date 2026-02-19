@@ -3,11 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  LayoutDashboard,
+  Compass,
   FolderKanban,
+  Zap,
   Users,
-  Bookmark,
-  Inbox,
   Plus,
   Menu,
   X,
@@ -23,11 +22,10 @@ import { Logo } from "./logo";
 import { NavItem } from "./nav-item";
 
 const navigation = [
-  { href: "/dashboard", icon: LayoutDashboard, label: labels.nav.dashboard },
-  { href: "/postings", icon: FolderKanban, label: labels.nav.postings },
-  { href: "/matches", icon: Users, label: labels.nav.matches },
-  { href: "/bookmarks", icon: Bookmark, label: labels.nav.bookmarks },
-  { href: "/inbox", icon: Inbox, label: labels.nav.inbox },
+  { href: "/discover", icon: Compass, label: labels.nav.discover },
+  { href: "/my-postings", icon: FolderKanban, label: labels.nav.myPostings },
+  { href: "/active", icon: Zap, label: labels.nav.active },
+  { href: "/connections", icon: Users, label: labels.nav.connections },
 ];
 
 const secondaryNavigation = [
@@ -107,7 +105,7 @@ export function Sidebar({ className }: SidebarProps) {
               isCollapsed ? "md:opacity-0 md:w-0" : "opacity-100",
             )}
           >
-            <Logo href="/dashboard" />
+            <Logo href="/active" />
           </div>
           {/* Collapse toggle - desktop only */}
           <Button
