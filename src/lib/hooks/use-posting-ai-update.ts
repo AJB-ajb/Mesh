@@ -1,11 +1,88 @@
 "use client";
 
-import { useState, useCallback } from "react";
 import type { KeyedMutator } from "swr";
-import { createClient } from "@/lib/supabase/client";
 import type { PostingFormState, ExtractedPosting } from "@/lib/types/posting";
-import { triggerEmbeddingGeneration } from "@/lib/api/trigger-embedding";
 import type { PostingDetailData } from "./use-posting-detail";
+import { useAiUpdate, type AiUpdateConfig } from "./use-ai-update";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+const parseList = (value: string) =>
+  value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+// ---------------------------------------------------------------------------
+// Config
+// ---------------------------------------------------------------------------
+
+function buildPostingConfig(
+  postingId: string,
+): AiUpdateConfig<PostingFormState, ExtractedPosting> {
+  return {
+    table: "postings",
+    rowColumn: "id",
+    rowId: postingId,
+    snapshotColumn: "previous_posting_snapshot",
+    useUpsert: false,
+
+    buildSnapshot: (form) => ({
+      title: form.title,
+      description: form.description,
+      category: form.category,
+      estimated_time: form.estimatedTime,
+      team_size_max: parseInt(form.lookingFor, 10) || 5,
+      tags: form.tags ? parseList(form.tags) : [],
+      context_identifier: form.contextIdentifier || null,
+      mode: form.mode,
+    }),
+
+    buildExtractedFields: (extracted) => ({
+      ...(extracted.title != null && { title: extracted.title }),
+      ...(extracted.description != null && {
+        description: extracted.description,
+      }),
+      ...(extracted.category != null && { category: extracted.category }),
+      ...(extracted.estimated_time != null && {
+        estimated_time: extracted.estimated_time,
+      }),
+      ...(extracted.team_size_max != null && {
+        team_size_max: extracted.team_size_max,
+      }),
+      ...(extracted.tags != null && { tags: extracted.tags }),
+      ...(extracted.context_identifier != null && {
+        context_identifier: extracted.context_identifier,
+      }),
+      ...(extracted.mode != null && { mode: extracted.mode }),
+    }),
+
+    buildRestoredFields: (snapshot) => ({
+      ...(snapshot.title != null && { title: snapshot.title }),
+      ...(snapshot.description != null && {
+        description: snapshot.description,
+      }),
+      ...(snapshot.category != null && { category: snapshot.category }),
+      ...(snapshot.estimated_time != null && {
+        estimated_time: snapshot.estimated_time,
+      }),
+      ...(snapshot.team_size_max != null && {
+        team_size_max: snapshot.team_size_max,
+      }),
+      ...(snapshot.tags != null && { tags: snapshot.tags }),
+      ...(snapshot.context_identifier != null && {
+        context_identifier: snapshot.context_identifier,
+      }),
+      ...(snapshot.mode != null && { mode: snapshot.mode }),
+    }),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
 
 export function usePostingAiUpdate(
   postingId: string,
@@ -13,172 +90,11 @@ export function usePostingAiUpdate(
   sourceText: string | null,
   mutate: KeyedMutator<PostingDetailData>,
 ) {
-  const [isApplyingUpdate, setIsApplyingUpdate] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-
-  const applyFreeFormUpdate = useCallback(
-    async (updatedText: string, extractedPosting: ExtractedPosting) => {
-      setError(null);
-      setIsApplyingUpdate(true);
-
-      const supabase = createClient();
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        setIsApplyingUpdate(false);
-        setError("Please sign in again.");
-        return;
-      }
-
-      // Build snapshot of current posting fields for undo
-      const parseList = (value: string) =>
-        value
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean);
-
-      const currentSnapshot: Record<string, unknown> = {
-        title: currentForm.title,
-        description: currentForm.description,
-        category: currentForm.category,
-        estimated_time: currentForm.estimatedTime,
-        team_size_max: parseInt(currentForm.lookingFor, 10) || 5,
-        tags: currentForm.tags ? parseList(currentForm.tags) : [],
-        context_identifier: currentForm.contextIdentifier || null,
-        mode: currentForm.mode,
-      };
-
-      // Save updated posting + undo data to DB
-      const { error: updateError } = await supabase
-        .from("postings")
-        .update({
-          source_text: updatedText,
-          previous_source_text: sourceText ?? null,
-          previous_posting_snapshot: currentSnapshot,
-          ...(extractedPosting.title != null && {
-            title: extractedPosting.title,
-          }),
-          ...(extractedPosting.description != null && {
-            description: extractedPosting.description,
-          }),
-          ...(extractedPosting.category != null && {
-            category: extractedPosting.category,
-          }),
-          ...(extractedPosting.estimated_time != null && {
-            estimated_time: extractedPosting.estimated_time,
-          }),
-          ...(extractedPosting.team_size_max != null && {
-            team_size_max: extractedPosting.team_size_max,
-          }),
-          ...(extractedPosting.tags != null && {
-            tags: extractedPosting.tags,
-          }),
-          ...(extractedPosting.context_identifier != null && {
-            context_identifier: extractedPosting.context_identifier,
-          }),
-          ...(extractedPosting.mode != null && {
-            mode: extractedPosting.mode,
-          }),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", postingId);
-
-      setIsApplyingUpdate(false);
-
-      if (updateError) {
-        setError("Failed to save update. Please try again.");
-        return;
-      }
-
-      triggerEmbeddingGeneration();
-
-      setSuccess(true);
-      await mutate();
-    },
-    [postingId, currentForm, sourceText, mutate],
+  const config = buildPostingConfig(postingId);
+  return useAiUpdate<PostingFormState, ExtractedPosting>(
+    currentForm,
+    sourceText,
+    mutate as KeyedMutator<unknown>,
+    config,
   );
-
-  const undoLastUpdate = useCallback(async () => {
-    setError(null);
-    setIsApplyingUpdate(true);
-
-    const supabase = createClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      setIsApplyingUpdate(false);
-      setError("Please sign in again.");
-      return;
-    }
-
-    // Fetch the previous snapshot from DB
-    const { data: postingData } = await supabase
-      .from("postings")
-      .select("previous_source_text, previous_posting_snapshot")
-      .eq("id", postingId)
-      .single();
-
-    if (!postingData?.previous_source_text) {
-      setIsApplyingUpdate(false);
-      setError("Nothing to undo.");
-      return;
-    }
-
-    const snapshot = (postingData.previous_posting_snapshot ?? {}) as Record<
-      string,
-      unknown
-    >;
-
-    // Restore previous state
-    const { error: updateError } = await supabase
-      .from("postings")
-      .update({
-        source_text: postingData.previous_source_text,
-        previous_source_text: null,
-        previous_posting_snapshot: null,
-        ...(snapshot.title != null && { title: snapshot.title }),
-        ...(snapshot.description != null && {
-          description: snapshot.description,
-        }),
-        ...(snapshot.category != null && { category: snapshot.category }),
-        ...(snapshot.estimated_time != null && {
-          estimated_time: snapshot.estimated_time,
-        }),
-        ...(snapshot.team_size_max != null && {
-          team_size_max: snapshot.team_size_max,
-        }),
-        ...(snapshot.tags != null && { tags: snapshot.tags }),
-        ...(snapshot.context_identifier != null && {
-          context_identifier: snapshot.context_identifier,
-        }),
-        ...(snapshot.mode != null && { mode: snapshot.mode }),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", postingId);
-
-    setIsApplyingUpdate(false);
-
-    if (updateError) {
-      setError("Failed to undo. Please try again.");
-      return;
-    }
-
-    setSuccess(true);
-    await mutate();
-  }, [postingId, mutate]);
-
-  return {
-    isApplyingUpdate,
-    error,
-    success,
-    applyFreeFormUpdate,
-    undoLastUpdate,
-  };
 }
