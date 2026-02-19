@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { OnlineStatus, OnlineStatusBadge } from "@/components/ui/online-status";
 import { cn } from "@/lib/utils";
@@ -47,14 +48,12 @@ export function ConversationList({
   if (conversations.length === 0) {
     return (
       <Card>
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <MessageSquare className="h-12 w-12 text-muted-foreground/50" />
-          <p className="mt-4 text-muted-foreground">
-            {labels.chat.noConversations}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {labels.chat.startByContacting}
-          </p>
+        <CardContent className="p-0">
+          <EmptyState
+            icon={<MessageSquare />}
+            title={labels.chat.noConversations}
+            description={labels.chat.startByContacting}
+          />
         </CardContent>
       </Card>
     );

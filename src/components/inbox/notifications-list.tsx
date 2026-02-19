@@ -15,6 +15,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { formatTimeAgoShort } from "@/lib/format";
@@ -116,11 +117,12 @@ export function NotificationsList({
       {/* Notifications list */}
       {notifications.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Inbox className="h-12 w-12 text-muted-foreground/50" />
-            <p className="mt-4 text-muted-foreground">
-              {labels.inbox.noNotifications}
-            </p>
+          <CardContent className="p-0">
+            <EmptyState
+              icon={<Inbox />}
+              title={labels.inbox.noNotifications}
+              description="You're all caught up!"
+            />
           </CardContent>
         </Card>
       ) : (

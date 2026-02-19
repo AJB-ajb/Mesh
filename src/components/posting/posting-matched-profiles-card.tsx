@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles, Loader2, MessageSquare } from "lucide-react";
+import { Sparkles, Loader2, MessageSquare, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { formatScore } from "@/lib/matching/scoring";
 import { getInitials } from "@/lib/format";
 import type { MatchedProfile } from "@/lib/hooks/use-posting-detail";
@@ -45,12 +46,12 @@ export function PostingMatchedProfilesCard({
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : matchedProfiles.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-sm text-muted-foreground">
-              No matched profiles found yet. Complete profiles will appear here
-              as they match your posting.
-            </p>
-          </div>
+          <EmptyState
+            icon={<Users />}
+            title="No matches yet"
+            description="Complete profiles will appear here as they match your posting."
+            className="py-8"
+          />
         ) : (
           <div className="space-y-4">
             {matchedProfiles.map((matchedProfile) => (
