@@ -44,6 +44,10 @@ export interface Database {
         Insert: FriendshipInsert;
         Update: Partial<FriendshipInsert>;
       };
+      feedback: {
+        Row: Feedback;
+        Insert: FeedbackInsert;
+      };
     };
   };
 }
@@ -312,6 +316,32 @@ export interface FriendshipInsert {
   user_id: string;
   friend_id: string;
   status?: "pending" | "accepted" | "declined" | "blocked";
+  created_at?: string;
+}
+
+// ============================================
+// FEEDBACK TYPES
+// ============================================
+
+export type FeedbackMood = "frustrated" | "neutral" | "happy";
+
+export interface Feedback {
+  id: string;
+  user_id: string | null;
+  message: string;
+  mood: FeedbackMood | null;
+  page_url: string;
+  user_agent: string | null;
+  created_at: string;
+}
+
+export interface FeedbackInsert {
+  id?: string;
+  user_id?: string | null;
+  message: string;
+  mood?: FeedbackMood | null;
+  page_url: string;
+  user_agent?: string | null;
   created_at?: string;
 }
 

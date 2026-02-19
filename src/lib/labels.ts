@@ -882,6 +882,29 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
+  // Feedback widget
+  // ---------------------------------------------------------------------------
+  feedback: {
+    buttonAriaLabel: "Send feedback",
+    sheetTitle: "Send Feedback",
+    sheetDescription:
+      "Let us know about bugs, irritations, or suggestions. Your feedback helps us improve.",
+    messagePlaceholder:
+      "What's on your mind? Describe a bug, something that annoyed you, or a suggestion...",
+    moodLabel: "How are you feeling?",
+    moods: {
+      frustrated: "Frustrated",
+      neutral: "Neutral",
+      happy: "Happy",
+    } as const,
+    submitButton: "Send feedback",
+    submittingButton: "Sending...",
+    successMessage: "Thank you for your feedback!",
+    errorGeneric: "Something went wrong. Please try again.",
+    errorEmptyMessage: "Please enter a message.",
+  },
+
+  // ---------------------------------------------------------------------------
   // Skip link (accessibility)
   // ---------------------------------------------------------------------------
   a11y: {

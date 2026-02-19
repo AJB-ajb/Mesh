@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { SWRProvider } from "@/lib/swr/provider";
+import { FeedbackWidget } from "@/components/feedback/feedback-widget";
 import { labels } from "@/lib/labels";
 import "./globals.css";
 
@@ -93,7 +94,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
         <SWRProvider>
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>
+            {children}
+            <FeedbackWidget />
+          </ThemeProvider>
         </SWRProvider>
       </body>
     </html>

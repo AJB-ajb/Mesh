@@ -105,6 +105,27 @@ Matches between users and projects, including scores and status.
 
 ---
 
+### feedback
+
+User-submitted feedback (bugs, suggestions, irritations). Write-once — no `updated_at`.
+
+| Field        | Type        | Nullable | Default           | Description                                     |
+| ------------ | ----------- | -------- | ----------------- | ----------------------------------------------- |
+| `id`         | uuid        | NO       | gen_random_uuid() | Primary key                                     |
+| `user_id`    | uuid        | YES      | null              | References `profiles.user_id`, NULL = anonymous |
+| `message`    | text        | NO       | -                 | Feedback content                                |
+| `mood`       | text        | YES      | null              | CHECK: frustrated, neutral, happy               |
+| `page_url`   | text        | NO       | -                 | URL where feedback was submitted                |
+| `user_agent` | text        | YES      | null              | Browser user agent string                       |
+| `created_at` | timestamptz | NO       | now()             | Submission timestamp                            |
+
+**RLS Policies:**
+
+- INSERT: Anyone can submit feedback (including anonymous/unauthenticated)
+- SELECT: Authenticated users can read only their own feedback (`user_id = auth.uid()`)
+
+---
+
 ## JSONB Structures
 
 ### availability_slots (profiles)
@@ -147,7 +168,9 @@ auth.users
                    │              │
                    │              └── 1:N ── matches (project_id)
                    │
-                   └── 1:N ── matches (user_id)
+                   ├── 1:N ── matches (user_id)
+                   │
+                   └── 0:N ── feedback (user_id, nullable)
 ```
 
 ---
