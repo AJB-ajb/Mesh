@@ -19,6 +19,7 @@ type AiExtractionCardProps = {
   extractionSuccess: boolean;
   onExtract: () => void;
   onSwitchToForm: () => void;
+  variant?: "posting" | "profile";
 };
 
 export function AiExtractionCard({
@@ -28,24 +29,40 @@ export function AiExtractionCard({
   extractionSuccess,
   onExtract,
   onSwitchToForm,
+  variant = "posting",
 }: AiExtractionCardProps) {
+  const isProfile = variant === "profile";
+  const cardTitle = isProfile
+    ? labels.extraction.profileCardTitle
+    : labels.extraction.postingCardTitle;
+  const cardDescription = isProfile
+    ? labels.extraction.profileDescription
+    : labels.extraction.postingDescription;
+  const placeholder = isProfile
+    ? labels.extraction.profilePlaceholder
+    : labels.extraction.postingPlaceholder;
+  const extractButton = isProfile
+    ? labels.extraction.extractProfileButton
+    : labels.extraction.extractPostingButton;
+  const helpText = isProfile
+    ? labels.extraction.profileHelpText
+    : labels.extraction.postingHelpText;
+
   return (
     <Card className="border-primary/20 bg-primary/5">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
-          {labels.extraction.postingCardTitle}
+          {cardTitle}
         </CardTitle>
-        <CardDescription>
-          {labels.extraction.postingDescription}
-        </CardDescription>
+        <CardDescription>{cardDescription}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Textarea
           rows={12}
           value={aiText}
           onChange={(e) => onAiTextChange(e.target.value)}
-          placeholder={labels.extraction.postingPlaceholder}
+          placeholder={placeholder}
           enableMic
           onTranscriptionChange={(text) =>
             onAiTextChange(aiText ? aiText + " " + text : text)
@@ -71,7 +88,7 @@ export function AiExtractionCard({
             ) : (
               <>
                 <Sparkles className="h-4 w-4" />
-                {labels.extraction.extractPostingButton}
+                {extractButton}
               </>
             )}
           </Button>
@@ -79,9 +96,7 @@ export function AiExtractionCard({
             {labels.extraction.switchToFormButton}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          {labels.extraction.postingHelpText}
-        </p>
+        <p className="text-xs text-muted-foreground">{helpText}</p>
       </CardContent>
     </Card>
   );

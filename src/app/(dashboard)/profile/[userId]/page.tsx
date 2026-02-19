@@ -10,6 +10,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
 import { getInitials } from "@/lib/format";
 
+function skillLevelLabel(level: number): string {
+  if (level <= 2) return "Beginner";
+  if (level <= 4) return "Can follow tutorials";
+  if (level <= 6) return "Intermediate";
+  if (level <= 8) return "Advanced";
+  return "Expert";
+}
+
+type ProfileSkillRow = {
+  skill_id: string;
+  level: number;
+  skill_nodes: { id: string; name: string } | null;
+};
+
 type PublicProfile = {
   user_id: string;
   full_name: string | null;
@@ -18,6 +32,7 @@ type PublicProfile = {
   skills: string[] | null;
   location_mode: string | null;
   location_name: string | null;
+  profile_skills: ProfileSkillRow[];
 };
 
 async function fetchPublicProfile(key: string): Promise<PublicProfile | null> {
@@ -27,13 +42,13 @@ async function fetchPublicProfile(key: string): Promise<PublicProfile | null> {
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "user_id, full_name, headline, bio, skills, location_mode, location_name",
+      "user_id, full_name, headline, bio, skills, location_mode, location_name, profile_skills(skill_id, level, skill_nodes(id, name))",
     )
     .eq("user_id", userId)
     .single();
 
   if (error || !data) return null;
-  return data as PublicProfile;
+  return data as unknown as PublicProfile;
 }
 
 export default function PublicProfilePage() {
@@ -105,6 +120,36 @@ export default function PublicProfilePage() {
             <p className="text-muted-foreground whitespace-pre-wrap">
               {profile.bio}
             </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {profile.profile_skills && profile.profile_skills.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Skills</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {profile.profile_skills
+                .filter((ps) => ps.skill_nodes)
+                .map((ps) => (
+                  <div key={ps.skill_id} className="flex items-center gap-3">
+                    <span className="w-32 truncate text-sm font-medium">
+                      {ps.skill_nodes!.name}
+                    </span>
+                    <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{ width: `${(ps.level / 10) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground w-24 text-right">
+                      {ps.level}/10 ({skillLevelLabel(ps.level)})
+                    </span>
+                  </div>
+                ))}
+            </div>
           </CardContent>
         </Card>
       )}

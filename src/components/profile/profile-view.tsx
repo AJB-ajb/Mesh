@@ -81,6 +81,31 @@ export function ProfileView({ form }: { form: ProfileFormState }) {
             </div>
           </div>
 
+          {/* Tree-based skills */}
+          {form.selectedSkills.length > 0 && (
+            <div>
+              <p className="mb-2 text-sm text-muted-foreground">Skills</p>
+              <div className="space-y-2">
+                {form.selectedSkills.map((skill) => (
+                  <div key={skill.skillId} className="flex items-center gap-3">
+                    <span className="w-32 truncate text-sm font-medium">
+                      {skill.name}
+                    </span>
+                    <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{ width: `${(skill.level / 10) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground w-24 text-right">
+                      {skill.level}/10 ({skillLevelLabel(skill.level)})
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Skill levels */}
           {form.skillLevels.length > 0 && (
             <div>
