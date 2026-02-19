@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { sendNotification } from "@/lib/notifications/create";
 import type { Message } from "@/lib/hooks/use-inbox";
 
 // ---------------------------------------------------------------------------
@@ -57,19 +58,13 @@ export function useSendMessage(
         .eq("user_id", currentUserId)
         .maybeSingle();
 
-      supabase
-        .from("notifications")
-        .insert({
-          user_id: otherUserId,
-          type: "new_message",
-          title: "New Message",
-          body: `${profile?.full_name || "Someone"}: ${content.trim().slice(0, 50)}${content.length > 50 ? "..." : ""}`,
-          related_user_id: currentUserId,
-        })
-        .then(({ error: notifError }) => {
-          if (notifError)
-            console.error("Error creating notification:", notifError);
-        });
+      sendNotification({
+        userId: otherUserId,
+        type: "new_message",
+        title: "New Message",
+        body: `${profile?.full_name || "Someone"}: ${content.trim().slice(0, 50)}${content.length > 50 ? "..." : ""}`,
+        relatedUserId: currentUserId,
+      });
 
       setIsSending(false);
       mutateMessages();

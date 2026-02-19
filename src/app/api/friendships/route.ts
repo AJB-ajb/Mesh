@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
 import { apiError } from "@/lib/errors";
+import { sendNotification } from "@/lib/notifications/create";
 
 /**
  * GET /api/friendships
@@ -78,19 +79,16 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  supabase
-    .from("notifications")
-    .insert({
-      user_id: friend_id,
+  sendNotification(
+    {
+      userId: friend_id,
       type: "friend_request",
       title: "Connection Request",
       body: `${senderProfile?.full_name || "Someone"} wants to connect with you`,
-      related_user_id: user.id,
-    })
-    .then(({ error: notifError }) => {
-      if (notifError)
-        console.error("Error creating friend_request notification:", notifError);
-    });
+      relatedUserId: user.id,
+    },
+    supabase,
+  );
 
   return NextResponse.json({ friendship: data }, { status: 201 });
 });

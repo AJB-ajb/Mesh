@@ -6,6 +6,7 @@ import {
   shouldNotify,
   type NotificationPreferences,
 } from "@/lib/notifications/preferences";
+import { sendNotifications } from "@/lib/notifications/create";
 import type { GroupMessageWithSender } from "./use-group-messages";
 
 type TeamMember = {
@@ -107,32 +108,20 @@ export function useSendGroupMessage({
             );
           }
 
-          const notifications = otherMembers
+          const notificationPayloads = otherMembers
             .filter((m) => {
               const prefs = prefsById.get(m.user_id);
               return shouldNotify(prefs, "new_group_message", "in_app");
             })
             .map((m) => ({
-              user_id: m.user_id,
+              userId: m.user_id,
               type: "new_group_message",
               title: "New Team Message",
               body: `${senderName ?? "Someone"} in "${postingTitle}": ${trimmed.slice(0, 80)}${trimmed.length > 80 ? "…" : ""}`,
-              related_posting_id: postingId,
+              relatedPostingId: postingId,
             }));
 
-          if (notifications.length > 0) {
-            supabase
-              .from("notifications")
-              .insert(notifications)
-              .then(({ error: notifError }) => {
-                if (notifError) {
-                  console.warn(
-                    "[SendGroupMessage] Error creating notifications:",
-                    notifError,
-                  );
-                }
-              });
-          }
+          sendNotifications(notificationPayloads);
         }
 
         setIsSending(false);
