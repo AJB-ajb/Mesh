@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { BadgeList } from "@/components/ui/badge-list";
 import {
   Card,
   CardContent,
@@ -60,16 +61,7 @@ export function InterestSentCard({ interest }: InterestSentCardProps) {
         )}
 
         {posting?.skills && posting.skills.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {posting.skills.slice(0, 5).map((skill) => (
-              <Badge key={skill} variant="secondary">
-                {skill}
-              </Badge>
-            ))}
-            {posting.skills.length > 5 && (
-              <Badge variant="outline">+{posting.skills.length - 5}</Badge>
-            )}
-          </div>
+          <BadgeList items={posting.skills} />
         )}
 
         <div className="flex items-center gap-2 border-t border-border pt-4">

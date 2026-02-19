@@ -3,27 +3,15 @@ import { Check, MessageSquare, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BadgeList } from "@/components/ui/badge-list";
 import { formatTimeAgo } from "@/lib/format";
+import { statusColors, statusLabels } from "@/lib/posting/styles";
 import type {
   MatchResponse,
   Posting as BasePosting,
 } from "@/lib/supabase/types";
 
 type Posting = BasePosting & { skills?: string[] };
-
-const statusColors: Record<string, string> = {
-  pending: "bg-warning/10 text-warning",
-  applied: "bg-info/10 text-info",
-  accepted: "bg-success/10 text-success",
-  declined: "bg-muted text-muted-foreground",
-};
-
-const statusLabels: Record<string, string> = {
-  pending: "Pending",
-  applied: "Requested",
-  accepted: "Accepted",
-  declined: "Declined",
-};
 
 export interface AiMatchCardProps {
   match: MatchResponse;
@@ -80,21 +68,7 @@ export function AiMatchCard({ match, isApplying, onApply }: AiMatchCardProps) {
 
         {/* Skills */}
         {posting.skills && posting.skills.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {posting.skills.slice(0, 5).map((skill) => (
-              <span
-                key={skill}
-                className="rounded-md border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium"
-              >
-                {skill}
-              </span>
-            ))}
-            {posting.skills.length > 5 && (
-              <span className="rounded-md border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium">
-                +{posting.skills.length - 5}
-              </span>
-            )}
-          </div>
+          <BadgeList items={posting.skills} />
         )}
 
         {/* Actions */}
