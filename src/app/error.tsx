@@ -6,6 +6,7 @@ import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { labels } from "@/lib/labels";
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -27,19 +28,19 @@ export default function Error({ error, reset }: ErrorProps) {
 
       {/* Title */}
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-        Something went wrong
+        {labels.error.title}
       </h1>
 
       {/* Description */}
       <p className="mt-4 max-w-md text-muted-foreground">
-        We encountered an unexpected error. Our team has been notified and is
-        working on a fix.
+        {labels.error.description}
       </p>
 
       {/* Error ID (for support) */}
       {error.digest && (
         <p className="mt-2 text-xs text-muted-foreground">
-          Error ID: {error.digest}
+          {labels.error.errorIdPrefix}
+          {error.digest}
         </p>
       )}
 
@@ -47,12 +48,12 @@ export default function Error({ error, reset }: ErrorProps) {
       <div className="mt-8 flex flex-col gap-4 sm:flex-row">
         <Button onClick={reset}>
           <RefreshCw className="h-4 w-4" />
-          Try again
+          {labels.error.tryAgain}
         </Button>
         <Button variant="outline" asChild>
           <Link href="/">
             <Home className="h-4 w-4" />
-            Go home
+            {labels.error.goHome}
           </Link>
         </Button>
       </div>

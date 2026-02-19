@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { OnlineStatus, OnlineStatusBadge } from "@/components/ui/online-status";
 import { cn } from "@/lib/utils";
+import { labels } from "@/lib/labels";
 import { useRealtimeChat } from "@/lib/hooks/use-realtime-chat";
 import { useSendMessage } from "@/lib/hooks/use-send-message";
 import { usePresenceContext } from "@/components/providers/presence-provider";
@@ -64,9 +65,11 @@ export function ConversationList({
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <MessageSquare className="h-12 w-12 text-muted-foreground/50" />
-          <p className="mt-4 text-muted-foreground">No conversations yet</p>
+          <p className="mt-4 text-muted-foreground">
+            {labels.chat.noConversations}
+          </p>
           <p className="text-sm text-muted-foreground">
-            Start by contacting a posting creator
+            {labels.chat.startByContacting}
           </p>
         </CardContent>
       </Card>
@@ -98,7 +101,7 @@ export function ConversationList({
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
               <h4 className="font-medium truncate">
-                {conversation.other_user?.full_name || "Unknown"}
+                {conversation.other_user?.full_name || labels.common.unknown}
               </h4>
               {conversation.last_message && (
                 <span className="text-xs text-muted-foreground">
@@ -114,7 +117,7 @@ export function ConversationList({
             {conversation.last_message && (
               <p className="text-sm text-muted-foreground truncate">
                 {conversation.last_message.sender_id === currentUserId
-                  ? "You: "
+                  ? labels.chat.youPrefix
                   : ""}
                 {conversation.last_message.content}
               </p>
@@ -221,7 +224,7 @@ export function ChatPanel({
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h4 className="font-medium truncate">
-                  {conversation.other_user?.full_name || "Unknown"}
+                  {conversation.other_user?.full_name || labels.common.unknown}
                 </h4>
                 <OnlineStatus
                   isOnline={isUserOnline(
@@ -249,7 +252,7 @@ export function ChatPanel({
         {localMessages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
             <MessageSquare className="h-8 w-8 mb-2" />
-            <p>No messages yet. Start the conversation!</p>
+            <p>{labels.chat.noMessages}</p>
           </div>
         ) : (
           localMessages.map((message) => (
@@ -270,7 +273,9 @@ export function ChatPanel({
                     : "bg-muted",
                 )}
               >
-                <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                <p className="text-sm whitespace-pre-wrap break-words">
+                  {message.content}
+                </p>
                 <p
                   className={cn(
                     "text-xs mt-1",
@@ -316,7 +321,7 @@ export function ChatPanel({
               }
             }}
             onBlur={() => setIsTyping(false)}
-            placeholder="Type a message..."
+            placeholder={labels.chat.messagePlaceholder}
             rows={1}
             className="flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
@@ -339,12 +344,12 @@ export function ChatPanel({
           {isConnected ? (
             <>
               <Wifi className="h-3 w-3 text-green-500" />
-              <span>Connected</span>
+              <span>{labels.chat.connectionConnected}</span>
             </>
           ) : (
             <>
               <WifiOff className="h-3 w-3 text-red-500" />
-              <span>Connecting...</span>
+              <span>{labels.chat.connectionConnecting}</span>
             </>
           )}
         </div>

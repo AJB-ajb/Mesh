@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Search, Filter, Loader2, X } from "lucide-react";
 
+import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -87,9 +88,11 @@ export default function MatchesPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Matches</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {labels.matches.title}
+          </h1>
           <p className="mt-1 text-muted-foreground">
-            Postings that match your skills and interests
+            {labels.matches.subtitle}
           </p>
         </div>
         <Card className="border-warning/30 bg-warning/5">
@@ -101,18 +104,18 @@ export default function MatchesPage() {
               <div className="space-y-2">
                 <h3 className="font-semibold">
                   {isProfileError
-                    ? "Profile Incomplete"
-                    : "Unable to Find Matches"}
+                    ? labels.matches.profileIncomplete
+                    : labels.matches.unableToFindMatches}
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-md">
                   {isProfileError
-                    ? "Add a description and skills to your profile so we can find relevant matches for you."
+                    ? labels.matches.profileIncompleteHint
                     : error}
                 </p>
               </div>
               {isProfileError && (
                 <Button asChild>
-                  <Link href="/profile">Go to Profile</Link>
+                  <Link href="/profile">{labels.common.goToProfile}</Link>
                 </Button>
               )}
             </div>
@@ -126,10 +129,10 @@ export default function MatchesPage() {
     <div className="space-y-6">
       {/* Page header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Matches</h1>
-        <p className="mt-1 text-muted-foreground">
-          Postings that match your skills and interests
-        </p>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {labels.matches.title}
+        </h1>
+        <p className="mt-1 text-muted-foreground">{labels.matches.subtitle}</p>
       </div>
 
       {/* Search and filter */}
@@ -138,7 +141,7 @@ export default function MatchesPage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder='Try "remote React, 10+ hours/week"...'
+            placeholder={labels.common.searchPlaceholder}
             className="pl-9 pr-10"
             value={nlQuery}
             onChange={(e) => setNlQuery(e.target.value)}
@@ -158,7 +161,7 @@ export default function MatchesPage() {
           disabled
         >
           <Filter className="h-4 w-4" />
-          <span className="sr-only">Filter</span>
+          <span className="sr-only">{labels.common.filter}</span>
         </Button>
       </div>
 
@@ -187,17 +190,17 @@ export default function MatchesPage() {
             className="h-6 text-xs"
             onClick={clearFilters}
           >
-            Clear all
+            {labels.common.clearAll}
           </Button>
         </div>
       )}
 
       {filteredMatches.length === 0 ? (
         <EmptyState
-          title="No matches yet"
-          description="Complete your profile to start seeing matches that align with your skills and interests."
+          title={labels.matches.emptyTitle}
+          description={labels.matches.emptyDescription}
           action={{
-            label: "Complete Profile",
+            label: labels.matches.completeProfile,
             href: "/profile",
           }}
         />

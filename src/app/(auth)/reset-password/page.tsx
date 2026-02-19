@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { Logo } from "@/components/layout/logo";
+import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
@@ -33,13 +34,13 @@ export default function ResetPasswordPage() {
     setMessage(null);
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError(labels.auth.resetPassword.errorPasswordMismatch);
       setIsLoading(false);
       return;
     }
 
     if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+      setError(labels.auth.resetPassword.errorPasswordLength);
       setIsLoading(false);
       return;
     }
@@ -52,7 +53,7 @@ export default function ResetPasswordPage() {
     if (updateError) {
       setError(updateError.message);
     } else {
-      setMessage("Password updated successfully! Redirecting...");
+      setMessage(labels.auth.resetPassword.success);
       setTimeout(() => {
         router.push("/login");
       }, 2000);
@@ -69,9 +70,11 @@ export default function ResetPasswordPage() {
       <main className="flex flex-1 items-center justify-center px-6 py-16 lg:px-8">
         <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
           <div className="space-y-2 text-center">
-            <h1 className="text-2xl font-semibold">Reset password</h1>
+            <h1 className="text-2xl font-semibold">
+              {labels.auth.resetPassword.title}
+            </h1>
             <p className="text-sm text-muted-foreground">
-              Enter your new password below.
+              {labels.auth.resetPassword.subtitle}
             </p>
           </div>
 
@@ -90,7 +93,7 @@ export default function ResetPasswordPage() {
           <form onSubmit={handleUpdatePassword} className="mt-6 space-y-4">
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-medium">
-                New Password
+                {labels.auth.resetPassword.newPasswordLabel}
               </label>
               <Input
                 id="password"
@@ -104,7 +107,7 @@ export default function ResetPasswordPage() {
             </div>
             <div className="space-y-2">
               <label htmlFor="confirmPassword" className="text-sm font-medium">
-                Confirm Password
+                {labels.auth.resetPassword.confirmPasswordLabel}
               </label>
               <Input
                 id="confirmPassword"
@@ -117,7 +120,9 @@ export default function ResetPasswordPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Updating..." : "Update password"}
+              {isLoading
+                ? labels.auth.resetPassword.updating
+                : labels.auth.resetPassword.updatePassword}
             </Button>
           </form>
         </div>

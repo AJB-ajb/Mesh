@@ -2,6 +2,7 @@
 
 import { Bookmark, Loader2 } from "lucide-react";
 
+import { labels } from "@/lib/labels";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InterestSentCard } from "@/components/match/interest-sent-card";
 import { useBookmarks } from "@/lib/hooks/use-bookmarks";
@@ -21,19 +22,21 @@ export default function BookmarksPage() {
     <div className="space-y-6">
       {/* Page header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Bookmarks</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {labels.bookmarks.title}
+        </h1>
         <p className="mt-1 text-muted-foreground">
-          Postings you&apos;ve saved for later
+          {labels.bookmarks.subtitle}
         </p>
       </div>
 
       {bookmarks.length === 0 ? (
         <EmptyState
           icon={<Bookmark />}
-          title="No bookmarks yet"
-          description="Browse postings and bookmark ones you're interested in."
+          title={labels.bookmarks.emptyTitle}
+          description={labels.bookmarks.emptyDescription}
           action={{
-            label: "Browse Postings",
+            label: labels.bookmarks.browsePostings,
             href: "/postings",
           }}
         />

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { labels } from "@/lib/labels";
 
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/lib/hooks/use-profile";
@@ -117,13 +118,15 @@ export default function ProfilePage() {
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to dashboard
+        {labels.common.backToDashboard}
       </Link>
 
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Your Profile</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {labels.profile.title}
+          </h1>
           <p className="mt-1 text-muted-foreground">
             {userEmail && <span className="text-sm">{userEmail}</span>}
           </p>
@@ -133,7 +136,7 @@ export default function ProfilePage() {
             data-testid="profile-edit-button"
             onClick={() => setIsEditing(true)}
           >
-            Edit Profile
+            {labels.profile.editButton}
           </Button>
         )}
       </div>
@@ -146,7 +149,7 @@ export default function ProfilePage() {
 
       {success && (
         <p className="rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-600 dark:text-green-400">
-          Profile updated successfully!
+          {labels.profile.updateSuccess}
         </p>
       )}
 

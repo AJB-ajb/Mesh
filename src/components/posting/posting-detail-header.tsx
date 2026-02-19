@@ -156,17 +156,17 @@ function OwnerActions({
           {isSaving ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Saving...
+              {labels.postingDetail.saving}
             </>
           ) : (
             <>
               <Check className="h-4 w-4" />
-              Save
+              {labels.common.save}
             </>
           )}
         </Button>
         <Button variant="outline" onClick={onCancelEdit}>
-          Cancel
+          {labels.common.cancel}
         </Button>
       </div>
     );
@@ -188,20 +188,23 @@ function OwnerActions({
                 ) : (
                   <RefreshCw className="h-4 w-4" />
                 )}
-                Repost
+                {labels.common.repost}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Repost this posting?</AlertDialogTitle>
+                <AlertDialogTitle>
+                  {labels.postingDetail.repostTitle}
+                </AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will remove all existing join requests and repost the
-                  posting as fresh. This action cannot be undone.
+                  {labels.postingDetail.repostDescription}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={onRepost}>Repost</AlertDialogAction>
+                <AlertDialogCancel>{labels.common.cancel}</AlertDialogCancel>
+                <AlertDialogAction onClick={onRepost}>
+                  {labels.common.repost}
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -210,7 +213,7 @@ function OwnerActions({
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" onClick={onStartEdit}>
           <Pencil className="h-4 w-4" />
-          Edit
+          {labels.common.edit}
         </Button>
         <Button variant="destructive" onClick={onDelete} disabled={isDeleting}>
           {isDeleting ? (
@@ -283,8 +286,10 @@ function ApplySection({
           {myApplication?.status === "waitlisted" && (
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              Waitlisted
-              {waitlistPosition ? ` — #${waitlistPosition} in line` : ""}
+              {labels.joinRequest.applicantStatus.waitlisted}
+              {waitlistPosition
+                ? labels.postingDetail.waitlistPosition(waitlistPosition)
+                : ""}
             </span>
           )}
         </Badge>
@@ -306,7 +311,7 @@ function ApplySection({
           {isApplying ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Joining waitlist...
+              {labels.postingDetail.joiningWaitlist}
             </>
           ) : (
             <>
@@ -325,7 +330,7 @@ function ApplySection({
           <textarea
             value={coverMessage}
             onChange={(e) => onCoverMessageChange(e.target.value)}
-            placeholder="Tell the posting creator why you'd like to join... (optional)"
+            placeholder={labels.chat.coverMessagePlaceholder}
             rows={3}
             className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
@@ -334,7 +339,7 @@ function ApplySection({
               {isApplying ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Requesting...
+                  {labels.postingDetail.requesting}
                 </>
               ) : (
                 <>
@@ -344,7 +349,7 @@ function ApplySection({
               )}
             </Button>
             <Button variant="outline" onClick={onHideApplyForm}>
-              Cancel
+              {labels.common.cancel}
             </Button>
           </div>
         </div>
@@ -361,7 +366,11 @@ function ApplySection({
 
   // Non-open, non-filled (e.g. closed, expired)
   if (posting.status !== "open") {
-    return <Badge variant="secondary">Posting {posting.status}</Badge>;
+    return (
+      <Badge variant="secondary">
+        {labels.postingDetail.postingStatus(posting.status)}
+      </Badge>
+    );
   }
 
   // Auto-accept: instant join, no cover message form
@@ -371,7 +380,7 @@ function ApplySection({
         {isApplying ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Joining...
+            {labels.postingDetail.joining}
           </>
         ) : (
           <>
@@ -389,7 +398,7 @@ function ApplySection({
         <textarea
           value={coverMessage}
           onChange={(e) => onCoverMessageChange(e.target.value)}
-          placeholder="Tell the posting creator why you'd like to join... (optional)"
+          placeholder={labels.chat.coverMessagePlaceholder}
           rows={3}
           className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         />
@@ -398,7 +407,7 @@ function ApplySection({
             {isApplying ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Requesting to join...
+                {labels.postingDetail.requestingToJoin}
               </>
             ) : (
               <>
@@ -408,7 +417,7 @@ function ApplySection({
             )}
           </Button>
           <Button variant="outline" onClick={onHideApplyForm}>
-            Cancel
+            {labels.common.cancel}
           </Button>
         </div>
       </div>
@@ -500,7 +509,7 @@ export function PostingDetailHeader({
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to postings
+        {labels.common.backToPostings}
       </Link>
 
       {error && (
@@ -534,7 +543,9 @@ export function PostingDetailHeader({
                     : "outline"
               }
             >
-              {isExpired(posting.expires_at) ? "Expired" : posting.status}
+              {isExpired(posting.expires_at)
+                ? labels.common.expired
+                : posting.status}
             </Badge>
             {posting.expires_at && (
               <span
@@ -549,12 +560,13 @@ export function PostingDetailHeader({
                 className="bg-green-500 hover:bg-green-600 flex items-center gap-1"
               >
                 <Sparkles className="h-4 w-4" />
-                {formatScore(computeWeightedScore(matchBreakdown))} match
+                {formatScore(computeWeightedScore(matchBreakdown))}{" "}
+                {labels.postingDetail.match}
               </Badge>
             )}
           </div>
           <p className="text-muted-foreground">
-            Posted by{" "}
+            {labels.postingDetail.postedBy}{" "}
             <Link
               href={`/profile/${posting.profiles?.user_id}`}
               className="hover:underline text-foreground"

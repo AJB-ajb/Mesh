@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Loader2, ListOrdered, XCircle } from "lucide-react";
 
+import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSequentialInviteForPosting } from "@/lib/hooks/use-sequential-invites";
@@ -158,7 +159,7 @@ export function SequentialInviteCard({
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <ListOrdered className="h-5 w-5" />
-            Sequential Invite
+            {labels.sequentialInvite.title}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -181,7 +182,7 @@ export function SequentialInviteCard({
               ) : (
                 <XCircle className="h-4 w-4" />
               )}
-              Cancel Invite
+              {labels.sequentialInvite.cancelInvite}
             </Button>
           )}
         </CardContent>
@@ -195,13 +196,12 @@ export function SequentialInviteCard({
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <ListOrdered className="h-5 w-5" />
-          Sequential Invite
+          {labels.sequentialInvite.title}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Invite your connections one by one in order. Each person can join or
-          pass before the next is asked.
+          {labels.sequentialInvite.description}
         </p>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
@@ -217,10 +217,10 @@ export function SequentialInviteCard({
             {isCreating ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Starting...
+                {labels.sequentialInvite.starting}
               </>
             ) : (
-              "Start Sequential Invite"
+              labels.sequentialInvite.startButton
             )}
           </Button>
         )}

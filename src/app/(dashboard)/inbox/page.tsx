@@ -7,6 +7,7 @@ import { Bell, MessageSquare, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { labels } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/client";
 import {
   subscribeToNotifications,
@@ -184,10 +185,10 @@ function InboxPageContent() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Inbox</h1>
-          <p className="mt-1 text-muted-foreground">
-            Notifications and messages
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {labels.inbox.title}
+          </h1>
+          <p className="mt-1 text-muted-foreground">{labels.inbox.subtitle}</p>
         </div>
       </div>
 
@@ -207,7 +208,7 @@ function InboxPageContent() {
         >
           <div className="flex items-center gap-2">
             <Bell className="h-4 w-4" />
-            Notifications
+            {labels.inbox.notificationsTab}
             {unreadNotifications > 0 && (
               <Badge variant="destructive" className="h-5 min-w-5 px-1.5">
                 {unreadNotifications}
@@ -226,7 +227,7 @@ function InboxPageContent() {
         >
           <div className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
-            Messages
+            {labels.inbox.messagesTab}
             {conversations.reduce((acc, c) => acc + (c.unread_count || 0), 0) >
               0 && (
               <Badge variant="destructive" className="h-5 min-w-5 px-1.5">
@@ -275,7 +276,7 @@ function InboxPageContent() {
               <Card className="flex flex-col items-center justify-center h-[600px]">
                 <MessageSquare className="h-12 w-12 text-muted-foreground/50" />
                 <p className="mt-4 text-muted-foreground">
-                  Select a conversation to start messaging
+                  {labels.inbox.selectConversation}
                 </p>
               </Card>
             )}

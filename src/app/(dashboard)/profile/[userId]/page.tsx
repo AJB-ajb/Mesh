@@ -4,17 +4,18 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import useSWR from "swr";
+import { labels } from "@/lib/labels";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
 import { getInitials } from "@/lib/format";
 
 function skillLevelLabel(level: number): string {
-  if (level <= 2) return "Beginner";
-  if (level <= 4) return "Can follow tutorials";
-  if (level <= 6) return "Intermediate";
-  if (level <= 8) return "Advanced";
-  return "Expert";
+  if (level <= 2) return labels.publicProfile.skillLevels.beginner;
+  if (level <= 4) return labels.publicProfile.skillLevels.canFollowTutorials;
+  if (level <= 6) return labels.publicProfile.skillLevels.intermediate;
+  if (level <= 8) return labels.publicProfile.skillLevels.advanced;
+  return labels.publicProfile.skillLevels.expert;
 }
 
 type ProfileSkillRow = {
@@ -74,11 +75,13 @@ export default function PublicProfilePage() {
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to postings
+          {labels.common.backToPostings}
         </Link>
         <Card>
           <CardContent className="flex min-h-[200px] flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground">Profile not found.</p>
+            <p className="text-muted-foreground">
+              {labels.publicProfile.profileNotFound}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -92,7 +95,7 @@ export default function PublicProfilePage() {
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to postings
+        {labels.common.backToPostings}
       </Link>
 
       <div className="flex items-center gap-4">
@@ -101,7 +104,7 @@ export default function PublicProfilePage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold">
-            {profile.full_name || "Unknown User"}
+            {profile.full_name || labels.common.unknownUser}
           </h1>
           {profile.headline && (
             <p className="text-muted-foreground">{profile.headline}</p>
@@ -112,7 +115,9 @@ export default function PublicProfilePage() {
       {profile.bio && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">About</CardTitle>
+            <CardTitle className="text-base">
+              {labels.publicProfile.aboutTitle}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground whitespace-pre-wrap">
@@ -125,7 +130,9 @@ export default function PublicProfilePage() {
       {profile.profile_skills && profile.profile_skills.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Skills</CardTitle>
+            <CardTitle className="text-base">
+              {labels.publicProfile.skillsTitle}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -151,7 +158,6 @@ export default function PublicProfilePage() {
           </CardContent>
         </Card>
       )}
-
     </div>
   );
 }

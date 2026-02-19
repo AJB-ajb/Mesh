@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { Logo } from "@/components/layout/logo";
+import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
@@ -106,9 +107,9 @@ function LoginForm() {
   return (
     <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
       <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-semibold">Welcome back</h1>
+        <h1 className="text-2xl font-semibold">{labels.auth.login.title}</h1>
         <p className="text-sm text-muted-foreground">
-          Sign in to continue to MeshIt.
+          {labels.auth.login.subtitle}
         </p>
       </div>
 
@@ -121,7 +122,7 @@ function LoginForm() {
       <form onSubmit={handleEmailSignIn} className="mt-6 space-y-4">
         <div className="space-y-2">
           <label htmlFor="email" className="text-sm font-medium">
-            Email
+            {labels.common.emailLabel}
           </label>
           <Input
             id="email"
@@ -136,13 +137,13 @@ function LoginForm() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label htmlFor="password" className="text-sm font-medium">
-              Password
+              {labels.common.passwordLabel}
             </label>
             <Link
               href="/forgot-password"
               className="text-sm text-primary hover:underline"
             >
-              Forgot password?
+              {labels.auth.login.forgotPassword}
             </Link>
           </div>
           <Input
@@ -160,7 +161,7 @@ function LoginForm() {
           className="w-full"
           disabled={isLoading || isOAuthLoading}
         >
-          {isLoading ? "Signing in..." : "Sign in"}
+          {isLoading ? labels.auth.login.signingIn : labels.common.signIn}
         </Button>
       </form>
 
@@ -170,7 +171,7 @@ function LoginForm() {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-card px-2 text-muted-foreground">
-            Or continue with
+            {labels.common.orContinueWith}
           </span>
         </div>
       </div>
@@ -218,12 +219,12 @@ function LoginForm() {
       </div>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
+        {labels.auth.login.noAccount}{" "}
         <Link
           href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"}
           className="text-primary hover:underline"
         >
-          Sign up
+          {labels.common.signUp}
         </Link>
       </p>
     </div>
@@ -242,14 +243,16 @@ export default function LoginPage() {
           fallback={
             <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
               <div className="space-y-2 text-center">
-                <h1 className="text-2xl font-semibold">Welcome back</h1>
+                <h1 className="text-2xl font-semibold">
+                  {labels.auth.login.title}
+                </h1>
                 <p className="text-sm text-muted-foreground">
-                  Sign in to continue to MeshIt.
+                  {labels.auth.login.subtitle}
                 </p>
               </div>
               <div className="mt-6 space-y-3">
                 <Button type="button" className="w-full" disabled>
-                  Loading...
+                  {labels.common.loading}
                 </Button>
               </div>
             </div>

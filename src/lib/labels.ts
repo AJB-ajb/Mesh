@@ -364,4 +364,528 @@ export const labels = {
     formButton: "Fill Form",
     aiButton: "AI Extract",
   },
+
+  // ---------------------------------------------------------------------------
+  // Common / shared strings
+  // ---------------------------------------------------------------------------
+  common: {
+    cancel: "Cancel",
+    save: "Save",
+    saving: "Saving...",
+    saveChanges: "Save changes",
+    loading: "Loading...",
+    signIn: "Sign in",
+    signOut: "Sign out",
+    signUp: "Sign up",
+    edit: "Edit",
+    delete: "Delete",
+    backToDashboard: "Back to dashboard",
+    backToPostings: "Back to postings",
+    newPosting: "New Posting",
+    goToProfile: "Go to Profile",
+    filter: "Filter",
+    clearAll: "Clear all",
+    searchPlaceholder: 'Try "remote React, 10+ hours/week"...',
+    orContinueWith: "Or continue with",
+    emailLabel: "Email",
+    passwordLabel: "Password",
+    emailPlaceholder: "you@example.com",
+    passwordPlaceholder: "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
+    unknownUser: "Unknown User",
+    unknown: "Unknown",
+    member: "Member",
+    repost: "Repost",
+    disconnect: "Disconnect",
+    connect: "Connect",
+    connecting: "Connecting...",
+    primary: "Primary",
+    connected: "Connected",
+    notConnected: "Not connected",
+    expired: "Expired",
+  } as const,
+
+  // ---------------------------------------------------------------------------
+  // Error page
+  // ---------------------------------------------------------------------------
+  error: {
+    title: "Something went wrong",
+    description:
+      "We encountered an unexpected error. Our team has been notified and is working on a fix.",
+    errorIdPrefix: "Error ID: ",
+    tryAgain: "Try again",
+    goHome: "Go home",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Not found page
+  // ---------------------------------------------------------------------------
+  notFound: {
+    title: "Page not found",
+    description:
+      "Sorry, we couldn\u2019t find the page you\u2019re looking for. It might have been moved or doesn\u2019t exist.",
+    goHome: "Go home",
+    goBack: "Go back",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Offline page
+  // ---------------------------------------------------------------------------
+  offline: {
+    title: "You\u2019re Offline",
+    description:
+      "It looks like you\u2019ve lost your internet connection. Don\u2019t worry, some features may still work with cached content.",
+    whatYouCanDo: "What you can do:",
+    viewPreviousPages: "View previously loaded pages",
+    browseCachedContent: "Browse cached content",
+    requiresConnection: "New matches and messages require connection",
+    tryAgain: "Try Again",
+    goToHome: "Go to Home",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Auth pages (login, signup, forgot-password, reset-password)
+  // ---------------------------------------------------------------------------
+  auth: {
+    login: {
+      title: "Welcome back",
+      subtitle: "Sign in to continue to MeshIt.",
+      signingIn: "Signing in...",
+      forgotPassword: "Forgot password?",
+      noAccount: "Don\u2019t have an account?",
+    },
+    signup: {
+      title: "Create an account",
+      subtitle: "Sign up to get started with MeshIt.",
+      creatingAccount: "Creating account...",
+      confirmPasswordLabel: "Confirm Password",
+      alreadyHaveAccount: "Already have an account?",
+      checkEmail: "Check your email to confirm your account.",
+      errorPasswordMismatch: "Passwords do not match.",
+      errorPasswordLength: "Password must be at least 6 characters.",
+    },
+    forgotPassword: {
+      title: "Forgot password?",
+      subtitle: "Enter your email and we\u2019ll send you a reset link.",
+      sending: "Sending...",
+      sendResetLink: "Send reset link",
+      rememberPassword: "Remember your password?",
+      checkEmail: "Check your email for a password reset link.",
+    },
+    resetPassword: {
+      title: "Reset password",
+      subtitle: "Enter your new password below.",
+      newPasswordLabel: "New Password",
+      confirmPasswordLabel: "Confirm Password",
+      updating: "Updating...",
+      updatePassword: "Update password",
+      success: "Password updated successfully! Redirecting...",
+      errorPasswordMismatch: "Passwords do not match.",
+      errorPasswordLength: "Password must be at least 6 characters.",
+    },
+  },
+
+  // ---------------------------------------------------------------------------
+  // Dashboard page
+  // ---------------------------------------------------------------------------
+  dashboard: {
+    title: "Dashboard",
+    subtitle:
+      "Welcome back! Here\u2019s what\u2019s happening with your postings.",
+    recentActivity: "Recent Activity",
+    recentActivityDescription:
+      "Your latest matches, join requests, and messages",
+    signInToSeeActivity: "Sign in to see your recent activity",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Quick actions
+  // ---------------------------------------------------------------------------
+  quickActions: {
+    title: "Quick Actions",
+    subtitle: "Common tasks to get started",
+    createPosting: "Create Posting",
+    createPostingDescription: "Find collaborators for your idea",
+    reviewMatches: "Review Matches",
+    reviewMatchesDescription: "See postings that match your profile",
+    browsePostings: "Browse Postings",
+    browsePostingsDescription: "Discover postings looking for people like you",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Matches page
+  // ---------------------------------------------------------------------------
+  matches: {
+    title: "Matches",
+    subtitle: "Postings that match your skills and interests",
+    profileIncomplete: "Profile Incomplete",
+    unableToFindMatches: "Unable to Find Matches",
+    profileIncompleteHint:
+      "Add a description and skills to your profile so we can find relevant matches for you.",
+    emptyTitle: "No matches yet",
+    emptyDescription:
+      "Complete your profile to start seeing matches that align with your skills and interests.",
+    completeProfile: "Complete Profile",
+    failedToLoadMatches: "Failed to load matches",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Bookmarks page
+  // ---------------------------------------------------------------------------
+  bookmarks: {
+    title: "Bookmarks",
+    subtitle: "Postings you\u2019ve saved for later",
+    emptyTitle: "No bookmarks yet",
+    emptyDescription:
+      "Browse postings and bookmark ones you\u2019re interested in.",
+    browsePostings: "Browse Postings",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Inbox page
+  // ---------------------------------------------------------------------------
+  inbox: {
+    title: "Inbox",
+    subtitle: "Notifications and messages",
+    notificationsTab: "Notifications",
+    messagesTab: "Messages",
+    selectConversation: "Select a conversation to start messaging",
+    markAllAsRead: "Mark all as read",
+    noNotifications: "No notifications yet",
+    joinAction: "Join",
+    doNotJoinAction: "Do not join",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Chat / conversations
+  // ---------------------------------------------------------------------------
+  chat: {
+    noConversations: "No conversations yet",
+    startByContacting: "Start by contacting a posting creator",
+    youPrefix: "You: ",
+    noMessages: "No messages yet. Start the conversation!",
+    messagePlaceholder: "Type a message...",
+    connectionConnected: "Connected",
+    connectionConnecting: "Connecting...",
+    coverMessagePlaceholder:
+      "Tell the posting creator why you\u2019d like to join... (optional)",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Settings page
+  // ---------------------------------------------------------------------------
+  settings: {
+    title: "Settings",
+    subtitle: "Manage your account preferences",
+    accountTitle: "Account",
+    accountDescription: "Your account information",
+    accountTypeLabel: "Account type",
+    connectedAccountsTitle: "Connected Accounts",
+    connectedAccountsDescription:
+      "Link multiple providers to access all features. You need at least one connected account.",
+    githubSyncTitle: "GitHub Profile Sync",
+    githubSyncDescription:
+      "Automatically enrich your profile with data from your GitHub account",
+    lastSyncedLabel: "Last synced:",
+    statusLabel: "Status:",
+    syncGithubButton: "Sync GitHub Profile",
+    notificationPrefsTitle: "Notification Preferences",
+    notificationPrefsDescription:
+      "Choose which notifications you receive in-app and in the browser",
+    tableType: "Type",
+    tableInApp: "In-App",
+    tableBrowser: "Browser",
+    profileTitle: "Profile",
+    profileDescription: "View and edit your profile details",
+    dangerZoneTitle: "Danger Zone",
+    dangerZoneDescription: "Irreversible account actions",
+    signOutDescription: "Sign out of your account on this device",
+    disconnectDialogTitle: (provider: string) => `Disconnect ${provider}?`,
+    disconnectDialogDescription: (provider: string) =>
+      `This will remove ${provider} from your connected accounts. You can reconnect it later if needed.`,
+    disconnectGithubNote:
+      "Note: Disconnecting GitHub will prevent automatic profile syncing.",
+    errorMinOneAccount: "You must have at least one connected account",
+    errorSignInAgain: "Please sign in again",
+    errorProviderNotFound: "Provider not found",
+    providerNames: {
+      google: "Google",
+      github: "GitHub",
+      linkedin_oidc: "LinkedIn",
+    } as const,
+  },
+
+  // ---------------------------------------------------------------------------
+  // Profile page
+  // ---------------------------------------------------------------------------
+  profile: {
+    title: "Your Profile",
+    editButton: "Edit Profile",
+    updateSuccess: "Profile updated successfully!",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Profile form (edit mode)
+  // ---------------------------------------------------------------------------
+  profileForm: {
+    generalInfoTitle: "General Information",
+    generalInfoDescription: "Share the essentials about who you are.",
+    fullNameLabel: "Full name",
+    fullNamePlaceholder: "e.g., Alex Johnson",
+    headlineLabel: "Headline",
+    headlinePlaceholder: "e.g., Full-stack developer",
+    bioLabel: "About you",
+    bioPlaceholder: "What do you enjoy building? What makes you unique?",
+    locationLabel: "Location",
+    locationSearchPlaceholder: "Search for a location...",
+    locationManualPlaceholder: "e.g., Berlin, Germany",
+    locationHelp:
+      "Use the buttons below to auto-fill your location, or type manually.",
+    gettingLocation: "Getting location...",
+    useCurrentLocation: "Use current location",
+    manualEntry: "Manual entry",
+    searchLocation: "Search location",
+    languagesLabel: "Spoken languages (comma-separated)",
+    languagesPlaceholder: "e.g., en, de, es",
+    languagesHelp:
+      "Use ISO codes: en (English), de (German), es (Spanish), fr (French), etc.",
+    interestsLabel: "Interests (comma-separated)",
+    interestsPlaceholder: "e.g., AI, fintech, education",
+    portfolioLabel: "Portfolio link",
+    portfolioPlaceholder: "https://your-portfolio.com",
+    githubLabel: "GitHub link",
+    githubPlaceholder: "https://github.com/username",
+    skillsTitle: "Skills",
+    skillsDescription:
+      "Search or browse the skill tree and rate your proficiency (0-10).",
+    skillsPlaceholder: "Search skills (e.g., React, Piano, Photography)...",
+    locationModeTitle: "Location Mode",
+    locationModeDescription: "Where do you prefer to collaborate?",
+    availabilityTitle: "Availability",
+    availabilityDescription:
+      "Click cells to toggle when you are typically available.",
+    locationModeOptions: {
+      remote: "Remote",
+      in_person: "In-person",
+      either: "Flexible",
+    } as const,
+  },
+
+  // ---------------------------------------------------------------------------
+  // Public profile page
+  // ---------------------------------------------------------------------------
+  publicProfile: {
+    profileNotFound: "Profile not found.",
+    aboutTitle: "About",
+    skillsTitle: "Skills",
+    skillLevels: {
+      beginner: "Beginner",
+      canFollowTutorials: "Can follow tutorials",
+      intermediate: "Intermediate",
+      advanced: "Advanced",
+      expert: "Expert",
+    } as const,
+  },
+
+  // ---------------------------------------------------------------------------
+  // Postings listing page
+  // ---------------------------------------------------------------------------
+  postings: {
+    title: "Postings",
+    subtitle: "Discover postings or manage your own",
+    tabs: {
+      discover: "Discover",
+      myPostings: "My Postings",
+    } as const,
+    categories: {
+      all: "All",
+      study: "Study",
+      hackathon: "Hackathon",
+      personal: "Personal",
+      professional: "Professional",
+      social: "Social",
+    } as const,
+    filtersTitle: "Filters",
+    modeLabel: "Mode",
+    modeAny: "Any mode",
+    modeOpen: "Open",
+    modeSequentialInvite: "Sequential Invite",
+    noPostingsOwner: "You haven\u2019t created any postings yet.",
+    noPostingsDiscover: "No postings found.",
+    createFirstPosting: "Create your first posting",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Posting detail page / header / sidebar
+  // ---------------------------------------------------------------------------
+  postingDetail: {
+    postingNotFound: "Posting not found.",
+    browsePostings: "Browse Postings",
+    saving: "Saving...",
+    joiningWaitlist: "Joining waitlist...",
+    requesting: "Requesting...",
+    requestingToJoin: "Requesting to join...",
+    joining: "Joining...",
+    postingStatus: (status: string) => `Posting ${status}`,
+    postedBy: "Posted by",
+    match: "match",
+    deleteConfirm:
+      "Are you sure you want to delete this posting? This action cannot be undone.",
+    repostTitle: "Repost this posting?",
+    repostDescription:
+      "This will remove all existing join requests and repost the posting as fresh. This action cannot be undone.",
+
+    // Sidebar
+    postingCreator: "Posting Creator",
+    contactCreator: "Contact Creator",
+    actionsTitle: "Actions",
+    linkCopied: "Link Copied!",
+    sharePosting: "Share Posting",
+    reportIssue: "Report Issue",
+    shareTitle: "Check out this posting on MeshIt",
+
+    // Error messages
+    errorUpdatePosting: "Failed to update posting. Please try again.",
+    errorUpdateSkills: "Failed to update skills. Please try again.",
+    errorSaveSkills: "Failed to save skills. Please try again.",
+    errorDeletePosting: "Failed to delete posting. Please try again.",
+    errorExtendDeadline: "Failed to extend deadline. Please try again.",
+    errorRepost: "Failed to repost. Please try again.",
+    errorSubmitRequest: "Failed to submit request. Please try again.",
+    errorWithdrawRequest: "Failed to withdraw request. Please try again.",
+    errorUpdateRequest: "Failed to update request. Please try again.",
+    errorStartConversation: "Failed to start conversation. Please try again.",
+
+    // Notifications (created programmatically)
+    waitlistPromotedTitle: "You\u2019re in! \ud83c\udf89",
+    waitlistPromotedBody: (title: string) =>
+      `A spot opened on "${title}" and you\u2019ve been promoted from the waitlist!`,
+    waitlistReadyTitle: "Spot opened \u2014 waitlist ready",
+    waitlistReadyBody: (title: string) =>
+      `A spot opened on "${title}". You have waitlisted people ready to accept.`,
+    requestAcceptedTitle: "Request Accepted! \ud83c\udf89",
+    requestUpdateTitle: "Request Update",
+    requestAcceptedBody: (title: string) =>
+      `Your request to join "${title}" has been accepted!`,
+    requestRejectedBody: (title: string) =>
+      `Your request to join "${title}" was not selected.`,
+
+    // Extend deadline
+    extendOptions: {
+      "7": "7 days",
+      "14": "14 days",
+      "30": "30 days",
+    } as const,
+
+    // Waitlist position
+    waitlistPosition: (pos: number) => `\u2014 #${pos} in line`,
+  },
+
+  // ---------------------------------------------------------------------------
+  // Navigation (header + sidebar)
+  // ---------------------------------------------------------------------------
+  nav: {
+    dashboard: "Dashboard",
+    postings: "Postings",
+    matches: "Matches",
+    bookmarks: "Bookmarks",
+    inbox: "Inbox",
+    profile: "Profile",
+    settings: "Settings",
+    notifications: "Notifications",
+    userMenu: "User menu",
+    toggleMenu: "Toggle menu",
+    mainNavigation: "Main navigation",
+    secondaryNavigation: "Secondary navigation",
+    copyright: "\u00a9 2026 MeshIt",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Skill picker
+  // ---------------------------------------------------------------------------
+  skill: {
+    levelLabels: {
+      beginner: "Beginner",
+      canFollowTutorials: "Can follow tutorials",
+      intermediate: "Intermediate",
+      advanced: "Advanced",
+      expert: "Expert",
+    } as const,
+    allCategories: "All",
+    addCustomPrefix: "Add \u201c",
+    addCustomSuffix: "\u201d as a new skill",
+    noSkillsFound: "No skills found",
+    noCategoriesAvailable: "No categories available",
+    addingSkill: "Adding skill...",
+    searching: "Searching...",
+    kbdNavigate: "navigate",
+    kbdSelect: "select",
+    kbdClose: "close",
+    anyLevel: "Any level",
+    anyLevelWelcome: "Any level welcome",
+    requiresAtLeast: (label: string) => `Requires at least: ${label}`,
+  },
+
+  // ---------------------------------------------------------------------------
+  // Sequential invite
+  // ---------------------------------------------------------------------------
+  sequentialInvite: {
+    title: "Sequential Invite",
+    description:
+      "Invite your connections one by one in order. Each person can join or pass before the next is asked.",
+    starting: "Starting...",
+    startButton: "Start Sequential Invite",
+    cancelInvite: "Cancel Invite",
+    progressTitle: "Sequential Invite Progress",
+    statusLabels: {
+      pending: "In Progress",
+      accepted: "Accepted",
+      completed: "Completed",
+      cancelled: "Cancelled",
+    } as const,
+    acceptedSummary: (name: string) => `${name} accepted the invite`,
+    completedSummary: (count: number) =>
+      `All ${count} connections were asked \u2014 no one accepted`,
+    cancelledSummary: "This sequential invite was cancelled",
+    waitingSummary: (current: number, total: number) =>
+      `${current} of ${total} \u2014 waiting for response`,
+  },
+
+  // ---------------------------------------------------------------------------
+  // Connections
+  // ---------------------------------------------------------------------------
+  connections: {
+    noConnections: "No connections yet",
+    pendingRequests: "Pending Requests",
+    sentRequests: "Sent Requests",
+    connectionsCount: (n: number) => `Connections (${n})`,
+    pending: "Pending",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Match card
+  // ---------------------------------------------------------------------------
+  matchCard: {
+    matchSuffix: "% match",
+    accept: "Accept",
+    message: "Message",
+    availablePrefix: "Available: ",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Online status & typing indicator
+  // ---------------------------------------------------------------------------
+  status: {
+    online: "Online",
+    offline: "Offline",
+    isTyping: (name: string) => `${name} is typing...`,
+    typing: "typing...",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Skip link (accessibility)
+  // ---------------------------------------------------------------------------
+  a11y: {
+    skipToMainContent: "Skip to main content",
+    toggleTheme: "Toggle theme",
+  },
 } as const;

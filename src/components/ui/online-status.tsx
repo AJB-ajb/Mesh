@@ -1,5 +1,6 @@
 "use client";
 
+import { labels } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 
 type OnlineStatusProps = {
@@ -29,12 +30,12 @@ export function OnlineStatus({
           sizeClasses[size],
           isOnline
             ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"
-            : "bg-gray-400"
+            : "bg-gray-400",
         )}
       />
       {showLabel && (
         <span className="text-xs text-muted-foreground">
-          {isOnline ? "Online" : "Offline"}
+          {isOnline ? labels.status.online : labels.status.offline}
         </span>
       )}
     </div>
@@ -66,9 +67,7 @@ export function OnlineStatusBadge({
         className={cn(
           "absolute h-3 w-3 rounded-full border-2 border-background",
           positionClasses[position],
-          isOnline
-            ? "bg-green-500"
-            : "bg-gray-400"
+          isOnline ? "bg-green-500" : "bg-gray-400",
         )}
       />
     </div>

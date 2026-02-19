@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { labels } from "@/lib/labels";
 import { useSkillSearch } from "@/lib/hooks/use-skill-search";
 import type { SkillNode } from "@/lib/types/skill";
 import type {
@@ -24,11 +25,11 @@ import type {
 // ---------------------------------------------------------------------------
 
 function skillLevelLabel(level: number): string {
-  if (level <= 2) return "Beginner";
-  if (level <= 4) return "Can follow tutorials";
-  if (level <= 6) return "Intermediate";
-  if (level <= 8) return "Advanced";
-  return "Expert";
+  if (level <= 2) return labels.skill.levelLabels.beginner;
+  if (level <= 4) return labels.skill.levelLabels.canFollowTutorials;
+  if (level <= 6) return labels.skill.levelLabels.intermediate;
+  if (level <= 8) return labels.skill.levelLabels.advanced;
+  return labels.skill.levelLabels.expert;
 }
 
 // ---------------------------------------------------------------------------
@@ -345,7 +346,7 @@ export function SkillPicker(props: SkillPickerProps) {
                   onClick={handleBrowseBack}
                   className="hover:text-foreground"
                 >
-                  All
+                  {labels.skill.allCategories}
                 </button>
                 {browsePath.map((segment, i) => (
                   <span key={i} className="flex items-center gap-1">
@@ -434,7 +435,9 @@ export function SkillPicker(props: SkillPickerProps) {
                 >
                   <Plus className="h-4 w-4 flex-shrink-0" />
                   <span>
-                    Add &quot;{inputValue.trim()}&quot; as a new skill
+                    {labels.skill.addCustomPrefix}
+                    {inputValue.trim()}
+                    {labels.skill.addCustomSuffix}
                   </span>
                   {isNormalizing && (
                     <Loader2 className="ml-auto h-4 w-4 animate-spin" />
@@ -446,8 +449,8 @@ export function SkillPicker(props: SkillPickerProps) {
               {!isLoading && dropdownItems.length === 0 && !hasAddCustom && (
                 <div className="px-3 py-4 text-center text-sm text-muted-foreground">
                   {showSearchResults
-                    ? "No skills found"
-                    : "No categories available"}
+                    ? labels.skill.noSkillsFound
+                    : labels.skill.noCategoriesAvailable}
                 </div>
               )}
 
@@ -455,7 +458,9 @@ export function SkillPicker(props: SkillPickerProps) {
               {isLoading && dropdownItems.length === 0 && (
                 <div className="flex items-center justify-center px-3 py-4 text-sm text-muted-foreground">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isNormalizing ? "Adding skill..." : "Searching..."}
+                  {isNormalizing
+                    ? labels.skill.addingSkill
+                    : labels.skill.searching}
                 </div>
               )}
             </div>
@@ -463,9 +468,12 @@ export function SkillPicker(props: SkillPickerProps) {
             {/* Keyboard hints */}
             {totalItems > 0 && (
               <div className="border-t px-3 py-1.5 text-[10px] text-muted-foreground">
-                <kbd className="rounded border px-1">↑↓</kbd> navigate{" "}
-                <kbd className="rounded border px-1">↵</kbd> select{" "}
-                <kbd className="rounded border px-1">esc</kbd> close
+                <kbd className="rounded border px-1">↑↓</kbd>{" "}
+                {labels.skill.kbdNavigate}{" "}
+                <kbd className="rounded border px-1">↵</kbd>{" "}
+                {labels.skill.kbdSelect}{" "}
+                <kbd className="rounded border px-1">esc</kbd>{" "}
+                {labels.skill.kbdClose}
               </div>
             )}
           </div>
@@ -531,7 +539,7 @@ export function SkillPicker(props: SkillPickerProps) {
                   <span className="w-28 text-right text-sm font-medium tabular-nums">
                     {(skill as SelectedPostingSkill).levelMin != null
                       ? `Min: ${(skill as SelectedPostingSkill).levelMin}/10`
-                      : "Any level"}
+                      : labels.skill.anyLevel}
                   </span>
                 </div>
               )}
@@ -540,8 +548,12 @@ export function SkillPicker(props: SkillPickerProps) {
                 {mode === "profile"
                   ? skillLevelLabel((skill as SelectedProfileSkill).level)
                   : (skill as SelectedPostingSkill).levelMin != null
-                    ? `Requires at least: ${skillLevelLabel((skill as SelectedPostingSkill).levelMin!)}`
-                    : "Any level welcome"}
+                    ? labels.skill.requiresAtLeast(
+                        skillLevelLabel(
+                          (skill as SelectedPostingSkill).levelMin!,
+                        ),
+                      )
+                    : labels.skill.anyLevelWelcome}
               </p>
             </div>
           ))}
