@@ -2,24 +2,15 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Plus, Search, Filter, Loader2, X } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { labels } from "@/lib/labels";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { usePostings } from "@/lib/hooks/use-postings";
 import type { Posting } from "@/lib/hooks/use-postings";
 import { PostingDiscoverCard } from "@/components/posting/posting-discover-card";
-
-const categories = [
-  { value: "all", label: labels.postings.categories.all },
-  { value: "study", label: labels.postings.categories.study },
-  { value: "hackathon", label: labels.postings.categories.hackathon },
-  { value: "personal", label: labels.postings.categories.personal },
-  { value: "professional", label: labels.postings.categories.professional },
-  { value: "social", label: labels.postings.categories.social },
-] as const;
+import { PostingFilters } from "@/components/posting/posting-filters";
 
 export default function MyPostingsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -77,88 +68,18 @@ export default function MyPostingsPage() {
         </Button>
       </div>
 
-      {/* Search and filter */}
-      <div className="flex gap-2">
-        <div className="relative flex-1 sm:w-80">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search your postings..."
-            className="pl-9"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <Button
-          variant={hasActiveFilters ? "default" : "outline"}
-          size="icon"
-          onClick={() => setShowFilters((v) => !v)}
-        >
-          <Filter className="h-4 w-4" />
-          <span className="sr-only">{labels.common.filter}</span>
-        </Button>
-      </div>
-
-      {/* Category chips */}
-      <div className="flex flex-wrap gap-2">
-        {categories.map((cat) => (
-          <button
-            key={cat.value}
-            onClick={() => setFilterCategory(cat.value)}
-            className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
-              filterCategory === cat.value
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Filter panel (mode only) */}
-      {showFilters && (
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium">
-                {labels.postings.filtersTitle}
-              </h3>
-              <div className="flex gap-2">
-                {hasActiveFilters && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters}>
-                    {labels.common.clearAll}
-                  </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setShowFilters(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">
-                {labels.postings.modeLabel}
-              </label>
-              <select
-                value={filterMode}
-                onChange={(e) => setFilterMode(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-              >
-                <option value="all">{labels.postings.modeAny}</option>
-                <option value="open">{labels.postings.modeOpen}</option>
-                <option value="friend_ask">
-                  {labels.postings.modeSequentialInvite}
-                </option>
-              </select>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <PostingFilters
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        filterCategory={filterCategory}
+        onCategoryChange={setFilterCategory}
+        filterMode={filterMode}
+        onModeChange={setFilterMode}
+        showFilters={showFilters}
+        onToggleFilters={() => setShowFilters((v) => !v)}
+        hasActiveFilters={hasActiveFilters}
+        onClearFilters={clearFilters}
+      />
 
       {/* Loading state */}
       {isLoading ? (

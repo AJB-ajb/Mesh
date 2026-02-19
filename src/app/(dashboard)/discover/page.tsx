@@ -3,14 +3,10 @@
 import { Suspense, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Plus, Search, Filter, Loader2, X, Bookmark } from "lucide-react";
-import { SpeechInput } from "@/components/ai-elements/speech-input";
-import { transcribeAudio } from "@/lib/transcribe";
+import { Plus, Loader2 } from "lucide-react";
 import { labels } from "@/lib/labels";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { usePostings } from "@/lib/hooks/use-postings";
 import type { Posting } from "@/lib/hooks/use-postings";
@@ -18,17 +14,9 @@ import { useNlFilter } from "@/lib/hooks/use-nl-filter";
 import { usePostingInterest } from "@/lib/hooks/use-posting-interest";
 import { applyFilters } from "@/lib/filters/apply-filters";
 import { PostingDiscoverCard } from "@/components/posting/posting-discover-card";
+import { PostingFilters } from "@/components/posting/posting-filters";
 
 type SortOption = "recent" | "match";
-
-const categories = [
-  { value: "all", label: labels.postings.categories.all },
-  { value: "study", label: labels.postings.categories.study },
-  { value: "hackathon", label: labels.postings.categories.hackathon },
-  { value: "personal", label: labels.postings.categories.personal },
-  { value: "professional", label: labels.postings.categories.professional },
-  { value: "social", label: labels.postings.categories.social },
-] as const;
 
 function DiscoverContent() {
   const searchParams = useSearchParams();
@@ -144,178 +132,31 @@ function DiscoverContent() {
         </Button>
       </div>
 
-      {/* Search and filter */}
-      <div className="flex gap-2">
-        <div className="relative flex-1 sm:w-80">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder={labels.common.searchPlaceholder}
-            className="pl-9 pr-16"
-            value={nlQuery}
-            onChange={(e) => {
-              setNlQuery(e.target.value);
-              setSearchQuery(e.target.value);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleNlSearch(nlQuery);
-              }
-            }}
-          />
-          {nlQuery && !isTranslating && (
-            <button
-              type="button"
-              onClick={() => {
-                setNlQuery("");
-                setSearchQuery("");
-              }}
-              className="absolute right-9 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-              <span className="sr-only">{labels.common.clearAll}</span>
-            </button>
-          )}
-          {isTranslating ? (
-            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-          ) : (
-            <SpeechInput
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-              size="icon"
-              variant="ghost"
-              onAudioRecorded={transcribeAudio}
-              onTranscriptionChange={(text) => {
-                setNlQuery(text);
-                setSearchQuery(text);
-                handleNlSearch(text);
-              }}
-            />
-          )}
-        </div>
-        <Button
-          variant={hasActiveFilters ? "default" : "outline"}
-          size="icon"
-          onClick={() => setShowFilters((v) => !v)}
-        >
-          <Filter className="h-4 w-4" />
-          <span className="sr-only">{labels.common.filter}</span>
-        </Button>
-      </div>
-
-      {/* Active NL filter pills */}
-      {nlFilterPills.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          {nlFilterPills.map((pill) => (
-            <Badge
-              key={pill.key}
-              variant="secondary"
-              className="flex items-center gap-1 pr-1"
-            >
-              {pill.label}
-              <button
-                onClick={() => handleRemoveNlFilter(pill.key)}
-                className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20"
-              >
-                <X className="h-3 w-3" />
-                <span className="sr-only">Remove {pill.label}</span>
-              </button>
-            </Badge>
-          ))}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 text-xs"
-            onClick={clearFilters}
-          >
-            {labels.common.clearAll}
-          </Button>
-        </div>
-      )}
-
-      {/* Category chips */}
-      <div className="flex flex-wrap gap-2">
-        {categories.map((cat) => (
-          <button
-            key={cat.value}
-            onClick={() => setFilterCategory(cat.value)}
-            className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
-              filterCategory === cat.value
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Saved toggle + Sort control */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => setShowSaved((v) => !v)}
-          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors ${
-            showSaved
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-          }`}
-        >
-          <Bookmark className="h-3.5 w-3.5" />
-          {labels.discover.savedFilter}
-        </button>
-
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as SortOption)}
-          className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-        >
-          <option value="recent">{labels.discover.sortByRecent}</option>
-          <option value="match">{labels.discover.sortByMatch}</option>
-        </select>
-      </div>
-
-      {/* Filter panel (mode only — category handled by chips) */}
-      {showFilters && (
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium">
-                {labels.postings.filtersTitle}
-              </h3>
-              <div className="flex gap-2">
-                {hasActiveFilters && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters}>
-                    {labels.common.clearAll}
-                  </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setShowFilters(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">
-                {labels.postings.modeLabel}
-              </label>
-              <select
-                value={filterMode}
-                onChange={(e) => setFilterMode(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-              >
-                <option value="all">{labels.postings.modeAny}</option>
-                <option value="open">{labels.postings.modeOpen}</option>
-                <option value="friend_ask">
-                  {labels.postings.modeSequentialInvite}
-                </option>
-              </select>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <PostingFilters
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        filterCategory={filterCategory}
+        onCategoryChange={setFilterCategory}
+        filterMode={filterMode}
+        onModeChange={setFilterMode}
+        showFilters={showFilters}
+        onToggleFilters={() => setShowFilters((v) => !v)}
+        hasActiveFilters={hasActiveFilters}
+        onClearFilters={clearFilters}
+        showNlSearch
+        nlQuery={nlQuery}
+        onNlQueryChange={setNlQuery}
+        onNlSearch={handleNlSearch}
+        nlFilterPills={nlFilterPills}
+        onRemoveNlFilter={handleRemoveNlFilter}
+        isTranslating={isTranslating}
+        showSavedToggle
+        showSaved={showSaved}
+        onToggleSaved={() => setShowSaved((v) => !v)}
+        showSort
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+      />
 
       {interestError && (
         <p className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">

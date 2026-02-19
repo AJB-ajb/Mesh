@@ -18,16 +18,15 @@ import {
 import type { PostingFormState } from "@/lib/hooks/use-posting-detail";
 import { PostingDetailHeader } from "@/components/posting/posting-detail-header";
 import { PostingAboutCard } from "@/components/posting/posting-about-card";
-import { PostingApplicationsCard } from "@/components/posting/posting-applications-card";
 import { PostingCompatibilityCard } from "@/components/posting/posting-compatibility-card";
-import { PostingMatchedProfilesCard } from "@/components/posting/posting-matched-profiles-card";
 import { PostingSidebar } from "@/components/posting/posting-sidebar";
 import { PostingTeamCard } from "@/components/posting/posting-team-card";
-import { FreeFormUpdate } from "@/components/shared/free-form-update";
 import { usePostingAiUpdate } from "@/lib/hooks/use-posting-ai-update";
-import { SequentialInviteCard } from "@/components/posting/sequential-invite-card";
 import { SequentialInviteResponseCard } from "@/components/posting/sequential-invite-response-card";
 import { GroupChatPanel } from "@/components/posting/group-chat-panel";
+import { PostingEditTab } from "@/components/posting/posting-edit-tab";
+import { PostingManageTab } from "@/components/posting/posting-manage-tab";
+import { PostingActivityTab } from "@/components/posting/posting-activity-tab";
 
 // ---------------------------------------------------------------------------
 // Inner component that uses useSearchParams (needs Suspense boundary)
@@ -144,7 +143,6 @@ function PostingDetailInner() {
     pId: string,
     p: NonNullable<typeof posting>,
   ) => {
-    // Get first waitlisted user (FIFO)
     const { data: waitlisted } = await supabase
       .from("applications")
       .select("id, applicant_id")
@@ -155,7 +153,6 @@ function PostingDetailInner() {
       .maybeSingle();
 
     if (!waitlisted) {
-      // No one on waitlist — reopen the posting if it was filled
       if (p.status === "filled") {
         await supabase
           .from("postings")
@@ -166,13 +163,11 @@ function PostingDetailInner() {
     }
 
     if (p.auto_accept) {
-      // Auto-promote: instantly accept the first waitlisted user
       await supabase
         .from("applications")
         .update({ status: "accepted" })
         .eq("id", waitlisted.id);
 
-      // Notify the promoted user
       const { data: promotedProfile } = await supabase
         .from("profiles")
         .select("notification_preferences")
@@ -193,7 +188,6 @@ function PostingDetailInner() {
         });
       }
     } else {
-      // Manual review: notify the poster that a spot opened
       const { data: ownerProfile } = await supabase
         .from("profiles")
         .select("notification_preferences")
@@ -213,7 +207,6 @@ function PostingDetailInner() {
         });
       }
 
-      // Reopen the posting since it needs manual review
       if (p.status === "filled") {
         await supabase
           .from("postings")
@@ -310,7 +303,6 @@ function PostingDetailInner() {
       return;
     }
 
-    // Sync posting_skills join table: always clear, then re-insert if needed
     const { error: deleteError } = await supabase
       .from("posting_skills")
       .delete()
@@ -492,7 +484,6 @@ function PostingDetailInner() {
 
     setLocalMyApplication({ ...myApplication, status: "withdrawn" });
 
-    // If an accepted user withdraws, trigger waitlist promotion
     if (wasAccepted && posting) {
       await promoteFromWaitlist(supabase, postingId, posting);
     }
@@ -526,7 +517,6 @@ function PostingDetailInner() {
           ? ("application_accepted" as const)
           : ("application_rejected" as const);
 
-      // Check recipient preferences
       const { data: recipientProfile } = await supabase
         .from("profiles")
         .select("notification_preferences")
@@ -555,7 +545,6 @@ function PostingDetailInner() {
       }
     }
 
-    // If accepting a new member, check if posting should be marked as filled
     if (newStatus === "accepted" && posting) {
       const { count } = await supabase
         .from("applications")
@@ -816,120 +805,49 @@ function PostingDetailInner() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Edit tab */}
         <TabsContent value="edit">
-          <div className="grid gap-6 lg:grid-cols-3 mt-6">
-            <div className="space-y-6 lg:col-span-2">
-              {!isEditing && (
-                <FreeFormUpdate
-                  entityType="posting"
-                  entityId={postingId}
-                  sourceText={posting.source_text ?? null}
-                  canUndo={!!posting.previous_source_text}
-                  isApplying={isApplyingUpdate}
-                  onUpdate={applyFreeFormUpdate}
-                  onUndo={undoLastUpdate}
-                />
-              )}
-
-              <PostingAboutCard
-                posting={posting}
-                isEditing={isEditing}
-                form={form}
-                onFormChange={handleFormChange}
-              />
-            </div>
-
-            <PostingSidebar
-              posting={posting}
-              isOwner={isOwner}
-              onContactCreator={handleContactCreator}
-            />
-          </div>
+          <PostingEditTab
+            posting={posting}
+            postingId={postingId}
+            isOwner={isOwner}
+            isEditing={isEditing}
+            form={form}
+            onFormChange={handleFormChange}
+            onContactCreator={handleContactCreator}
+            isApplyingUpdate={isApplyingUpdate}
+            onApplyUpdate={applyFreeFormUpdate}
+            onUndoUpdate={undoLastUpdate}
+          />
         </TabsContent>
 
-        {/* Manage tab */}
         <TabsContent value="manage">
-          <div className="grid gap-6 lg:grid-cols-3 mt-6">
-            <div className="space-y-6 lg:col-span-2">
-              <PostingApplicationsCard
-                applications={effectiveApplications}
-                isUpdatingApplication={isUpdatingApplication}
-                onUpdateStatus={handleUpdateApplicationStatus}
-                onMessage={handleStartConversation}
-              />
-
-              {posting.mode === "friend_ask" && currentUserId && (
-                <SequentialInviteCard
-                  postingId={postingId}
-                  currentUserId={currentUserId}
-                />
-              )}
-
-              <PostingMatchedProfilesCard
-                matchedProfiles={matchedProfiles}
-                isLoadingMatches={isLoading}
-                onViewProfile={(userId) => router.push(`/profile/${userId}`)}
-                onMessage={handleStartConversation}
-              />
-            </div>
-
-            <PostingSidebar
-              posting={posting}
-              isOwner={isOwner}
-              onContactCreator={handleContactCreator}
-            />
-          </div>
+          <PostingManageTab
+            posting={posting}
+            postingId={postingId}
+            isOwner={isOwner}
+            currentUserId={currentUserId}
+            applications={effectiveApplications}
+            matchedProfiles={matchedProfiles}
+            isLoading={isLoading}
+            isUpdatingApplication={isUpdatingApplication}
+            onUpdateStatus={handleUpdateApplicationStatus}
+            onStartConversation={handleStartConversation}
+            onContactCreator={handleContactCreator}
+          />
         </TabsContent>
 
-        {/* Project tab */}
         <TabsContent value="project">
-          <div className="grid gap-6 lg:grid-cols-3 mt-6">
-            <div className="space-y-6 lg:col-span-2">
-              <PostingTeamCard
-                applications={effectiveApplications}
-                creatorName={posting.profiles?.full_name ?? null}
-                teamSizeMin={posting.team_size_min}
-                teamSizeMax={posting.team_size_max}
-              />
-
-              <PostingAboutCard
-                posting={posting}
-                isEditing={false}
-                form={form}
-                onFormChange={handleFormChange}
-              />
-
-              {currentUserId && (
-                <GroupChatPanel
-                  postingId={postingId}
-                  postingTitle={posting.title}
-                  currentUserId={currentUserId}
-                  currentUserName={currentUserProfile?.full_name ?? null}
-                  teamMembers={[
-                    {
-                      user_id: posting.creator_id,
-                      full_name: posting.profiles?.full_name ?? null,
-                      role: "creator",
-                    },
-                    ...effectiveApplications
-                      .filter((a) => a.status === "accepted")
-                      .map((a) => ({
-                        user_id: a.applicant_id,
-                        full_name: a.profiles?.full_name ?? null,
-                        role: "member",
-                      })),
-                  ]}
-                />
-              )}
-            </div>
-
-            <PostingSidebar
-              posting={posting}
-              isOwner={isOwner}
-              onContactCreator={handleContactCreator}
-            />
-          </div>
+          <PostingActivityTab
+            posting={posting}
+            postingId={postingId}
+            isOwner={isOwner}
+            currentUserId={currentUserId}
+            currentUserName={currentUserProfile?.full_name ?? null}
+            applications={effectiveApplications}
+            form={form}
+            onFormChange={handleFormChange}
+            onContactCreator={handleContactCreator}
+          />
         </TabsContent>
       </Tabs>
     </div>
