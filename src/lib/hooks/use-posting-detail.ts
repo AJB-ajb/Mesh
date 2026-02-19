@@ -31,6 +31,8 @@ export type PostingDetail = {
   tags?: string[];
   context_identifier?: string | null;
   auto_accept: boolean;
+  availability_mode?: string | null;
+  timezone?: string | null;
   source_text?: string | null;
   previous_source_text?: string | null;
   previous_posting_snapshot?: Record<string, unknown> | null;

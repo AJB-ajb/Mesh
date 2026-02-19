@@ -10,6 +10,8 @@ import {
   TIME_SLOTS,
   TIME_SLOT_LABELS,
 } from "@/lib/types/profile";
+import type { RecurringWindow } from "@/lib/types/availability";
+import { CalendarWeekView } from "@/components/availability/calendar-week-view";
 
 const LOCATION_MODE_DISPLAY: Record<string, string> = {
   remote: "Remote",
@@ -25,7 +27,13 @@ function skillLevelLabel(level: number): string {
   return "Expert";
 }
 
-export function ProfileView({ form }: { form: ProfileFormState }) {
+export function ProfileView({
+  form,
+  availabilityWindows,
+}: {
+  form: ProfileFormState;
+  availabilityWindows?: RecurringWindow[];
+}) {
   const skillsList = parseList(form.skills);
   const interestsList = parseList(form.interests);
 
@@ -192,8 +200,21 @@ export function ProfileView({ form }: { form: ProfileFormState }) {
         </CardContent>
       </Card>
 
-      {/* Availability */}
-      {hasAvailability && (
+      {/* Availability — prefer CalendarWeekView if windows are available */}
+      {availabilityWindows && availabilityWindows.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Availability</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CalendarWeekView
+              windows={availabilityWindows}
+              onChange={() => {}}
+              readOnly
+            />
+          </CardContent>
+        </Card>
+      ) : hasAvailability ? (
         <Card>
           <CardHeader>
             <CardTitle>Availability</CardTitle>
@@ -241,7 +262,7 @@ export function ProfileView({ form }: { form: ProfileFormState }) {
             </div>
           </CardContent>
         </Card>
-      )}
+      ) : null}
     </div>
   );
 }

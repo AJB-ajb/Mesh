@@ -20,11 +20,16 @@ import {
 export type { PostingFormState };
 export { defaultPostingFormState as defaultFormState };
 
+import type {
+  AvailabilityMode,
+  RecurringWindow,
+} from "@/lib/types/availability";
 import { PostingFormBasic } from "./posting-form-basic";
 import { PostingFormSkills } from "./posting-form-skills";
 import { PostingFormMeta } from "./posting-form-meta";
 import { PostingFormTeam } from "./posting-form-team";
 import { PostingFormLocation } from "./posting-form-location";
+import { PostingFormAvailability } from "./posting-form-availability";
 
 type PostingFormCardProps = {
   form: PostingFormState;
@@ -66,6 +71,14 @@ export function PostingFormCard({
     }));
   };
 
+  const handleAvailabilityModeChange = (mode: AvailabilityMode) => {
+    setForm((prev) => ({ ...prev, availabilityMode: mode }));
+  };
+
+  const handleRecurringWindowsChange = (windows: RecurringWindow[]) => {
+    setForm((prev) => ({ ...prev, availabilityWindows: windows }));
+  };
+
   return (
     <form onSubmit={onSubmit}>
       <Card>
@@ -90,6 +103,15 @@ export function PostingFormCard({
           <PostingFormTeam form={form} onChange={onChange} />
 
           <PostingFormLocation form={form} onChange={onChange} />
+
+          <PostingFormAvailability
+            availabilityMode={form.availabilityMode}
+            onModeChange={handleAvailabilityModeChange}
+            recurringWindows={form.availabilityWindows}
+            onRecurringWindowsChange={handleRecurringWindowsChange}
+            specificWindows={form.specificWindows}
+            onSpecificWindowsChange={() => {}}
+          />
 
           {/* Submit */}
           <div className="flex gap-4 pt-4">

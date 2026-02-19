@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import type { KeyedMutator } from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { type ProfileFormState, parseList } from "@/lib/types/profile";
+import type { RecurringWindow } from "@/lib/types/availability";
 import { triggerEmbeddingGeneration } from "@/lib/api/trigger-embedding";
 import type { ProfileFetchResult } from "./use-profile-data";
 
@@ -20,7 +21,11 @@ export function useProfileSave(
   const [success, setSuccess] = useState(false);
 
   const handleSubmit = useCallback(
-    async (event: React.FormEvent<HTMLFormElement>, form: ProfileFormState) => {
+    async (
+      event: React.FormEvent<HTMLFormElement>,
+      form: ProfileFormState,
+      availabilityWindows?: RecurringWindow[],
+    ) => {
       event.preventDefault();
       setError(null);
       setSuccess(false);
@@ -56,6 +61,7 @@ export function useProfileSave(
           github_url: form.githubUrl.trim(),
           location_mode: form.locationMode,
           availability_slots: form.availabilitySlots,
+          timezone: form.timezone || null,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "user_id" },
@@ -87,6 +93,25 @@ export function useProfileSave(
           .from("profile_skills")
           .delete()
           .eq("profile_id", user.id);
+      }
+
+      // Sync availability_windows
+      if (availabilityWindows) {
+        await supabase
+          .from("availability_windows")
+          .delete()
+          .eq("profile_id", user.id);
+
+        if (availabilityWindows.length > 0) {
+          const windowRows = availabilityWindows.map((w) => ({
+            profile_id: user.id,
+            window_type: "recurring" as const,
+            day_of_week: w.day_of_week,
+            start_minutes: w.start_minutes,
+            end_minutes: w.end_minutes,
+          }));
+          await supabase.from("availability_windows").insert(windowRows);
+        }
       }
 
       setIsSaving(false);

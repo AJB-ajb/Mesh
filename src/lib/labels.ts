@@ -1061,4 +1061,29 @@ export const labels = {
     connected: "Connected",
     message: "Message",
   },
+
+  // ---------------------------------------------------------------------------
+  // Availability
+  // ---------------------------------------------------------------------------
+  availability: {
+    // Quick/Detailed mode toggle
+    quickMode: "Quick",
+    detailedMode: "Detailed",
+    quickModeHint: "Toggle morning, afternoon, and evening slots for each day.",
+    detailedModeHint:
+      "Drag to create precise time windows on the weekly calendar.",
+
+    // Posting availability mode
+    postingAvailabilityTitle: "Availability",
+    modeFlexible: "Flexible",
+    modeFlexibleDescription:
+      "No specific schedule — collaborators can work anytime.",
+    modeRecurring: "Recurring weekly",
+    modeRecurringDescription:
+      "Set weekly time windows when the team should be available.",
+    modeSpecificDates: "Specific dates",
+    modeSpecificDatesDescription:
+      "Pick exact dates and times for collaboration.",
+    specificDatesComingSoon: "Specific date selection coming soon.",
+  },
 } as const;

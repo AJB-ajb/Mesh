@@ -62,6 +62,7 @@ function makeProfile(overrides: Partial<Profile> = {}): Profile {
     previous_source_text: null,
     previous_profile_snapshot: null,
     embedding: null,
+    timezone: null,
     notification_preferences: null,
     created_at: "2025-01-01T00:00:00Z",
     updated_at: "2025-01-01T00:00:00Z",

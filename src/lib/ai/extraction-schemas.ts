@@ -74,6 +74,36 @@ export function profileExtractionSchema(mode: ExtractionMode): ObjectSchema {
       description:
         "Location preference: 0.0 = in-person only, 0.5 = either, 1.0 = remote only",
     },
+    availability_windows: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          day_of_week: {
+            type: SchemaType.NUMBER,
+            description: "Day of week: 0=Monday, 1=Tuesday, ..., 6=Sunday",
+          },
+          start_minutes: {
+            type: SchemaType.NUMBER,
+            description:
+              "Start time in minutes from midnight (0-1439). E.g., 540 = 9:00 AM",
+          },
+          end_minutes: {
+            type: SchemaType.NUMBER,
+            description:
+              "End time in minutes from midnight (1-1440). E.g., 1020 = 5:00 PM",
+          },
+        },
+        required: ["day_of_week", "start_minutes", "end_minutes"],
+      },
+      description:
+        "Weekly recurring availability windows extracted from text like 'weekday evenings' or 'Saturday 2-4pm'",
+    },
+    timezone: {
+      type: SchemaType.STRING,
+      description:
+        "IANA timezone if mentioned (e.g., 'America/New_York', 'Europe/Berlin')",
+    },
   };
 
   const required = mode === "update" ? ["updated_text", "skills"] : ["skills"];
@@ -145,6 +175,43 @@ export function postingExtractionSchema(mode: ExtractionMode): ObjectSchema {
       enum: ["open", "friend_ask"],
       description:
         "Posting mode: 'open' for public discovery (default), 'friend_ask' for sequential connection-by-connection invites",
+    },
+    availability_mode: {
+      type: SchemaType.STRING,
+      format: "enum",
+      enum: ["flexible", "recurring", "specific_dates"],
+      description:
+        "Schedule type: 'flexible' if no specific schedule mentioned (default), 'recurring' if weekly times specified, 'specific_dates' if exact dates given",
+    },
+    availability_windows: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          day_of_week: {
+            type: SchemaType.NUMBER,
+            description: "Day of week: 0=Monday, 1=Tuesday, ..., 6=Sunday",
+          },
+          start_minutes: {
+            type: SchemaType.NUMBER,
+            description:
+              "Start time in minutes from midnight (0-1439). E.g., 540 = 9:00 AM",
+          },
+          end_minutes: {
+            type: SchemaType.NUMBER,
+            description:
+              "End time in minutes from midnight (1-1440). E.g., 1020 = 5:00 PM",
+          },
+        },
+        required: ["day_of_week", "start_minutes", "end_minutes"],
+      },
+      description:
+        "Weekly recurring availability windows. Only populate when availability_mode is 'recurring'",
+    },
+    timezone: {
+      type: SchemaType.STRING,
+      description:
+        "IANA timezone if mentioned (e.g., 'America/New_York', 'Europe/Berlin')",
     },
   };
 

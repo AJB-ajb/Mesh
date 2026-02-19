@@ -71,6 +71,7 @@ export interface Profile {
   location_preference: number | null; // 0-1 float (0=in-person, 0.5=either, 1=remote)
   location_mode: "remote" | "in_person" | "either" | null;
   availability_slots: AvailabilitySlotsMap | null;
+  timezone: string | null;
   // Links
   portfolio_url: string | null;
   github_url: string | null;
@@ -100,6 +101,7 @@ export interface ProfileInsert {
   location_preference?: number | null;
   location_mode?: "remote" | "in_person" | "either" | null;
   availability_slots?: AvailabilitySlotsMap | null;
+  timezone?: string | null;
   portfolio_url?: string | null;
   github_url?: string | null;
   source_text?: string | null;
@@ -124,6 +126,7 @@ export interface ProfileUpdate {
   location_preference?: number | null;
   location_mode?: "remote" | "in_person" | "either" | null;
   availability_slots?: AvailabilitySlotsMap | null;
+  timezone?: string | null;
   portfolio_url?: string | null;
   github_url?: string | null;
   source_text?: string | null;
@@ -161,6 +164,8 @@ export interface Posting {
   estimated_time: string | null;
   auto_accept: boolean;
   embedding: number[] | null;
+  availability_mode: "flexible" | "recurring" | "specific_dates";
+  timezone: string | null;
   status: "open" | "closed" | "filled" | "expired" | "paused";
   created_at: string;
   updated_at: string;
@@ -188,6 +193,8 @@ export interface PostingInsert {
   natural_language_criteria?: string | null;
   estimated_time?: string | null;
   auto_accept?: boolean;
+  availability_mode?: "flexible" | "recurring" | "specific_dates";
+  timezone?: string | null;
   embedding?: number[] | null;
   status?: "open" | "closed" | "filled" | "expired" | "paused";
   created_at?: string;
@@ -216,6 +223,8 @@ export interface PostingUpdate {
   natural_language_criteria?: string | null;
   estimated_time?: string | null;
   auto_accept?: boolean;
+  availability_mode?: "flexible" | "recurring" | "specific_dates";
+  timezone?: string | null;
   embedding?: number[] | null;
   status?: "open" | "closed" | "filled" | "expired" | "paused";
   created_at?: string;

@@ -80,6 +80,7 @@ export type ProfileFormState = {
   skillLevels: SkillLevel[];
   locationMode: LocationMode;
   availabilitySlots: AvailabilitySlots;
+  timezone: string;
   /** Skills selected from the skill tree (new normalized model) */
   selectedSkills: import("./skill").SelectedProfileSkill[];
 };
@@ -99,6 +100,7 @@ export const defaultFormState: ProfileFormState = {
   skillLevels: [],
   locationMode: "either",
   availabilitySlots: {},
+  timezone: "",
   selectedSkills: [],
 };
 
@@ -123,6 +125,12 @@ export type ExtractedProfileV2 = {
   location_preference?: number;
   location_mode?: LocationMode;
   availability_slots?: Record<string, unknown>;
+  availability_windows?: {
+    day_of_week: number;
+    start_minutes: number;
+    end_minutes: number;
+  }[];
+  timezone?: string;
 };
 
 export type ProfileUpdateResponse = {
@@ -171,5 +179,6 @@ export function mapExtractedToFormState(
     ...(extracted.availability_slots != null && {
       availabilitySlots: extracted.availability_slots as AvailabilitySlots,
     }),
+    ...(extracted.timezone != null && { timezone: extracted.timezone }),
   };
 }

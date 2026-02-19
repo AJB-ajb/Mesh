@@ -40,6 +40,8 @@ export default function ProfilePage() {
     isApplyingUpdate,
     applyFreeFormUpdate,
     undoLastUpdate,
+    availabilityWindows,
+    onAvailabilityWindowsChange,
   } = useProfile();
 
   const {
@@ -177,6 +179,8 @@ export default function ProfilePage() {
                 onChange={handleChange}
                 onCancel={() => setIsEditing(false)}
                 location={location}
+                availabilityWindows={availabilityWindows}
+                onAvailabilityWindowsChange={onAvailabilityWindowsChange}
               />
               <IntegrationsSection
                 connectedProviders={connectedProviders}
@@ -204,7 +208,7 @@ export default function ProfilePage() {
             onUpdate={applyFreeFormUpdate}
             onUndo={undoLastUpdate}
           />
-          <ProfileView form={form} />
+          <ProfileView form={form} availabilityWindows={availabilityWindows} />
           <IntegrationsSection
             connectedProviders={connectedProviders}
             isEditing={false}

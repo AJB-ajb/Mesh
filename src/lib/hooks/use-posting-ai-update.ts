@@ -38,6 +38,8 @@ function buildPostingConfig(
       tags: form.tags ? parseList(form.tags) : [],
       context_identifier: form.contextIdentifier || null,
       mode: form.mode,
+      availability_mode: form.availabilityMode,
+      timezone: form.timezone || null,
     }),
 
     buildExtractedFields: (extracted) => ({
@@ -57,6 +59,10 @@ function buildPostingConfig(
         context_identifier: extracted.context_identifier,
       }),
       ...(extracted.mode != null && { mode: extracted.mode }),
+      ...(extracted.availability_mode != null && {
+        availability_mode: extracted.availability_mode,
+      }),
+      ...(extracted.timezone != null && { timezone: extracted.timezone }),
     }),
 
     buildRestoredFields: (snapshot) => ({
@@ -76,6 +82,10 @@ function buildPostingConfig(
         context_identifier: snapshot.context_identifier,
       }),
       ...(snapshot.mode != null && { mode: snapshot.mode }),
+      ...(snapshot.availability_mode != null && {
+        availability_mode: snapshot.availability_mode,
+      }),
+      ...(snapshot.timezone != null && { timezone: snapshot.timezone }),
     }),
   };
 }

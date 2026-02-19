@@ -38,10 +38,59 @@ User profile information including skills, preferences, and matching-related dat
 | `embedding`                 | vector(1536)     | YES      | null     | OpenAI embedding for semantic matching                          |
 | `created_at`                | timestamptz      | NO       | now()    | Record creation timestamp                                       |
 | `updated_at`                | timestamptz      | NO       | now()    | Last update timestamp (auto-updated)                            |
+| `timezone`                  | text             | YES      | null     | IANA timezone string (e.g., 'Europe/Berlin')                    |
 
 **RLS Policies:**
 
 - Users can view, insert, and update only their own profile
+
+---
+
+### availability_windows
+
+Minute-level recurring (or specific) availability windows for profiles and postings. Used for overlap-based matching scoring.
+
+| Field             | Type        | Nullable | Default           | Description                                                 |
+| ----------------- | ----------- | -------- | ----------------- | ----------------------------------------------------------- |
+| `id`              | uuid        | NO       | gen_random_uuid() | Primary key                                                 |
+| `profile_id`      | uuid FK     | YES      | null              | References `profiles(user_id)` ON DELETE CASCADE            |
+| `posting_id`      | uuid FK     | YES      | null              | References `postings(id)` ON DELETE CASCADE                 |
+| `window_type`     | text        | NO       | -                 | `'recurring'` or `'specific'`                               |
+| `day_of_week`     | smallint    | YES      | null              | 0=Mon..6=Sun (recurring only)                               |
+| `start_minutes`   | smallint    | YES      | null              | 0-1439, minutes from midnight (recurring only)              |
+| `end_minutes`     | smallint    | YES      | null              | 1-1440, minutes from midnight (recurring only)              |
+| `specific_date`   | date        | YES      | null              | Date for specific windows                                   |
+| `start_time_utc`  | timestamptz | YES      | null              | Start time (specific only)                                  |
+| `end_time_utc`    | timestamptz | YES      | null              | End time (specific only)                                    |
+| `canonical_range` | int4range   | YES      | null              | Trigger-computed: `[day*1440+start, day*1440+end)` for GiST |
+| `created_at`      | timestamptz | NO       | now()             | Record creation timestamp                                   |
+
+**Constraints:**
+
+- `exactly_one_owner`: exactly one of `profile_id`/`posting_id` must be set
+- `recurring_fields_required`: when `window_type = 'recurring'`, day/start/end NOT NULL
+- `specific_fields_required`: when `window_type = 'specific'`, date/start_utc/end_utc NOT NULL
+- `end_after_start_recurring`: `end_minutes > start_minutes`
+- `end_after_start_specific`: `end_time_utc > start_time_utc`
+
+**Indexes:**
+
+- B-tree on `profile_id` (WHERE NOT NULL)
+- B-tree on `posting_id` (WHERE NOT NULL)
+- GiST on `canonical_range` (WHERE NOT NULL) — for `&&` overlap queries
+
+**Trigger:** `compute_canonical_range()` — auto-computes `canonical_range` on INSERT/UPDATE for recurring windows.
+
+**RLS Policies:**
+
+- All authenticated users can SELECT (needed for matching)
+- INSERT/UPDATE/DELETE restricted to owner (`profile_id = auth.uid()` OR posting's `creator_id = auth.uid()`)
+
+**RPC Functions:**
+
+| Function                     | Parameters                             | Returns  | Description                                                 |
+| ---------------------------- | -------------------------------------- | -------- | ----------------------------------------------------------- |
+| `compute_availability_score` | `p_profile_id uuid, p_posting_id uuid` | `float8` | Overlap minutes / posting total minutes (1.0 if no windows) |
 
 ---
 

@@ -1,4 +1,9 @@
 import type { SelectedPostingSkill } from "@/lib/types/skill";
+import type {
+  AvailabilityMode,
+  RecurringWindow,
+  SpecificWindow,
+} from "@/lib/types/availability";
 
 export type PostingFormState = {
   title: string;
@@ -21,6 +26,10 @@ export type PostingFormState = {
   contextIdentifier: string;
   skillLevelMin: string;
   autoAccept: string;
+  availabilityMode: AvailabilityMode;
+  timezone: string;
+  availabilityWindows: RecurringWindow[];
+  specificWindows: SpecificWindow[];
   /** Skills selected from the skill tree (new normalized model) */
   selectedSkills: SelectedPostingSkill[];
 };
@@ -44,6 +53,13 @@ export type ExtractedPosting = {
   tags?: string[];
   context_identifier?: string;
   mode?: string;
+  availability_mode?: AvailabilityMode;
+  availability_windows?: {
+    day_of_week: number;
+    start_minutes: number;
+    end_minutes: number;
+  }[];
+  timezone?: string;
 };
 
 export type PostingUpdateResponse = {
@@ -73,5 +89,9 @@ export const defaultPostingFormState: PostingFormState = {
   contextIdentifier: "",
   skillLevelMin: "",
   autoAccept: "false",
+  availabilityMode: "flexible",
+  timezone: "",
+  availabilityWindows: [],
+  specificWindows: [],
   selectedSkills: [],
 };

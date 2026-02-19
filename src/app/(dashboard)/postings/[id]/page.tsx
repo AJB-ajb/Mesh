@@ -16,6 +16,7 @@ import {
   shouldNotify,
 } from "@/lib/notifications/preferences";
 import type { PostingFormState } from "@/lib/hooks/use-posting-detail";
+import type { RecurringWindow } from "@/lib/types/availability";
 import { PostingDetailHeader } from "@/components/posting/posting-detail-header";
 import { PostingAboutCard } from "@/components/posting/posting-about-card";
 import { PostingCompatibilityCard } from "@/components/posting/posting-compatibility-card";
@@ -88,6 +89,10 @@ function PostingDetailInner() {
     contextIdentifier: "",
     skillLevelMin: "",
     autoAccept: "false",
+    availabilityMode: "flexible",
+    timezone: "",
+    availabilityWindows: [],
+    specificWindows: [],
     selectedSkills: [],
   });
 
@@ -222,8 +227,24 @@ function PostingDetailInner() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleStartEdit = () => {
+  const handleStartEdit = async () => {
     if (!posting) return;
+
+    // Fetch availability windows for this posting
+    const supabase = createClient();
+    const { data: windowRows } = await supabase
+      .from("availability_windows")
+      .select("*")
+      .eq("posting_id", postingId)
+      .eq("window_type", "recurring");
+
+    const windows: RecurringWindow[] = (windowRows ?? []).map((w) => ({
+      window_type: "recurring" as const,
+      day_of_week: w.day_of_week!,
+      start_minutes: w.start_minutes!,
+      end_minutes: w.end_minutes!,
+    }));
+
     setForm({
       title: posting.title,
       description: posting.description,
@@ -245,6 +266,12 @@ function PostingDetailInner() {
       contextIdentifier: posting.context_identifier || "",
       skillLevelMin: "",
       autoAccept: posting.auto_accept ? "true" : "false",
+      availabilityMode:
+        (posting.availability_mode as PostingFormState["availabilityMode"]) ||
+        "flexible",
+      timezone: posting.timezone || "",
+      availabilityWindows: windows,
+      specificWindows: [],
       selectedSkills: posting.selectedPostingSkills ?? [],
     });
     setIsEditing(true);
@@ -293,6 +320,8 @@ function PostingDetailInner() {
           : [],
         context_identifier: form.contextIdentifier.trim() || null,
         auto_accept: form.autoAccept === "true",
+        availability_mode: form.availabilityMode,
+        timezone: form.timezone || null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", postingId);
@@ -329,6 +358,26 @@ function PostingDetailInner() {
         setError("Failed to save skills. Please try again.");
         return;
       }
+    }
+
+    // Sync availability windows
+    await supabase
+      .from("availability_windows")
+      .delete()
+      .eq("posting_id", postingId);
+
+    if (
+      form.availabilityMode !== "flexible" &&
+      form.availabilityWindows.length > 0
+    ) {
+      const windowRows = form.availabilityWindows.map((w) => ({
+        posting_id: postingId,
+        window_type: "recurring" as const,
+        day_of_week: w.day_of_week,
+        start_minutes: w.start_minutes,
+        end_minutes: w.end_minutes,
+      }));
+      await supabase.from("availability_windows").insert(windowRows);
     }
 
     setIsSaving(false);

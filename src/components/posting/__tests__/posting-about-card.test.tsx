@@ -56,6 +56,10 @@ const baseForm: PostingFormState = {
   contextIdentifier: "",
   skillLevelMin: "",
   autoAccept: "false",
+  availabilityMode: "flexible",
+  timezone: "",
+  availabilityWindows: [],
+  specificWindows: [],
   selectedSkills: [],
 };
 

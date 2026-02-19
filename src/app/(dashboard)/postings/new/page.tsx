@@ -90,6 +90,21 @@ export default function NewPostingPage() {
         contextIdentifier:
           extracted.context_identifier || prev.contextIdentifier,
         skillLevelMin: prev.skillLevelMin,
+        availabilityMode: extracted.availability_mode || prev.availabilityMode,
+        timezone: extracted.timezone || prev.timezone,
+        availabilityWindows: Array.isArray(extracted.availability_windows)
+          ? extracted.availability_windows.map(
+              (w: {
+                day_of_week: number;
+                start_minutes: number;
+                end_minutes: number;
+              }) => ({
+                day_of_week: w.day_of_week,
+                start_minutes: w.start_minutes,
+                end_minutes: w.end_minutes,
+              }),
+            )
+          : prev.availabilityWindows,
       }));
 
       setExtractionSuccess(true);
@@ -213,6 +228,8 @@ export default function NewPostingPage() {
           : [],
         context_identifier: form.contextIdentifier.trim() || null,
         auto_accept: form.autoAccept === "true",
+        availability_mode: form.availabilityMode,
+        timezone: form.timezone || null,
       })
       .select()
       .single();
@@ -254,6 +271,21 @@ export default function NewPostingPage() {
         level_min: s.levelMin,
       }));
       await supabase.from("posting_skills").insert(postingSkillRows);
+    }
+
+    // Insert availability_windows if mode is not flexible
+    if (
+      form.availabilityMode !== "flexible" &&
+      form.availabilityWindows.length > 0
+    ) {
+      const windowRows = form.availabilityWindows.map((w) => ({
+        posting_id: posting.id,
+        window_type: "recurring" as const,
+        day_of_week: w.day_of_week,
+        start_minutes: w.start_minutes,
+        end_minutes: w.end_minutes,
+      }));
+      await supabase.from("availability_windows").insert(windowRows);
     }
 
     // Trigger embedding generation (fire-and-forget, non-blocking)

@@ -35,7 +35,15 @@ Extract as much relevant information as possible from the provided text, which c
 - Any text describing a developer
 
 Be thorough in extracting skills - look for programming languages, frameworks, tools, and technologies.
-If information is not explicitly stated, make reasonable inferences based on context.`,
+If information is not explicitly stated, make reasonable inferences based on context.
+
+For availability, convert natural language to recurring weekly windows:
+- "Weekday evenings" → Monday-Friday, 1080-1440 (6pm-midnight)
+- "Saturday 2-4pm" → day 5, 840-960
+- "Mornings except Tuesday" → Mon,Wed-Sun, 360-720
+- Days: 0=Monday, 1=Tuesday, 2=Wednesday, 3=Thursday, 4=Friday, 5=Saturday, 6=Sunday
+- Minutes from midnight: 6am=360, 9am=540, 12pm=720, 3pm=900, 5pm=1020, 6pm=1080, 9pm=1260, midnight=1440
+If a timezone is mentioned (e.g., "EST", "Berlin time"), extract it as an IANA timezone string.`,
 );
 
 export const PROFILE_UPDATE_SYSTEM_PROMPT = buildUpdatePrompt(
@@ -64,7 +72,16 @@ Extract as much relevant information as possible from the provided text, which c
 Be thorough in extracting skills - look for programming languages, frameworks, tools, and technologies.
 Categorize the posting as study, hackathon, personal, professional, or social based on context.
 Infer team size range from context if not explicitly stated.
-Create a clear, concise title if one isn't provided.`,
+Create a clear, concise title if one isn't provided.
+
+For scheduling/availability:
+- If no schedule mentioned → availability_mode: "flexible"
+- If weekly recurring times mentioned → availability_mode: "recurring", populate availability_windows
+- Convert times to minutes from midnight: 6am=360, 9am=540, 12pm=720, 5pm=1020, 6pm=1080, midnight=1440
+- Days: 0=Monday, 1=Tuesday, ..., 6=Sunday
+- Examples: "Tuesday and Thursday evenings" → recurring with day 1 and 3, 1080-1440
+  "Weekends 10am-2pm" → day 5 and 6, 600-840
+If a timezone is mentioned, extract as IANA timezone (e.g., "America/New_York").`,
 );
 
 export const POSTING_UPDATE_SYSTEM_PROMPT = buildUpdatePrompt(

@@ -127,6 +127,8 @@ export async function matchProfileToPostings(
         natural_language_criteria: row.natural_language_criteria || null,
         estimated_time: row.estimated_time || null,
         auto_accept: row.auto_accept ?? false,
+        availability_mode: row.availability_mode || "flexible",
+        timezone: row.timezone || null,
         embedding: null,
         status: "open",
         created_at: row.created_at,

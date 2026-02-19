@@ -10,17 +10,15 @@ import {
 } from "@/components/ui/card";
 import { labels } from "@/lib/labels";
 import type { ProfileFormState } from "@/lib/types/profile";
-import {
-  type LocationMode,
-  type AvailabilitySlots,
-} from "@/lib/types/profile";
+import { type LocationMode } from "@/lib/types/profile";
+import type { RecurringWindow } from "@/lib/types/availability";
 import type { SelectedProfileSkill } from "@/lib/types/skill";
 import type { GeocodingResult } from "@/lib/geocoding";
 
 import { ProfileFormGeneral } from "./profile-form-general";
 import { ProfileFormSkills } from "./profile-form-skills";
 import { ProfileFormLocationMode } from "./profile-form-location-mode";
-import { ProfileFormAvailability } from "./profile-form-availability";
+import { AvailabilityEditor } from "@/components/availability/availability-editor";
 
 export function ProfileForm({
   form,
@@ -30,6 +28,8 @@ export function ProfileForm({
   onChange,
   onCancel,
   location,
+  availabilityWindows,
+  onAvailabilityWindowsChange,
 }: {
   form: ProfileFormState;
   setForm: React.Dispatch<React.SetStateAction<ProfileFormState>>;
@@ -46,6 +46,8 @@ export function ProfileForm({
     handleLocationSelect: (result: GeocodingResult) => void;
     handleLocationInputChange: (value: string) => void;
   };
+  availabilityWindows: RecurringWindow[];
+  onAvailabilityWindowsChange: (windows: RecurringWindow[]) => void;
 }) {
   const handleAddSkill = (skill: SelectedProfileSkill) => {
     setForm((prev) => ({
@@ -72,22 +74,6 @@ export function ProfileForm({
 
   const setLocationMode = (mode: LocationMode) => {
     setForm((prev) => ({ ...prev, locationMode: mode }));
-  };
-
-  const toggleSlot = (day: string, slot: string) => {
-    setForm((prev) => {
-      const current = prev.availabilitySlots[day] ?? [];
-      const next = current.includes(slot)
-        ? current.filter((s) => s !== slot)
-        : [...current, slot];
-      const slots: AvailabilitySlots = { ...prev.availabilitySlots };
-      if (next.length === 0) {
-        delete slots[day];
-      } else {
-        slots[day] = next;
-      }
-      return { ...prev, availabilitySlots: slots };
-    });
   };
 
   return (
@@ -143,7 +129,7 @@ export function ProfileForm({
         </CardContent>
       </Card>
 
-      {/* Availability Slot Picker */}
+      {/* Availability Editor (Quick/Detailed) */}
       <Card>
         <CardHeader>
           <CardTitle>{labels.profileForm.availabilityTitle}</CardTitle>
@@ -152,9 +138,9 @@ export function ProfileForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ProfileFormAvailability
-            availabilitySlots={form.availabilitySlots}
-            onToggleSlot={toggleSlot}
+          <AvailabilityEditor
+            windows={availabilityWindows}
+            onChange={onAvailabilityWindowsChange}
           />
         </CardContent>
       </Card>

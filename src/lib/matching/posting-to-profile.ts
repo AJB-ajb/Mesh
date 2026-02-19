@@ -114,6 +114,7 @@ export async function matchPostingToProfiles(
         previous_source_text: null,
         previous_profile_snapshot: null,
         embedding: null,
+        timezone: null,
         notification_preferences: null,
         created_at: "",
         updated_at: "",

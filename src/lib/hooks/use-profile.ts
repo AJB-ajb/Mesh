@@ -1,6 +1,9 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import type { ProfileFormState } from "@/lib/types/profile";
+import type { RecurringWindow } from "@/lib/types/availability";
+import { gridToWindows } from "@/lib/availability/quick-mode";
 import { useProfileData } from "./use-profile-data";
 import { useProfileForm } from "./use-profile-form";
 import { useProfileSave } from "./use-profile-save";
@@ -24,6 +27,53 @@ export function useProfile() {
   );
   const providers = useProfileProviders();
 
+  // Availability windows state — initialised from fetched data,
+  // managed locally during edit, synced on save.
+  const [localWindows, setLocalWindows] = useState<RecurringWindow[] | null>(
+    null,
+  );
+
+  // When editing, use local draft; otherwise use fetched data
+  const availabilityWindows: RecurringWindow[] = profileForm.isEditing
+    ? (localWindows ??
+      data?.recurringWindows ??
+      gridToWindows(profileForm.form.availabilitySlots))
+    : (data?.recurringWindows ??
+      gridToWindows(profileForm.form.availabilitySlots));
+
+  const handleAvailabilityWindowsChange = useCallback(
+    (windows: RecurringWindow[]) => {
+      setLocalWindows(windows);
+    },
+    [],
+  );
+
+  // Override setIsEditing to also init/clear local windows
+  const originalSetIsEditing = profileForm.setIsEditing;
+  const setIsEditing = useCallback(
+    (value: boolean | ((prev: boolean) => boolean)) => {
+      originalSetIsEditing(value);
+      const next =
+        typeof value === "function" ? value(profileForm.isEditing) : value;
+      if (next) {
+        // Entering edit mode — snapshot windows
+        setLocalWindows(
+          data?.recurringWindows ??
+            gridToWindows(profileForm.form.availabilitySlots),
+        );
+      } else {
+        // Leaving edit mode — discard draft
+        setLocalWindows(null);
+      }
+    },
+    [
+      originalSetIsEditing,
+      profileForm.isEditing,
+      data?.recurringWindows,
+      profileForm.form.availabilitySlots,
+    ],
+  );
+
   // Merge errors from sub-hooks
   const error =
     save.error ??
@@ -40,7 +90,7 @@ export function useProfile() {
     setError: save.setError,
     success: save.success || aiUpdate.success,
     isEditing: profileForm.isEditing,
-    setIsEditing: profileForm.setIsEditing,
+    setIsEditing,
     userEmail: data?.userEmail ?? null,
     connectedProviders: data?.connectedProviders ?? {
       github: false,
@@ -50,13 +100,15 @@ export function useProfile() {
     isGithubProvider: data?.isGithubProvider ?? false,
     handleChange: profileForm.handleChange,
     handleSubmit: (e: React.FormEvent<HTMLFormElement>) =>
-      save.handleSubmit(e, profileForm.form),
+      save.handleSubmit(e, profileForm.form, availabilityWindows),
     handleLinkProvider: providers.handleLinkProvider,
     sourceText: data?.sourceText ?? null,
     canUndo: data?.canUndo ?? false,
     isApplyingUpdate: aiUpdate.isApplyingUpdate,
     applyFreeFormUpdate: aiUpdate.applyFreeFormUpdate,
     undoLastUpdate: aiUpdate.undoLastUpdate,
+    availabilityWindows,
+    onAvailabilityWindowsChange: handleAvailabilityWindowsChange,
     mutate,
   } satisfies Record<string, unknown> & { form: ProfileFormState };
 }
