@@ -1003,13 +1003,45 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
-  // Connections page (placeholder)
+  // Connections page
   // ---------------------------------------------------------------------------
   connectionsPage: {
     title: "Connections",
-    subtitle: "Your network of collaborators",
+    subtitle: "Your network and messages",
     comingSoon: "Coming soon",
     comingSoonDescription:
       "Manage your connections, view mutual interests, and start conversations with collaborators.",
+    searchPlaceholder: "Search connections...",
+    noConnections: "No connections yet",
+    noConnectionsHint: "Add people you know to start connecting",
+    selectConnection: "Select a connection to start chatting",
+    pendingRequestsTitle: "Connection Requests",
+    addConnection: "+ Add",
+    qrCode: "QR Code",
+    shareLink: "Share Link",
+    linkCopied: "Link copied!",
+    downloadQr: "Download QR",
+    copyLink: "Copy Link",
+    qrCodeTitle: "Your QR Code",
+    qrCodeDescription: (name: string) => `Scan to connect with ${name}`,
+    addConnectionTitle: "Add Connection",
+    addConnectionSubtitle: "Search for people to connect with",
+    searchPeoplePlaceholder: "Search by name...",
+    noResults: "No people found",
+    connectButton: "Connect",
+    requestSent: "Request Sent",
+    startConversationOnSend: "Send a message to start a conversation",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Public profile connection actions
+  // ---------------------------------------------------------------------------
+  connectionAction: {
+    connect: "Connect",
+    requestPending: "Request Pending",
+    accept: "Accept",
+    decline: "Decline",
+    connected: "Connected",
+    message: "Message",
   },
 } as const;

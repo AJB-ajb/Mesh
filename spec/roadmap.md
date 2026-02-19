@@ -79,7 +79,24 @@
 
 ## Milestones
 
-### v0.3 — Matching & Filtering
+### v0.3 — Navigation Redesign
+
+Restructure the top-level UI around four primary pages reflecting the posting lifecycle: discover → recruit → coordinate → connect. See [ux.md](ux.md) for full page layouts.
+
+| Feature                              | Issue | Effort       | Description                                                                                                            |
+| ------------------------------------ | ----- | ------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Discover page                        | —     | Medium       | New `/discover` — single feed merging old Postings (Discover), Matches, Bookmarks. Sorted by match score, saved filter |
+| My Postings page                     | —     | Small-Medium | Refactor `/postings` to flat list of own postings only. Cards show team fill `current / min (max)`, pending actions    |
+| Posting detail tabs                  | —     | Medium       | Refactor `/postings/[id]` into Edit · Manage · Project tabs. Manage: applicants, sequential invites. Project: group chat, team. Disabled states for inactive tabs |
+| Active page                          | —     | Medium       | New `/active` — list of projects at min team size (created + joined). Cards show unread messages, role, team fill      |
+| Project group chat                   | —     | Medium-Large | Group messaging per posting (Project tab). Distinct from 1:1 DMs in Connections                                        |
+| [x] Connections page                 | —     | Medium       | New `/connections` — split layout: connection list with DMs, pending requests (collapsible), add/QR/share actions      |
+| Notifications → header bell          | —     | Small-Medium | Move notifications out of Inbox page into header bell dropdown. Remove `/inbox` route                                  |
+| Sidebar & routing update             | —     | Small        | Update sidebar nav items, default landing page → Active, remove old routes (dashboard, matches, bookmarks, inbox)      |
+| [x] Connection improvements          | —     | Medium       | QR code for connecting, share profile link, connect button on profiles, search by name/email                           |
+| Remove Dashboard page                | —     | Small        | Remove `/dashboard` route and components                                                                               |
+
+### v0.4 — Matching & Filtering
 
 | Feature                           | Issue | Effort       | Description                                                                                                                      |
 | --------------------------------- | ----- | ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -94,7 +111,7 @@
 | Configurable matching weights     | —     | Small-Medium | Weight sliders on posting creation; stored per posting; passed to scoring                                                        |
 | Fix 0% match score display        | #46   | Small        | Investigate and fix 0% matches showing as "new match" on dashboard                                                               |
 
-### v0.4 — Engagement & Discovery
+### v0.5 — Engagement & Discovery
 
 | Feature                    | Issue | Effort | Description                                                                          |
 | -------------------------- | ----- | ------ | ------------------------------------------------------------------------------------ |

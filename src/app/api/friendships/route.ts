@@ -71,5 +71,26 @@ export const POST = withAuth(async (req, { user, supabase }) => {
 
   if (error) return apiError("INTERNAL", error.message, 500);
 
+  // Create a friend_request notification for the recipient (fire-and-forget)
+  const { data: senderProfile } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  supabase
+    .from("notifications")
+    .insert({
+      user_id: friend_id,
+      type: "friend_request",
+      title: "Connection Request",
+      body: `${senderProfile?.full_name || "Someone"} wants to connect with you`,
+      related_user_id: user.id,
+    })
+    .then(({ error: notifError }) => {
+      if (notifError)
+        console.error("Error creating friend_request notification:", notifError);
+    });
+
   return NextResponse.json({ friendship: data }, { status: 201 });
 });

@@ -142,12 +142,14 @@ type ChatPanelProps = {
   conversation: Conversation;
   currentUserId: string | null;
   onBack: () => void;
+  className?: string;
 };
 
 export function ChatPanel({
   conversation,
   currentUserId,
   onBack,
+  className,
 }: ChatPanelProps) {
   const { isUserOnline } = usePresenceContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -201,7 +203,7 @@ export function ChatPanel({
   }, [sendMessage, newMessage]);
 
   return (
-    <Card className="flex flex-col h-[600px]">
+    <Card className={cn("flex flex-col h-[600px]", className)}>
       {/* Chat header */}
       <CardHeader className="border-b border-border py-4">
         <div className="flex items-center justify-between">

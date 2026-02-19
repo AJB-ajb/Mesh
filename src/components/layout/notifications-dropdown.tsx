@@ -8,6 +8,7 @@ import {
   FolderKanban,
   MessageSquare,
   ListOrdered,
+  Users,
   Check,
   Loader2,
 } from "lucide-react";
@@ -48,6 +49,8 @@ function getNotificationIcon(type: string) {
       return <MessageSquare className="h-4 w-4" />;
     case "sequential_invite":
       return <ListOrdered className="h-4 w-4" />;
+    case "friend_request":
+      return <Users className="h-4 w-4" />;
     default:
       return <Bell className="h-4 w-4" />;
   }
@@ -61,6 +64,8 @@ function getIconColor(type: string) {
       return "bg-red-100 text-red-600 dark:bg-red-900/30";
     case "sequential_invite":
       return "bg-blue-100 text-blue-600 dark:bg-blue-900/30";
+    case "friend_request":
+      return "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30";
     default:
       return "bg-muted text-muted-foreground";
   }
@@ -121,7 +126,9 @@ export function NotificationsDropdown() {
       if (!notification.read) {
         markAsRead(notification.id);
       }
-      if (notification.related_posting_id) {
+      if (notification.type === "friend_request") {
+        router.push("/connections");
+      } else if (notification.related_posting_id) {
         router.push(`/postings/${notification.related_posting_id}`);
       }
       setOpen(false);
@@ -296,7 +303,7 @@ export function NotificationsDropdown() {
                 size="sm"
                 className="w-full text-xs"
                 onClick={() => {
-                  router.push("/inbox");
+                  router.push("/connections");
                   setOpen(false);
                 }}
               >
