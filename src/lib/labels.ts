@@ -388,7 +388,7 @@ export const labels = {
     signUp: "Sign up",
     edit: "Edit",
     delete: "Delete",
-    backToDashboard: "Back to dashboard",
+    backToDashboard: "Back",
     backToPostings: "Back to postings",
     newPosting: "New Posting",
     goToProfile: "Go to Profile",
