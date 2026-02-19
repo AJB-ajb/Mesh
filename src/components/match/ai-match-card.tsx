@@ -4,26 +4,13 @@ import { Check, MessageSquare, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatTimeAgo } from "@/lib/format";
+import { statusColors, statusLabels } from "@/lib/posting/styles";
 import type {
   MatchResponse,
   Posting as BasePosting,
 } from "@/lib/supabase/types";
 
 type Posting = BasePosting & { skills?: string[] };
-
-const statusColors: Record<string, string> = {
-  pending: "bg-warning/10 text-warning",
-  applied: "bg-info/10 text-info",
-  accepted: "bg-success/10 text-success",
-  declined: "bg-muted text-muted-foreground",
-};
-
-const statusLabels: Record<string, string> = {
-  pending: "Pending",
-  applied: "Requested",
-  accepted: "Accepted",
-  declined: "Declined",
-};
 
 export interface AiMatchCardProps {
   match: MatchResponse;

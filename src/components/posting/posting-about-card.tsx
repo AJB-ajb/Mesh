@@ -11,6 +11,7 @@ import { LocationAutocomplete } from "@/components/location/location-autocomplet
 import { NOT_SPECIFIED } from "@/lib/format";
 import { reverseGeocode, type GeocodingResult } from "@/lib/geocoding";
 import { labels } from "@/lib/labels";
+import { getLocationModeDisplay } from "@/lib/posting/location";
 import type {
   PostingDetail,
   PostingFormState,
@@ -22,18 +23,6 @@ type PostingAboutCardProps = {
   form: PostingFormState;
   onFormChange: (field: keyof PostingFormState, value: string) => void;
 };
-
-function getLocationModeDisplay(mode: string | null) {
-  switch (mode) {
-    case "remote":
-      return { icon: "🏠", label: "Remote" };
-    case "in_person":
-      return { icon: "📍", label: "In-person" };
-    case "either":
-    default:
-      return { icon: "🌐", label: "Flexible" };
-  }
-}
 
 function LocationEditFields({
   form,
