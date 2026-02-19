@@ -111,7 +111,7 @@ Restructure the top-level UI around four primary pages reflecting the posting li
 | Configurable matching weights     | —     | Small-Medium | Weight sliders on posting creation; stored per posting; passed to scoring                                                                              |
 | Fix 0% match score display        | #46   | Small        | Investigate and fix 0% matches showing as "new match" on dashboard                                                                                     |
 
-### v0.5 — Engagement & Discovery
+### v0.5 — Engagement & Notifications
 
 | Feature                    | Issue | Effort | Description                                                                          |
 | -------------------------- | ----- | ------ | ------------------------------------------------------------------------------------ |
@@ -120,11 +120,10 @@ Restructure the top-level UI around four primary pages reflecting the posting li
 | Posting images             | #29   | Medium | Upload and display images on postings                                                |
 | Email auth fix (SMTP)      | #37   | Small  | Configure Supabase SMTP for confirmation emails                                      |
 
-### v0.5 — Sequential Invite & Channels
+### v0.6 — Channels & Content
 
 | Feature                      | Issue | Effort       | Description                                           |
 | ---------------------------- | ----- | ------------ | ----------------------------------------------------- |
-| Sequential invite mode       | —     | Large        | **Done** — merged to `dev`. See "Implemented" above.  |
 | Channels for shared contexts | #27   | Medium-Large | Shared posting contexts for hackathons, courses, orgs |
 | Markdown-first interface     | #28   | Medium       | Markdown editing and export for postings              |
 
@@ -144,7 +143,6 @@ Restructure the top-level UI around four primary pages reflecting the posting li
 
 These are ideas without a target milestone. They'll be prioritized as the product evolves:
 
-- Connections / social graph between users
 - Posting templates for common categories
 - Analytics dashboard for posting owners
 - Public posting embed / share links
@@ -152,7 +150,6 @@ These are ideas without a target milestone. They'll be prioritized as the produc
 - Mobile app (React Native or PWA enhancement)
 - Improve mic button visibility in textareas (#43)
 - Standardize date formatting across the app (#44)
-- Add CTAs to empty states (#45)
 - Keep AI Extract reference text visible while typing (#47)
 - Add skeleton/spinner loading states for slow connections (#48)
 
