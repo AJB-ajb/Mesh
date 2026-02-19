@@ -220,6 +220,17 @@ export function PostingAboutCard({
               </select>
             </div>
             <div className="space-y-2">
+              <label className="text-sm font-medium">Min team size</label>
+              <Input
+                type="number"
+                min={1}
+                max={10}
+                value={form.teamSizeMin}
+                onChange={(e) => onFormChange("teamSizeMin", e.target.value)}
+                placeholder="Min people needed (1-10)"
+              />
+            </div>
+            <div className="space-y-2">
               <label className="text-sm font-medium">Looking for</label>
               <Input
                 type="number"
@@ -321,10 +332,10 @@ export function PostingAboutCard({
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg border border-border p-4">
               <Users className="h-5 w-5 text-muted-foreground" />
-              <p className="mt-2 text-sm text-muted-foreground">Looking for</p>
+              <p className="mt-2 text-sm text-muted-foreground">Team size</p>
               <p className="font-medium">
-                {posting.team_size_max}{" "}
-                {posting.team_size_max === 1 ? "person" : "people"}
+                Min {posting.team_size_min} · Looking for{" "}
+                {posting.team_size_max}
               </p>
             </div>
             <div className="rounded-lg border border-border p-4">

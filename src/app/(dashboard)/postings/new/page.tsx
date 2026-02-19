@@ -79,7 +79,7 @@ export default function NewPostingPage() {
           ? extracted.skills.join(", ")
           : prev.skills,
         estimatedTime: extracted.estimated_time || prev.estimatedTime,
-        teamSizeMin: "1",
+        teamSizeMin: extracted.team_size_min?.toString() || prev.teamSizeMin,
         teamSizeMax: extractedMax,
         lookingFor: extractedMax,
         category: extracted.category || prev.category,
@@ -188,7 +188,10 @@ export default function NewPostingPage() {
         title,
         description: form.description.trim(),
         estimated_time: form.estimatedTime || null,
-        team_size_min: 1,
+        team_size_min: Math.max(
+          1,
+          Math.min(lookingFor, Number(form.teamSizeMin) || 1),
+        ),
         team_size_max: lookingFor,
         category: form.category,
         mode: form.mode,

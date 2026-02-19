@@ -316,8 +316,25 @@ export function PostingFormCard({
             </p>
           </div>
 
-          {/* Looking for, Mode, and Expires */}
-          <div className="grid gap-4 sm:grid-cols-3">
+          {/* Team size, Mode, and Expires */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-2">
+              <label htmlFor="team-size-min" className="text-sm font-medium">
+                {labels.postingForm.teamSizeMinLabel}
+              </label>
+              <Input
+                id="team-size-min"
+                type="number"
+                min={1}
+                max={10}
+                value={form.teamSizeMin}
+                onChange={(e) => onChange("teamSizeMin", e.target.value)}
+                placeholder={labels.postingForm.teamSizeMinPlaceholder}
+              />
+              <p className="text-xs text-muted-foreground">
+                {labels.postingForm.teamSizeMinHelp}
+              </p>
+            </div>
             <div className="space-y-2">
               <label htmlFor="looking-for" className="text-sm font-medium">
                 {labels.postingForm.lookingForLabel}

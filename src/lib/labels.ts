@@ -63,6 +63,10 @@ export const labels = {
       new_message: "New Message",
       match_found: "Match Found",
     } as const,
+    dropdownTitle: "Notifications",
+    markAllRead: "Mark all as read",
+    empty: "No notifications",
+    viewAll: "View all",
   },
 
   // ---------------------------------------------------------------------------
@@ -209,6 +213,9 @@ export const labels = {
     contextPlaceholder: "e.g., CS101, HackMIT 2026, Book Club #3",
     contextHelp:
       "Course code, hackathon name, or group identifier for exact-match filtering.",
+    teamSizeMinLabel: "Min team size",
+    teamSizeMinPlaceholder: "Min people needed (1-10)",
+    teamSizeMinHelp: "Minimum people to start the project",
     lookingForLabel: "Looking for",
     lookingForPlaceholder: "e.g., 3",
     lookingForHelp: "Number of people (1-10)",
@@ -722,6 +729,13 @@ export const labels = {
   postingDetail: {
     postingNotFound: "Posting not found.",
     browsePostings: "Browse Postings",
+    tabs: {
+      edit: "Edit",
+      manage: "Manage",
+      project: "Project",
+    } as const,
+    projectComingSoon: "Group chat coming soon",
+    projectDisabled: "Available when minimum team size is reached",
     saving: "Saving...",
     joiningWaitlist: "Joining waitlist...",
     requesting: "Requesting...",
@@ -979,10 +993,13 @@ export const labels = {
   // ---------------------------------------------------------------------------
   active: {
     title: "Active",
-    subtitle: "Your active projects and collaborations",
-    comingSoon: "Coming soon",
-    comingSoonDescription:
-      "Track your active projects, team progress, and collaboration status \u2014 all in one place.",
+    subtitle: "Your active postings",
+    youCreated: "You created",
+    youJoined: "You joined",
+    empty: "No active postings yet",
+    emptyDescription:
+      "Postings appear here once the minimum team size is reached.",
+    discoverCta: "Discover postings",
   },
 
   // ---------------------------------------------------------------------------

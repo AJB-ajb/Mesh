@@ -123,11 +123,11 @@ describe("PostingAboutCard", () => {
         onFormChange={onFormChange}
       />,
     );
-    expect(screen.getByText("3 people")).toBeInTheDocument();
+    expect(screen.getByText(/Min 1 · Looking for 3/)).toBeInTheDocument();
   });
 
-  it("renders singular 'person' for team_size_max of 1", () => {
-    const posting = { ...basePosting, team_size_max: 1 };
+  it("renders team size with different min/max values", () => {
+    const posting = { ...basePosting, team_size_min: 2, team_size_max: 5 };
     render(
       <PostingAboutCard
         posting={posting}
@@ -136,7 +136,7 @@ describe("PostingAboutCard", () => {
         onFormChange={onFormChange}
       />,
     );
-    expect(screen.getByText("1 person")).toBeInTheDocument();
+    expect(screen.getByText(/Min 2 · Looking for 5/)).toBeInTheDocument();
   });
 
   it("renders estimated time", () => {

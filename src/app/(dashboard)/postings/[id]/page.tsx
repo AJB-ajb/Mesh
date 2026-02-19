@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Loader2, MessageSquare } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { createClient } from "@/lib/supabase/client";
+import { labels } from "@/lib/labels";
 import { usePostingDetail } from "@/lib/hooks/use-posting-detail";
 import {
   type NotificationPreferences,
@@ -20,14 +22,20 @@ import { PostingApplicationsCard } from "@/components/posting/posting-applicatio
 import { PostingCompatibilityCard } from "@/components/posting/posting-compatibility-card";
 import { PostingMatchedProfilesCard } from "@/components/posting/posting-matched-profiles-card";
 import { PostingSidebar } from "@/components/posting/posting-sidebar";
+import { PostingTeamCard } from "@/components/posting/posting-team-card";
 import { FreeFormUpdate } from "@/components/shared/free-form-update";
 import { usePostingAiUpdate } from "@/lib/hooks/use-posting-ai-update";
 import { SequentialInviteCard } from "@/components/posting/sequential-invite-card";
 import { SequentialInviteResponseCard } from "@/components/posting/sequential-invite-response-card";
 
-export default function PostingDetailPage() {
+// ---------------------------------------------------------------------------
+// Inner component that uses useSearchParams (needs Suspense boundary)
+// ---------------------------------------------------------------------------
+
+function PostingDetailInner() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const postingId = params.id as string;
 
   const {
@@ -44,6 +52,13 @@ export default function PostingDetailPage() {
     isLoading,
     mutate,
   } = usePostingDetail(postingId);
+
+  // Determine default tab from URL or context
+  const tabParam = searchParams.get("tab");
+  const defaultTab =
+    tabParam === "edit" || tabParam === "manage" || tabParam === "project"
+      ? tabParam
+      : "manage";
 
   // Local UI state
   const [isEditing, setIsEditing] = useState(false);
@@ -109,6 +124,18 @@ export default function PostingDetailPage() {
     localWaitlistPosition !== undefined
       ? localWaitlistPosition
       : fetchedWaitlistPosition;
+
+  // Accepted count for project tab gating
+  const acceptedCount = effectiveApplications.filter(
+    (a) => a.status === "accepted",
+  ).length;
+
+  // Check if non-owner is an accepted member (can see Project tab)
+  const isAcceptedMember = !isOwner && myApplication?.status === "accepted";
+
+  // Project tab disabled when min team not reached
+  const projectEnabled =
+    posting != null && acceptedCount >= posting.team_size_min;
 
   // Promote the first waitlisted user when a spot opens
   const promoteFromWaitlist = async (
@@ -208,7 +235,7 @@ export default function PostingDetailPage() {
       description: posting.description,
       skills: posting.skills?.join(", ") || "",
       estimatedTime: posting.estimated_time || "",
-      teamSizeMin: "1",
+      teamSizeMin: posting.team_size_min?.toString() || "1",
       teamSizeMax: posting.team_size_max?.toString() || "5",
       lookingFor: posting.team_size_max?.toString() || "3",
       category: posting.category || "personal",
@@ -245,7 +272,10 @@ export default function PostingDetailPage() {
         title: form.title.trim(),
         description: form.description.trim(),
         estimated_time: form.estimatedTime || null,
-        team_size_min: 1,
+        team_size_min: Math.max(
+          1,
+          Math.min(lookingFor, Number(form.teamSizeMin) || 1),
+        ),
         team_size_max: lookingFor,
         category: form.category,
         mode: form.mode,
@@ -623,6 +653,100 @@ export default function PostingDetailPage() {
     );
   }
 
+  // Non-owner view: flat layout (no tabs) — unless accepted member who sees Project
+  if (!isOwner) {
+    return (
+      <div className="space-y-6">
+        <PostingDetailHeader
+          posting={posting}
+          isOwner={isOwner}
+          matchBreakdown={matchBreakdown}
+          isEditing={false}
+          isSaving={false}
+          isDeleting={false}
+          isExtending={false}
+          isReposting={false}
+          editTitle=""
+          onEditTitleChange={() => {}}
+          onSave={() => {}}
+          onCancelEdit={() => {}}
+          onStartEdit={() => {}}
+          onDelete={() => {}}
+          onExtendDeadline={() => {}}
+          onRepost={() => {}}
+          hasApplied={hasApplied}
+          myApplication={myApplication}
+          waitlistPosition={waitlistPosition}
+          showApplyForm={showApplyForm}
+          coverMessage={coverMessage}
+          isApplying={isApplying}
+          onShowApplyForm={() => setShowApplyForm(true)}
+          onHideApplyForm={() => {
+            setShowApplyForm(false);
+            setError(null);
+          }}
+          onCoverMessageChange={setCoverMessage}
+          onApply={handleApply}
+          onWithdraw={handleWithdrawApplication}
+          error={error}
+          hideApplySection={posting.mode === "friend_ask"}
+        />
+
+        {posting.mode === "friend_ask" && currentUserId && (
+          <SequentialInviteResponseCard
+            postingId={postingId}
+            currentUserId={currentUserId}
+          />
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
+            <PostingAboutCard
+              posting={posting}
+              isEditing={false}
+              form={form}
+              onFormChange={handleFormChange}
+            />
+
+            {currentUserProfile && (
+              <PostingCompatibilityCard
+                matchBreakdown={matchBreakdown}
+                isComputingMatch={false}
+              />
+            )}
+
+            {/* Accepted members can see the Project section */}
+            {isAcceptedMember && projectEnabled && (
+              <>
+                <PostingTeamCard
+                  applications={effectiveApplications}
+                  creatorName={posting.profiles?.full_name ?? null}
+                  teamSizeMin={posting.team_size_min}
+                  teamSizeMax={posting.team_size_max}
+                />
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-8">
+                    <MessageSquare className="h-8 w-8 text-muted-foreground/50" />
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {labels.postingDetail.projectComingSoon}
+                    </p>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
+
+          <PostingSidebar
+            posting={posting}
+            isOwner={isOwner}
+            onContactCreator={handleContactCreator}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Owner view: tabbed layout
   return (
     <div className="space-y-6">
       <PostingDetailHeader
@@ -657,78 +781,149 @@ export default function PostingDetailPage() {
         onApply={handleApply}
         onWithdraw={handleWithdrawApplication}
         error={error}
-        hideApplySection={!isOwner && posting.mode === "friend_ask"}
+        hideApplySection={false}
       />
 
-      {!isOwner && posting.mode === "friend_ask" && currentUserId && (
-        <SequentialInviteResponseCard
-          postingId={postingId}
-          currentUserId={currentUserId}
-        />
-      )}
+      <Tabs defaultValue={defaultTab}>
+        <TabsList variant="line">
+          <TabsTrigger value="edit">
+            {labels.postingDetail.tabs.edit}
+          </TabsTrigger>
+          <TabsTrigger value="manage">
+            {labels.postingDetail.tabs.manage}
+          </TabsTrigger>
+          <TabsTrigger
+            value="project"
+            disabled={!projectEnabled}
+            title={
+              !projectEnabled ? labels.postingDetail.projectDisabled : undefined
+            }
+          >
+            {labels.postingDetail.tabs.project}
+          </TabsTrigger>
+        </TabsList>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main content */}
-        <div className="space-y-6 lg:col-span-2">
-          {isOwner && !isEditing && (
-            <FreeFormUpdate
-              entityType="posting"
-              entityId={postingId}
-              sourceText={posting.source_text ?? null}
-              canUndo={!!posting.previous_source_text}
-              isApplying={isApplyingUpdate}
-              onUpdate={applyFreeFormUpdate}
-              onUndo={undoLastUpdate}
+        {/* Edit tab */}
+        <TabsContent value="edit">
+          <div className="grid gap-6 lg:grid-cols-3 mt-6">
+            <div className="space-y-6 lg:col-span-2">
+              {!isEditing && (
+                <FreeFormUpdate
+                  entityType="posting"
+                  entityId={postingId}
+                  sourceText={posting.source_text ?? null}
+                  canUndo={!!posting.previous_source_text}
+                  isApplying={isApplyingUpdate}
+                  onUpdate={applyFreeFormUpdate}
+                  onUndo={undoLastUpdate}
+                />
+              )}
+
+              <PostingAboutCard
+                posting={posting}
+                isEditing={isEditing}
+                form={form}
+                onFormChange={handleFormChange}
+              />
+            </div>
+
+            <PostingSidebar
+              posting={posting}
+              isOwner={isOwner}
+              onContactCreator={handleContactCreator}
             />
-          )}
+          </div>
+        </TabsContent>
 
-          <PostingAboutCard
-            posting={posting}
-            isEditing={isEditing}
-            form={form}
-            onFormChange={handleFormChange}
-          />
+        {/* Manage tab */}
+        <TabsContent value="manage">
+          <div className="grid gap-6 lg:grid-cols-3 mt-6">
+            <div className="space-y-6 lg:col-span-2">
+              <PostingApplicationsCard
+                applications={effectiveApplications}
+                isUpdatingApplication={isUpdatingApplication}
+                onUpdateStatus={handleUpdateApplicationStatus}
+                onMessage={handleStartConversation}
+              />
 
-          {isOwner && (
-            <PostingApplicationsCard
-              applications={effectiveApplications}
-              isUpdatingApplication={isUpdatingApplication}
-              onUpdateStatus={handleUpdateApplicationStatus}
-              onMessage={handleStartConversation}
+              {posting.mode === "friend_ask" && currentUserId && (
+                <SequentialInviteCard
+                  postingId={postingId}
+                  currentUserId={currentUserId}
+                />
+              )}
+
+              <PostingMatchedProfilesCard
+                matchedProfiles={matchedProfiles}
+                isLoadingMatches={isLoading}
+                onViewProfile={(userId) => router.push(`/profile/${userId}`)}
+                onMessage={handleStartConversation}
+              />
+            </div>
+
+            <PostingSidebar
+              posting={posting}
+              isOwner={isOwner}
+              onContactCreator={handleContactCreator}
             />
-          )}
+          </div>
+        </TabsContent>
 
-          {isOwner && posting.mode === "friend_ask" && currentUserId && (
-            <SequentialInviteCard
-              postingId={postingId}
-              currentUserId={currentUserId}
+        {/* Project tab */}
+        <TabsContent value="project">
+          <div className="grid gap-6 lg:grid-cols-3 mt-6">
+            <div className="space-y-6 lg:col-span-2">
+              <PostingTeamCard
+                applications={effectiveApplications}
+                creatorName={posting.profiles?.full_name ?? null}
+                teamSizeMin={posting.team_size_min}
+                teamSizeMax={posting.team_size_max}
+              />
+
+              <PostingAboutCard
+                posting={posting}
+                isEditing={false}
+                form={form}
+                onFormChange={handleFormChange}
+              />
+
+              {/* Chat placeholder */}
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-8">
+                  <MessageSquare className="h-8 w-8 text-muted-foreground/50" />
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {labels.postingDetail.projectComingSoon}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <PostingSidebar
+              posting={posting}
+              isOwner={isOwner}
+              onContactCreator={handleContactCreator}
             />
-          )}
-
-          {!isOwner && currentUserProfile && (
-            <PostingCompatibilityCard
-              matchBreakdown={matchBreakdown}
-              isComputingMatch={false}
-            />
-          )}
-
-          {isOwner && (
-            <PostingMatchedProfilesCard
-              matchedProfiles={matchedProfiles}
-              isLoadingMatches={isLoading}
-              onViewProfile={(userId) => router.push(`/profile/${userId}`)}
-              onMessage={handleStartConversation}
-            />
-          )}
-        </div>
-
-        {/* Sidebar */}
-        <PostingSidebar
-          posting={posting}
-          isOwner={isOwner}
-          onContactCreator={handleContactCreator}
-        />
-      </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Page component with Suspense boundary for useSearchParams
+// ---------------------------------------------------------------------------
+
+export default function PostingDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <PostingDetailInner />
+    </Suspense>
   );
 }

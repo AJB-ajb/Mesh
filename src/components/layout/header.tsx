@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, User, Settings, LogOut } from "lucide-react";
+import { User, Settings, LogOut } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { GlobalSearch } from "./global-search";
+import { NotificationsDropdown } from "./notifications-dropdown";
 import { useNotifications } from "@/lib/hooks/use-notifications";
 import { useSignOut } from "@/lib/hooks/use-sign-out";
 
@@ -16,7 +17,7 @@ interface HeaderProps {
 }
 
 export function Header({ className }: HeaderProps) {
-  const { unreadCount, userInitials } = useNotifications();
+  const { userInitials } = useNotifications();
   const { signOut } = useSignOut();
 
   return (
@@ -36,18 +37,7 @@ export function Header({ className }: HeaderProps) {
       <div className="flex items-center gap-2">
         <ThemeToggle />
 
-        <Button variant="ghost" size="icon" className="relative" asChild>
-          <Link href="/inbox">
-            <Bell className="h-5 w-5" />
-            <span className="sr-only">{labels.nav.notifications}</span>
-            {/* Notification badge */}
-            {unreadCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs font-medium text-destructive-foreground">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
-            )}
-          </Link>
-        </Button>
+        <NotificationsDropdown />
 
         {/* User dropdown */}
         <div className="relative group">
