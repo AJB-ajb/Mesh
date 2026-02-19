@@ -3,7 +3,7 @@
 import { useState, Suspense } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2, MessageSquare } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +27,7 @@ import { FreeFormUpdate } from "@/components/shared/free-form-update";
 import { usePostingAiUpdate } from "@/lib/hooks/use-posting-ai-update";
 import { SequentialInviteCard } from "@/components/posting/sequential-invite-card";
 import { SequentialInviteResponseCard } from "@/components/posting/sequential-invite-response-card";
+import { GroupChatPanel } from "@/components/posting/group-chat-panel";
 
 // ---------------------------------------------------------------------------
 // Inner component that uses useSearchParams (needs Suspense boundary)
@@ -716,7 +717,7 @@ function PostingDetailInner() {
             )}
 
             {/* Accepted members can see the Project section */}
-            {isAcceptedMember && projectEnabled && (
+            {isAcceptedMember && projectEnabled && currentUserId && (
               <>
                 <PostingTeamCard
                   applications={effectiveApplications}
@@ -724,14 +725,26 @@ function PostingDetailInner() {
                   teamSizeMin={posting.team_size_min}
                   teamSizeMax={posting.team_size_max}
                 />
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-8">
-                    <MessageSquare className="h-8 w-8 text-muted-foreground/50" />
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {labels.postingDetail.projectComingSoon}
-                    </p>
-                  </CardContent>
-                </Card>
+                <GroupChatPanel
+                  postingId={postingId}
+                  postingTitle={posting.title}
+                  currentUserId={currentUserId}
+                  currentUserName={currentUserProfile?.full_name ?? null}
+                  teamMembers={[
+                    {
+                      user_id: posting.creator_id,
+                      full_name: posting.profiles?.full_name ?? null,
+                      role: "creator",
+                    },
+                    ...effectiveApplications
+                      .filter((a) => a.status === "accepted")
+                      .map((a) => ({
+                        user_id: a.applicant_id,
+                        full_name: a.profiles?.full_name ?? null,
+                        role: "member",
+                      })),
+                  ]}
+                />
               </>
             )}
           </div>
@@ -887,15 +900,28 @@ function PostingDetailInner() {
                 onFormChange={handleFormChange}
               />
 
-              {/* Chat placeholder */}
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-8">
-                  <MessageSquare className="h-8 w-8 text-muted-foreground/50" />
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {labels.postingDetail.projectComingSoon}
-                  </p>
-                </CardContent>
-              </Card>
+              {currentUserId && (
+                <GroupChatPanel
+                  postingId={postingId}
+                  postingTitle={posting.title}
+                  currentUserId={currentUserId}
+                  currentUserName={currentUserProfile?.full_name ?? null}
+                  teamMembers={[
+                    {
+                      user_id: posting.creator_id,
+                      full_name: posting.profiles?.full_name ?? null,
+                      role: "creator",
+                    },
+                    ...effectiveApplications
+                      .filter((a) => a.status === "accepted")
+                      .map((a) => ({
+                        user_id: a.applicant_id,
+                        full_name: a.profiles?.full_name ?? null,
+                        role: "member",
+                      })),
+                  ]}
+                />
+              )}
             </div>
 
             <PostingSidebar

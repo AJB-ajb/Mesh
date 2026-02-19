@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Users } from "lucide-react";
+import { Users, MessageSquare } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -67,6 +67,12 @@ export function ActivePostingCard({ posting }: ActivePostingCardProps) {
             <span className="text-xs">
               {new Date(posting.created_at).toLocaleDateString()}
             </span>
+            {posting.unreadCount > 0 && (
+              <span className="flex items-center gap-1 text-xs text-primary font-medium">
+                <MessageSquare className="h-3.5 w-3.5" />
+                {labels.active.unreadMessages(posting.unreadCount)}
+              </span>
+            )}
           </div>
         </CardContent>
       </Card>
