@@ -17,6 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { labels } from "@/lib/labels";
 
 import {
   type PostingFormState,
@@ -57,7 +58,7 @@ function LocationSection({
     <div className="space-y-4">
       <div className="space-y-2">
         <label htmlFor="location-mode" className="text-sm font-medium">
-          Location Mode
+          {labels.postingForm.locationModeLabel}
         </label>
         <select
           id="location-mode"
@@ -65,30 +66,36 @@ function LocationSection({
           onChange={(e) => onChange("locationMode", e.target.value)}
           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
-          <option value="either">Flexible</option>
-          <option value="remote">Remote</option>
-          <option value="in_person">In-person</option>
+          <option value="either">
+            {labels.postingForm.locationModeOptions.either}
+          </option>
+          <option value="remote">
+            {labels.postingForm.locationModeOptions.remote}
+          </option>
+          <option value="in_person">
+            {labels.postingForm.locationModeOptions.in_person}
+          </option>
         </select>
       </div>
 
       {showLocation && (
         <div className="space-y-2">
           <label htmlFor="location-name" className="text-sm font-medium">
-            Location
+            {labels.postingForm.locationLabel}
           </label>
           {showAutocomplete ? (
             <LocationAutocomplete
               value={form.locationName}
               onSelect={handleLocationSelect}
               onChange={(value) => onChange("locationName", value)}
-              placeholder="Search for a location..."
+              placeholder={labels.postingForm.locationSearchPlaceholder}
             />
           ) : (
             <Input
               id="location-name"
               value={form.locationName}
               onChange={(e) => onChange("locationName", e.target.value)}
-              placeholder="e.g., Berlin, Germany"
+              placeholder={labels.postingForm.locationPlaceholder}
             />
           )}
           <div className="flex gap-2">
@@ -101,12 +108,12 @@ function LocationSection({
               {showAutocomplete ? (
                 <>
                   <MapPin className="mr-1 h-3 w-3" />
-                  Manual entry
+                  {labels.postingForm.manualEntryButton}
                 </>
               ) : (
                 <>
                   <Search className="mr-1 h-3 w-3" />
-                  Search location
+                  {labels.postingForm.searchLocationButton}
                 </>
               )}
             </Button>
@@ -117,7 +124,7 @@ function LocationSection({
       {showMaxDistance && (
         <div className="space-y-2">
           <label htmlFor="max-distance" className="text-sm font-medium">
-            Max Distance (km)
+            {labels.postingForm.maxDistanceLabel}
           </label>
           <Input
             id="max-distance"
@@ -125,11 +132,10 @@ function LocationSection({
             min={1}
             value={form.maxDistanceKm}
             onChange={(e) => onChange("maxDistanceKm", e.target.value)}
-            placeholder="e.g., 50"
+            placeholder={labels.postingForm.maxDistancePlaceholder}
           />
           <p className="text-xs text-muted-foreground">
-            Maximum distance for in-person collaboration. Used as a hard filter
-            in matching.
+            {labels.postingForm.maxDistanceHelp}
           </p>
         </div>
       )}
@@ -173,23 +179,22 @@ export function PostingFormCard({
     <form onSubmit={onSubmit}>
       <Card>
         <CardHeader>
-          <CardTitle>Posting Details</CardTitle>
+          <CardTitle>{labels.postingForm.cardTitle}</CardTitle>
           <CardDescription>
-            Tell us about your posting in plain language. You can paste from
-            Slack, Discord, or describe it yourself.
+            {labels.postingForm.cardDescription}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Title */}
           <div className="space-y-2">
             <label htmlFor="title" className="text-sm font-medium">
-              Posting Title
+              {labels.postingForm.titleLabel}
             </label>
             <Input
               id="title"
               value={form.title}
               onChange={(e) => onChange("title", e.target.value)}
-              placeholder="Optional — auto-generated from description"
+              placeholder={labels.postingForm.titlePlaceholder}
               className="text-lg"
             />
           </div>
@@ -197,16 +202,15 @@ export function PostingFormCard({
           {/* Description */}
           <div className="space-y-2">
             <label htmlFor="description" className="text-sm font-medium">
-              Description <span className="text-destructive">*</span>
+              {labels.postingForm.descriptionLabel}{" "}
+              <span className="text-destructive">*</span>
             </label>
             <Textarea
               id="description"
               rows={6}
               value={form.description}
               onChange={(e) => onChange("description", e.target.value)}
-              placeholder="Describe your project and what kind of collaborators you're looking for...
-
-Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebGL or game dev experience, hackathon this weekend."
+              placeholder={labels.postingForm.descriptionPlaceholder}
               enableMic
               onTranscriptionChange={(text) =>
                 onChange(
@@ -216,17 +220,17 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
               }
             />
             <p className="text-xs text-muted-foreground">
-              Skills, team size, and timeline will be extracted from your
-              description.
+              {labels.extraction.formHint}
             </p>
           </div>
 
           {/* Skills */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Required Skills</label>
+            <label className="text-sm font-medium">
+              {labels.postingForm.skillsLabel}
+            </label>
             <p className="text-xs text-muted-foreground">
-              Search or browse the skill tree. Set an optional minimum level per
-              skill.
+              {labels.postingForm.skillsHelp}
             </p>
             <SkillPicker
               mode="posting"
@@ -234,23 +238,23 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
               onAdd={handleAddSkill}
               onRemove={handleRemoveSkill}
               onUpdateLevel={handleUpdateSkillLevel}
-              placeholder="Search skills (e.g., React, Python, Design)..."
+              placeholder={labels.postingForm.skillsPlaceholder}
             />
           </div>
 
           {/* Tags */}
           <div className="space-y-2">
             <label htmlFor="tags" className="text-sm font-medium">
-              Tags (comma-separated)
+              {labels.postingForm.tagsLabel}
             </label>
             <Input
               id="tags"
               value={form.tags}
               onChange={(e) => onChange("tags", e.target.value)}
-              placeholder="e.g., beginner-friendly, weekend, remote, sustainability"
+              placeholder={labels.postingForm.tagsPlaceholder}
             />
             <p className="text-xs text-muted-foreground">
-              Free-form tags to help people discover your posting.
+              {labels.postingForm.tagsHelp}
             </p>
           </div>
 
@@ -258,18 +262,18 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <label htmlFor="estimated-time" className="text-sm font-medium">
-                Estimated Time
+                {labels.postingForm.estimatedTimeLabel}
               </label>
               <Input
                 id="estimated-time"
                 value={form.estimatedTime}
                 onChange={(e) => onChange("estimatedTime", e.target.value)}
-                placeholder="e.g., 2 weeks, 1 month"
+                placeholder={labels.postingForm.estimatedTimePlaceholder}
               />
             </div>
             <div className="space-y-2">
               <label htmlFor="category" className="text-sm font-medium">
-                Category
+                {labels.postingForm.categoryLabel}
               </label>
               <select
                 id="category"
@@ -277,11 +281,21 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
                 onChange={(e) => onChange("category", e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                <option value="study">Study</option>
-                <option value="hackathon">Hackathon</option>
-                <option value="personal">Personal</option>
-                <option value="professional">Professional</option>
-                <option value="social">Social</option>
+                <option value="study">
+                  {labels.postingForm.categoryOptions.study}
+                </option>
+                <option value="hackathon">
+                  {labels.postingForm.categoryOptions.hackathon}
+                </option>
+                <option value="personal">
+                  {labels.postingForm.categoryOptions.personal}
+                </option>
+                <option value="professional">
+                  {labels.postingForm.categoryOptions.professional}
+                </option>
+                <option value="social">
+                  {labels.postingForm.categoryOptions.social}
+                </option>
               </select>
             </div>
           </div>
@@ -289,17 +303,16 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
           {/* Context Identifier */}
           <div className="space-y-2">
             <label htmlFor="context-identifier" className="text-sm font-medium">
-              Context (optional)
+              {labels.postingForm.contextLabel}
             </label>
             <Input
               id="context-identifier"
               value={form.contextIdentifier}
               onChange={(e) => onChange("contextIdentifier", e.target.value)}
-              placeholder="e.g., CS101, HackMIT 2026, Book Club #3"
+              placeholder={labels.postingForm.contextPlaceholder}
             />
             <p className="text-xs text-muted-foreground">
-              Course code, hackathon name, or group identifier for exact-match
-              filtering.
+              {labels.postingForm.contextHelp}
             </p>
           </div>
 
@@ -307,7 +320,7 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
               <label htmlFor="looking-for" className="text-sm font-medium">
-                Looking for
+                {labels.postingForm.lookingForLabel}
               </label>
               <Input
                 id="looking-for"
@@ -316,15 +329,15 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
                 max={10}
                 value={form.lookingFor}
                 onChange={(e) => onChange("lookingFor", e.target.value)}
-                placeholder="e.g., 3"
+                placeholder={labels.postingForm.lookingForPlaceholder}
               />
               <p className="text-xs text-muted-foreground">
-                Number of people (1-10)
+                {labels.postingForm.lookingForHelp}
               </p>
             </div>
             <div className="space-y-2">
               <label htmlFor="mode" className="text-sm font-medium">
-                Mode
+                {labels.postingForm.modeLabel}
               </label>
               <select
                 id="mode"
@@ -332,13 +345,17 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
                 onChange={(e) => onChange("mode", e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                <option value="open">Open</option>
-                <option value="friend_ask">Sequential Invite</option>
+                <option value="open">
+                  {labels.postingForm.modeOptions.open}
+                </option>
+                <option value="friend_ask">
+                  {labels.postingForm.modeOptions.friend_ask}
+                </option>
               </select>
             </div>
             <div className="space-y-2">
               <label htmlFor="expires-at" className="text-sm font-medium">
-                Expires on
+                {labels.postingForm.expiresOnLabel}
               </label>
               <Input
                 id="expires-at"
@@ -348,7 +365,7 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
                 min={new Date().toISOString().slice(0, 10)}
               />
               <p className="text-xs text-muted-foreground">
-                Default: 90 days from today
+                {labels.postingForm.expiresOnHelp}
               </p>
             </div>
           </div>
@@ -368,10 +385,10 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
               className="h-4 w-4 rounded border border-input"
             />
             <label htmlFor="auto-accept" className="text-sm font-medium">
-              Auto-accept
+              {labels.postingForm.autoAcceptLabel}
             </label>
             <p className="text-xs text-muted-foreground">
-              Instantly accept anyone who joins (no manual review)
+              {labels.postingForm.autoAcceptHelp}
             </p>
           </div>
 
@@ -385,14 +402,14 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
               {isSaving ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Creating...
+                  {labels.postingForm.creatingButton}
                 </>
               ) : (
-                "Create Posting"
+                labels.postingForm.createButton
               )}
             </Button>
             <Button type="button" variant="outline" asChild>
-              <Link href="/postings">Cancel</Link>
+              <Link href="/postings">{labels.postingForm.cancelButton}</Link>
             </Button>
           </div>
         </CardContent>

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { GitHubSyncStatus } from "@/lib/types/profile";
+import { labels } from "@/lib/labels";
 
 export function GitHubIntegrationCard({
   isGithubProvider,
@@ -43,7 +44,7 @@ export function GitHubIntegrationCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Github className="h-5 w-5" />
-            <CardTitle className="text-lg">GitHub Profile Enrichment</CardTitle>
+            <CardTitle className="text-lg">{labels.github.cardTitle}</CardTitle>
           </div>
           {isGithubProvider && (
             <Button
@@ -56,29 +57,24 @@ export function GitHubIntegrationCard({
               {isGithubSyncing ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Syncing...
+                  {labels.github.syncingButton}
                 </>
               ) : (
                 <>
                   <RefreshCw className="h-4 w-4" />
-                  Sync Now
+                  {labels.github.syncButton}
                 </>
               )}
             </Button>
           )}
         </div>
-        <CardDescription>
-          Automatically enrich your profile with skills, interests, and
-          experience from your GitHub activity
-        </CardDescription>
+        <CardDescription>{labels.github.cardDescription}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {!isGithubProvider && (
           <div className="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/30 p-4">
             <p className="text-sm text-amber-700 dark:text-amber-300">
-              Connect your GitHub account from the Integrations section below to
-              automatically analyze your repositories, commit messages, and
-              coding style to enrich your profile with insights from your code.
+              {labels.github.connectInfo}
             </p>
           </div>
         )}
@@ -96,17 +92,16 @@ export function GitHubIntegrationCard({
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
                   <Check className="h-4 w-4" />
-                  Last synced:{" "}
-                  {new Date(
-                    githubSync.lastSyncedAt!,
-                  ).toLocaleDateString()} at{" "}
-                  {new Date(githubSync.lastSyncedAt!).toLocaleTimeString()}
+                  {labels.github.lastSynced(
+                    new Date(githubSync.lastSyncedAt!).toLocaleDateString(),
+                    new Date(githubSync.lastSyncedAt!).toLocaleTimeString(),
+                  )}
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <p className="text-sm text-muted-foreground">
-                      GitHub Username
+                      {labels.github.usernameLabel}
                     </p>
                     <a
                       href={githubSync.data.githubUrl}
@@ -118,7 +113,9 @@ export function GitHubIntegrationCard({
                     </a>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Activity</p>
+                    <p className="text-sm text-muted-foreground">
+                      {labels.github.activityLabel}
+                    </p>
                     <p className="font-medium">
                       {githubSync.data.repoCount} repos &middot;{" "}
                       {githubSync.data.totalStars} stars &middot;{" "}
@@ -133,7 +130,7 @@ export function GitHubIntegrationCard({
                 {githubSync.data.primaryLanguages.length > 0 && (
                   <div>
                     <p className="mb-2 text-sm text-muted-foreground">
-                      Languages Detected
+                      {labels.github.languagesLabel}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {githubSync.data.primaryLanguages
@@ -154,7 +151,7 @@ export function GitHubIntegrationCard({
                 {githubSync.data.codingStyle && (
                   <div>
                     <p className="text-sm text-muted-foreground">
-                      Coding Style
+                      {labels.github.codingStyleLabel}
                     </p>
                     <p className="font-medium text-sm">
                       {githubSync.data.codingStyle}
@@ -165,7 +162,7 @@ export function GitHubIntegrationCard({
                 {githubSync.data.experienceSignals.length > 0 && (
                   <div>
                     <p className="mb-2 text-sm text-muted-foreground">
-                      Experience Signals
+                      {labels.github.experienceSignalsLabel}
                     </p>
                     <ul className="text-sm space-y-1">
                       {githubSync.data.experienceSignals
@@ -188,7 +185,7 @@ export function GitHubIntegrationCard({
                     <div className="rounded-md border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/30 p-4 space-y-3">
                       <p className="text-sm font-medium flex items-center gap-2">
                         <Sparkles className="h-4 w-4 text-purple-500" />
-                        Suggestions from your GitHub
+                        {labels.github.suggestionsTitle}
                       </p>
 
                       {(githubSync.suggestions.suggestedSkills?.length ?? 0) >
@@ -196,7 +193,7 @@ export function GitHubIntegrationCard({
                         <div>
                           <div className="flex items-center justify-between mb-2">
                             <p className="text-xs text-muted-foreground">
-                              Suggested Skills
+                              {labels.github.suggestedSkillsLabel}
                             </p>
                             <Button
                               size="sm"
@@ -209,7 +206,7 @@ export function GitHubIntegrationCard({
                                 )
                               }
                             >
-                              Add All
+                              {labels.github.addAllButton}
                             </Button>
                           </div>
                           <div className="flex flex-wrap gap-1">
@@ -236,7 +233,7 @@ export function GitHubIntegrationCard({
                         <div>
                           <div className="flex items-center justify-between mb-2">
                             <p className="text-xs text-muted-foreground">
-                              Suggested Interests
+                              {labels.github.suggestedInterestsLabel}
                             </p>
                             <Button
                               size="sm"
@@ -250,7 +247,7 @@ export function GitHubIntegrationCard({
                                 )
                               }
                             >
-                              Add All
+                              {labels.github.addAllButton}
                             </Button>
                           </div>
                           <div className="flex flex-wrap gap-1">
@@ -276,7 +273,7 @@ export function GitHubIntegrationCard({
                         <div>
                           <div className="flex items-center justify-between mb-2">
                             <p className="text-xs text-muted-foreground">
-                              Suggested Bio
+                              {labels.github.suggestedBioLabel}
                             </p>
                             <Button
                               size="sm"
@@ -289,7 +286,7 @@ export function GitHubIntegrationCard({
                                 )
                               }
                             >
-                              Use This
+                              {labels.github.useThisButton}
                             </Button>
                           </div>
                           <p className="text-xs text-muted-foreground italic">
@@ -304,9 +301,7 @@ export function GitHubIntegrationCard({
 
             {!githubSync?.synced && !isGithubSyncing && (
               <p className="text-sm text-muted-foreground">
-                Click &quot;Sync Now&quot; to analyze your GitHub profile and
-                automatically enrich your profile with skills, interests, and
-                experience level based on your repositories and commits.
+                {labels.github.syncHelp}
               </p>
             )}
           </>

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Sparkles, FileText, Loader2, CheckCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { labels } from "@/lib/labels";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -145,7 +146,7 @@ function DeveloperOnboardingContent() {
 
   const handleAiExtract = async () => {
     if (!aiText.trim()) {
-      setError("Please paste some text to extract profile information from.");
+      setError(labels.onboarding.errorEmptyText);
       return;
     }
 
@@ -235,7 +236,7 @@ function DeveloperOnboardingContent() {
 
     if (userError || !user) {
       setIsSaving(false);
-      setError("Please sign in again to save your profile.");
+      setError(labels.onboarding.errorNotSignedIn);
       return;
     }
 
@@ -257,7 +258,7 @@ function DeveloperOnboardingContent() {
 
     if (upsertError) {
       setIsSaving(false);
-      setError("We couldn't save your profile. Please try again.");
+      setError(labels.onboarding.errorSaveFailed);
       return;
     }
 
@@ -272,7 +273,9 @@ function DeveloperOnboardingContent() {
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-sm text-muted-foreground">Loading your profile…</p>
+        <p className="text-sm text-muted-foreground">
+          {labels.onboarding.loadingMessage}
+        </p>
       </div>
     );
   }
@@ -286,10 +289,11 @@ function DeveloperOnboardingContent() {
       <main className="flex flex-1 items-center justify-center px-6 py-12 lg:px-8">
         <form onSubmit={handleSubmit} className="w-full max-w-3xl space-y-6">
           <div className="text-center">
-            <h1 className="text-3xl font-semibold">Complete your profile</h1>
+            <h1 className="text-3xl font-semibold">
+              {labels.onboarding.pageTitle}
+            </h1>
             <p className="mt-2 text-muted-foreground">
-              Tell us about yourself so we can help you find the right postings
-              and collaborators.
+              {labels.onboarding.pageSubtitle}
             </p>
           </div>
 
@@ -311,7 +315,7 @@ function DeveloperOnboardingContent() {
               }`}
             >
               <FileText className="h-4 w-4" />
-              Fill Form
+              {labels.inputModeToggle.formButton}
             </button>
             <button
               type="button"
@@ -323,7 +327,7 @@ function DeveloperOnboardingContent() {
               }`}
             >
               <Sparkles className="h-4 w-4" />
-              AI Extract
+              {labels.inputModeToggle.aiButton}
             </button>
           </div>
 
@@ -333,12 +337,10 @@ function DeveloperOnboardingContent() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-primary" />
-                  AI Profile Extraction
+                  {labels.extraction.profileCardTitle}
                 </CardTitle>
                 <CardDescription>
-                  Paste your GitHub profile README, LinkedIn bio, resume, or use
-                  the mic to describe yourself. Your profile information will be
-                  extracted automatically.
+                  {labels.extraction.profileDescription}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -346,17 +348,7 @@ function DeveloperOnboardingContent() {
                   rows={12}
                   value={aiText}
                   onChange={(e) => setAiText(e.target.value)}
-                  placeholder={`Paste your profile text here, or use the mic to describe yourself...
-
-Example:
-Hi, I'm Alex! I'm a full-stack developer with 5 years of experience.
-
-Tech Stack: React, TypeScript, Node.js, PostgreSQL, AWS
-Interests: AI/ML, fintech, developer tools
-Based in San Francisco, available 15 hrs/week
-
-Currently looking for hackathon projects and open source contributions.
-Check out my work at github.com/alexdev`}
+                  placeholder={labels.extraction.profilePlaceholder}
                   enableMic
                   onTranscriptionChange={(text) =>
                     setAiText((prev) => (prev ? prev + " " + text : text))
@@ -372,17 +364,17 @@ Check out my work at github.com/alexdev`}
                     {isExtracting ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Extracting...
+                        {labels.extraction.extractingButton}
                       </>
                     ) : extractionSuccess ? (
                       <>
                         <CheckCircle className="h-4 w-4" />
-                        Extracted!
+                        {labels.extraction.extractedButton}
                       </>
                     ) : (
                       <>
                         <Sparkles className="h-4 w-4" />
-                        Extract Profile
+                        {labels.extraction.extractProfileButton}
                       </>
                     )}
                   </Button>
@@ -391,12 +383,11 @@ Check out my work at github.com/alexdev`}
                     variant="outline"
                     onClick={() => setInputMode("form")}
                   >
-                    Switch to Form
+                    {labels.extraction.switchToFormButton}
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  After extraction, youll be able to review and edit the
-                  extracted information.
+                  {labels.extraction.profileHelpText}
                 </p>
               </CardContent>
             </Card>
@@ -407,17 +398,16 @@ Check out my work at github.com/alexdev`}
             <>
               <Card>
                 <CardHeader>
-                  <CardTitle>General Information</CardTitle>
+                  <CardTitle>{labels.onboarding.generalInfoTitle}</CardTitle>
                   <CardDescription>
-                    Share the essentials about who you are and how you like to
-                    work.
+                    {labels.onboarding.generalInfoDescription}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <label htmlFor="fullName" className="text-sm font-medium">
-                        Full name
+                        {labels.onboarding.fullNameLabel}
                       </label>
                       <Input
                         id="fullName"
@@ -425,12 +415,12 @@ Check out my work at github.com/alexdev`}
                         onChange={(event) =>
                           handleChange("fullName", event.target.value)
                         }
-                        placeholder="e.g., Alex Johnson"
+                        placeholder={labels.onboarding.fullNamePlaceholder}
                       />
                     </div>
                     <div className="space-y-2">
                       <label htmlFor="headline" className="text-sm font-medium">
-                        Headline
+                        {labels.onboarding.headlineLabel}
                       </label>
                       <Input
                         id="headline"
@@ -438,14 +428,14 @@ Check out my work at github.com/alexdev`}
                         onChange={(event) =>
                           handleChange("headline", event.target.value)
                         }
-                        placeholder="e.g., Full-stack developer"
+                        placeholder={labels.onboarding.headlinePlaceholder}
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <label htmlFor="bio" className="text-sm font-medium">
-                      About you
+                      {labels.onboarding.bioLabel}
                     </label>
                     <Textarea
                       id="bio"
@@ -454,7 +444,7 @@ Check out my work at github.com/alexdev`}
                       onChange={(event) =>
                         handleChange("bio", event.target.value)
                       }
-                      placeholder="What do you enjoy building? What makes you unique?"
+                      placeholder={labels.onboarding.bioPlaceholder}
                       enableMic
                       onTranscriptionChange={(text) =>
                         handleChange(
@@ -468,7 +458,7 @@ Check out my work at github.com/alexdev`}
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <label htmlFor="location" className="text-sm font-medium">
-                        Location (optional)
+                        {labels.onboarding.locationLabel}
                       </label>
                       <Input
                         id="location"
@@ -476,7 +466,7 @@ Check out my work at github.com/alexdev`}
                         onChange={(event) =>
                           handleChange("location", event.target.value)
                         }
-                        placeholder="e.g., Lagos, Remote"
+                        placeholder={labels.onboarding.locationPlaceholder}
                       />
                     </div>
                     <div className="space-y-2">
@@ -484,7 +474,7 @@ Check out my work at github.com/alexdev`}
                         htmlFor="availabilityHours"
                         className="text-sm font-medium"
                       >
-                        Availability (hrs/week)
+                        {labels.onboarding.availabilityLabel}
                       </label>
                       <Input
                         id="availabilityHours"
@@ -492,7 +482,7 @@ Check out my work at github.com/alexdev`}
                         onChange={(event) =>
                           handleChange("availabilityHours", event.target.value)
                         }
-                        placeholder="e.g., 10"
+                        placeholder={labels.onboarding.availabilityPlaceholder}
                       />
                     </div>
                   </div>
@@ -503,7 +493,7 @@ Check out my work at github.com/alexdev`}
                         htmlFor="experienceLevel"
                         className="text-sm font-medium"
                       >
-                        Experience level
+                        {labels.onboarding.experienceLevelLabel}
                       </label>
                       <select
                         id="experienceLevel"
@@ -513,10 +503,21 @@ Check out my work at github.com/alexdev`}
                           handleChange("experienceLevel", event.target.value)
                         }
                       >
-                        <option value="junior">Junior</option>
-                        <option value="intermediate">Intermediate</option>
-                        <option value="senior">Senior</option>
-                        <option value="lead">Lead</option>
+                        <option value="junior">
+                          {labels.onboarding.experienceLevelOptions.junior}
+                        </option>
+                        <option value="intermediate">
+                          {
+                            labels.onboarding.experienceLevelOptions
+                              .intermediate
+                          }
+                        </option>
+                        <option value="senior">
+                          {labels.onboarding.experienceLevelOptions.senior}
+                        </option>
+                        <option value="lead">
+                          {labels.onboarding.experienceLevelOptions.lead}
+                        </option>
                       </select>
                     </div>
                     <div className="space-y-2">
@@ -524,7 +525,7 @@ Check out my work at github.com/alexdev`}
                         htmlFor="collaborationStyle"
                         className="text-sm font-medium"
                       >
-                        Collaboration style
+                        {labels.onboarding.collaborationStyleLabel}
                       </label>
                       <select
                         id="collaborationStyle"
@@ -534,9 +535,15 @@ Check out my work at github.com/alexdev`}
                           handleChange("collaborationStyle", event.target.value)
                         }
                       >
-                        <option value="async">Mostly async</option>
-                        <option value="sync">Mostly sync</option>
-                        <option value="hybrid">Hybrid</option>
+                        <option value="async">
+                          {labels.onboarding.collaborationStyleOptions.async}
+                        </option>
+                        <option value="sync">
+                          {labels.onboarding.collaborationStyleOptions.sync}
+                        </option>
+                        <option value="hybrid">
+                          {labels.onboarding.collaborationStyleOptions.hybrid}
+                        </option>
                       </select>
                     </div>
                   </div>
@@ -544,7 +551,7 @@ Check out my work at github.com/alexdev`}
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <label htmlFor="skills" className="text-sm font-medium">
-                        Skills (comma-separated)
+                        {labels.onboarding.skillsLabel}
                       </label>
                       <Input
                         id="skills"
@@ -552,7 +559,7 @@ Check out my work at github.com/alexdev`}
                         onChange={(event) =>
                           handleChange("skills", event.target.value)
                         }
-                        placeholder="e.g., React, TypeScript, Supabase"
+                        placeholder={labels.onboarding.skillsPlaceholder}
                       />
                     </div>
                     <div className="space-y-2">
@@ -560,7 +567,7 @@ Check out my work at github.com/alexdev`}
                         htmlFor="interests"
                         className="text-sm font-medium"
                       >
-                        Interests (comma-separated)
+                        {labels.onboarding.interestsLabel}
                       </label>
                       <Input
                         id="interests"
@@ -568,7 +575,7 @@ Check out my work at github.com/alexdev`}
                         onChange={(event) =>
                           handleChange("interests", event.target.value)
                         }
-                        placeholder="e.g., AI, fintech, education"
+                        placeholder={labels.onboarding.interestsPlaceholder}
                       />
                     </div>
                   </div>
@@ -579,7 +586,7 @@ Check out my work at github.com/alexdev`}
                         htmlFor="portfolioUrl"
                         className="text-sm font-medium"
                       >
-                        Portfolio link (optional)
+                        {labels.onboarding.portfolioLabel}
                       </label>
                       <Input
                         id="portfolioUrl"
@@ -587,7 +594,7 @@ Check out my work at github.com/alexdev`}
                         onChange={(event) =>
                           handleChange("portfolioUrl", event.target.value)
                         }
-                        placeholder="https://your-portfolio.com"
+                        placeholder={labels.onboarding.portfolioPlaceholder}
                       />
                     </div>
                     <div className="space-y-2">
@@ -595,7 +602,7 @@ Check out my work at github.com/alexdev`}
                         htmlFor="githubUrl"
                         className="text-sm font-medium"
                       >
-                        GitHub link (optional)
+                        {labels.onboarding.githubLabel}
                       </label>
                       <Input
                         id="githubUrl"
@@ -603,7 +610,7 @@ Check out my work at github.com/alexdev`}
                         onChange={(event) =>
                           handleChange("githubUrl", event.target.value)
                         }
-                        placeholder="https://github.com/username"
+                        placeholder={labels.onboarding.githubPlaceholder}
                       />
                     </div>
                   </div>
@@ -612,9 +619,9 @@ Check out my work at github.com/alexdev`}
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Posting Preferences</CardTitle>
+                  <CardTitle>{labels.onboarding.preferencesTitle}</CardTitle>
                   <CardDescription>
-                    Tell us what kinds of postings youre excited to join.
+                    {labels.onboarding.preferencesDescription}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5">
@@ -624,7 +631,7 @@ Check out my work at github.com/alexdev`}
                         htmlFor="projectTypes"
                         className="text-sm font-medium"
                       >
-                        Posting types (comma-separated)
+                        {labels.onboarding.projectTypesLabel}
                       </label>
                       <Input
                         id="projectTypes"
@@ -632,7 +639,7 @@ Check out my work at github.com/alexdev`}
                         onChange={(event) =>
                           handleChange("projectTypes", event.target.value)
                         }
-                        placeholder="e.g., SaaS, hackathon, open source"
+                        placeholder={labels.onboarding.projectTypesPlaceholder}
                       />
                     </div>
                     <div className="space-y-2">
@@ -640,7 +647,7 @@ Check out my work at github.com/alexdev`}
                         htmlFor="preferredRoles"
                         className="text-sm font-medium"
                       >
-                        Preferred roles (comma-separated)
+                        {labels.onboarding.preferredRolesLabel}
                       </label>
                       <Input
                         id="preferredRoles"
@@ -648,7 +655,9 @@ Check out my work at github.com/alexdev`}
                         onChange={(event) =>
                           handleChange("preferredRoles", event.target.value)
                         }
-                        placeholder="e.g., Frontend, Backend, PM"
+                        placeholder={
+                          labels.onboarding.preferredRolesPlaceholder
+                        }
                       />
                     </div>
                   </div>
@@ -658,7 +667,7 @@ Check out my work at github.com/alexdev`}
                       htmlFor="preferredStack"
                       className="text-sm font-medium"
                     >
-                      Preferred tech stack (comma-separated)
+                      {labels.onboarding.preferredStackLabel}
                     </label>
                     <Input
                       id="preferredStack"
@@ -666,7 +675,7 @@ Check out my work at github.com/alexdev`}
                       onChange={(event) =>
                         handleChange("preferredStack", event.target.value)
                       }
-                      placeholder="e.g., React, Node, Postgres"
+                      placeholder={labels.onboarding.preferredStackPlaceholder}
                     />
                   </div>
 
@@ -676,7 +685,7 @@ Check out my work at github.com/alexdev`}
                         htmlFor="commitmentLevel"
                         className="text-sm font-medium"
                       >
-                        Time commitment
+                        {labels.onboarding.commitmentLevelLabel}
                       </label>
                       <select
                         id="commitmentLevel"
@@ -686,10 +695,18 @@ Check out my work at github.com/alexdev`}
                           handleChange("commitmentLevel", event.target.value)
                         }
                       >
-                        <option value="5">5 hrs/week</option>
-                        <option value="10">10 hrs/week</option>
-                        <option value="15">15 hrs/week</option>
-                        <option value="20">20+ hrs/week</option>
+                        <option value="5">
+                          {labels.onboarding.commitmentOptions["5"]}
+                        </option>
+                        <option value="10">
+                          {labels.onboarding.commitmentOptions["10"]}
+                        </option>
+                        <option value="15">
+                          {labels.onboarding.commitmentOptions["15"]}
+                        </option>
+                        <option value="20">
+                          {labels.onboarding.commitmentOptions["20"]}
+                        </option>
                       </select>
                     </div>
                     <div className="space-y-2">
@@ -697,7 +714,7 @@ Check out my work at github.com/alexdev`}
                         htmlFor="timelinePreference"
                         className="text-sm font-medium"
                       >
-                        Timeline preference
+                        {labels.onboarding.timelinePreferenceLabel}
                       </label>
                       <select
                         id="timelinePreference"
@@ -707,10 +724,18 @@ Check out my work at github.com/alexdev`}
                           handleChange("timelinePreference", event.target.value)
                         }
                       >
-                        <option value="weekend">This weekend</option>
-                        <option value="1_week">1 week</option>
-                        <option value="1_month">1 month</option>
-                        <option value="ongoing">Ongoing</option>
+                        <option value="weekend">
+                          {labels.onboarding.timelineOptions.weekend}
+                        </option>
+                        <option value="1_week">
+                          {labels.onboarding.timelineOptions["1_week"]}
+                        </option>
+                        <option value="1_month">
+                          {labels.onboarding.timelineOptions["1_month"]}
+                        </option>
+                        <option value="ongoing">
+                          {labels.onboarding.timelineOptions.ongoing}
+                        </option>
                       </select>
                     </div>
                   </div>
@@ -721,14 +746,16 @@ Check out my work at github.com/alexdev`}
 
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <Button type="submit" disabled={isSaving || isExtracting}>
-              {isSaving ? "Saving..." : "Save profile"}
+              {isSaving
+                ? labels.onboarding.savingButton
+                : labels.onboarding.saveButton}
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={() => router.replace(next || "/dashboard")}
             >
-              Skip for now
+              {labels.onboarding.skipButton}
             </Button>
           </div>
         </form>
@@ -742,7 +769,9 @@ export default function DeveloperOnboardingPage() {
     <Suspense
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-background">
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <p className="text-sm text-muted-foreground">
+            {labels.onboarding.suspenseFallback}
+          </p>
         </div>
       }
     >

@@ -112,7 +112,7 @@ export default async function LandingPage() {
         <div className="flex items-center gap-4">
           <ThemeToggle />
           <Button variant="ghost" asChild>
-            <Link href="/login">Log in</Link>
+            <Link href="/login">{labels.landing.loginButton}</Link>
           </Button>
         </div>
       </header>
@@ -132,9 +132,7 @@ export default async function LandingPage() {
 
           {/* Main Headline */}
           <h1 className="max-w-4xl animate-slide-up text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-            Find people to do
-            <br />
-            things with.
+            {labels.landing.heroTitle}
           </h1>
 
           {/* Subheadline */}
@@ -152,12 +150,14 @@ export default async function LandingPage() {
           >
             <Button size="lg" className="gap-2 px-8" asChild>
               <Link href="/login?next=/postings/new">
-                Post something
+                {labels.landing.postSomethingButton}
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
             <Button size="lg" variant="outline" className="px-8" asChild>
-              <Link href="/postings">Explore postings</Link>
+              <Link href="/postings">
+                {labels.landing.explorePostingsButton}
+              </Link>
             </Button>
           </div>
         </section>
@@ -166,11 +166,10 @@ export default async function LandingPage() {
         <section className="border-t border-border bg-muted/30 py-16 lg:py-24">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
-              People are looking for all kinds of things
+              {labels.landing.useCaseSectionTitle}
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
-              From study partners to startup co-founders — post what you want to
-              do and find the right people.
+              {labels.landing.useCaseSectionSubtitle}
             </p>
 
             <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -228,10 +227,10 @@ export default async function LandingPage() {
         <section className="py-16 lg:py-24">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
-              How it works
+              {labels.landing.howItWorksTitle}
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
-              From idea to collaboration in under a minute.
+              {labels.landing.howItWorksSubtitle}
             </p>
 
             <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -241,11 +240,10 @@ export default async function LandingPage() {
                   1
                 </div>
                 <h3 className="text-xl font-semibold">
-                  Describe what you want to do
+                  {labels.landing.howItWorksStep1Title}
                 </h3>
                 <p className="mt-2 text-muted-foreground">
-                  Paste text, speak, or fill a form — describe any activity,
-                  project, or event you need people for.
+                  {labels.landing.howItWorksStep1Body}
                 </p>
               </div>
 
@@ -268,11 +266,10 @@ export default async function LandingPage() {
                   3
                 </div>
                 <h3 className="text-xl font-semibold">
-                  Connect and collaborate
+                  {labels.landing.howItWorksStep3Title}
                 </h3>
                 <p className="mt-2 text-muted-foreground">
-                  Chat, plan, and do the thing — whether it&apos;s a hackathon,
-                  a tennis match, or a startup launch.
+                  {labels.landing.howItWorksStep3Body}
                 </p>
               </div>
             </div>
@@ -283,10 +280,10 @@ export default async function LandingPage() {
         <section className="border-t border-border bg-muted/30 py-16 lg:py-24">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
-              Built for real connections
+              {labels.landing.featuresSectionTitle}
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
-              Smart tools that make finding the right people effortless.
+              {labels.landing.featuresSectionSubtitle}
             </p>
 
             <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
@@ -306,10 +303,11 @@ export default async function LandingPage() {
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <Mic className="h-6 w-6" />
                 </div>
-                <h3 className="font-semibold">Voice & Text Input</h3>
+                <h3 className="font-semibold">
+                  {labels.landing.voiceTextInputTitle}
+                </h3>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Describe what you&apos;re looking for in your own words — type
-                  it out or just speak.
+                  {labels.landing.voiceTextInputBody}
                 </p>
               </div>
 
@@ -317,10 +315,11 @@ export default async function LandingPage() {
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <MessageSquare className="h-6 w-6" />
                 </div>
-                <h3 className="font-semibold">Real-Time Messaging</h3>
+                <h3 className="font-semibold">
+                  {labels.landing.realtimeMessagingTitle}
+                </h3>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Connect instantly with your matches and start planning
-                  together right away.
+                  {labels.landing.realtimeMessagingBody}
                 </p>
               </div>
 
@@ -328,10 +327,11 @@ export default async function LandingPage() {
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <Zap className="h-6 w-6" />
                 </div>
-                <h3 className="font-semibold">Smart Compatibility</h3>
+                <h3 className="font-semibold">
+                  {labels.landing.smartCompatibilityTitle}
+                </h3>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  See why someone is a good match — skills, availability,
-                  location, and interest alignment.
+                  {labels.landing.smartCompatibilityBody}
                 </p>
               </div>
             </div>
@@ -342,7 +342,7 @@ export default async function LandingPage() {
         <section className="py-16 lg:py-24">
           <div className="mx-auto max-w-4xl px-6 text-center lg:px-8">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Ready to find your people?
+              {labels.landing.finalCtaTitle}
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
               {labels.landing.ctaBody}
@@ -350,7 +350,7 @@ export default async function LandingPage() {
             <div className="mt-8">
               <Button size="lg" className="gap-2 px-8" asChild>
                 <Link href="/login">
-                  Get started free
+                  {labels.landing.getStartedButton}
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
@@ -363,20 +363,20 @@ export default async function LandingPage() {
       <footer className="border-t border-border py-8">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 sm:flex-row lg:px-8">
           <p className="text-sm text-muted-foreground">
-            © 2026 MeshIt. All rights reserved.
+            {labels.landing.footerCopyright}
           </p>
           <nav className="flex gap-6">
             <Link
               href="/privacy"
               className="text-sm text-muted-foreground hover:text-foreground"
             >
-              Privacy
+              {labels.landing.privacyLink}
             </Link>
             <Link
               href="/terms"
               className="text-sm text-muted-foreground hover:text-foreground"
             >
-              Terms
+              {labels.landing.termsLink}
             </Link>
           </nav>
         </div>

@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { labels } from "@/lib/labels";
 
 type AiExtractionCardProps = {
   aiText: string;
@@ -33,12 +34,10 @@ export function AiExtractionCard({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
-          AI Posting Extraction
+          {labels.extraction.postingCardTitle}
         </CardTitle>
         <CardDescription>
-          Paste your posting description from Slack, Discord, a GitHub README,
-          or use the mic to describe it. Details will be extracted
-          automatically.
+          {labels.extraction.postingDescription}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -46,18 +45,7 @@ export function AiExtractionCard({
           rows={12}
           value={aiText}
           onChange={(e) => onAiTextChange(e.target.value)}
-          placeholder={`Paste your posting text here, or use the mic to describe it...
-
-Example:
-Hey everyone! Looking for 2-3 devs to join my hackathon project this weekend \u{1F680}
-
-Building an AI-powered recipe generator that suggests meals based on what's in your fridge.
-
-Tech stack: React, TypeScript, OpenAI API, Supabase
-Need: Frontend dev + someone with AI/ML experience
-Commitment: ~10 hrs over the weekend
-
-DM if interested!`}
+          placeholder={labels.extraction.postingPlaceholder}
           enableMic
           onTranscriptionChange={(text) =>
             onAiTextChange(aiText ? aiText + " " + text : text)
@@ -73,27 +61,26 @@ DM if interested!`}
             {isExtracting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Extracting...
+                {labels.extraction.extractingButton}
               </>
             ) : extractionSuccess ? (
               <>
                 <CheckCircle className="h-4 w-4" />
-                Extracted!
+                {labels.extraction.extractedButton}
               </>
             ) : (
               <>
                 <Sparkles className="h-4 w-4" />
-                Extract Posting Details
+                {labels.extraction.extractPostingButton}
               </>
             )}
           </Button>
           <Button type="button" variant="outline" onClick={onSwitchToForm}>
-            Switch to Form
+            {labels.extraction.switchToFormButton}
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          After extraction, youll be able to review and edit the extracted
-          information before creating your posting.
+          {labels.extraction.postingHelpText}
         </p>
       </CardContent>
     </Card>

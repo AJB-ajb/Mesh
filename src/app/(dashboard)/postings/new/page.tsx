@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
+import { labels } from "@/lib/labels";
 import { InputModeToggle } from "@/components/posting/input-mode-toggle";
 import { AiExtractionCard } from "@/components/posting/ai-extraction-card";
 import {
@@ -50,7 +51,7 @@ export default function NewPostingPage() {
 
   const handleAiExtract = async () => {
     if (!aiText.trim()) {
-      setError("Please paste some text to extract posting information from.");
+      setError(labels.postingCreation.errorEmptyText);
       return;
     }
 
@@ -117,7 +118,7 @@ export default function NewPostingPage() {
     setError(null);
 
     if (!form.description.trim()) {
-      setError("Please enter a posting description.");
+      setError(labels.postingCreation.errorEmptyDescription);
       return;
     }
 
@@ -125,7 +126,7 @@ export default function NewPostingPage() {
     const title =
       form.title.trim() ||
       form.description.trim().split(/[.\n]/)[0].slice(0, 100) ||
-      "Untitled Posting";
+      labels.postingCreation.untitledFallback;
 
     setIsSaving(true);
 
@@ -137,7 +138,7 @@ export default function NewPostingPage() {
 
     if (userError || !user) {
       setIsSaving(false);
-      setError("Please sign in to create a posting.");
+      setError(labels.postingCreation.errorNotSignedIn);
       return;
     }
 
@@ -152,7 +153,7 @@ export default function NewPostingPage() {
       // PGRST116 is "not found" which is expected if profile doesn't exist
       setIsSaving(false);
       console.error("Profile check error:", profileCheckError);
-      setError("Failed to verify your profile. Please try again.");
+      setError(labels.postingCreation.errorProfileCheck);
       return;
     }
 
@@ -168,7 +169,9 @@ export default function NewPostingPage() {
         setIsSaving(false);
         console.error("Profile creation error:", profileError);
         setError(
-          `Failed to create user profile: ${profileError.message || "Please try again."}`,
+          labels.postingCreation.errorProfileCreation(
+            profileError.message || "Please try again.",
+          ),
         );
         return;
       }
@@ -231,20 +234,23 @@ export default function NewPostingPage() {
       console.error("Insert error:", insertError);
 
       // Provide more specific error messages
-      let errorMessage = "Failed to create posting. Please try again.";
+      let errorMessage: string = labels.postingCreation.errorGeneric;
 
       if (insertError.code === "23503") {
         // Foreign key violation - profile doesn't exist
-        errorMessage =
-          "Your profile is missing. Please complete your profile first.";
+        errorMessage = labels.postingCreation.errorMissingProfile;
       } else if (insertError.code === "23505") {
         // Unique violation
-        errorMessage = "A posting with this information already exists.";
+        errorMessage = labels.postingCreation.errorDuplicate;
       } else if (insertError.code === "23514") {
         // Check constraint violation
-        errorMessage = `Invalid posting data: ${insertError.message}`;
+        errorMessage = labels.postingCreation.errorInvalidData(
+          insertError.message,
+        );
       } else if (insertError.message) {
-        errorMessage = `Failed to create posting: ${insertError.message}`;
+        errorMessage = labels.postingCreation.errorWithReason(
+          insertError.message,
+        );
       }
 
       setError(errorMessage);
@@ -279,14 +285,16 @@ export default function NewPostingPage() {
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to postings
+        {labels.postingCreation.backButton}
       </Link>
 
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Create Posting</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {labels.postingCreation.pageTitle}
+        </h1>
         <p className="mt-1 text-muted-foreground">
-          Describe your posting to find the right collaborators
+          {labels.postingCreation.subtitle}
         </p>
       </div>
 
@@ -326,8 +334,8 @@ export default function NewPostingPage() {
       {/* Info */}
       <p className="text-center text-sm text-muted-foreground">
         {inputMode === "ai"
-          ? "Paste your posting description and we\u2019ll extract the details automatically."
-          : "After creating your posting, matching collaborators will be surfaced automatically based on your description."}
+          ? labels.postingCreation.infoAiMode
+          : labels.postingCreation.infoFormMode}
       </p>
     </div>
   );

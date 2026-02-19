@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { SWRProvider } from "@/lib/swr/provider";
+import { labels } from "@/lib/labels";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,11 +18,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "MeshIt - Find Your Perfect Match",
+    default: labels.meta.title,
     template: "%s | MeshIt",
   },
-  description:
-    "Find people for hackathons, study groups, side projects, and more. Describe what you want to do and get matched with the right collaborators.",
+  description: labels.meta.description,
   keywords: [
     "collaboration",
     "project matching",
@@ -30,13 +30,13 @@ export const metadata: Metadata = {
     "team building",
     "hackathon",
   ],
-  authors: [{ name: "MeshIt" }],
-  creator: "MeshIt",
+  authors: [{ name: labels.meta.appName }],
+  creator: labels.meta.appName,
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "MeshIt",
+    title: labels.meta.appName,
   },
   formatDetection: {
     telephone: false,
@@ -45,16 +45,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://meshit.app",
-    title: "MeshIt - Find Your Perfect Match",
-    description:
-      "Find people for hackathons, study groups, side projects, and more. Describe what you want to do and get matched with the right collaborators.",
-    siteName: "MeshIt",
+    title: labels.meta.title,
+    description: labels.meta.description,
+    siteName: labels.meta.appName,
   },
   twitter: {
     card: "summary_large_image",
-    title: "MeshIt - Find Your Perfect Match",
-    description:
-      "Find people for hackathons, study groups, side projects, and more. Describe what you want to do and get matched with the right collaborators.",
+    title: labels.meta.title,
+    description: labels.meta.description,
   },
   robots: {
     index: true,
