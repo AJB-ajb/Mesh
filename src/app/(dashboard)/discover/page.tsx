@@ -151,7 +151,7 @@ function DiscoverContent() {
           <Input
             type="search"
             placeholder={labels.common.searchPlaceholder}
-            className="pl-9 pr-10"
+            className="pl-9 pr-16"
             value={nlQuery}
             onChange={(e) => {
               setNlQuery(e.target.value);
@@ -163,6 +163,19 @@ function DiscoverContent() {
               }
             }}
           />
+          {nlQuery && !isTranslating && (
+            <button
+              type="button"
+              onClick={() => {
+                setNlQuery("");
+                setSearchQuery("");
+              }}
+              className="absolute right-9 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">{labels.common.clearAll}</span>
+            </button>
+          )}
           {isTranslating ? (
             <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
           ) : (
