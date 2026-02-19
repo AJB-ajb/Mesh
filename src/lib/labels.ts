@@ -1,5 +1,5 @@
 /**
- * Centralized user-facing labels for MeshIt.
+ * Centralized user-facing labels for Mesh.
  *
  * Single source of truth for all UI strings. Follows the terminology
  * spec (spec/terminology.md).
@@ -113,7 +113,7 @@ export const labels = {
     ctaBody: "Post what you want to do and get matched with the right people.",
     getStartedButton: "Get started free",
 
-    footerCopyright: "\u00a9 2026 MeshIt. All rights reserved.",
+    footerCopyright: "\u00a9 2026 Mesh. All rights reserved.",
     privacyLink: "Privacy",
     termsLink: "Terms",
   },
@@ -122,10 +122,10 @@ export const labels = {
   // Site metadata / SEO
   // ---------------------------------------------------------------------------
   meta: {
-    title: "MeshIt - Find Your Perfect Match",
+    title: "Mesh - Find Your Perfect Match",
     description:
       "Find people for hackathons, study groups, side projects, and more. Describe what you want to do and get matched with the right collaborators.",
-    appName: "MeshIt",
+    appName: "Mesh",
   },
 
   // ---------------------------------------------------------------------------
@@ -448,14 +448,14 @@ export const labels = {
   auth: {
     login: {
       title: "Welcome back",
-      subtitle: "Sign in to continue to MeshIt.",
+      subtitle: "Sign in to continue to Mesh.",
       signingIn: "Signing in...",
       forgotPassword: "Forgot password?",
       noAccount: "Don\u2019t have an account?",
     },
     signup: {
       title: "Create an account",
-      subtitle: "Sign up to get started with MeshIt.",
+      subtitle: "Sign up to get started with Mesh.",
       creatingAccount: "Creating account...",
       confirmPasswordLabel: "Confirm Password",
       alreadyHaveAccount: "Already have an account?",
@@ -741,7 +741,7 @@ export const labels = {
     linkCopied: "Link Copied!",
     sharePosting: "Share Posting",
     reportIssue: "Report Issue",
-    shareTitle: "Check out this posting on MeshIt",
+    shareTitle: "Check out this posting on Mesh",
 
     // Error messages
     errorUpdatePosting: "Failed to update posting. Please try again.",
@@ -796,7 +796,7 @@ export const labels = {
     toggleMenu: "Toggle menu",
     mainNavigation: "Main navigation",
     secondaryNavigation: "Secondary navigation",
-    copyright: "\u00a9 2026 MeshIt",
+    copyright: "\u00a9 2026 Mesh",
   },
 
   // ---------------------------------------------------------------------------

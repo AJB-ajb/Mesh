@@ -8,9 +8,9 @@ import type {
   GitHubCommit,
   GitHubUser,
   GitHubContent,
-} from './types';
+} from "./types";
 
-const GITHUB_API_BASE = 'https://api.github.com';
+const GITHUB_API_BASE = "https://api.github.com";
 
 /**
  * GitHub API error
@@ -20,10 +20,10 @@ export class GitHubAPIError extends Error {
     message: string,
     public status: number,
     public rateLimitRemaining?: number,
-    public rateLimitReset?: Date
+    public rateLimitReset?: Date,
   ) {
     super(message);
-    this.name = 'GitHubAPIError';
+    this.name = "GitHubAPIError";
   }
 }
 
@@ -33,9 +33,9 @@ export class GitHubAPIError extends Error {
 async function githubFetch<T>(
   endpoint: string,
   accessToken: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<T> {
-  const url = endpoint.startsWith('http')
+  const url = endpoint.startsWith("http")
     ? endpoint
     : `${GITHUB_API_BASE}${endpoint}`;
 
@@ -43,16 +43,16 @@ async function githubFetch<T>(
     ...options,
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      Accept: 'application/vnd.github.v3+json',
-      'User-Agent': 'MeshIt-App',
+      Accept: "application/vnd.github.v3+json",
+      "User-Agent": "Mesh-App",
       ...options.headers,
     },
   });
 
   const rateLimitRemaining = parseInt(
-    response.headers.get('X-RateLimit-Remaining') || '0'
+    response.headers.get("X-RateLimit-Remaining") || "0",
   );
-  const rateLimitReset = response.headers.get('X-RateLimit-Reset');
+  const rateLimitReset = response.headers.get("X-RateLimit-Reset");
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
@@ -60,7 +60,7 @@ async function githubFetch<T>(
       error.message || `GitHub API error: ${response.status}`,
       response.status,
       rateLimitRemaining,
-      rateLimitReset ? new Date(parseInt(rateLimitReset) * 1000) : undefined
+      rateLimitReset ? new Date(parseInt(rateLimitReset) * 1000) : undefined,
     );
   }
 
@@ -71,9 +71,9 @@ async function githubFetch<T>(
  * Fetch authenticated user's profile
  */
 export async function fetchGitHubUser(
-  accessToken: string
+  accessToken: string,
 ): Promise<GitHubUser> {
-  return githubFetch<GitHubUser>('/user', accessToken);
+  return githubFetch<GitHubUser>("/user", accessToken);
 }
 
 /**
@@ -82,7 +82,7 @@ export async function fetchGitHubUser(
  */
 export async function fetchUserRepos(
   accessToken: string,
-  limit: number = 100
+  limit: number = 100,
 ): Promise<GitHubRepo[]> {
   const repos: GitHubRepo[] = [];
   let page = 1;
@@ -91,7 +91,7 @@ export async function fetchUserRepos(
   while (repos.length < limit) {
     const pageRepos = await githubFetch<GitHubRepo[]>(
       `/user/repos?sort=updated&direction=desc&per_page=${perPage}&page=${page}`,
-      accessToken
+      accessToken,
     );
 
     if (pageRepos.length === 0) break;
@@ -112,12 +112,12 @@ export async function fetchUserRepos(
 export async function fetchRepoLanguages(
   accessToken: string,
   owner: string,
-  repo: string
+  repo: string,
 ): Promise<Record<string, number>> {
   try {
     return await githubFetch<Record<string, number>>(
       `/repos/${owner}/${repo}/languages`,
-      accessToken
+      accessToken,
     );
   } catch (error) {
     // Return empty if repo is private or inaccessible
@@ -138,13 +138,13 @@ export async function fetchRepoCommits(
   owner: string,
   repo: string,
   since?: string,
-  limit: number = 30
+  limit: number = 30,
 ): Promise<GitHubCommit[]> {
   try {
-    const sinceParam = since ? `&since=${since}` : '';
+    const sinceParam = since ? `&since=${since}` : "";
     return await githubFetch<GitHubCommit[]>(
       `/repos/${owner}/${repo}/commits?per_page=${limit}${sinceParam}`,
-      accessToken
+      accessToken,
     );
   } catch (error) {
     // Return empty if repo is private or has no commits
@@ -161,16 +161,16 @@ export async function fetchRepoCommits(
 export async function fetchRepoReadme(
   accessToken: string,
   owner: string,
-  repo: string
+  repo: string,
 ): Promise<string | null> {
   try {
     const content = await githubFetch<GitHubContent>(
       `/repos/${owner}/${repo}/readme`,
-      accessToken
+      accessToken,
     );
 
-    if (content.content && content.encoding === 'base64') {
-      return Buffer.from(content.content, 'base64').toString('utf-8');
+    if (content.content && content.encoding === "base64") {
+      return Buffer.from(content.content, "base64").toString("utf-8");
     }
 
     return null;
@@ -190,16 +190,16 @@ export async function fetchFileContent(
   accessToken: string,
   owner: string,
   repo: string,
-  path: string
+  path: string,
 ): Promise<string | null> {
   try {
     const content = await githubFetch<GitHubContent>(
       `/repos/${owner}/${repo}/contents/${path}`,
-      accessToken
+      accessToken,
     );
 
-    if (content.content && content.encoding === 'base64') {
-      return Buffer.from(content.content, 'base64').toString('utf-8');
+    if (content.content && content.encoding === "base64") {
+      return Buffer.from(content.content, "base64").toString("utf-8");
     }
 
     return null;
@@ -219,16 +219,16 @@ export async function fetchCommitFile(
   owner: string,
   repo: string,
   commitSha: string,
-  filePath: string
+  filePath: string,
 ): Promise<string | null> {
   try {
     const content = await githubFetch<GitHubContent>(
       `/repos/${owner}/${repo}/contents/${filePath}?ref=${commitSha}`,
-      accessToken
+      accessToken,
     );
 
-    if (content.content && content.encoding === 'base64') {
-      return Buffer.from(content.content, 'base64').toString('utf-8');
+    if (content.content && content.encoding === "base64") {
+      return Buffer.from(content.content, "base64").toString("utf-8");
     }
 
     return null;
@@ -247,7 +247,7 @@ export async function fetchCommitDetails(
   accessToken: string,
   owner: string,
   repo: string,
-  commitSha: string
+  commitSha: string,
 ): Promise<{
   message: string;
   files: Array<{
@@ -276,7 +276,7 @@ export async function fetchCommitDetails(
     };
   } catch (error) {
     if (error instanceof GitHubAPIError && error.status === 404) {
-      return { message: '', files: [] };
+      return { message: "", files: [] };
     }
     throw error;
   }
@@ -285,26 +285,22 @@ export async function fetchCommitDetails(
 /**
  * Check if access token has required scopes
  */
-export async function checkTokenScopes(
-  accessToken: string
-): Promise<string[]> {
+export async function checkTokenScopes(accessToken: string): Promise<string[]> {
   const response = await fetch(`${GITHUB_API_BASE}/user`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      Accept: 'application/vnd.github.v3+json',
+      Accept: "application/vnd.github.v3+json",
     },
   });
 
-  const scopes = response.headers.get('X-OAuth-Scopes');
-  return scopes ? scopes.split(', ').map((s) => s.trim()) : [];
+  const scopes = response.headers.get("X-OAuth-Scopes");
+  return scopes ? scopes.split(", ").map((s) => s.trim()) : [];
 }
 
 /**
  * Get rate limit status
  */
-export async function getRateLimitStatus(
-  accessToken: string
-): Promise<{
+export async function getRateLimitStatus(accessToken: string): Promise<{
   limit: number;
   remaining: number;
   reset: Date;
@@ -315,7 +311,7 @@ export async function getRateLimitStatus(
       remaining: number;
       reset: number;
     };
-  }>('/rate_limit', accessToken);
+  }>("/rate_limit", accessToken);
 
   return {
     limit: data.rate.limit,

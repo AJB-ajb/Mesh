@@ -1,6 +1,6 @@
 # Terminology
 
-Canonical reference for all user-facing terminology in MeshIt. When implementing UI labels, spec updates, or translations, always refer to this document.
+Canonical reference for all user-facing terminology in Mesh. When implementing UI labels, spec updates, or translations, always refer to this document.
 
 See also: [mesh.md](mesh.md) (product overview), [ux.md](ux.md) (UX spec), [matching.md](matching.md) (matching algorithm).
 

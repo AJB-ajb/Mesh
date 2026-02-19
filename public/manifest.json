@@ -1,6 +1,6 @@
 {
-  "name": "MeshIt - Find Your Perfect Project Match",
-  "short_name": "MeshIt",
+  "name": "Mesh - Find Your Perfect Project Match",
+  "short_name": "Mesh",
   "description": "AI-powered matching connects developers with projects that fit their skills and interests",
   "start_url": "/",
   "display": "standalone",
@@ -41,14 +41,14 @@
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "MeshIt Dashboard"
+      "label": "Mesh Dashboard"
     },
     {
       "src": "/screenshots/mobile.png",
       "sizes": "750x1334",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "MeshIt Mobile"
+      "label": "Mesh Mobile"
     }
   ],
   "shortcuts": [

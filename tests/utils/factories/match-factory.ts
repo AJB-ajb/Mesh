@@ -1,6 +1,6 @@
 /**
  * Match Factory
- * Creates test match data for MeshIt matches table
+ * Creates test match data for Mesh matches table
  */
 
 import { faker } from "@faker-js/faker";

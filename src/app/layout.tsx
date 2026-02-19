@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: {
     default: labels.meta.title,
-    template: "%s | MeshIt",
+    template: "%s | Mesh",
   },
   description: labels.meta.description,
   keywords: [

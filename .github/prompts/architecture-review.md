@@ -1,6 +1,6 @@
-# MeshIt Architecture Review
+# Mesh Architecture Review
 
-You are performing a weekly automated architecture review of the MeshIt codebase. Your goal is to surface concrete, actionable findings and file them as a GitHub issue.
+You are performing a weekly automated architecture review of the Mesh codebase. Your goal is to surface concrete, actionable findings and file them as a GitHub issue.
 
 ## Step 1: Load Context
 
@@ -98,6 +98,7 @@ Review `spec/roadmap.md` v0.3 milestone features against the current codebase:
 After completing the audit, create a GitHub issue with the following structure.
 
 Use severity labels on each finding:
+
 - 🔴 **Critical** — security vulnerability, data loss risk, or broken feature
 - 🟡 **Warning** — correctness issue, missing coverage, or technical debt that will compound
 - 🔵 **Suggestion** — improvement opportunity, performance optimization, or nice-to-have

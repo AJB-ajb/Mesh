@@ -116,7 +116,7 @@ describe("searchLocations", () => {
       expect.any(String),
       expect.objectContaining({
         headers: expect.objectContaining({
-          "User-Agent": expect.stringContaining("MeshIt"),
+          "User-Agent": expect.stringContaining("Mesh"),
         }),
       }),
     );

@@ -1,5 +1,5 @@
 /**
- * Discord Profile Extractor for MeshIt
+ * Discord Profile Extractor for Mesh
  *
  * This script extracts profile information from Discord messages and creates
  * user accounts in Supabase. Designed for hackathon bulk onboarding.
@@ -397,7 +397,7 @@ async function main() {
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║        Discord Profile Extractor for MeshIt              ║
+║        Discord Profile Extractor for Mesh                ║
 ║                                                           ║
 ║  Extracts profile info from Discord messages and         ║
 ║  creates user accounts in Supabase                       ║

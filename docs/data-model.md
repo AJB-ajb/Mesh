@@ -5,7 +5,7 @@
 
 ## Overview
 
-This document describes the database schema for the Meshit application. It covers all tables, their fields, relationships, and JSONB structures.
+This document describes the database schema for the Mesh application. It covers all tables, their fields, relationships, and JSONB structures.
 
 ---
 

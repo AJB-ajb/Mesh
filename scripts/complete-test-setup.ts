@@ -1,5 +1,5 @@
 /**
- * Complete test data setup for MeshIt
+ * Complete test data setup for Mesh
  * Creates 5 profiles with complete data, 2 projects, applications, and messages
  */
 

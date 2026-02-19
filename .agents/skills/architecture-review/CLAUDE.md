@@ -2,7 +2,7 @@
 
 ## Overview
 
-MeshIt-specific codebase health check. Scans for duplicated code, anti-patterns, complexity hotspots, and inconsistencies across the Next.js + Supabase + SWR stack.
+Mesh-specific codebase health check. Scans for duplicated code, anti-patterns, complexity hotspots, and inconsistencies across the Next.js + Supabase + SWR stack.
 
 ## Structure
 

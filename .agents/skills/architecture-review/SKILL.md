@@ -1,14 +1,14 @@
 ---
 name: architecture-review
-description: Scans MeshIt codebase for duplicated code, bad patterns, complexity hotspots, and inconsistencies. Run periodically or before major releases. Produces actionable findings with severity and file locations.
+description: Scans Mesh codebase for duplicated code, bad patterns, complexity hotspots, and inconsistencies. Run periodically or before major releases. Produces actionable findings with severity and file locations.
 metadata:
   version: "1.0.0"
-  scope: MeshIt-specific
+  scope: Mesh-specific
 ---
 
 # Architecture Review
 
-Codebase health check for MeshIt. Detects duplicated code, anti-patterns, complexity, and inconsistencies across the Next.js + Supabase + SWR stack.
+Codebase health check for Mesh. Detects duplicated code, anti-patterns, complexity, and inconsistencies across the Next.js + Supabase + SWR stack.
 
 ## When to Run
 

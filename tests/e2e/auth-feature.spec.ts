@@ -26,7 +26,7 @@ test.describe("Feature: Authentication Flow", () => {
     // Check page title and subtitle
     await expect(page.locator('h1:has-text("Welcome back")')).toBeVisible();
     await expect(
-      page.locator("text=Sign in to continue to MeshIt"),
+      page.locator("text=Sign in to continue to Mesh"),
     ).toBeVisible();
 
     // Check email/password form

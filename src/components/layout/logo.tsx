@@ -28,7 +28,7 @@ export function Logo({
   href = "/",
 }: LogoProps) {
   const env = getEnvironmentName();
-  const displayName = env === "Production" ? "MeshIt" : `MeshIt - ${env}`;
+  const displayName = env === "Production" ? "Mesh" : `Mesh - ${env}`;
 
   return (
     <Link
