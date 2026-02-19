@@ -12,27 +12,39 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type {
-  ExtractedProfileV2,
-  ProfileUpdateResponse,
-} from "@/lib/types/profile";
+import { labels } from "@/lib/labels";
+import type { ExtractedProfileV2 } from "@/lib/types/profile";
+import type { ExtractedPosting } from "@/lib/types/posting";
+import type { ProfileUpdateResponse } from "@/lib/types/profile";
+import type { PostingUpdateResponse } from "@/lib/types/posting";
 
-export function FreeFormProfileUpdate({
+type EntityType = "profile" | "posting";
+type Extracted = ExtractedProfileV2 | ExtractedPosting;
+
+type FreeFormUpdateProps<T extends Extracted> = {
+  entityType: EntityType;
+  entityId?: string; // required for posting
+  sourceText: string | null;
+  canUndo: boolean;
+  isApplying: boolean;
+  onUpdate: (updatedText: string, extracted: T) => Promise<void>;
+  onUndo: () => Promise<void>;
+};
+
+const API_ENDPOINTS: Record<EntityType, string> = {
+  profile: "/api/extract/profile/update",
+  posting: "/api/extract/posting/update",
+};
+
+export function FreeFormUpdate<T extends Extracted>({
+  entityType,
+  entityId,
   sourceText,
   canUndo,
   isApplying,
   onUpdate,
   onUndo,
-}: {
-  sourceText: string | null;
-  canUndo: boolean;
-  isApplying: boolean;
-  onUpdate: (
-    updatedText: string,
-    extractedProfile: ExtractedProfileV2,
-  ) => Promise<void>;
-  onUndo: () => Promise<void>;
-}) {
+}: FreeFormUpdateProps<T>) {
   const [editableSourceText, setEditableSourceText] = useState(
     sourceText ?? "",
   );
@@ -40,34 +52,49 @@ export function FreeFormProfileUpdate({
   const [error, setError] = useState<string | null>(null);
   const [showSourceText, setShowSourceText] = useState(!!sourceText);
 
+  const copy = labels.quickUpdate[entityType];
+
   const handleApplyUpdate = async () => {
     if (!updateInstruction.trim()) return;
 
     setError(null);
 
     try {
-      const res = await fetch("/api/extract/profile/update", {
+      const body: Record<string, string> = {
+        sourceText: editableSourceText,
+        updateInstruction,
+      };
+      if (entityType === "posting" && entityId) {
+        body.postingId = entityId;
+      }
+
+      const res = await fetch(API_ENDPOINTS[entityType], {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sourceText: editableSourceText,
-          updateInstruction,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error ?? "Failed to apply update.");
+        setError(
+          data.error?.message ?? data.error ?? "Failed to apply update.",
+        );
         return;
       }
 
-      const data: ProfileUpdateResponse = await res.json();
-
-      setEditableSourceText(data.updatedSourceText);
-      setUpdateInstruction("");
-      await onUpdate(data.updatedSourceText, data.extractedProfile);
+      if (entityType === "profile") {
+        const data: ProfileUpdateResponse = await res.json();
+        setEditableSourceText(data.updatedSourceText);
+        setUpdateInstruction("");
+        await onUpdate(data.updatedSourceText, data.extractedProfile as T);
+      } else {
+        const data: PostingUpdateResponse = await res.json();
+        setEditableSourceText(data.updatedSourceText);
+        setUpdateInstruction("");
+        await onUpdate(data.updatedSourceText, data.extractedPosting as T);
+      }
     } catch {
-      setError("Network error. Please try again.");
+      setError(labels.quickUpdate.networkError);
     }
   };
 
@@ -76,11 +103,8 @@ export function FreeFormProfileUpdate({
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle>Quick Update</CardTitle>
-            <CardDescription>
-              Describe what changed and your profile fields will update
-              automatically.
-            </CardDescription>
+            <CardTitle>{copy.title}</CardTitle>
+            <CardDescription>{copy.description}</CardDescription>
           </div>
           {canUndo && (
             <Button
@@ -90,13 +114,13 @@ export function FreeFormProfileUpdate({
               disabled={isApplying}
             >
               <Undo2 className="mr-2 h-4 w-4" />
-              Undo
+              {labels.quickUpdate.undoButton}
             </Button>
           )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Collapsible source text — only shown when there's existing text */}
+        {/* Collapsible source text */}
         {(sourceText || editableSourceText) && (
           <div>
             <button
@@ -109,7 +133,7 @@ export function FreeFormProfileUpdate({
               ) : (
                 <ChevronDown className="h-4 w-4" />
               )}
-              Profile description
+              {copy.sourceLabel}
             </button>
             {showSourceText && (
               <Textarea
@@ -117,7 +141,7 @@ export function FreeFormProfileUpdate({
                 rows={6}
                 value={editableSourceText}
                 onChange={(e) => setEditableSourceText(e.target.value)}
-                placeholder="Paste or type your profile description here (e.g., a short bio, your skills, what you're looking for)..."
+                placeholder={copy.sourcePlaceholder}
                 enableMic
                 onTranscriptionChange={(text) =>
                   setEditableSourceText((prev) =>
@@ -131,12 +155,12 @@ export function FreeFormProfileUpdate({
 
         {/* Update instruction */}
         <div className="space-y-2">
-          <label className="text-sm font-medium">What changed?</label>
+          <label className="text-sm font-medium">{copy.instructionLabel}</label>
           <Textarea
             rows={2}
             value={updateInstruction}
             onChange={(e) => setUpdateInstruction(e.target.value)}
-            placeholder="e.g., I also know Python now and am available 20 hours/week"
+            placeholder={copy.instructionPlaceholder}
             enableMic
             onTranscriptionChange={(text) =>
               setUpdateInstruction((prev) => (prev ? prev + " " + text : text))
@@ -157,10 +181,10 @@ export function FreeFormProfileUpdate({
           {isApplying ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Applying...
+              {labels.quickUpdate.applyingButton}
             </>
           ) : (
-            "Apply Update"
+            labels.quickUpdate.applyButton
           )}
         </Button>
       </CardContent>
