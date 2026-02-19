@@ -21,12 +21,12 @@ export const metadata: Metadata = {
     template: "%s | MeshIt",
   },
   description:
-    "AI-powered matching connects developers with projects that fit their skills and interests. Stop posting 'looking for teammates' in Slack.",
+    "Find people for hackathons, study groups, side projects, and more. Describe what you want to do and get matched with the right collaborators.",
   keywords: [
     "collaboration",
     "project matching",
     "developers",
-    "AI matching",
+    "activity matching",
     "team building",
     "hackathon",
   ],
@@ -47,14 +47,14 @@ export const metadata: Metadata = {
     url: "https://meshit.app",
     title: "MeshIt - Find Your Perfect Match",
     description:
-      "AI-powered matching connects developers with projects that fit their skills and interests.",
+      "Find people for hackathons, study groups, side projects, and more. Describe what you want to do and get matched with the right collaborators.",
     siteName: "MeshIt",
   },
   twitter: {
     card: "summary_large_image",
     title: "MeshIt - Find Your Perfect Match",
     description:
-      "AI-powered matching connects developers with projects that fit their skills and interests.",
+      "Find people for hackathons, study groups, side projects, and more. Describe what you want to do and get matched with the right collaborators.",
   },
   robots: {
     index: true,

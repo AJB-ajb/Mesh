@@ -286,7 +286,7 @@ export default function NewPostingPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Create Posting</h1>
         <p className="mt-1 text-muted-foreground">
-          Describe your posting and let AI find the perfect collaborators
+          Describe your posting to find the right collaborators
         </p>
       </div>
 
@@ -326,8 +326,8 @@ export default function NewPostingPage() {
       {/* Info */}
       <p className="text-center text-sm text-muted-foreground">
         {inputMode === "ai"
-          ? "Paste your posting description and let AI extract the details automatically."
-          : "After creating your posting, our AI will immediately start finding matching collaborators based on your description."}
+          ? "Paste your posting description and we\u2019ll extract the details automatically."
+          : "After creating your posting, matching collaborators will be surfaced automatically based on your description."}
       </p>
     </div>
   );

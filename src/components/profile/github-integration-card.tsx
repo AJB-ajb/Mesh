@@ -76,12 +76,9 @@ export function GitHubIntegrationCard({
         {!isGithubProvider && (
           <div className="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/30 p-4">
             <p className="text-sm text-amber-700 dark:text-amber-300">
-              <strong>Connect with GitHub</strong> to automatically analyze your
-              repositories, commit messages, and coding style to enrich your
-              profile with AI-powered insights.
-            </p>
-            <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-              Connect your GitHub account from the Integrations section below.
+              Connect your GitHub account from the Integrations section below to
+              automatically analyze your repositories, commit messages, and
+              coding style to enrich your profile with insights from your code.
             </p>
           </div>
         )}
@@ -191,7 +188,7 @@ export function GitHubIntegrationCard({
                     <div className="rounded-md border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/30 p-4 space-y-3">
                       <p className="text-sm font-medium flex items-center gap-2">
                         <Sparkles className="h-4 w-4 text-purple-500" />
-                        AI Suggestions from your GitHub
+                        Suggestions from your GitHub
                       </p>
 
                       {(githubSync.suggestions.suggestedSkills?.length ?? 0) >

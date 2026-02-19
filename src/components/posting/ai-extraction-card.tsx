@@ -37,8 +37,8 @@ export function AiExtractionCard({
         </CardTitle>
         <CardDescription>
           Paste your posting description from Slack, Discord, a GitHub README,
-          or use the mic to describe it. Our AI will automatically extract
-          posting details.
+          or use the mic to describe it. Details will be extracted
+          automatically.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

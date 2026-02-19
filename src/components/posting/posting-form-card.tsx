@@ -216,7 +216,7 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
               }
             />
             <p className="text-xs text-muted-foreground">
-              Our AI will extract skills, team size, and timeline from your
+              Skills, team size, and timeline will be extracted from your
               description.
             </p>
           </div>

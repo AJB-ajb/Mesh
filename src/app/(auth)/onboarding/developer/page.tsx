@@ -337,8 +337,8 @@ function DeveloperOnboardingContent() {
                 </CardTitle>
                 <CardDescription>
                   Paste your GitHub profile README, LinkedIn bio, resume, or use
-                  the mic to describe yourself. Our AI will automatically
-                  extract your profile information.
+                  the mic to describe yourself. Your profile information will be
+                  extracted automatically.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">

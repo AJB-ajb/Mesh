@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowRight,
-  Sparkles,
   Users,
   MessageSquare,
   Mic,
@@ -28,6 +27,7 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { createClient } from "@/lib/supabase/server";
+import { labels } from "@/lib/labels";
 
 const examplePostings = [
   {
@@ -120,12 +120,12 @@ export default async function LandingPage() {
       {/* Hero Section */}
       <main className="flex flex-1 flex-col">
         <section className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center lg:px-8 lg:py-24">
-          {/* AI Badge */}
+          {/* Badge */}
           <div className="mb-8 animate-fade-in">
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-4 py-1.5 text-sm">
-              <Sparkles className="h-4 w-4 text-blue-500" />
+              <Users className="h-4 w-4 text-blue-500" />
               <span className="text-muted-foreground">
-                AI-powered people matching
+                {labels.landing.heroBadge}
               </span>
             </div>
           </div>
@@ -142,9 +142,7 @@ export default async function LandingPage() {
             className="mt-6 max-w-2xl animate-slide-up text-lg text-muted-foreground sm:text-xl"
             style={{ animationDelay: "100ms" }}
           >
-            Hackathons, study groups, sports, concerts, side projects, startups
-            — describe what you want to do, and AI finds the right people to do
-            it with.
+            {labels.landing.heroSubheadline}
           </p>
 
           {/* CTA Buttons */}
@@ -257,11 +255,10 @@ export default async function LandingPage() {
                   2
                 </div>
                 <h3 className="text-xl font-semibold">
-                  AI finds compatible people
+                  {labels.landing.howItWorksStep2Title}
                 </h3>
                 <p className="mt-2 text-muted-foreground">
-                  Matching on skills, availability, location, and interests — AI
-                  surfaces the people most likely to be a great fit.
+                  {labels.landing.howItWorksStep2Body}
                 </p>
               </div>
 
@@ -297,10 +294,11 @@ export default async function LandingPage() {
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <Search className="h-6 w-6" />
                 </div>
-                <h3 className="font-semibold">AI-Powered Matching</h3>
+                <h3 className="font-semibold">
+                  {labels.landing.smartMatchingTitle}
+                </h3>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Semantic understanding of what you need and who fits — not
-                  just keyword matching.
+                  {labels.landing.smartMatchingBody}
                 </p>
               </div>
 
@@ -347,8 +345,7 @@ export default async function LandingPage() {
               Ready to find your people?
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              Post what you want to do and let AI connect you with the right
-              people.
+              {labels.landing.ctaBody}
             </p>
             <div className="mt-8">
               <Button size="lg" className="gap-2 px-8" asChild>
