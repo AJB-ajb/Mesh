@@ -16,12 +16,6 @@ import {
 import type { InputMode } from "@/components/posting/input-mode-toggle";
 import type { PostingFormState } from "@/components/posting/posting-form-card";
 
-const parseList = (value: string) =>
-  value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-
 export default function NewPostingPage() {
   const router = useRouter();
   const [form, setForm] = useState<PostingFormState>(defaultFormState);
@@ -187,20 +181,12 @@ export default function NewPostingPage() {
     const locationLng = parseFloat(form.locationLng);
     const maxDistanceKm = parseInt(form.maxDistanceKm, 10);
 
-    // Derive backward-compat skills array from selectedSkills (+ any free-form text)
-    const selectedSkillNames = form.selectedSkills.map((s) => s.name);
-    const freeFormSkills = parseList(form.skills);
-    const allSkillNames = [
-      ...new Set([...selectedSkillNames, ...freeFormSkills]),
-    ];
-
     const { data: posting, error: insertError } = await supabase
       .from("postings")
       .insert({
         creator_id: user.id,
         title,
         description: form.description.trim(),
-        skills: allSkillNames,
         estimated_time: form.estimatedTime || null,
         team_size_min: 1,
         team_size_max: lookingFor,

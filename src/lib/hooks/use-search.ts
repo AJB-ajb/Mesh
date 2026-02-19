@@ -22,14 +22,14 @@ async function fetchSearchResults(key: string): Promise<SearchResult[]> {
     supabase
       .from("postings")
       .select(
-        "id, title, description, skills, status, posting_skills(skill_nodes(name))",
+        "id, title, description, status, posting_skills(skill_nodes(name))",
       )
       .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
       .limit(5),
     supabase
       .from("profiles")
       .select(
-        "user_id, full_name, headline, skills, profile_skills(skill_nodes(name))",
+        "user_id, full_name, headline, profile_skills(skill_nodes(name))",
       )
       .or(`full_name.ilike.${searchTerm},headline.ilike.${searchTerm}`)
       .limit(5),

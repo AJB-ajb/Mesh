@@ -127,7 +127,6 @@ export async function fetchRecommendedPostings(
         id,
         title,
         description,
-        skills,
         team_size_min,
         team_size_max,
         estimated_time,
@@ -160,17 +159,13 @@ export async function fetchRecommendedPostings(
       if (!posting) return null;
 
       const profiles = posting.profiles as Record<string, unknown> | null;
-      // Derive skills from join table
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const joinSkills = deriveSkillNames(posting.posting_skills as any[]);
+      const skills = deriveSkillNames(posting.posting_skills as any[]);
       return {
         id: posting.id,
         title: posting.title,
         description: posting.description,
-        skills:
-          joinSkills.length > 0
-            ? joinSkills
-            : (posting.skills as string[]) || [],
+        skills,
         teamSize: `${posting.team_size_min}-${posting.team_size_max} people`,
         estimatedTime: (posting.estimated_time as string) || "",
         category: (posting.category as string) || "",

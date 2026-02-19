@@ -201,12 +201,6 @@ export default function PostingDetailPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const parseList = (value: string) =>
-    value
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
-
   const handleStartEdit = () => {
     if (!posting) return;
     setForm({
@@ -245,19 +239,11 @@ export default function PostingDetailPage() {
     const locationLng = parseFloat(form.locationLng);
     const maxDistanceKm = parseInt(form.maxDistanceKm, 10);
 
-    // Merge selectedSkills names into the free-form skills array (dual-write)
-    const selectedSkillNames = form.selectedSkills.map((s) => s.name);
-    const freeFormSkills = parseList(form.skills);
-    const allSkillNames = [
-      ...new Set([...selectedSkillNames, ...freeFormSkills]),
-    ];
-
     const { error: updateError } = await supabase
       .from("postings")
       .update({
         title: form.title.trim(),
         description: form.description.trim(),
-        skills: allSkillNames,
         estimated_time: form.estimatedTime || null,
         team_size_min: 1,
         team_size_max: lookingFor,

@@ -29,7 +29,6 @@ type JoinSkillRow = { skill_nodes: any };
 interface ProfileRow {
   user_id: string;
   bio: string | null;
-  skills: string[] | null;
   interests: string[] | null;
   headline: string | null;
   profile_skills?: JoinSkillRow[] | null;
@@ -39,7 +38,6 @@ interface PostingRow {
   id: string;
   title: string;
   description: string;
-  skills: string[] | null;
   posting_skills?: JoinSkillRow[] | null;
 }
 
@@ -104,7 +102,7 @@ export async function POST(req: Request) {
     const { data: pendingProfiles, error: profilesError } = await supabase
       .from("profiles")
       .select(
-        "user_id, bio, skills, interests, headline, profile_skills(skill_nodes(name))",
+        "user_id, bio, interests, headline, profile_skills(skill_nodes(name))",
       )
       .eq("needs_embedding", true)
       .limit(BATCH_LIMIT);
@@ -120,7 +118,7 @@ export async function POST(req: Request) {
     const { data: pendingPostings, error: postingsError } = await supabase
       .from("postings")
       .select(
-        "id, title, description, skills, posting_skills(skill_nodes(name))",
+        "id, title, description, posting_skills(skill_nodes(name))",
       )
       .eq("needs_embedding", true)
       .limit(BATCH_LIMIT);

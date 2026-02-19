@@ -5,7 +5,6 @@ import Link from "next/link";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import useSWR from "swr";
 
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
 import { getInitials } from "@/lib/format";
@@ -29,7 +28,6 @@ type PublicProfile = {
   full_name: string | null;
   headline: string | null;
   bio: string | null;
-  skills: string[] | null;
   location_mode: string | null;
   location_name: string | null;
   profile_skills: ProfileSkillRow[];
@@ -42,7 +40,7 @@ async function fetchPublicProfile(key: string): Promise<PublicProfile | null> {
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "user_id, full_name, headline, bio, skills, location_mode, location_name, profile_skills(skill_id, level, skill_nodes(id, name))",
+      "user_id, full_name, headline, bio, location_mode, location_name, profile_skills(skill_id, level, skill_nodes(id, name))",
     )
     .eq("user_id", userId)
     .single();
@@ -154,22 +152,6 @@ export default function PublicProfilePage() {
         </Card>
       )}
 
-      {profile.skills && profile.skills.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Skills</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {profile.skills.map((skill) => (
-                <Badge key={skill} variant="secondary">
-                  {skill}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
