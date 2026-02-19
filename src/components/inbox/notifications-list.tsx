@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { labels } from "@/lib/labels";
 import type { Notification } from "@/lib/supabase/realtime";
 
 const formatDate = (dateString: string) => {
@@ -122,7 +123,7 @@ export function NotificationsList({
         <div className="flex justify-end">
           <Button variant="ghost" size="sm" onClick={onMarkAllAsRead}>
             <CheckCheck className="h-4 w-4" />
-            Mark all as read
+            {labels.inbox.markAllAsRead}
           </Button>
         </div>
       )}
@@ -132,7 +133,9 @@ export function NotificationsList({
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Inbox className="h-12 w-12 text-muted-foreground/50" />
-            <p className="mt-4 text-muted-foreground">No notifications yet</p>
+            <p className="mt-4 text-muted-foreground">
+              {labels.inbox.noNotifications}
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -195,7 +198,7 @@ export function NotificationsList({
                         ) : (
                           <Check className="h-3 w-3" />
                         )}
-                        Join
+                        {labels.inbox.joinAction}
                       </Button>
                       <Button
                         size="sm"
@@ -205,7 +208,7 @@ export function NotificationsList({
                           handleInviteResponse(notification, "decline")
                         }
                       >
-                        Do not join
+                        {labels.inbox.doNotJoinAction}
                       </Button>
                     </div>
                   )}

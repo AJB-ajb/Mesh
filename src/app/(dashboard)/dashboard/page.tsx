@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 
+import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -33,7 +34,7 @@ import {
 } from "@/components/dashboard/dashboard-data";
 
 export const metadata: Metadata = {
-  title: "Dashboard",
+  title: labels.dashboard.title,
 };
 
 export default async function DashboardPage() {
@@ -58,15 +59,17 @@ export default async function DashboardPage() {
       {/* Page header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {labels.dashboard.title}
+          </h1>
           <p className="mt-1 text-muted-foreground">
-            Welcome back! Here&apos;s what&apos;s happening with your postings.
+            {labels.dashboard.subtitle}
           </p>
         </div>
         <Button asChild>
           <Link href="/postings/new">
             <Plus className="h-4 w-4" />
-            New Posting
+            {labels.common.newPosting}
           </Link>
         </Button>
       </div>
@@ -82,9 +85,9 @@ export default async function DashboardPage() {
       {/* Recent activity */}
       <Card data-testid="recent-activity">
         <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
+          <CardTitle>{labels.dashboard.recentActivity}</CardTitle>
           <CardDescription>
-            Your latest matches, join requests, and messages
+            {labels.dashboard.recentActivityDescription}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -92,7 +95,7 @@ export default async function DashboardPage() {
             <RecentActivityList supabase={supabase} userId={user.id} />
           ) : (
             <p className="text-sm text-muted-foreground">
-              Sign in to see your recent activity
+              {labels.dashboard.signInToSeeActivity}
             </p>
           )}
         </CardContent>

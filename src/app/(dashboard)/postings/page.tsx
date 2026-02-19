@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Plus, Search, Filter, Loader2, X } from "lucide-react";
 import { SpeechInput } from "@/components/ai-elements/speech-input";
 import { transcribeAudio } from "@/lib/transcribe";
+import { labels } from "@/lib/labels";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,17 +19,17 @@ import { applyFilters } from "@/lib/filters/apply-filters";
 import { PostingDiscoverCard } from "@/components/posting/posting-discover-card";
 
 const tabs: { id: TabId; label: string }[] = [
-  { id: "discover", label: "Discover" },
-  { id: "my-postings", label: "My Postings" },
+  { id: "discover", label: labels.postings.tabs.discover },
+  { id: "my-postings", label: labels.postings.tabs.myPostings },
 ];
 
 const categories = [
-  { value: "all", label: "All" },
-  { value: "study", label: "Study" },
-  { value: "hackathon", label: "Hackathon" },
-  { value: "personal", label: "Personal" },
-  { value: "professional", label: "Professional" },
-  { value: "social", label: "Social" },
+  { value: "all", label: labels.postings.categories.all },
+  { value: "study", label: labels.postings.categories.study },
+  { value: "hackathon", label: labels.postings.categories.hackathon },
+  { value: "personal", label: labels.postings.categories.personal },
+  { value: "professional", label: labels.postings.categories.professional },
+  { value: "social", label: labels.postings.categories.social },
 ] as const;
 
 export default function PostingsPage() {
@@ -98,15 +99,17 @@ export default function PostingsPage() {
       {/* Page header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Postings</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {labels.postings.title}
+          </h1>
           <p className="mt-1 text-muted-foreground">
-            Discover postings or manage your own
+            {labels.postings.subtitle}
           </p>
         </div>
         <Button asChild>
           <Link href="/postings/new">
             <Plus className="h-4 w-4" />
-            New Posting
+            {labels.common.newPosting}
           </Link>
         </Button>
       </div>
@@ -136,7 +139,7 @@ export default function PostingsPage() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
-              placeholder='Try "remote React, 10+ hours/week"...'
+              placeholder={labels.common.searchPlaceholder}
               className="pl-9 pr-10"
               value={nlQuery}
               onChange={(e) => {
@@ -171,7 +174,7 @@ export default function PostingsPage() {
             onClick={() => setShowFilters((v) => !v)}
           >
             <Filter className="h-4 w-4" />
-            <span className="sr-only">Filter</span>
+            <span className="sr-only">{labels.common.filter}</span>
           </Button>
         </div>
       </div>
@@ -201,7 +204,7 @@ export default function PostingsPage() {
             className="h-6 text-xs"
             onClick={clearFilters}
           >
-            Clear all
+            {labels.common.clearAll}
           </Button>
         </div>
       )}
@@ -228,11 +231,13 @@ export default function PostingsPage() {
         <Card>
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium">Filters</h3>
+              <h3 className="text-sm font-medium">
+                {labels.postings.filtersTitle}
+              </h3>
               <div className="flex gap-2">
                 {hasActiveFilters && (
                   <Button variant="ghost" size="sm" onClick={clearFilters}>
-                    Clear all
+                    {labels.common.clearAll}
                   </Button>
                 )}
                 <Button
@@ -247,16 +252,18 @@ export default function PostingsPage() {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
-                Mode
+                {labels.postings.modeLabel}
               </label>
               <select
                 value={filterMode}
                 onChange={(e) => setFilterMode(e.target.value)}
                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
               >
-                <option value="all">Any mode</option>
-                <option value="open">Open</option>
-                <option value="friend_ask">Sequential Invite</option>
+                <option value="all">{labels.postings.modeAny}</option>
+                <option value="open">{labels.postings.modeOpen}</option>
+                <option value="friend_ask">
+                  {labels.postings.modeSequentialInvite}
+                </option>
               </select>
             </div>
           </CardContent>
@@ -279,14 +286,14 @@ export default function PostingsPage() {
           <CardContent className="flex min-h-[200px] flex-col items-center justify-center py-12">
             <p className="text-muted-foreground">
               {activeTab === "my-postings"
-                ? "You haven't created any postings yet."
-                : "No postings found."}
+                ? labels.postings.noPostingsOwner
+                : labels.postings.noPostingsDiscover}
             </p>
             {activeTab === "my-postings" && (
               <Button asChild className="mt-4">
                 <Link href="/postings/new">
                   <Plus className="h-4 w-4" />
-                  Create your first posting
+                  {labels.postings.createFirstPosting}
                 </Link>
               </Button>
             )}

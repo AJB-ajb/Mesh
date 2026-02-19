@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Bell, User, Settings, LogOut } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { GlobalSearch } from "./global-search";
@@ -38,7 +39,7 @@ export function Header({ className }: HeaderProps) {
         <Button variant="ghost" size="icon" className="relative" asChild>
           <Link href="/inbox">
             <Bell className="h-5 w-5" />
-            <span className="sr-only">Notifications</span>
+            <span className="sr-only">{labels.nav.notifications}</span>
             {/* Notification badge */}
             {unreadCount > 0 && (
               <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs font-medium text-destructive-foreground">
@@ -54,7 +55,7 @@ export function Header({ className }: HeaderProps) {
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">
               {userInitials}
             </div>
-            <span className="sr-only">User menu</span>
+            <span className="sr-only">{labels.nav.userMenu}</span>
           </Button>
 
           {/* Dropdown menu */}
@@ -64,14 +65,14 @@ export function Header({ className }: HeaderProps) {
               className="flex items-center gap-2 rounded-sm px-3 py-2 text-sm hover:bg-accent"
             >
               <User className="h-4 w-4" />
-              Profile
+              {labels.nav.profile}
             </Link>
             <Link
               href="/settings"
               className="flex items-center gap-2 rounded-sm px-3 py-2 text-sm hover:bg-accent"
             >
               <Settings className="h-4 w-4" />
-              Settings
+              {labels.nav.settings}
             </Link>
             <div className="my-1 h-px bg-border" />
             <button
@@ -79,7 +80,7 @@ export function Header({ className }: HeaderProps) {
               className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-destructive hover:bg-accent"
             >
               <LogOut className="h-4 w-4" />
-              Sign out
+              {labels.common.signOut}
             </button>
           </div>
         </div>

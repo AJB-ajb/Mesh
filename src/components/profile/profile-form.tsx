@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { LocationAutocomplete } from "@/components/location/location-autocomplete";
 import { SkillPicker } from "@/components/skill/skill-picker";
+import { labels } from "@/lib/labels";
 import type { ProfileFormState } from "@/lib/types/profile";
 import {
   type LocationMode,
@@ -30,9 +31,12 @@ import type { GeocodingResult } from "@/lib/geocoding";
 // ---------------------------------------------------------------------------
 
 const LOCATION_MODE_OPTIONS: { value: LocationMode; label: string }[] = [
-  { value: "remote", label: "Remote" },
-  { value: "in_person", label: "In-person" },
-  { value: "either", label: "Flexible" },
+  { value: "remote", label: labels.profileForm.locationModeOptions.remote },
+  {
+    value: "in_person",
+    label: labels.profileForm.locationModeOptions.in_person,
+  },
+  { value: "either", label: labels.profileForm.locationModeOptions.either },
 ];
 
 // ---------------------------------------------------------------------------
@@ -117,47 +121,47 @@ export function ProfileForm({
       {/* ============================================ */}
       <Card>
         <CardHeader>
-          <CardTitle>General Information</CardTitle>
+          <CardTitle>{labels.profileForm.generalInfoTitle}</CardTitle>
           <CardDescription>
-            Share the essentials about who you are.
+            {labels.profileForm.generalInfoDescription}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <label htmlFor="fullName" className="text-sm font-medium">
-                Full name
+                {labels.profileForm.fullNameLabel}
               </label>
               <Input
                 id="fullName"
                 value={form.fullName}
                 onChange={(e) => onChange("fullName", e.target.value)}
-                placeholder="e.g., Alex Johnson"
+                placeholder={labels.profileForm.fullNamePlaceholder}
               />
             </div>
             <div className="space-y-2">
               <label htmlFor="headline" className="text-sm font-medium">
-                Headline
+                {labels.profileForm.headlineLabel}
               </label>
               <Input
                 id="headline"
                 value={form.headline}
                 onChange={(e) => onChange("headline", e.target.value)}
-                placeholder="e.g., Full-stack developer"
+                placeholder={labels.profileForm.headlinePlaceholder}
               />
             </div>
           </div>
 
           <div className="space-y-2">
             <label htmlFor="bio" className="text-sm font-medium">
-              About you
+              {labels.profileForm.bioLabel}
             </label>
             <Textarea
               id="bio"
               rows={4}
               value={form.bio}
               onChange={(e) => onChange("bio", e.target.value)}
-              placeholder="What do you enjoy building? What makes you unique?"
+              placeholder={labels.profileForm.bioPlaceholder}
               enableMic
               onTranscriptionChange={(text) =>
                 onChange("bio", form.bio ? form.bio + " " + text : text)
@@ -169,7 +173,7 @@ export function ProfileForm({
           <div className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="location" className="text-sm font-medium">
-                Location
+                {labels.profileForm.locationLabel}
               </label>
 
               {location.showAutocomplete ? (
@@ -177,7 +181,7 @@ export function ProfileForm({
                   value={form.location}
                   onSelect={location.handleLocationSelect}
                   onChange={location.handleLocationInputChange}
-                  placeholder="Search for a location..."
+                  placeholder={labels.profileForm.locationSearchPlaceholder}
                 />
               ) : (
                 <Input
@@ -186,13 +190,12 @@ export function ProfileForm({
                   onChange={(e) =>
                     location.handleLocationInputChange(e.target.value)
                   }
-                  placeholder="e.g., Berlin, Germany"
+                  placeholder={labels.profileForm.locationManualPlaceholder}
                 />
               )}
 
               <p className="text-xs text-muted-foreground">
-                Use the buttons below to auto-fill your location, or type
-                manually.
+                {labels.profileForm.locationHelp}
               </p>
             </div>
 
@@ -207,12 +210,12 @@ export function ProfileForm({
                 {location.isGeolocating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Getting location...
+                    {labels.profileForm.gettingLocation}
                   </>
                 ) : (
                   <>
                     <MapPin className="mr-2 h-4 w-4" />
-                    Use current location
+                    {labels.profileForm.useCurrentLocation}
                   </>
                 )}
               </Button>
@@ -226,7 +229,9 @@ export function ProfileForm({
                 }
               >
                 <Search className="mr-2 h-4 w-4" />
-                {location.showAutocomplete ? "Manual entry" : "Search location"}
+                {location.showAutocomplete
+                  ? labels.profileForm.manualEntry
+                  : labels.profileForm.searchLocation}
               </Button>
             </div>
 
@@ -243,30 +248,29 @@ export function ProfileForm({
 
           <div className="space-y-2">
             <label htmlFor="languages" className="text-sm font-medium">
-              Spoken languages (comma-separated)
+              {labels.profileForm.languagesLabel}
             </label>
             <Input
               id="languages"
               value={form.languages}
               onChange={(e) => onChange("languages", e.target.value)}
-              placeholder="e.g., en, de, es"
+              placeholder={labels.profileForm.languagesPlaceholder}
             />
             <p className="text-xs text-muted-foreground">
-              Use ISO codes: en (English), de (German), es (Spanish), fr
-              (French), etc.
+              {labels.profileForm.languagesHelp}
             </p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <label htmlFor="interests" className="text-sm font-medium">
-                Interests (comma-separated)
+                {labels.profileForm.interestsLabel}
               </label>
               <Input
                 id="interests"
                 value={form.interests}
                 onChange={(e) => onChange("interests", e.target.value)}
-                placeholder="e.g., AI, fintech, education"
+                placeholder={labels.profileForm.interestsPlaceholder}
               />
             </div>
           </div>
@@ -274,24 +278,24 @@ export function ProfileForm({
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <label htmlFor="portfolioUrl" className="text-sm font-medium">
-                Portfolio link
+                {labels.profileForm.portfolioLabel}
               </label>
               <Input
                 id="portfolioUrl"
                 value={form.portfolioUrl}
                 onChange={(e) => onChange("portfolioUrl", e.target.value)}
-                placeholder="https://your-portfolio.com"
+                placeholder={labels.profileForm.portfolioPlaceholder}
               />
             </div>
             <div className="space-y-2">
               <label htmlFor="githubUrl" className="text-sm font-medium">
-                GitHub link
+                {labels.profileForm.githubLabel}
               </label>
               <Input
                 id="githubUrl"
                 value={form.githubUrl}
                 onChange={(e) => onChange("githubUrl", e.target.value)}
-                placeholder="https://github.com/username"
+                placeholder={labels.profileForm.githubPlaceholder}
               />
             </div>
           </div>
@@ -303,9 +307,9 @@ export function ProfileForm({
       {/* ============================================ */}
       <Card>
         <CardHeader>
-          <CardTitle>Skills</CardTitle>
+          <CardTitle>{labels.profileForm.skillsTitle}</CardTitle>
           <CardDescription>
-            Search or browse the skill tree and rate your proficiency (0-10).
+            {labels.profileForm.skillsDescription}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -315,7 +319,7 @@ export function ProfileForm({
             onAdd={handleAddSkill}
             onRemove={handleRemoveSkill}
             onUpdateLevel={handleUpdateSkillLevel}
-            placeholder="Search skills (e.g., React, Piano, Photography)..."
+            placeholder={labels.profileForm.skillsPlaceholder}
           />
         </CardContent>
       </Card>
@@ -325,8 +329,10 @@ export function ProfileForm({
       {/* ============================================ */}
       <Card>
         <CardHeader>
-          <CardTitle>Location Mode</CardTitle>
-          <CardDescription>Where do you prefer to collaborate?</CardDescription>
+          <CardTitle>{labels.profileForm.locationModeTitle}</CardTitle>
+          <CardDescription>
+            {labels.profileForm.locationModeDescription}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex gap-2">
@@ -352,9 +358,9 @@ export function ProfileForm({
       {/* ============================================ */}
       <Card>
         <CardHeader>
-          <CardTitle>Availability</CardTitle>
+          <CardTitle>{labels.profileForm.availabilityTitle}</CardTitle>
           <CardDescription>
-            Click cells to toggle when you are typically available.
+            {labels.profileForm.availabilityDescription}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -407,10 +413,10 @@ export function ProfileForm({
 
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
         <Button type="submit" disabled={isSaving}>
-          {isSaving ? "Saving..." : "Save changes"}
+          {isSaving ? labels.common.saving : labels.common.saveChanges}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
+          {labels.common.cancel}
         </Button>
       </div>
     </form>

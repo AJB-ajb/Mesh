@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 
 import { Logo } from "@/components/layout/logo";
+import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
@@ -25,13 +26,13 @@ export default function ForgotPasswordPage() {
       email,
       {
         redirectTo: `${window.location.origin}/reset-password`,
-      }
+      },
     );
 
     if (resetError) {
       setError(resetError.message);
     } else {
-      setMessage("Check your email for a password reset link.");
+      setMessage(labels.auth.forgotPassword.checkEmail);
     }
     setIsLoading(false);
   };
@@ -45,9 +46,11 @@ export default function ForgotPasswordPage() {
       <main className="flex flex-1 items-center justify-center px-6 py-16 lg:px-8">
         <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
           <div className="space-y-2 text-center">
-            <h1 className="text-2xl font-semibold">Forgot password?</h1>
+            <h1 className="text-2xl font-semibold">
+              {labels.auth.forgotPassword.title}
+            </h1>
             <p className="text-sm text-muted-foreground">
-              Enter your email and we&apos;ll send you a reset link.
+              {labels.auth.forgotPassword.subtitle}
             </p>
           </div>
 
@@ -66,7 +69,7 @@ export default function ForgotPasswordPage() {
           <form onSubmit={handleResetPassword} className="mt-6 space-y-4">
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium">
-                Email
+                {labels.common.emailLabel}
               </label>
               <Input
                 id="email"
@@ -79,14 +82,16 @@ export default function ForgotPasswordPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Sending..." : "Send reset link"}
+              {isLoading
+                ? labels.auth.forgotPassword.sending
+                : labels.auth.forgotPassword.sendResetLink}
             </Button>
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Remember your password?{" "}
+            {labels.auth.forgotPassword.rememberPassword}{" "}
             <Link href="/login" className="text-primary hover:underline">
-              Sign in
+              {labels.common.signIn}
             </Link>
           </p>
         </div>

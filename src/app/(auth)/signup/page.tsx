@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 import { Logo } from "@/components/layout/logo";
+import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
@@ -41,13 +42,13 @@ function SignUpForm() {
     setMessage(null);
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError(labels.auth.signup.errorPasswordMismatch);
       setIsLoading(false);
       return;
     }
 
     if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+      setError(labels.auth.signup.errorPasswordLength);
       setIsLoading(false);
       return;
     }
@@ -75,7 +76,7 @@ function SignUpForm() {
     }
 
     // Fallback: email confirmation is enabled, user must verify
-    setMessage("Check your email to confirm your account.");
+    setMessage(labels.auth.signup.checkEmail);
     setIsLoading(false);
   };
 
@@ -126,9 +127,11 @@ function SignUpForm() {
       <main className="flex flex-1 items-center justify-center px-6 py-16 lg:px-8">
         <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
           <div className="space-y-2 text-center">
-            <h1 className="text-2xl font-semibold">Create an account</h1>
+            <h1 className="text-2xl font-semibold">
+              {labels.auth.signup.title}
+            </h1>
             <p className="text-sm text-muted-foreground">
-              Sign up to get started with MeshIt.
+              {labels.auth.signup.subtitle}
             </p>
           </div>
 
@@ -147,7 +150,7 @@ function SignUpForm() {
           <form onSubmit={handleSignUp} className="mt-6 space-y-4">
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium">
-                Email
+                {labels.common.emailLabel}
               </label>
               <Input
                 id="email"
@@ -161,7 +164,7 @@ function SignUpForm() {
             </div>
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-medium">
-                Password
+                {labels.common.passwordLabel}
               </label>
               <Input
                 id="password"
@@ -175,7 +178,7 @@ function SignUpForm() {
             </div>
             <div className="space-y-2">
               <label htmlFor="confirmPassword" className="text-sm font-medium">
-                Confirm Password
+                {labels.auth.signup.confirmPasswordLabel}
               </label>
               <Input
                 id="confirmPassword"
@@ -192,7 +195,9 @@ function SignUpForm() {
               className="w-full"
               disabled={isLoading || isOAuthLoading}
             >
-              {isLoading ? "Creating account..." : "Sign up"}
+              {isLoading
+                ? labels.auth.signup.creatingAccount
+                : labels.common.signUp}
             </Button>
           </form>
 
@@ -202,7 +207,7 @@ function SignUpForm() {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-card px-2 text-muted-foreground">
-                Or continue with
+                {labels.common.orContinueWith}
               </span>
             </div>
           </div>
@@ -250,12 +255,12 @@ function SignUpForm() {
           </div>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
+            {labels.auth.signup.alreadyHaveAccount}{" "}
             <Link
               href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}
               className="text-primary hover:underline"
             >
-              Sign in
+              {labels.common.signIn}
             </Link>
           </p>
         </div>

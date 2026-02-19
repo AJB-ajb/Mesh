@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, X, UserMinus, Users } from "lucide-react";
 
+import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -78,7 +79,9 @@ export function ConnectionList({ currentUserId }: { currentUserId: string }) {
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Users className="h-12 w-12 text-muted-foreground/50" />
-          <p className="mt-4 text-muted-foreground">No connections yet</p>
+          <p className="mt-4 text-muted-foreground">
+            {labels.connections.noConnections}
+          </p>
         </CardContent>
       </Card>
     );
@@ -90,7 +93,7 @@ export function ConnectionList({ currentUserId }: { currentUserId: string }) {
       {pendingIncoming.length > 0 && (
         <section>
           <h3 className="mb-2 text-sm font-medium text-muted-foreground">
-            Pending Requests
+            {labels.connections.pendingRequests}
           </h3>
           <div className="space-y-2">
             {pendingIncoming.map((f) => (
@@ -114,7 +117,7 @@ export function ConnectionList({ currentUserId }: { currentUserId: string }) {
                     onClick={() => handleAction(f.id, "accepted")}
                   >
                     <Check className="h-4 w-4" />
-                    Accept
+                    {labels.joinRequest.action.accept}
                   </Button>
                   <Button
                     variant="ghost"
@@ -123,7 +126,7 @@ export function ConnectionList({ currentUserId }: { currentUserId: string }) {
                     onClick={() => handleAction(f.id, "declined")}
                   >
                     <X className="h-4 w-4" />
-                    Decline
+                    {labels.joinRequest.action.decline}
                   </Button>
                 </div>
               </div>
@@ -136,7 +139,7 @@ export function ConnectionList({ currentUserId }: { currentUserId: string }) {
       {pendingSent.length > 0 && (
         <section>
           <h3 className="mb-2 text-sm font-medium text-muted-foreground">
-            Sent Requests
+            {labels.connections.sentRequests}
           </h3>
           <div className="space-y-2">
             {pendingSent.map((f) => (
@@ -152,7 +155,7 @@ export function ConnectionList({ currentUserId }: { currentUserId: string }) {
                     </p>
                   )}
                 </div>
-                <Badge variant="secondary">Pending</Badge>
+                <Badge variant="secondary">{labels.connections.pending}</Badge>
               </div>
             ))}
           </div>
@@ -163,7 +166,7 @@ export function ConnectionList({ currentUserId }: { currentUserId: string }) {
       {accepted.length > 0 && (
         <section>
           <h3 className="mb-2 text-sm font-medium text-muted-foreground">
-            Connections ({accepted.length})
+            {labels.connections.connectionsCount(accepted.length)}
           </h3>
           <div className="space-y-2">
             {accepted.map((f) => (

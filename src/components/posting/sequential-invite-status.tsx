@@ -2,6 +2,7 @@
 
 import { CheckCircle2, Circle, Clock, XCircle, ArrowRight } from "lucide-react";
 
+import { labels } from "@/lib/labels";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { FriendAsk } from "@/lib/supabase/types";
@@ -34,7 +35,9 @@ export function SequentialInviteStatus({
     <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium">Sequential Invite Progress</h4>
+        <h4 className="text-sm font-medium">
+          {labels.sequentialInvite.progressTitle}
+        </h4>
         <Badge variant={config.variant}>{config.label}</Badge>
       </div>
 
@@ -100,12 +103,20 @@ export function SequentialInviteStatus({
       {/* Summary */}
       <p className="text-xs text-muted-foreground">
         {status === "accepted"
-          ? `${connectionNames[ordered_friend_list[current_request_index]] ?? "Connection"} accepted the invite`
+          ? labels.sequentialInvite.acceptedSummary(
+              connectionNames[ordered_friend_list[current_request_index]] ??
+                "Connection",
+            )
           : status === "completed"
-            ? `All ${ordered_friend_list.length} connections were asked — no one accepted`
+            ? labels.sequentialInvite.completedSummary(
+                ordered_friend_list.length,
+              )
             : status === "cancelled"
-              ? "This sequential invite was cancelled"
-              : `${current_request_index + 1} of ${ordered_friend_list.length} — waiting for response`}
+              ? labels.sequentialInvite.cancelledSummary
+              : labels.sequentialInvite.waitingSummary(
+                  current_request_index + 1,
+                  ordered_friend_list.length,
+                )}
       </p>
     </div>
   );

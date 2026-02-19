@@ -24,6 +24,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { labels } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/client";
 import { GoogleIcon } from "@/components/icons/auth-icons";
 import {
@@ -209,18 +210,8 @@ function SettingsContent() {
     router.replace("/login");
   };
 
-  const getProviderName = (provider: Provider): string => {
-    switch (provider) {
-      case "google":
-        return "Google";
-      case "github":
-        return "GitHub";
-      case "linkedin_oidc":
-        return "LinkedIn";
-      default:
-        return provider;
-    }
-  };
+  const getProviderName = (provider: Provider): string =>
+    labels.settings.providerNames[provider] ?? provider;
 
   const getProviderIcon = (provider: Provider) => {
     switch (provider) {
@@ -254,15 +245,15 @@ function SettingsContent() {
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to dashboard
+        {labels.common.backToDashboard}
       </Link>
 
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="mt-1 text-muted-foreground">
-          Manage your account preferences
-        </p>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {labels.settings.title}
+        </h1>
+        <p className="mt-1 text-muted-foreground">{labels.settings.subtitle}</p>
       </div>
 
       {/* Error/Success Messages */}
@@ -282,18 +273,24 @@ function SettingsContent() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Account</CardTitle>
-          <CardDescription>Your account information</CardDescription>
+          <CardTitle>{labels.settings.accountTitle}</CardTitle>
+          <CardDescription>
+            {labels.settings.accountDescription}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <p className="text-sm text-muted-foreground">Email</p>
+            <p className="text-sm text-muted-foreground">
+              {labels.common.emailLabel}
+            </p>
             <p className="font-medium">{userEmail}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Account type</p>
+            <p className="text-sm text-muted-foreground">
+              {labels.settings.accountTypeLabel}
+            </p>
             <p className="font-medium capitalize">
-              {persona ? persona.replace("_", " ") : "Member"}
+              {persona ? persona.replace("_", " ") : labels.common.member}
             </p>
           </div>
         </CardContent>
@@ -302,10 +299,9 @@ function SettingsContent() {
       {/* Connected Accounts */}
       <Card>
         <CardHeader>
-          <CardTitle>Connected Accounts</CardTitle>
+          <CardTitle>{labels.settings.connectedAccountsTitle}</CardTitle>
           <CardDescription>
-            Link multiple providers to access all features. You need at least
-            one connected account.
+            {labels.settings.connectedAccountsDescription}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -323,12 +319,14 @@ function SettingsContent() {
                     </p>
                     {providerData.isPrimary && (
                       <Badge variant="secondary" className="text-xs">
-                        Primary
+                        {labels.common.primary}
                       </Badge>
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {providerData.connected ? "Connected" : "Not connected"}
+                    {providerData.connected
+                      ? labels.common.connected
+                      : labels.common.notConnected}
                   </p>
                 </div>
               </div>
@@ -344,7 +342,7 @@ function SettingsContent() {
                   disabled={connectedCount <= 1}
                 >
                   <X className="mr-2 h-4 w-4" />
-                  Disconnect
+                  {labels.common.disconnect}
                 </Button>
               ) : (
                 <Button
@@ -356,12 +354,12 @@ function SettingsContent() {
                   {linkingProvider === providerData.provider ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Connecting...
+                      {labels.common.connecting}
                     </>
                   ) : (
                     <>
                       <Link2 className="mr-2 h-4 w-4" />
-                      Connect
+                      {labels.common.connect}
                     </>
                   )}
                 </Button>
@@ -375,23 +373,22 @@ function SettingsContent() {
       {githubConnected && (
         <Card>
           <CardHeader>
-            <CardTitle>GitHub Profile Sync</CardTitle>
+            <CardTitle>{labels.settings.githubSyncTitle}</CardTitle>
             <CardDescription>
-              Automatically enrich your profile with data from your GitHub
-              account
+              {labels.settings.githubSyncDescription}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {githubSyncStatus?.synced && (
               <div className="text-sm">
                 <p className="text-muted-foreground">
-                  Last synced:{" "}
+                  {labels.settings.lastSyncedLabel}{" "}
                   {githubSyncStatus.lastSyncedAt
                     ? new Date(githubSyncStatus.lastSyncedAt).toLocaleString()
                     : "Never"}
                 </p>
                 <p className="text-muted-foreground">
-                  Status:{" "}
+                  {labels.settings.statusLabel}{" "}
                   <span className="capitalize">
                     {githubSyncStatus.syncStatus}
                   </span>
@@ -407,12 +404,12 @@ function SettingsContent() {
               {isGithubSyncing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Syncing...
+                  {labels.github.syncingButton}
                 </>
               ) : (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4" />
-                  Sync GitHub Profile
+                  {labels.settings.syncGithubButton}
                 </>
               )}
             </Button>
@@ -423,9 +420,9 @@ function SettingsContent() {
       {/* Notification Preferences */}
       <Card>
         <CardHeader>
-          <CardTitle>Notification Preferences</CardTitle>
+          <CardTitle>{labels.settings.notificationPrefsTitle}</CardTitle>
           <CardDescription>
-            Choose which notifications you receive in-app and in the browser
+            {labels.settings.notificationPrefsDescription}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -434,13 +431,13 @@ function SettingsContent() {
               <thead>
                 <tr className="border-b border-border">
                   <th className="pb-2 text-left font-medium text-muted-foreground">
-                    Type
+                    {labels.settings.tableType}
                   </th>
                   <th className="pb-2 text-center font-medium text-muted-foreground">
-                    In-App
+                    {labels.settings.tableInApp}
                   </th>
                   <th className="pb-2 text-center font-medium text-muted-foreground">
-                    Browser
+                    {labels.settings.tableBrowser}
                   </th>
                 </tr>
               </thead>
@@ -481,31 +478,37 @@ function SettingsContent() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Profile</CardTitle>
-          <CardDescription>View and edit your profile details</CardDescription>
+          <CardTitle>{labels.settings.profileTitle}</CardTitle>
+          <CardDescription>
+            {labels.settings.profileDescription}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Button variant="outline" asChild>
-            <Link href="/profile">Go to Profile</Link>
+            <Link href="/profile">{labels.common.goToProfile}</Link>
           </Button>
         </CardContent>
       </Card>
 
       <Card className="border-destructive/50">
         <CardHeader>
-          <CardTitle className="text-destructive">Danger Zone</CardTitle>
-          <CardDescription>Irreversible account actions</CardDescription>
+          <CardTitle className="text-destructive">
+            {labels.settings.dangerZoneTitle}
+          </CardTitle>
+          <CardDescription>
+            {labels.settings.dangerZoneDescription}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Sign out</p>
+              <p className="font-medium">{labels.common.signOut}</p>
               <p className="text-sm text-muted-foreground">
-                Sign out of your account on this device
+                {labels.settings.signOutDescription}
               </p>
             </div>
             <Button variant="destructive" onClick={handleSignOut}>
-              Sign out
+              {labels.common.signOut}
             </Button>
           </div>
         </CardContent>
@@ -516,30 +519,32 @@ function SettingsContent() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Disconnect{" "}
-              {unlinkingProvider && getProviderName(unlinkingProvider)}?
+              {unlinkingProvider &&
+                labels.settings.disconnectDialogTitle(
+                  getProviderName(unlinkingProvider),
+                )}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove{" "}
-              {unlinkingProvider && getProviderName(unlinkingProvider)} from
-              your connected accounts. You can reconnect it later if needed.
+              {unlinkingProvider &&
+                labels.settings.disconnectDialogDescription(
+                  getProviderName(unlinkingProvider),
+                )}
               {unlinkingProvider === "github" && (
                 <span className="block mt-2 text-yellow-600 dark:text-yellow-500">
-                  Note: Disconnecting GitHub will prevent automatic profile
-                  syncing.
+                  {labels.settings.disconnectGithubNote}
                 </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setUnlinkingProvider(null)}>
-              Cancel
+              {labels.common.cancel}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleUnlinkProvider}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Disconnect
+              {labels.common.disconnect}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
