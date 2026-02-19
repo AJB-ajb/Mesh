@@ -133,6 +133,7 @@ type OwnerActionsProps = {
   onDelete: () => void;
   onExtendDeadline: (days: number) => void;
   onRepost: () => void;
+  hideEditButton?: boolean;
 };
 
 function OwnerActions({
@@ -148,6 +149,7 @@ function OwnerActions({
   onDelete,
   onExtendDeadline,
   onRepost,
+  hideEditButton,
 }: OwnerActionsProps) {
   if (isEditing) {
     return (
@@ -211,10 +213,12 @@ function OwnerActions({
         </div>
       )}
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" onClick={onStartEdit}>
-          <Pencil className="h-4 w-4" />
-          {labels.common.edit}
-        </Button>
+        {!hideEditButton && (
+          <Button variant="outline" onClick={onStartEdit}>
+            <Pencil className="h-4 w-4" />
+            {labels.common.edit}
+          </Button>
+        )}
         <Button variant="destructive" onClick={onDelete} disabled={isDeleting}>
           {isDeleting ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -467,6 +471,7 @@ type PostingDetailHeaderProps = {
   onWithdraw: () => void;
   error: string | null;
   hideApplySection?: boolean;
+  hideEditButton?: boolean;
 };
 
 export function PostingDetailHeader({
@@ -499,6 +504,7 @@ export function PostingDetailHeader({
   onWithdraw,
   error,
   hideApplySection,
+  hideEditButton,
 }: PostingDetailHeaderProps) {
   const creatorName = posting.profiles?.full_name || "Unknown";
 
@@ -591,6 +597,7 @@ export function PostingDetailHeader({
             onDelete={onDelete}
             onExtendDeadline={onExtendDeadline}
             onRepost={onRepost}
+            hideEditButton={hideEditButton}
           />
         ) : (
           !hideApplySection && (

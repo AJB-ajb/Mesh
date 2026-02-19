@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2, MessageSquare } from "lucide-react";
@@ -27,6 +27,10 @@ import { FreeFormUpdate } from "@/components/shared/free-form-update";
 import { usePostingAiUpdate } from "@/lib/hooks/use-posting-ai-update";
 import { SequentialInviteCard } from "@/components/posting/sequential-invite-card";
 import { SequentialInviteResponseCard } from "@/components/posting/sequential-invite-response-card";
+import {
+  InputModeToggle,
+  type InputMode,
+} from "@/components/posting/input-mode-toggle";
 
 // ---------------------------------------------------------------------------
 // Inner component that uses useSearchParams (needs Suspense boundary)
@@ -60,8 +64,12 @@ function PostingDetailInner() {
       ? tabParam
       : "manage";
 
+  // Tab & input mode state
+  const [activeTab, setActiveTab] = useState(defaultTab);
+  const [inputMode, setInputMode] = useState<InputMode>("form");
+
   // Local UI state
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(defaultTab === "edit");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExtending, setIsExtending] = useState(false);
@@ -256,6 +264,34 @@ function PostingDetailInner() {
     setIsEditing(true);
   };
 
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (tab === "edit" && inputMode === "form") {
+      handleStartEdit();
+    } else if (tab !== "edit") {
+      setIsEditing(false);
+    }
+  };
+
+  const handleInputModeChange = (mode: InputMode) => {
+    setInputMode(mode);
+    if (mode === "form") {
+      handleStartEdit();
+    } else {
+      setIsEditing(false);
+    }
+  };
+
+  // Populate form when posting data loads and we're on the edit tab in form mode
+  useEffect(() => {
+    if (posting && activeTab === "edit" && inputMode === "form") {
+      queueMicrotask(() => {
+        handleStartEdit();
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [posting?.id]);
+
   const handleSave = async () => {
     setError(null);
     setIsSaving(true);
@@ -340,6 +376,7 @@ function PostingDetailInner() {
 
     setIsSaving(false);
     setIsEditing(false);
+    setActiveTab("manage");
     mutate();
   };
 
@@ -761,8 +798,12 @@ function PostingDetailInner() {
         editTitle={form.title}
         onEditTitleChange={(value) => handleFormChange("title", value)}
         onSave={handleSave}
-        onCancelEdit={() => setIsEditing(false)}
+        onCancelEdit={() => {
+          setIsEditing(false);
+          setActiveTab("manage");
+        }}
         onStartEdit={handleStartEdit}
+        hideEditButton={activeTab === "edit"}
         onDelete={handleDelete}
         onExtendDeadline={handleExtendDeadline}
         onRepost={handleRepost}
@@ -784,7 +825,7 @@ function PostingDetailInner() {
         hideApplySection={false}
       />
 
-      <Tabs defaultValue={defaultTab}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList variant="line">
           <TabsTrigger value="edit">
             {labels.postingDetail.tabs.edit}
@@ -807,9 +848,15 @@ function PostingDetailInner() {
 
         {/* Edit tab */}
         <TabsContent value="edit">
-          <div className="grid gap-6 lg:grid-cols-3 mt-6">
+          <div className="mt-4 mb-6">
+            <InputModeToggle
+              inputMode={inputMode}
+              onModeChange={handleInputModeChange}
+            />
+          </div>
+          <div className="grid gap-6 lg:grid-cols-3">
             <div className="space-y-6 lg:col-span-2">
-              {!isEditing && (
+              {inputMode === "ai" && (
                 <FreeFormUpdate
                   entityType="posting"
                   entityId={postingId}
@@ -823,7 +870,7 @@ function PostingDetailInner() {
 
               <PostingAboutCard
                 posting={posting}
-                isEditing={isEditing}
+                isEditing={inputMode === "form"}
                 form={form}
                 onFormChange={handleFormChange}
               />
