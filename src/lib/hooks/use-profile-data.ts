@@ -2,7 +2,7 @@
 
 import useSWR from "swr";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { getUserOrThrow } from "@/lib/supabase/auth";
 import {
   type ProfileFormState,
   type SkillLevel,
@@ -70,15 +70,7 @@ function parseAvailabilitySlots(raw: unknown): AvailabilitySlots {
 // ---------------------------------------------------------------------------
 
 async function fetchProfile(): Promise<ProfileFetchResult> {
-  const supabase = createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("Not authenticated");
-  }
+  const { supabase, user } = await getUserOrThrow();
 
   const identities = user.identities || [];
   const connectedProviders = {

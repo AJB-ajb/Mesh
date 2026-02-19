@@ -1,5 +1,5 @@
 import useSWR from "swr";
-import { createClient } from "@/lib/supabase/client";
+import { getUserOrThrow } from "@/lib/supabase/auth";
 import { apiFetcher } from "@/lib/swr/fetchers";
 
 type Provider = "google" | "github" | "linkedin_oidc";
@@ -23,14 +23,7 @@ type GithubSyncStatus = {
 };
 
 async function fetchSettings(): Promise<SettingsData> {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("Not authenticated");
-  }
+  const { user } = await getUserOrThrow();
 
   const identities = user.identities || [];
   const primaryProvider = user.app_metadata?.provider;

@@ -1,17 +1,35 @@
 import useSWR from "swr";
-import { createClient } from "@/lib/supabase/client";
+import { getUserOrThrow } from "@/lib/supabase/auth";
 
 export type MergedConnection = {
   friendshipId: string;
-  otherUser: { user_id: string; full_name: string | null; headline: string | null };
-  conversation: { id: string; posting_id: string | null; posting?: { title: string }; participant_1: string; participant_2: string } | null;
-  lastMessage: { content: string; created_at: string; sender_id: string } | null;
+  otherUser: {
+    user_id: string;
+    full_name: string | null;
+    headline: string | null;
+  };
+  conversation: {
+    id: string;
+    posting_id: string | null;
+    posting?: { title: string };
+    participant_1: string;
+    participant_2: string;
+  } | null;
+  lastMessage: {
+    content: string;
+    created_at: string;
+    sender_id: string;
+  } | null;
   unreadCount: number;
 };
 
 type PendingConnection = {
   friendshipId: string;
-  otherUser: { user_id: string; full_name: string | null; headline: string | null };
+  otherUser: {
+    user_id: string;
+    full_name: string | null;
+    headline: string | null;
+  };
 };
 
 type ConnectionsPageData = {
@@ -21,15 +39,7 @@ type ConnectionsPageData = {
 };
 
 async function fetchConnectionsPageData(): Promise<ConnectionsPageData> {
-  const supabase = createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("Not authenticated");
-  }
+  const { supabase, user } = await getUserOrThrow();
 
   // Fetch friendships and conversations in parallel
   const [{ data: friendshipsData }, { data: conversationsData }] =
@@ -72,8 +82,16 @@ async function fetchConnectionsPageData(): Promise<ConnectionsPageData> {
     accepted.map(async (f) => {
       const otherUser =
         f.user_id === user.id
-          ? (f.friend as { user_id: string; full_name: string | null; headline: string | null } | null)
-          : (f.user as { user_id: string; full_name: string | null; headline: string | null } | null);
+          ? (f.friend as {
+              user_id: string;
+              full_name: string | null;
+              headline: string | null;
+            } | null)
+          : (f.user as {
+              user_id: string;
+              full_name: string | null;
+              headline: string | null;
+            } | null);
 
       const otherUserId = f.user_id === user.id ? f.friend_id : f.user_id;
       const conv = convByUserId.get(otherUserId) ?? null;
@@ -151,7 +169,11 @@ async function fetchConnectionsPageData(): Promise<ConnectionsPageData> {
 
   // Build pending incoming
   const pendingIncoming: PendingConnection[] = pendingIncomingRaw.map((f) => {
-    const otherUser = f.user as { user_id: string; full_name: string | null; headline: string | null } | null;
+    const otherUser = f.user as {
+      user_id: string;
+      full_name: string | null;
+      headline: string | null;
+    } | null;
     return {
       friendshipId: f.id,
       otherUser: {
