@@ -1000,6 +1000,9 @@ export const labels = {
     emptyDescription:
       "Postings appear here once the minimum team size is reached.",
     discoverCta: "Discover postings",
+    filterAll: "All",
+    filterCreated: "Created",
+    filterJoined: "Joined",
   },
 
   // ---------------------------------------------------------------------------
