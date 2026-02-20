@@ -48,7 +48,8 @@ describe("postingExtractionSchema", () => {
     expect(schema.properties!.team_size_min).toBeDefined();
     expect(schema.properties!.team_size_max).toBeDefined();
     expect(schema.properties!.category).toBeDefined();
-    expect(schema.properties!.mode).toBeDefined();
+    expect(schema.properties!.visibility).toBeDefined();
+    expect(schema.properties!.invitees).toBeDefined();
   });
 
   it("includes updated_text for update mode", () => {
@@ -58,13 +59,13 @@ describe("postingExtractionSchema", () => {
     expect(schema.properties!.team_size_min).toBeDefined();
   });
 
-  it("uses enum format for category and mode", () => {
+  it("uses enum format for category and visibility", () => {
     const schema = postingExtractionSchema("extract");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const category = schema.properties!.category as any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mode = schema.properties!.mode as any;
+    const visibility = schema.properties!.visibility as any;
     expect(category.format).toBe("enum");
-    expect(mode.format).toBe("enum");
+    expect(visibility.format).toBe("enum");
   });
 });

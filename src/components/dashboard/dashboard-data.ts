@@ -177,6 +177,9 @@ export async function fetchRecommendedPostings(
         expiresAt: (posting.expires_at as string) || null,
         tags: (posting.tags as string[]) || [],
         mode: (posting.mode as string) || "open",
+        visibility:
+          (posting.visibility as string) ??
+          ((posting.mode as string) === "friend_ask" ? "private" : "public"),
         contextIdentifier: (posting.context_identifier as string) || undefined,
         createdAt: formatDate(posting.created_at as string),
       };

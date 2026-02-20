@@ -159,22 +159,22 @@ describe("useNlFilter", () => {
     expect(onCategoryChange).toHaveBeenCalledWith("study");
   });
 
-  it("calls onModeChange when filters include mode", async () => {
-    const onModeChange = vi.fn();
+  it("calls onVisibilityChange when filters include visibility", async () => {
+    const onVisibilityChange = vi.fn();
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        filters: { mode: "open" },
+        filters: { visibility: "public" },
       }),
     });
 
-    const { result } = renderHook(() => useNlFilter({ onModeChange }));
+    const { result } = renderHook(() => useNlFilter({ onVisibilityChange }));
 
     await act(async () => {
-      await result.current.handleNlSearch("open postings");
+      await result.current.handleNlSearch("public postings");
     });
 
-    expect(onModeChange).toHaveBeenCalledWith("open");
+    expect(onVisibilityChange).toHaveBeenCalledWith("public");
   });
 
   it("calls onCategoryChange(undefined) when removing category filter", async () => {

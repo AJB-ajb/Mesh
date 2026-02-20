@@ -41,7 +41,7 @@ See [roadmap.md](roadmap.md) for full milestone tracking.
 - **Professional upskilling / mentorship**: Matching mentors and mentees (e.g., AI safety orgs)
 - **Hobbyists**: Game dev, writing, art, theater — finding collaborators
 - **Hackathons**: Finding aligned teammates; channels as shared context with QR codes
-- **Spontaneous activities**: Asking connections for quick plans with fast deadlines and sequential invites
+- **Spontaneous activities**: Asking connections for quick plans with fast deadlines and invites (sequential or parallel)
 
 See [vision.md](vision.md) for detailed analysis of each audience.
 
@@ -51,7 +51,7 @@ See [vision.md](vision.md) for detailed analysis of each audience.
 - Course project partners
 - Social activities (concert companion, tennis partner, board game night)
 - Spontaneous plans ("negotiation practice partner, online, today")
-- Sequential Invite: order connections by preference, send invites one-by-one until enough accept
+- Invite: order connections by preference (sequential) or invite all at once (parallel)
 - Finding someone from a larger group (classmates, community) without a specific person in mind
 
 ## Features
@@ -62,7 +62,7 @@ See [ux.md](ux.md) for design principles, pages, and interaction patterns.
 
 - Find people for a project
 - Find people for a social activity
-- Find a specific person from your connections for a plan (sequential invite)
+- Find a specific person from your connections for a plan (invite)
 - Find someone suitable from a larger group without a specific person in mind
 
 See [use-cases.md](use-cases.md) for detailed examples and scenarios.
@@ -77,7 +77,7 @@ See [matching.md](matching.md) for the matching algorithm.
 - Posting keywords for similarity matching
 - One-click OAuth login, no setup required
 - Notifications: daily digest + instant for high matches
-- _Sequential Invite_: ordered invite mode for 1:1 invites until enough accept
+- _Invite_: sequential (one-by-one) or parallel (all at once) invite mode for connections
 
 ### Future
 

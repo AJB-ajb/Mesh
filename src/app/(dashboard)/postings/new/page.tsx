@@ -83,7 +83,13 @@ export default function NewPostingPage() {
         teamSizeMax: extractedMax,
         lookingFor: extractedMax,
         category: extracted.category || prev.category,
-        mode: extracted.mode || prev.mode,
+        visibility:
+          extracted.visibility ||
+          (Array.isArray(extracted.invitees) && extracted.invitees.length > 0
+            ? "private"
+            : extracted.mode === "friend_ask"
+              ? "private"
+              : prev.visibility),
         tags: Array.isArray(extracted.tags)
           ? extracted.tags.join(", ")
           : prev.tags,
@@ -209,7 +215,8 @@ export default function NewPostingPage() {
         ),
         team_size_max: lookingFor,
         category: form.category,
-        mode: form.mode,
+        visibility: form.visibility,
+        mode: form.visibility === "private" ? "friend_ask" : "open",
         status: "open",
         expires_at: expiresAt.toISOString(),
         location_mode: form.locationMode || "either",

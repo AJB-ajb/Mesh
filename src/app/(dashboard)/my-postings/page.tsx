@@ -16,17 +16,17 @@ export default function MyPostingsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>("all");
-  const [filterMode, setFilterMode] = useState<string>("all");
+  const [filterVisibility, setFilterVisibility] = useState<string>("all");
 
   const { postings, userId, isLoading } = usePostings(
     "my-postings",
     filterCategory,
   );
 
-  const hasActiveFilters = filterMode !== "all";
+  const hasActiveFilters = filterVisibility !== "all";
 
   const clearFilters = () => {
-    setFilterMode("all");
+    setFilterVisibility("all");
   };
 
   const filteredPostings = useMemo(() => {
@@ -42,11 +42,16 @@ export default function MyPostingsPage() {
         if (!matchesSearch) return false;
       }
 
-      if (filterMode !== "all" && posting.mode !== filterMode) return false;
+      if (filterVisibility !== "all") {
+        const v =
+          posting.visibility ??
+          (posting.mode === "friend_ask" ? "private" : "public");
+        if (v !== filterVisibility) return false;
+      }
 
       return true;
     });
-  }, [postings, searchQuery, filterMode]);
+  }, [postings, searchQuery, filterVisibility]);
 
   return (
     <div className="space-y-6">
@@ -73,8 +78,8 @@ export default function MyPostingsPage() {
         onSearchChange={setSearchQuery}
         filterCategory={filterCategory}
         onCategoryChange={setFilterCategory}
-        filterMode={filterMode}
-        onModeChange={setFilterMode}
+        filterVisibility={filterVisibility}
+        onVisibilityChange={setFilterVisibility}
         showFilters={showFilters}
         onToggleFilters={() => setShowFilters((v) => !v)}
         hasActiveFilters={hasActiveFilters}

@@ -17,6 +17,7 @@ interface SequentialInviteSelectorProps {
   currentUserId: string;
   selectedConnections: ConnectionItem[];
   onChange: (connections: ConnectionItem[]) => void;
+  inviteMode?: "sequential" | "parallel";
 }
 
 /**
@@ -27,6 +28,7 @@ export function SequentialInviteSelector({
   currentUserId,
   selectedConnections,
   onChange,
+  inviteMode = "sequential",
 }: SequentialInviteSelectorProps) {
   const { connections, isLoading } = useConnections();
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -108,29 +110,51 @@ export function SequentialInviteSelector({
       {selectedConnections.length > 0 && (
         <div className="space-y-1">
           <p className="text-sm font-medium text-muted-foreground">
-            Ask order (drag to reorder)
+            {inviteMode === "sequential"
+              ? "Ask order (drag to reorder)"
+              : "Selected connections"}
           </p>
           <div className="space-y-1">
             {selectedConnections.map((connection, index) => (
               <div
                 key={connection.user_id}
-                draggable
-                onDragStart={() => handleDragStart(index)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDrop={() => handleDrop(index)}
-                onDragEnd={handleDragEnd}
+                draggable={inviteMode === "sequential"}
+                onDragStart={
+                  inviteMode === "sequential"
+                    ? () => handleDragStart(index)
+                    : undefined
+                }
+                onDragOver={
+                  inviteMode === "sequential"
+                    ? (e) => handleDragOver(e, index)
+                    : undefined
+                }
+                onDrop={
+                  inviteMode === "sequential"
+                    ? () => handleDrop(index)
+                    : undefined
+                }
+                onDragEnd={
+                  inviteMode === "sequential" ? handleDragEnd : undefined
+                }
                 className={cn(
-                  "flex items-center gap-2 rounded-md border border-border bg-background p-2 cursor-grab active:cursor-grabbing transition-colors",
+                  "flex items-center gap-2 rounded-md border border-border bg-background p-2 transition-colors",
+                  inviteMode === "sequential" &&
+                    "cursor-grab active:cursor-grabbing",
                   dragIndex === index && "opacity-50",
                   dragOverIndex === index &&
                     dragIndex !== index &&
                     "border-primary bg-primary/5",
                 )}
               >
-                <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span className="text-sm font-medium text-muted-foreground w-6 shrink-0">
-                  {index + 1}.
-                </span>
+                {inviteMode === "sequential" && (
+                  <>
+                    <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-sm font-medium text-muted-foreground w-6 shrink-0">
+                      {index + 1}.
+                    </span>
+                  </>
+                )}
                 <span className="text-sm truncate flex-1">
                   {connection.full_name}
                 </span>

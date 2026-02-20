@@ -15,6 +15,7 @@ export type PostingFormState = {
   lookingFor: string;
   category: string;
   mode: string;
+  visibility: string;
   status: string;
   expiresAt: string;
   locationMode: string;
@@ -53,6 +54,8 @@ export type ExtractedPosting = {
   tags?: string[];
   context_identifier?: string;
   mode?: string;
+  visibility?: string;
+  invitees?: string[];
   availability_mode?: AvailabilityMode;
   availability_windows?: {
     day_of_week: number;
@@ -78,6 +81,7 @@ export const defaultPostingFormState: PostingFormState = {
   lookingFor: "3",
   category: "personal",
   mode: "open",
+  visibility: "public",
   status: "open",
   expiresAt: defaultExpiresAt(),
   locationMode: "either",

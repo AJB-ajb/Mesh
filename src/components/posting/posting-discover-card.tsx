@@ -85,12 +85,13 @@ export function PostingDiscoverCard({
                   {posting.context_identifier}
                 </Badge>
               )}
-              {posting.mode === "friend_ask" && (
+              {(posting.visibility === "private" ||
+                posting.mode === "friend_ask") && (
                 <Badge
                   variant="outline"
                   className="border-amber-500/30 text-amber-600 dark:text-amber-400"
                 >
-                  Sequential Invite
+                  Private
                 </Badge>
               )}
               {posting.status !== "open" && (

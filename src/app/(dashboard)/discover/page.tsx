@@ -26,7 +26,7 @@ function DiscoverContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>("all");
-  const [filterMode, setFilterMode] = useState<string>("all");
+  const [filterVisibility, setFilterVisibility] = useState<string>("all");
   const [showSaved, setShowSaved] = useState(initialSavedFilter);
   const [sortBy, setSortBy] = useState<SortOption>("recent");
 
@@ -37,8 +37,9 @@ function DiscoverContent() {
     (cat: string | undefined) => setFilterCategory(cat ?? "all"),
     [],
   );
-  const onModeChange = useCallback(
-    (mode: string | undefined) => setFilterMode(mode ?? "all"),
+  const onVisibilityChange = useCallback(
+    (visibility: string | undefined) =>
+      setFilterVisibility(visibility ?? "all"),
     [],
   );
 
@@ -52,12 +53,12 @@ function DiscoverContent() {
     handleNlSearch,
     handleRemoveNlFilter,
     clearFilters: clearNlFilters,
-  } = useNlFilter({ onCategoryChange, onModeChange });
+  } = useNlFilter({ onCategoryChange, onVisibilityChange });
 
-  const hasActiveFilters = filterMode !== "all" || hasNlFilters;
+  const hasActiveFilters = filterVisibility !== "all" || hasNlFilters;
 
   const clearFilters = () => {
-    setFilterMode("all");
+    setFilterVisibility("all");
     clearNlFilters();
   };
 
@@ -81,7 +82,13 @@ function DiscoverContent() {
         if (!matchesSearch) return false;
       }
 
-      if (filterMode !== "all" && posting.mode !== filterMode) return false;
+      if (
+        filterVisibility !== "all" &&
+        (posting.visibility ??
+          (posting.mode === "friend_ask" ? "private" : "public")) !==
+          filterVisibility
+      )
+        return false;
 
       return true;
     });
@@ -108,7 +115,7 @@ function DiscoverContent() {
   }, [
     postings,
     searchQuery,
-    filterMode,
+    filterVisibility,
     nlFilters,
     showSaved,
     bookmarkedIds,
@@ -140,8 +147,8 @@ function DiscoverContent() {
         onSearchChange={setSearchQuery}
         filterCategory={filterCategory}
         onCategoryChange={setFilterCategory}
-        filterMode={filterMode}
-        onModeChange={setFilterMode}
+        filterVisibility={filterVisibility}
+        onVisibilityChange={setFilterVisibility}
         showFilters={showFilters}
         onToggleFilters={() => setShowFilters((v) => !v)}
         hasActiveFilters={hasActiveFilters}
@@ -191,8 +198,13 @@ function DiscoverContent() {
               posting.id,
             );
             const isInteresting = interestingIds.has(posting.id);
+            const postingVisibility =
+              posting.visibility ??
+              (posting.mode === "friend_ask" ? "private" : "public");
             const showInterestButton =
-              !isOwner && posting.mode === "open" && !isAlreadyInterested;
+              !isOwner &&
+              postingVisibility !== "private" &&
+              !isAlreadyInterested;
 
             return (
               <PostingDiscoverCard

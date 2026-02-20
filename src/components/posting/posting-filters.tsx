@@ -35,9 +35,9 @@ interface PostingFiltersProps {
   filterCategory: string;
   onCategoryChange: (value: string) => void;
 
-  // Mode filter
-  filterMode: string;
-  onModeChange: (value: string) => void;
+  // Visibility filter
+  filterVisibility: string;
+  onVisibilityChange: (value: string) => void;
 
   // Filter panel visibility
   showFilters: boolean;
@@ -70,8 +70,8 @@ export function PostingFilters({
   onSearchChange,
   filterCategory,
   onCategoryChange,
-  filterMode,
-  onModeChange,
+  filterVisibility,
+  onVisibilityChange,
   showFilters,
   onToggleFilters,
   hasActiveFilters,
@@ -265,17 +265,19 @@ export function PostingFilters({
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
-                {labels.postings.modeLabel}
+                {labels.postings.visibilityLabel}
               </label>
               <select
-                value={filterMode}
-                onChange={(e) => onModeChange(e.target.value)}
+                value={filterVisibility}
+                onChange={(e) => onVisibilityChange(e.target.value)}
                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
               >
-                <option value="all">{labels.postings.modeAny}</option>
-                <option value="open">{labels.postings.modeOpen}</option>
-                <option value="friend_ask">
-                  {labels.postings.modeSequentialInvite}
+                <option value="all">{labels.postings.visibilityAny}</option>
+                <option value="public">
+                  {labels.postings.visibilityPublic}
+                </option>
+                <option value="private">
+                  {labels.postings.visibilityPrivate}
                 </option>
               </select>
             </div>

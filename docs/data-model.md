@@ -174,6 +174,52 @@ Project listings created by users seeking collaborators.
 
 ---
 
+### postings (current schema)
+
+> **Note:** The legacy `projects` table above shows the original schema. The current `postings` table includes additional fields from the redesign migrations.
+
+**Additional fields (not in legacy `projects` table):**
+
+| Field                       | Type    | Nullable | Default    | Description                                                              |
+| --------------------------- | ------- | -------- | ---------- | ------------------------------------------------------------------------ |
+| `mode`                      | text    | NO       | 'open'     | One of: `open`, `friend_ask`. **Deprecated** — use `visibility` instead. |
+| `visibility`                | text    | YES      | 'public'   | One of: `public`, `private`. Controls discoverability. Replaces `mode`.  |
+| `auto_accept`               | boolean | NO       | false      | Instantly accept anyone who joins                                        |
+| `availability_mode`         | text    | NO       | 'flexible' | One of: flexible, recurring, specific_dates                              |
+| `timezone`                  | text    | YES      | null       | IANA timezone string                                                     |
+| `location_mode`             | text    | YES      | null       | One of: remote, in_person, either                                        |
+| `location_name`             | text    | YES      | null       | Human-readable location string                                           |
+| `location_lat`              | double  | YES      | null       | Latitude                                                                 |
+| `location_lng`              | double  | YES      | null       | Longitude                                                                |
+| `max_distance_km`           | integer | YES      | null       | Hard filter for in-person distance                                       |
+| `natural_language_criteria` | text    | YES      | null       | Free-form matching criteria                                              |
+
+---
+
+### friend_asks
+
+Sequential or parallel invite sequences. A friend_ask tracks inviting connections to a posting.
+
+| Field                   | Type        | Nullable | Default           | Description                                            |
+| ----------------------- | ----------- | -------- | ----------------- | ------------------------------------------------------ |
+| `id`                    | uuid        | NO       | gen_random_uuid() | Primary key                                            |
+| `posting_id`            | uuid FK     | NO       | —                 | References `postings(id)`                              |
+| `creator_id`            | uuid FK     | NO       | —                 | References `profiles(user_id)` — the posting owner     |
+| `ordered_friend_list`   | uuid[]      | NO       | —                 | Ordered list of connection user IDs to invite          |
+| `current_request_index` | integer     | NO       | 0                 | Index of the currently-invited connection (sequential) |
+| `invite_mode`           | text        | NO       | 'sequential'      | One of: `sequential`, `parallel`                       |
+| `declined_list`         | uuid[]      | NO       | '{}'              | User IDs who declined (used in parallel mode)          |
+| `status`                | text        | NO       | 'pending'         | One of: pending, accepted, completed, cancelled        |
+| `created_at`            | timestamptz | NO       | now()             | Record creation timestamp                              |
+| `updated_at`            | timestamptz | NO       | now()             | Last update timestamp                                  |
+
+**RLS Policies:**
+
+- SELECT: `creator_id = auth.uid()` OR `auth.uid() = ANY(ordered_friend_list)`
+- INSERT/UPDATE: `creator_id = auth.uid()` for creation/cancellation; invitees can respond via API
+
+---
+
 ### matches
 
 Matches between users and projects, including scores and status.

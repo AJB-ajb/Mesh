@@ -8,9 +8,11 @@ import {
 
 /**
  * POST /api/friend-ask/[id]/respond
- * Respond to a sequential invite (accept or decline).
+ * Respond to an invite (accept or decline).
  * Body: { action: "accept" | "decline" }
- * Only the currently-invited connection can respond.
+ *
+ * Sequential mode: only the currently-invited connection can respond.
+ * Parallel mode: any connection in the list who hasn't declined can respond.
  */
 export const POST = withAuth(async (req, { user, supabase, params }) => {
   const { id } = params;
@@ -35,27 +37,42 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     .single();
 
   if (fetchError || !friendAsk) {
-    return apiError("NOT_FOUND", "Sequential invite not found", 404);
+    return apiError("NOT_FOUND", "Invite not found", 404);
   }
 
   if (friendAsk.status !== "pending") {
     return apiError(
       "VALIDATION",
-      `Cannot respond: sequential invite status is ${friendAsk.status}`,
+      `Cannot respond: invite status is ${friendAsk.status}`,
       400,
     );
   }
 
-  // Verify the user is the currently-invited connection
-  const currentFriendId =
-    friendAsk.ordered_friend_list[friendAsk.current_request_index];
+  const inviteMode = friendAsk.invite_mode ?? "sequential";
 
-  if (user.id !== currentFriendId) {
-    return apiError(
-      "FORBIDDEN",
-      "You are not the currently-invited connection",
-      403,
-    );
+  // --- Auth check ---
+  if (inviteMode === "sequential") {
+    // Sequential: only the currently-invited connection can respond
+    const currentFriendId =
+      friendAsk.ordered_friend_list[friendAsk.current_request_index];
+    if (user.id !== currentFriendId) {
+      return apiError(
+        "FORBIDDEN",
+        "You are not the currently-invited connection",
+        403,
+      );
+    }
+  } else {
+    // Parallel: any user in the list who hasn't declined can respond
+    const isInList = friendAsk.ordered_friend_list.includes(user.id);
+    const hasDeclined = (friendAsk.declined_list ?? []).includes(user.id);
+    if (!isInList || hasDeclined) {
+      return apiError(
+        "FORBIDDEN",
+        "You are not eligible to respond to this invite",
+        403,
+      );
+    }
   }
 
   // Fetch responder profile name and posting title for notifications
@@ -98,8 +115,8 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     }
   };
 
-  // Helper: send invite notification to the next connection
-  const notifyNextFriend = async (friendId: string) => {
+  // Helper: send invite notification to a connection
+  const notifyFriend = async (friendId: string) => {
     const { data: recipientProfile } = await supabase
       .from("profiles")
       .select("notification_preferences")
@@ -119,7 +136,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       await supabase.from("notifications").insert({
         user_id: friendId,
         type: "sequential_invite",
-        title: "Sequential Invite Received",
+        title: "Invite Received",
         body: `${creatorName?.full_name || "Someone"} wants you to join "${postingTitle}"`,
         related_posting_id: friendAsk.posting_id,
         related_user_id: friendAsk.creator_id,
@@ -127,17 +144,47 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     }
   };
 
+  // =========================================================================
+  // ACCEPT
+  // =========================================================================
   if (action === "accept") {
+    if (inviteMode === "parallel") {
+      // Parallel: set status accepted, record the acceptor's index
+      const acceptorIndex = friendAsk.ordered_friend_list.indexOf(user.id);
+      const { data, error } = await supabase
+        .from("friend_asks")
+        .update({ status: "accepted", current_request_index: acceptorIndex })
+        .eq("id", id)
+        .select()
+        .maybeSingle();
+
+      if (error) return apiError("INTERNAL", error.message, 500);
+      if (!data)
+        return apiError("NOT_FOUND", "Failed to read back updated invite", 404);
+
+      await notifyCreator(
+        "Invite Accepted!",
+        `${responderName} has joined "${postingTitle}"`,
+      );
+
+      return NextResponse.json({
+        friend_ask: data,
+        message: "Invite accepted",
+      });
+    }
+
+    // Sequential accept
     const { data, error } = await supabase
       .from("friend_asks")
       .update({ status: "accepted" })
       .eq("id", id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) return apiError("INTERNAL", error.message, 500);
+    if (!data)
+      return apiError("NOT_FOUND", "Failed to read back updated invite", 404);
 
-    // Notify the creator
     await notifyCreator(
       "Invite Accepted!",
       `${responderName} has joined "${postingTitle}"`,
@@ -145,18 +192,62 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
     return NextResponse.json({
       friend_ask: data,
-      message: "Sequential invite accepted",
+      message: "Invite accepted",
     });
   }
 
-  // Decline: auto-advance to next connection
-  const nextIndex = friendAsk.current_request_index + 1;
+  // =========================================================================
+  // DECLINE
+  // =========================================================================
 
   // Notify the creator about the decline
   await notifyCreator(
     "Invite Declined",
     `${responderName} declined the invite for "${postingTitle}"`,
   );
+
+  if (inviteMode === "parallel") {
+    // Parallel decline: append to declined_list
+    const newDeclinedList = [...(friendAsk.declined_list ?? []), user.id];
+
+    // If all connections declined, mark as completed
+    if (newDeclinedList.length >= friendAsk.ordered_friend_list.length) {
+      const { data, error } = await supabase
+        .from("friend_asks")
+        .update({ status: "completed", declined_list: newDeclinedList })
+        .eq("id", id)
+        .select()
+        .maybeSingle();
+
+      if (error) return apiError("INTERNAL", error.message, 500);
+      if (!data)
+        return apiError("NOT_FOUND", "Failed to read back updated invite", 404);
+
+      return NextResponse.json({
+        friend_ask: data,
+        message: "Declined. All connections have responded — invite completed.",
+      });
+    }
+
+    const { data, error } = await supabase
+      .from("friend_asks")
+      .update({ declined_list: newDeclinedList })
+      .eq("id", id)
+      .select()
+      .maybeSingle();
+
+    if (error) return apiError("INTERNAL", error.message, 500);
+    if (!data)
+      return apiError("NOT_FOUND", "Failed to read back updated invite", 404);
+
+    return NextResponse.json({
+      friend_ask: data,
+      message: "Declined. Other connections can still accept.",
+    });
+  }
+
+  // Sequential decline: auto-advance to next connection
+  const nextIndex = friendAsk.current_request_index + 1;
 
   if (nextIndex >= friendAsk.ordered_friend_list.length) {
     // No more connections to ask
@@ -165,9 +256,11 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       .update({ status: "completed", current_request_index: nextIndex })
       .eq("id", id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) return apiError("INTERNAL", error.message, 500);
+    if (!data)
+      return apiError("NOT_FOUND", "Failed to read back updated invite", 404);
 
     return NextResponse.json({
       friend_ask: data,
@@ -182,13 +275,15 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     .update({ current_request_index: nextIndex })
     .eq("id", id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) return apiError("INTERNAL", error.message, 500);
+  if (!data)
+    return apiError("NOT_FOUND", "Failed to read back updated invite", 404);
 
   // Auto-send invite to the next connection
   const nextFriendId = friendAsk.ordered_friend_list[nextIndex];
-  await notifyNextFriend(nextFriendId);
+  await notifyFriend(nextFriendId);
 
   return NextResponse.json({
     friend_ask: data,

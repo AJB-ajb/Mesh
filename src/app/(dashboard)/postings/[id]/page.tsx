@@ -85,6 +85,7 @@ function PostingDetailInner() {
     teamSizeMax: "5",
     lookingFor: "3",
     category: "personal",
+    visibility: "public",
     mode: "open",
     status: "open",
     expiresAt: "",
@@ -262,6 +263,9 @@ function PostingDetailInner() {
       teamSizeMax: posting.team_size_max?.toString() || "5",
       lookingFor: posting.team_size_max?.toString() || "3",
       category: posting.category || "personal",
+      visibility:
+        posting.visibility ??
+        (posting.mode === "friend_ask" ? "private" : "public"),
       mode: posting.mode || "open",
       status: posting.status || "open",
       expiresAt: posting.expires_at ? posting.expires_at.slice(0, 10) : "",
@@ -307,7 +311,8 @@ function PostingDetailInner() {
         ),
         team_size_max: lookingFor,
         category: form.category,
-        mode: form.mode,
+        visibility: form.visibility,
+        mode: form.visibility === "private" ? "friend_ask" : "open",
         status: form.status,
         expires_at: form.expiresAt
           ? new Date(form.expiresAt + "T23:59:59").toISOString()
@@ -736,17 +741,22 @@ function PostingDetailInner() {
           onApply={handleApply}
           onWithdraw={handleWithdrawApplication}
           error={error}
-          hideApplySection={posting.mode === "friend_ask"}
+          hideApplySection={
+            (posting.visibility ??
+              (posting.mode === "friend_ask" ? "private" : "public")) ===
+            "private"
+          }
           backHref={backHref}
           backLabel={backLabel}
         />
 
-        {posting.mode === "friend_ask" && currentUserId && (
-          <SequentialInviteResponseCard
-            postingId={postingId}
-            currentUserId={currentUserId}
-          />
-        )}
+        {(posting.visibility === "private" || posting.mode === "friend_ask") &&
+          currentUserId && (
+            <SequentialInviteResponseCard
+              postingId={postingId}
+              currentUserId={currentUserId}
+            />
+          )}
 
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">

@@ -1,7 +1,9 @@
 "use client";
 
+import { Globe, Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { labels } from "@/lib/labels";
+import { cn } from "@/lib/utils";
 import type { PostingFormState } from "@/lib/types/posting";
 
 type PostingFormTeamProps = {
@@ -12,8 +14,46 @@ type PostingFormTeamProps = {
 export function PostingFormTeam({ form, onChange }: PostingFormTeamProps) {
   return (
     <>
-      {/* Team size, Mode, and Expires */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Visibility toggle */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium">
+          {labels.postingForm.visibilityLabel}
+        </label>
+        <div className="flex rounded-lg border border-input p-1 w-fit">
+          <button
+            type="button"
+            onClick={() => onChange("visibility", "public")}
+            className={cn(
+              "inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors",
+              form.visibility === "public"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Globe className="h-4 w-4" />
+            {labels.postingForm.visibilityOptions.public}
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange("visibility", "private")}
+            className={cn(
+              "inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors",
+              form.visibility === "private"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Lock className="h-4 w-4" />
+            {labels.postingForm.visibilityOptions.private}
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {labels.postingForm.visibilityHelp}
+        </p>
+      </div>
+
+      {/* Team size and Expires */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="space-y-2">
           <label htmlFor="team-size-min" className="text-sm font-medium">
             {labels.postingForm.teamSizeMinLabel}
@@ -47,24 +87,6 @@ export function PostingFormTeam({ form, onChange }: PostingFormTeamProps) {
           <p className="text-xs text-muted-foreground">
             {labels.postingForm.lookingForHelp}
           </p>
-        </div>
-        <div className="space-y-2">
-          <label htmlFor="mode" className="text-sm font-medium">
-            {labels.postingForm.modeLabel}
-          </label>
-          <select
-            id="mode"
-            value={form.mode}
-            onChange={(e) => onChange("mode", e.target.value)}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            <option value="open">
-              {labels.postingForm.modeOptions.open}
-            </option>
-            <option value="friend_ask">
-              {labels.postingForm.modeOptions.friend_ask}
-            </option>
-          </select>
         </div>
         <div className="space-y-2">
           <label htmlFor="expires-at" className="text-sm font-medium">

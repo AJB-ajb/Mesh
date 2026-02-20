@@ -123,6 +123,8 @@ export async function matchProfileToPostings(
         category: row.category || null,
         context_identifier: row.context_identifier || null,
         tags: row.tags || [],
+        visibility:
+          row.visibility ?? (row.mode === "friend_ask" ? "private" : "public"),
         mode: row.mode || "open",
         location_preference: row.location_preference ?? null,
         natural_language_criteria: row.natural_language_criteria || null,

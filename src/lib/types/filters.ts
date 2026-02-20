@@ -1,6 +1,6 @@
 export interface PostingFilters {
   category?: string;
-  mode?: "open" | "friend_ask";
+  visibility?: "public" | "private";
   location_mode?: "remote" | "in_person" | "either";
   location_name?: string;
   max_distance_km?: number;

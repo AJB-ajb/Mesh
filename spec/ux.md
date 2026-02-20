@@ -70,7 +70,7 @@ Single unified feed replacing the old Postings (Discover tab), Matches, and Book
 - **Search bar** (NL-powered, voice input) at top
 - **Sort control:** match score (default), newest, etc.
 - **Saved filter:** toggle to show only bookmarked postings
-- **Filter panel** (collapsible): category, mode, location, team size, time commitment
+- **Filter panel** (collapsible): category, visibility (public/private), location, team size, time commitment
 - **Posting cards** in a flat list, each showing:
   - Title, description snippet
   - Match score percentage
@@ -93,8 +93,8 @@ Flat list of the user's own postings, sorted by recency. Recruitment-focused.
 
 Three-tab view for any posting the user owns. Entry point determines default tab (My Postings → Manage, Active → Project).
 
-- **Edit tab:** title, description, category, mode, team size, skills, location, settings
-- **Manage tab:** applicants list with accept/decline, sequential invite controls (create new invites to connections at any time), AI-matched profiles, waitlist
+- **Edit tab:** title, description, category, visibility (public/private toggle), team size, skills, location, settings
+- **Manage tab:** applicants list with accept/decline, invite controls (sequential or parallel mode, available on any posting), AI-matched profiles, waitlist
 - **Project tab:** group chat, team members, posting details. Disabled (greyed out) until min team size reached.
 
 Tabs that are not yet relevant are shown but disabled.
@@ -129,14 +129,17 @@ Not a page — lives in the **header bell icon** as a dropdown.
 - Unread count badge on bell
 - Dropdown shows recent notifications with type-specific icons
 - Mark all as read action
-- Notification types: interest_received, application_accepted/rejected, friend_request, sequential_invite, new_message, match_found
+- Notification types: interest_received, application_accepted/rejected, friend_request, sequential_invite (covers both sequential and parallel invites), new_message, match_found
 
 ## Interaction Patterns
 
 - **AI compatibility scores** shown on posting cards across Discover feed (match score on every card)
 - **Real-time messaging** with typing indicators and presence status — 1:1 DMs in Connections, group chat in Active (Project tab)
 - **Progressive disclosure:** empty states guide the user to their next action (Active → Discover, Connections → Add)
-- **Sequential Invite:** ordered invite flow — rank connections by preference, send invites one-by-one until someone accepts. Controlled at the posting level via the Manage tab (not global settings). New sequential invites can be created at any point while a posting is open. **Invitee flow:** notification with inline "Join / Do not join" buttons, plus response card on posting detail. On decline, the next connection is auto-invited.
+- **Invite:** invite connections to any posting (not restricted by visibility). Two modes:
+  - **Sequential:** rank connections by preference, send invites one-by-one until someone accepts. On decline, the next connection is auto-invited.
+  - **Parallel:** invite all selected connections at once. First to accept wins; others are notified the spot is taken.
+    Controlled via the Manage tab. **Invitee flow:** notification with inline "Join / Do not join" buttons, plus response card on posting detail.
 - **Posting lifecycle:** a posting becomes "active" once min team size is reached. Active postings appear in both My Postings (recruitment lens, while still open) and Active (coordination lens). A posting can be simultaneously open for recruiting and active for coordination.
 - **Waitlist**: When a posting is filled, the CTA changes to "Join waitlist" (auto-accept) or "Request to join waitlist" (manual review). Users see their waitlist position. Poster sees waitlisted people in the Manage tab.
 - **Voice input** for posting creation and natural language filtering
