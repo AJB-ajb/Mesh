@@ -115,6 +115,11 @@ export function NotificationsDropdown() {
       if (notification.type === "friend_request") {
         router.push("/connections");
       } else if (
+        notification.type === "new_message" &&
+        notification.related_user_id
+      ) {
+        router.push(`/connections?user=${notification.related_user_id}`);
+      } else if (
         notification.type === "new_group_message" &&
         notification.related_posting_id
       ) {

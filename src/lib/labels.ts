@@ -391,6 +391,7 @@ export const labels = {
     delete: "Delete",
     backToDashboard: "Back",
     backToPostings: "Back to postings",
+    backToDiscover: "Back to discover",
     newPosting: "New Posting",
     goToProfile: "Go to Profile",
     filter: "Filter",

@@ -7,6 +7,8 @@ import {
   Sparkles,
   Send,
   Check,
+  Bookmark,
+  BookmarkCheck,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -34,6 +36,8 @@ export interface PostingDiscoverCardProps {
   showInterestButton: boolean;
   onExpressInterest: (postingId: string) => void;
   activeTab: "discover" | "my-postings";
+  isBookmarked?: boolean;
+  onToggleBookmark?: (postingId: string) => void;
 }
 
 export function PostingDiscoverCard({
@@ -44,6 +48,8 @@ export function PostingDiscoverCard({
   showInterestButton,
   onExpressInterest,
   activeTab,
+  isBookmarked,
+  onToggleBookmark,
 }: PostingDiscoverCardProps) {
   const creatorName = posting.profiles?.full_name || "Unknown";
   const locationLabel = getLocationLabel(
@@ -59,7 +65,11 @@ export function PostingDiscoverCard({
             <div className="flex items-center gap-3 flex-wrap">
               <CardTitle className="text-xl">
                 <Link
-                  href={`/postings/${posting.id}`}
+                  href={
+                    activeTab === "discover"
+                      ? `/postings/${posting.id}?from=discover`
+                      : `/postings/${posting.id}`
+                  }
                   className="hover:underline cursor-pointer"
                 >
                   {posting.title}
@@ -104,6 +114,20 @@ export function PostingDiscoverCard({
             </div>
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
+            {!isOwner && onToggleBookmark && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onToggleBookmark(posting.id)}
+                aria-label={isBookmarked ? "Remove bookmark" : "Bookmark"}
+              >
+                {isBookmarked ? (
+                  <BookmarkCheck className="h-4 w-4 text-primary" />
+                ) : (
+                  <Bookmark className="h-4 w-4" />
+                )}
+              </Button>
+            )}
             {showInterestButton && (
               <Button
                 variant="outline"
@@ -125,7 +149,13 @@ export function PostingDiscoverCard({
               </Button>
             )}
             <Button variant="outline" asChild>
-              <Link href={`/postings/${posting.id}`}>
+              <Link
+                href={
+                  activeTab === "discover"
+                    ? `/postings/${posting.id}?from=discover`
+                    : `/postings/${posting.id}`
+                }
+              >
                 {isOwner ? "Edit" : "View Details"}
               </Link>
             </Button>
@@ -165,9 +195,7 @@ export function PostingDiscoverCard({
         )}
 
         {/* Skills */}
-        {posting.skills.length > 0 && (
-          <BadgeList items={posting.skills} />
-        )}
+        {posting.skills.length > 0 && <BadgeList items={posting.skills} />}
 
         {/* Tags */}
         {posting.tags && posting.tags.length > 0 && (

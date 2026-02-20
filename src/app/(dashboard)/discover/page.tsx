@@ -12,6 +12,7 @@ import { usePostings } from "@/lib/hooks/use-postings";
 import type { Posting } from "@/lib/hooks/use-postings";
 import { useNlFilter } from "@/lib/hooks/use-nl-filter";
 import { usePostingInterest } from "@/lib/hooks/use-posting-interest";
+import { useBookmarks } from "@/lib/hooks/use-bookmarks";
 import { applyFilters } from "@/lib/filters/apply-filters";
 import { PostingDiscoverCard } from "@/components/posting/posting-discover-card";
 import { PostingFilters } from "@/components/posting/posting-filters";
@@ -63,6 +64,8 @@ function DiscoverContent() {
   const { interestingIds, interestError, handleExpressInterest } =
     usePostingInterest(mutate);
 
+  const { bookmarkedIds, toggleBookmark } = useBookmarks();
+
   // Apply text search, mode filter, saved filter, and sort
   const filteredPostings = useMemo(() => {
     // Text search and mode filter
@@ -86,10 +89,10 @@ function DiscoverContent() {
     // Apply NL-parsed structured filters
     result = applyFilters(result, nlFilters);
 
-    // Apply saved filter
+    // Apply saved filter (bookmarked postings)
     if (showSaved) {
       result = result.filter((posting: Posting) =>
-        interestedPostingIds.includes(posting.id),
+        bookmarkedIds.has(posting.id),
       );
     }
 
@@ -108,7 +111,7 @@ function DiscoverContent() {
     filterMode,
     nlFilters,
     showSaved,
-    interestedPostingIds,
+    bookmarkedIds,
     sortBy,
   ]);
 
@@ -201,6 +204,8 @@ function DiscoverContent() {
                 showInterestButton={showInterestButton}
                 onExpressInterest={handleExpressInterest}
                 activeTab="discover"
+                isBookmarked={bookmarkedIds.has(posting.id)}
+                onToggleBookmark={toggleBookmark}
               />
             );
           })}
