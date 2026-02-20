@@ -233,7 +233,8 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
         .from("profiles")
         .select(
           "user_id, full_name, headline, location_preference, availability_slots, profile_skills(skill_nodes(name))",
-        ),
+        )
+        .limit(50),
     ]);
 
     // Enrich applications with profiles
@@ -260,41 +261,40 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
       });
     }
 
-    // Compute matched profiles
+    // Compute matched profiles (parallelized)
     if (allProfilesResult.data) {
-      const scored: MatchedProfile[] = [];
+      const profiles = allProfilesResult.data.filter(
+        (p) => p.user_id !== currentUserId,
+      );
 
-      for (const profile of allProfilesResult.data) {
-        if (profile.user_id === currentUserId) continue;
+      const results = await Promise.all(
+        profiles.map(async (profile) => {
+          try {
+            const { data: breakdown, error: breakdownError } =
+              await supabase.rpc("compute_match_breakdown", {
+                profile_user_id: profile.user_id,
+                target_posting_id: postingId,
+              });
 
-        try {
-          const { data: breakdown, error: breakdownError } = await supabase.rpc(
-            "compute_match_breakdown",
-            {
-              profile_user_id: profile.user_id,
-              target_posting_id: postingId,
-            },
-          );
-
-          if (!breakdownError && breakdown) {
-            const bd = breakdown as ScoreBreakdown;
-            scored.push({
-              profile_id: profile.user_id,
-              user_id: profile.user_id,
-              full_name: profile.full_name,
-              headline: profile.headline,
-              overall_score: computeWeightedScore(bd),
-              breakdown: bd,
-            });
+            if (!breakdownError && breakdown) {
+              const bd = breakdown as ScoreBreakdown;
+              return {
+                profile_id: profile.user_id,
+                user_id: profile.user_id,
+                full_name: profile.full_name,
+                headline: profile.headline,
+                overall_score: computeWeightedScore(bd),
+                breakdown: bd,
+              } satisfies MatchedProfile;
+            }
+          } catch {
+            // Skip profiles that fail to compute
           }
-        } catch (err) {
-          console.error(
-            `Failed to compute match for profile ${profile.user_id}:`,
-            err,
-          );
-        }
-      }
+          return null;
+        }),
+      );
 
+      const scored = results.filter((r): r is MatchedProfile => r !== null);
       scored.sort((a, b) => b.overall_score - a.overall_score);
       matchedProfiles = scored.slice(0, 10);
     }

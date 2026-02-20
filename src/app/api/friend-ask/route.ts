@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError } from "@/lib/errors";
+import { apiError, parseBody } from "@/lib/errors";
 
 /**
  * GET /api/friend-ask
@@ -24,18 +24,11 @@ export const GET = withAuth(async (_req, { user, supabase }) => {
  * Body: { posting_id: string, ordered_friend_list: string[], invite_mode?: "sequential" | "parallel" }
  */
 export const POST = withAuth(async (req, { user, supabase }) => {
-  let body: {
+  const { posting_id, ordered_friend_list, invite_mode } = await parseBody<{
     posting_id?: string;
     ordered_friend_list?: string[];
     invite_mode?: string;
-  };
-  try {
-    body = await req.json();
-  } catch {
-    return apiError("VALIDATION", "Invalid JSON body", 400);
-  }
-
-  const { posting_id, ordered_friend_list, invite_mode } = body;
+  }>(req);
 
   if (!posting_id) {
     return apiError("VALIDATION", "posting_id is required", 400);

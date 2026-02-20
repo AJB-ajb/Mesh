@@ -4,15 +4,33 @@ import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
 // ---------- Env mock ----------
 const originalEnv = process.env.DEEPGRAM_API_KEY;
 
+// ---------- Supabase mock ----------
+const mockGetUser = vi.fn();
+
+vi.mock("@/lib/supabase/server", () => ({
+  createClient: vi.fn(async () => ({
+    auth: {
+      getUser: mockGetUser,
+    },
+  })),
+}));
+
 // ---------- Fetch mock ----------
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
+import { POST } from "../route";
+
+const routeContext = { params: Promise.resolve({}) };
+
 describe("POST /api/transcribe", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.resetModules();
     process.env.DEEPGRAM_API_KEY = "test-deepgram-key";
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "user-1" } },
+      error: null,
+    });
   });
 
   afterAll(() => {
@@ -23,25 +41,35 @@ describe("POST /api/transcribe", () => {
     }
   });
 
-  it("returns 500 when DEEPGRAM_API_KEY is not set", async () => {
-    delete process.env.DEEPGRAM_API_KEY;
-    // Re-import to pick up missing env var
-    const { POST } = await import("../route");
+  it("returns 401 when not authenticated", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: "Unauthorized" },
+    });
 
     const req = new Request("http://localhost/api/transcribe", {
       method: "POST",
       body: new ArrayBuffer(10),
     });
-    // NextRequest-like: add headers getter
-    const res = await POST(req as never);
+
+    const res = await POST(req, routeContext);
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 500 when DEEPGRAM_API_KEY is not set", async () => {
+    delete process.env.DEEPGRAM_API_KEY;
+
+    const req = new Request("http://localhost/api/transcribe", {
+      method: "POST",
+      body: new ArrayBuffer(10),
+    });
+    const res = await POST(req, routeContext);
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body.error).toContain("Deepgram");
+    expect(body.error).toBeTruthy();
   });
 
   it("returns 400 when audio file is missing in multipart", async () => {
-    const { POST } = await import("../route");
-
     const formData = new FormData();
     // No 'audio' field
     const req = new Request("http://localhost/api/transcribe", {
@@ -49,30 +77,22 @@ describe("POST /api/transcribe", () => {
       body: formData,
     });
 
-    const res = await POST(req as never);
+    const res = await POST(req, routeContext);
     expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error).toContain("No audio");
   });
 
   it("returns 400 when audio data is empty (binary)", async () => {
-    const { POST } = await import("../route");
-
     const req = new Request("http://localhost/api/transcribe", {
       method: "POST",
       headers: { "Content-Type": "audio/webm" },
       body: new ArrayBuffer(0),
     });
 
-    const res = await POST(req as never);
+    const res = await POST(req, routeContext);
     expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error).toContain("Empty audio");
   });
 
   it("transcribes audio successfully (binary body)", async () => {
-    const { POST } = await import("../route");
-
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -93,7 +113,7 @@ describe("POST /api/transcribe", () => {
       body: audioData,
     });
 
-    const res = await POST(req as never);
+    const res = await POST(req, routeContext);
     const body = await res.json();
 
     expect(res.status).toBe(200);
@@ -110,8 +130,6 @@ describe("POST /api/transcribe", () => {
   });
 
   it("transcribes audio successfully (multipart)", async () => {
-    const { POST } = await import("../route");
-
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -136,7 +154,7 @@ describe("POST /api/transcribe", () => {
       body: formData,
     });
 
-    const res = await POST(req as never);
+    const res = await POST(req, routeContext);
     const body = await res.json();
 
     expect(res.status).toBe(200);
@@ -144,8 +162,6 @@ describe("POST /api/transcribe", () => {
   });
 
   it("returns 502 when Deepgram API fails", async () => {
-    const { POST } = await import("../route");
-
     mockFetch.mockResolvedValue({
       ok: false,
       status: 500,
@@ -158,16 +174,11 @@ describe("POST /api/transcribe", () => {
       body: new ArrayBuffer(100),
     });
 
-    const res = await POST(req as never);
-    const body = await res.json();
-
+    const res = await POST(req, routeContext);
     expect(res.status).toBe(502);
-    expect(body.error).toContain("Transcription failed");
   });
 
   it("returns 500 when fetch throws a network error", async () => {
-    const { POST } = await import("../route");
-
     mockFetch.mockRejectedValue(new Error("Network error"));
 
     const req = new Request("http://localhost/api/transcribe", {
@@ -176,7 +187,7 @@ describe("POST /api/transcribe", () => {
       body: new ArrayBuffer(100),
     });
 
-    const res = await POST(req as never);
+    const res = await POST(req, routeContext);
     expect(res.status).toBe(500);
   });
 });

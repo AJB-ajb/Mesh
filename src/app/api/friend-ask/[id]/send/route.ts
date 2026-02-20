@@ -5,6 +5,7 @@ import {
   type NotificationPreferences,
   shouldNotify,
 } from "@/lib/notifications/preferences";
+import { sendNotification } from "@/lib/notifications/create";
 
 /**
  * POST /api/friend-ask/[id]/send
@@ -70,14 +71,17 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
       recipientProfile?.notification_preferences as NotificationPreferences | null;
 
     if (shouldNotify(recipientPrefs, "sequential_invite", "in_app")) {
-      await supabase.from("notifications").insert({
-        user_id: friendId,
-        type: "sequential_invite",
-        title: "Invite Received",
-        body: `${senderName} wants you to join "${postingTitle}"`,
-        related_posting_id: friendAsk.posting_id,
-        related_user_id: user.id,
-      });
+      sendNotification(
+        {
+          userId: friendId,
+          type: "sequential_invite",
+          title: "Invite Received",
+          body: `${senderName} wants you to join "${postingTitle}"`,
+          relatedPostingId: friendAsk.posting_id,
+          relatedUserId: user.id,
+        },
+        supabase,
+      );
     }
   };
 

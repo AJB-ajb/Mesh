@@ -4,12 +4,15 @@
  */
 
 import { withAuth } from "@/lib/api/with-auth";
-import { apiSuccess, apiError } from "@/lib/errors";
+import { apiSuccess, apiError, parseBody } from "@/lib/errors";
 import { fetchIcalBusyBlocks } from "@/lib/calendar/ical";
-import { storeBusyBlocks, updateConnectionSyncStatus } from "@/lib/calendar/sync";
+import {
+  storeBusyBlocks,
+  updateConnectionSyncStatus,
+} from "@/lib/calendar/sync";
 
 export const POST = withAuth(async (req, { user, supabase }) => {
-  const body = await req.json();
+  const body = await parseBody<{ url?: string }>(req);
   const url = body.url?.trim();
 
   if (!url || (!url.startsWith("http://") && !url.startsWith("https://"))) {
@@ -62,12 +65,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to fetch iCal feed";
-    await updateConnectionSyncStatus(
-      supabase,
-      connection.id,
-      "error",
-      message,
-    );
+    await updateConnectionSyncStatus(supabase, connection.id, "error", message);
     return apiError("INTERNAL", `iCal sync failed: ${message}`, 500);
   }
 });

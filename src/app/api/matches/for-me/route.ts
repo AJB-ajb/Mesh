@@ -10,6 +10,7 @@ import {
   type NotificationPreferences,
   shouldNotify,
 } from "@/lib/notifications/preferences";
+import { sendNotification } from "@/lib/notifications/create";
 
 /**
  * GET /api/matches/for-me
@@ -71,13 +72,16 @@ export const GET = withAuth(async (req, { user, supabase }) => {
 
     if (shouldNotify(userPrefs, "match_found", "in_app")) {
       const topMatch = matches[0];
-      await supabase.from("notifications").insert({
-        user_id: user.id,
-        type: "match_found",
-        title: "New Matches Found",
-        body: `We found ${matches.length} posting${matches.length > 1 ? "s" : ""} matching your profile, including "${topMatch.posting.title}"`,
-        related_posting_id: topMatch.posting.id,
-      });
+      sendNotification(
+        {
+          userId: user.id,
+          type: "match_found",
+          title: "New Matches Found",
+          body: `We found ${matches.length} posting${matches.length > 1 ? "s" : ""} matching your profile, including "${topMatch.posting.title}"`,
+          relatedPostingId: topMatch.posting.id,
+        },
+        supabase,
+      );
     }
   }
 

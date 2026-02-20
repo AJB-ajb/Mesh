@@ -15,13 +15,11 @@ import {
   LinkedInIcon,
   LoaderIcon,
 } from "@/components/icons/auth-icons";
-
-type OAuthProvider = "google" | "github" | "linkedin" | null;
+import { useOAuthSignIn } from "@/lib/hooks/use-oauth-sign-in";
 
 function SignUpForm() {
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingProvider, setLoadingProvider] = useState<OAuthProvider>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -34,6 +32,8 @@ function SignUpForm() {
       ? `${origin}/callback?next=${encodeURIComponent(next)}`
       : `${origin}/callback`;
   };
+  const { loadingProvider, signIn, isOAuthLoading } =
+    useOAuthSignIn(getCallbackUrl);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,44 +79,6 @@ function SignUpForm() {
     setMessage(labels.auth.signup.checkEmail);
     setIsLoading(false);
   };
-
-  const handleGoogleSignIn = async () => {
-    setLoadingProvider("google");
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: getCallbackUrl(),
-      },
-    });
-    if (error) setLoadingProvider(null);
-  };
-
-  const handleGitHubSignIn = async () => {
-    setLoadingProvider("github");
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: {
-        redirectTo: getCallbackUrl(),
-      },
-    });
-    if (error) setLoadingProvider(null);
-  };
-
-  const handleLinkedInSignIn = async () => {
-    setLoadingProvider("linkedin");
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "linkedin_oidc",
-      options: {
-        redirectTo: getCallbackUrl(),
-      },
-    });
-    if (error) setLoadingProvider(null);
-  };
-
-  const isOAuthLoading = loadingProvider !== null;
 
   return (
     <AuthLayout
@@ -216,7 +178,7 @@ function SignUpForm() {
           type="button"
           variant="outline"
           className="flex-1"
-          onClick={handleGoogleSignIn}
+          onClick={() => signIn("google")}
           disabled={isLoading || isOAuthLoading}
         >
           {loadingProvider === "google" ? (
@@ -229,7 +191,7 @@ function SignUpForm() {
           type="button"
           variant="outline"
           className="flex-1"
-          onClick={handleGitHubSignIn}
+          onClick={() => signIn("github")}
           disabled={isLoading || isOAuthLoading}
         >
           {loadingProvider === "github" ? (
@@ -242,7 +204,7 @@ function SignUpForm() {
           type="button"
           variant="outline"
           className="flex-1"
-          onClick={handleLinkedInSignIn}
+          onClick={() => signIn("linkedin")}
           disabled={isLoading || isOAuthLoading}
         >
           {loadingProvider === "linkedin" ? (

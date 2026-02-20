@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError } from "@/lib/errors";
+import { apiError, parseBody } from "@/lib/errors";
 import {
   type NotificationPreferences,
   shouldNotify,
 } from "@/lib/notifications/preferences";
+import { sendNotification } from "@/lib/notifications/create";
 
 /**
  * POST /api/friend-ask/[id]/respond
@@ -17,14 +18,7 @@ import {
 export const POST = withAuth(async (req, { user, supabase, params }) => {
   const { id } = params;
 
-  let body: { action?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return apiError("VALIDATION", "Invalid JSON body", 400);
-  }
-
-  const { action } = body;
+  const { action } = await parseBody<{ action?: string }>(req);
 
   if (!action || !["accept", "decline"].includes(action)) {
     return apiError("VALIDATION", "action must be 'accept' or 'decline'", 400);
@@ -104,14 +98,17 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       creatorProfile?.notification_preferences as NotificationPreferences | null;
 
     if (shouldNotify(creatorPrefs, "sequential_invite", "in_app")) {
-      await supabase.from("notifications").insert({
-        user_id: friendAsk.creator_id,
-        type: "sequential_invite",
-        title,
-        body,
-        related_posting_id: friendAsk.posting_id,
-        related_user_id: user.id,
-      });
+      sendNotification(
+        {
+          userId: friendAsk.creator_id,
+          type: "sequential_invite",
+          title,
+          body,
+          relatedPostingId: friendAsk.posting_id,
+          relatedUserId: user.id,
+        },
+        supabase,
+      );
     }
   };
 
@@ -133,14 +130,17 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
         .eq("user_id", friendAsk.creator_id)
         .single();
 
-      await supabase.from("notifications").insert({
-        user_id: friendId,
-        type: "sequential_invite",
-        title: "Invite Received",
-        body: `${creatorName?.full_name || "Someone"} wants you to join "${postingTitle}"`,
-        related_posting_id: friendAsk.posting_id,
-        related_user_id: friendAsk.creator_id,
-      });
+      sendNotification(
+        {
+          userId: friendId,
+          type: "sequential_invite",
+          title: "Invite Received",
+          body: `${creatorName?.full_name || "Someone"} wants you to join "${postingTitle}"`,
+          relatedPostingId: friendAsk.posting_id,
+          relatedUserId: friendAsk.creator_id,
+        },
+        supabase,
+      );
     }
   };
 

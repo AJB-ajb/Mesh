@@ -2,7 +2,7 @@ import { generateStructuredJSON } from "@/lib/ai/gemini";
 import { profileExtractionSchema } from "@/lib/ai/extraction-schemas";
 import { PROFILE_UPDATE_SYSTEM_PROMPT } from "@/lib/ai/extraction-prompts";
 import { withAiExtraction } from "@/lib/api/with-ai-extraction";
-import { apiError, apiSuccess } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 
 /**
  * POST /api/extract/profile/update
@@ -10,7 +10,10 @@ import { apiError, apiSuccess } from "@/lib/errors";
  * then extracts structured fields from the result.
  */
 export const POST = withAiExtraction(async (req, { user, supabase }) => {
-  const { sourceText, updateInstruction } = await req.json();
+  const { sourceText, updateInstruction } = await parseBody<{
+    sourceText?: string;
+    updateInstruction?: string;
+  }>(req);
 
   if (
     !updateInstruction ||

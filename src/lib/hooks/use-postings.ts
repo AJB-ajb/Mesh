@@ -165,35 +165,34 @@ async function fetchPostings(key: string): Promise<PostingsResult> {
       .eq("user_id", user.id)
       .single();
 
-    if (profile) {
-      const scored = await Promise.all(
-        postings.map(async (posting) => {
-          try {
-            const { data: breakdown, error: rpcError } = await supabase.rpc(
-              "compute_match_breakdown",
-              {
-                profile_user_id: user.id,
-                target_posting_id: posting.id,
-              },
-            );
-
-            if (!rpcError && breakdown) {
-              const bd = breakdown as ScoreBreakdown;
-              return {
-                ...posting,
-                compatibility_score: computeWeightedScore(bd),
-                score_breakdown: bd,
-              };
-            }
-          } catch (err) {
-            console.error(
-              `Failed to compute score for posting ${posting.id}:`,
-              err,
-            );
-          }
-          return posting;
-        }),
+    if (profile && postings.length > 0) {
+      const postingIds = postings.map((p) => p.id);
+      const { data: batchResults } = await supabase.rpc(
+        "compute_match_breakdowns_batch",
+        {
+          profile_user_id: user.id,
+          posting_ids: postingIds,
+        },
       );
+
+      const breakdownMap = new Map<string, ScoreBreakdown>(
+        batchResults?.map(
+          (r: { posting_id: string; breakdown: ScoreBreakdown }) =>
+            [r.posting_id, r.breakdown] as const,
+        ) ?? [],
+      );
+
+      const scored = postings.map((posting) => {
+        const bd = breakdownMap.get(posting.id);
+        return bd
+          ? {
+              ...posting,
+              compatibility_score: computeWeightedScore(bd),
+              score_breakdown: bd,
+            }
+          : posting;
+      });
+
       return {
         postings: scored,
         userId: user?.id ?? null,

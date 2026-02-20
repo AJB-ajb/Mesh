@@ -2,14 +2,14 @@ import { generateStructuredJSON } from "@/lib/ai/gemini";
 import { profileExtractionSchema } from "@/lib/ai/extraction-schemas";
 import { PROFILE_EXTRACT_SYSTEM_PROMPT } from "@/lib/ai/extraction-prompts";
 import { withAiExtraction } from "@/lib/api/with-ai-extraction";
-import { apiError, apiSuccess } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 
 /**
  * POST /api/extract/profile
  * Extracts profile information from unstructured text using Gemini.
  */
 export const POST = withAiExtraction(async (req) => {
-  const { text } = await req.json();
+  const { text } = await parseBody<{ text?: string }>(req);
 
   if (!text || typeof text !== "string" || text.trim().length < 10) {
     return apiError(
