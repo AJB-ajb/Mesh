@@ -84,6 +84,18 @@ export const DEADLINES = {
   EXTEND_OPTIONS: [7, 14, 30],
 } as const;
 
+/** Calendar sync constants */
+export const CALENDAR_SYNC = {
+  /** How far ahead to fetch free/busy data (weeks) */
+  FREEBUSY_HORIZON_WEEKS: 8,
+  /** Minimum weeks a slot must be busy to be included in canonical projection */
+  CANONICAL_MIN_WEEKS_BUSY: 2,
+  /** Google polling interval for pg_cron (minutes) */
+  GOOGLE_POLL_INTERVAL_MINUTES: 15,
+  /** iCal polling interval for pg_cron (minutes) */
+  ICAL_POLL_INTERVAL_MINUTES: 30,
+} as const;
+
 /** AI generation parameters for match explanations */
 export const AI = {
   TEMPERATURE: 0.7,

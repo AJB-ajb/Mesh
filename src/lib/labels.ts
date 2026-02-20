@@ -1086,4 +1086,48 @@ export const labels = {
       "Pick exact dates and times for collaboration.",
     specificDatesComingSoon: "Specific date selection coming soon.",
   },
+
+  // ---------------------------------------------------------------------------
+  // Calendar sync
+  // ---------------------------------------------------------------------------
+  calendar: {
+    settingsTitle: "Calendar Sync",
+    settingsDescription:
+      "Connect your calendar to automatically factor real-world busy times into availability matching.",
+    googleConnect: "Connect Google Calendar",
+    googleConnecting: "Connecting...",
+    googleConnected: "Google Calendar connected",
+    icalConnect: "Connect iCal Feed",
+    icalPlaceholder: "https://calendar.example.com/feed.ics",
+    icalSubmit: "Add iCal Feed",
+    icalAdding: "Adding...",
+    disconnect: "Disconnect",
+    disconnecting: "Disconnecting...",
+    syncNow: "Sync Now",
+    syncing: "Syncing...",
+    lastSynced: (date: string) => `Last synced: ${date}`,
+    syncStatusLabels: {
+      pending: "Pending",
+      syncing: "Syncing",
+      synced: "Synced",
+      error: "Error",
+    } as const,
+    syncError: (msg: string) => `Sync error: ${msg}`,
+    busyBlockLabel: "Calendar busy",
+    visibilityTitle: "Calendar Visibility",
+    visibilityDescription:
+      "Control who can see your calendar busy times.",
+    visibilityMatchOnly: "Match scoring only",
+    visibilityMatchOnlyDescription:
+      "Calendar data only affects match scores. No one sees your busy times.",
+    visibilityTeamVisible: "Team members can see",
+    visibilityTeamVisibleDescription:
+      "Team members on accepted postings can see when you're busy.",
+    disconnectConfirmTitle: "Disconnect calendar?",
+    disconnectConfirmDescription:
+      "This will remove the calendar connection and all imported busy blocks. Your availability windows will not be affected.",
+    noConnections: "No calendars connected yet.",
+    errorGeneric: "Something went wrong. Please try again.",
+    errorInvalidIcalUrl: "Please enter a valid iCal URL (must start with http:// or https://).",
+  },
 } as const;

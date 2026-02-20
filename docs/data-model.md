@@ -39,6 +39,7 @@ User profile information including skills, preferences, and matching-related dat
 | `created_at`                | timestamptz      | NO       | now()    | Record creation timestamp                                       |
 | `updated_at`                | timestamptz      | NO       | now()    | Last update timestamp (auto-updated)                            |
 | `timezone`                  | text             | YES      | null     | IANA timezone string (e.g., 'Europe/Berlin')                    |
+| `calendar_visibility`       | text             | YES      | 'match_only' | `'match_only'` or `'team_visible'` — controls who sees calendar busy blocks |
 
 **RLS Policies:**
 
@@ -88,9 +89,58 @@ Minute-level recurring (or specific) time windows for profiles and postings. **D
 
 **RPC Functions:**
 
-| Function                     | Parameters                             | Returns  | Description                                                                                                                                 |
-| ---------------------------- | -------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `compute_availability_score` | `p_profile_id uuid, p_posting_id uuid` | `float8` | `1 - (blocked_overlap / posting_total)`. Profile windows are blocked time; posting windows are required time. 1.0 if either has no windows. |
+| Function                       | Parameters                             | Returns     | Description                                                                                                                                                             |
+| ------------------------------ | -------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `compute_availability_score`   | `p_profile_id uuid, p_posting_id uuid` | `float8`    | `1 - (blocked_overlap / posting_total)`. Uses `get_effective_blocked_ranges()` which unions manual windows + calendar busy blocks. 1.0 if either has no windows/blocks. |
+| `get_effective_blocked_ranges` | `p_profile_id uuid`                    | `int4range` | Returns all effective blocked canonical ranges for a profile: UNION of availability_windows + calendar_busy_blocks canonical projections.                                |
+
+---
+
+### calendar_connections
+
+External calendar connections (Google Calendar, iCal feeds) for availability sync.
+
+| Field                      | Type        | Nullable | Default           | Description                                             |
+| -------------------------- | ----------- | -------- | ----------------- | ------------------------------------------------------- |
+| `id`                       | uuid        | NO       | gen_random_uuid() | Primary key                                             |
+| `profile_id`               | uuid FK     | NO       | -                 | References `profiles(user_id)` ON DELETE CASCADE        |
+| `provider`                 | text        | NO       | -                 | `'google'` or `'ical'`                                  |
+| `access_token_encrypted`   | bytea       | YES      | null              | AES-256-GCM encrypted Google access token               |
+| `refresh_token_encrypted`  | bytea       | YES      | null              | AES-256-GCM encrypted Google refresh token              |
+| `token_expires_at`         | timestamptz | YES      | null              | Google token expiration time                            |
+| `ical_url`                 | text        | YES      | null              | iCal feed URL                                           |
+| `watch_channel_id`         | text        | YES      | null              | Google Calendar Watch channel ID                        |
+| `watch_resource_id`        | text        | YES      | null              | Google Calendar Watch resource ID                       |
+| `watch_expiration`         | timestamptz | YES      | null              | Google Watch channel expiration                         |
+| `last_synced_at`           | timestamptz | YES      | null              | Last successful sync timestamp                          |
+| `sync_status`              | text        | NO       | 'pending'         | One of: pending, syncing, synced, error                 |
+| `sync_error`               | text        | YES      | null              | Last sync error message                                 |
+| `created_at`               | timestamptz | NO       | now()             | Record creation timestamp                               |
+| `updated_at`               | timestamptz | NO       | now()             | Last update timestamp                                   |
+
+**Indexes:** Unique partial index on `(profile_id) WHERE provider = 'google'` (one Google connection per profile). B-tree on `profile_id`.
+
+**RLS:** Owner-only CRUD (`profile_id = auth.uid()`).
+
+---
+
+### calendar_busy_blocks
+
+Busy time blocks imported from external calendars. Replaced on each sync cycle.
+
+| Field              | Type          | Nullable | Default           | Description                                          |
+| ------------------ | ------------- | -------- | ----------------- | ---------------------------------------------------- |
+| `id`               | uuid          | NO       | gen_random_uuid() | Primary key                                          |
+| `connection_id`    | uuid FK       | NO       | -                 | References `calendar_connections(id)` ON DELETE CASCADE |
+| `profile_id`       | uuid FK       | NO       | -                 | References `profiles(user_id)` ON DELETE CASCADE     |
+| `start_time`       | timestamptz   | NO       | -                 | Busy period start                                    |
+| `end_time`         | timestamptz   | NO       | -                 | Busy period end                                      |
+| `canonical_ranges` | int4range[]   | YES      | null              | Canonical week projection for scoring                |
+| `created_at`       | timestamptz   | NO       | now()             | Record creation timestamp                            |
+
+**Indexes:** B-tree on `profile_id`, B-tree on `connection_id`, GIN on `canonical_ranges`.
+
+**RLS:** All authenticated can SELECT (for matching). Owner-only INSERT/DELETE.
 
 ---
 

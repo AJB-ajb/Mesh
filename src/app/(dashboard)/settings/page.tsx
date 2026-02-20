@@ -40,6 +40,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/lib/hooks/use-settings";
 import type { Provider } from "@/lib/hooks/use-settings";
+import { CalendarSettingsCard } from "@/components/calendar/calendar-settings-card";
 import { useNotificationPreferences } from "@/lib/hooks/use-notification-preferences";
 import {
   type NotificationType,
@@ -416,6 +417,18 @@ function SettingsContent() {
           </CardContent>
         </Card>
       )}
+
+      {/* Calendar Sync */}
+      <CalendarSettingsCard
+        onError={(msg) => {
+          setError(msg);
+          setSuccess(null);
+        }}
+        onSuccess={(msg) => {
+          setSuccess(msg);
+          setError(null);
+        }}
+      />
 
       {/* Notification Preferences */}
       <Card>

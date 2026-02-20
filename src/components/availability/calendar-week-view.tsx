@@ -5,6 +5,7 @@ import type { RecurringWindow } from "@/lib/types/availability";
 import { DAY_MAP_REVERSE } from "@/lib/types/availability";
 import { DAY_LABELS } from "@/lib/types/profile";
 import { CalendarWeekViewBlock } from "./calendar-week-view-block";
+import { CalendarWeekViewBusyBlock } from "./calendar-week-view-busy-block";
 import { useCalendarDrag } from "./use-calendar-drag";
 
 const HOUR_HEIGHT = 48; // px per hour
@@ -17,12 +18,14 @@ type CalendarWeekViewProps = {
   windows: RecurringWindow[];
   onChange: (windows: RecurringWindow[]) => void;
   readOnly?: boolean;
+  busyBlocks?: RecurringWindow[];
 };
 
 export function CalendarWeekView({
   windows,
   onChange,
   readOnly,
+  busyBlocks,
 }: CalendarWeekViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -157,6 +160,17 @@ export function CalendarWeekView({
                     onMoveStart={onBlockMove}
                   />
                 ))}
+
+                {/* Calendar busy blocks (read-only, blue) */}
+                {busyBlocks
+                  ?.filter((b) => b.day_of_week === day)
+                  .map((b, idx) => (
+                    <CalendarWeekViewBusyBlock
+                      key={`busy-${b.day_of_week}-${b.start_minutes}-${idx}`}
+                      window={b}
+                      startHour={START_HOUR}
+                    />
+                  ))}
 
                 {/* Preview block during drag-to-create */}
                 {previewForDay && (
