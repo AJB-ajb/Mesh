@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError } from "@/lib/errors";
+import { apiError, parseBody } from "@/lib/errors";
 import { sendNotification } from "@/lib/notifications/create";
 
 /**
@@ -25,14 +25,7 @@ export const GET = withAuth(async (_req, { user, supabase }) => {
  * Send a connection request. Body: { friend_id: string }
  */
 export const POST = withAuth(async (req, { user, supabase }) => {
-  let body: { friend_id?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return apiError("VALIDATION", "Invalid JSON body", 400);
-  }
-
-  const { friend_id } = body;
+  const { friend_id } = await parseBody<{ friend_id?: string }>(req);
 
   if (!friend_id) {
     return apiError("VALIDATION", "friend_id is required", 400);

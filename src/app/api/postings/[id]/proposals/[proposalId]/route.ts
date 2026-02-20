@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError } from "@/lib/errors";
+import { apiError, parseBody } from "@/lib/errors";
 
 /** PATCH: Confirm or cancel a proposal (owner only) */
 export const PATCH = withAuth(async (req, { user, supabase, params }) => {
@@ -22,8 +22,7 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
     );
   }
 
-  const body = await req.json();
-  const { status } = body as { status: string };
+  const { status } = await parseBody<{ status: string }>(req);
 
   if (!status || !["confirmed", "cancelled"].includes(status)) {
     return apiError(

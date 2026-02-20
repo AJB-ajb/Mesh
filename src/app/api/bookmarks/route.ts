@@ -1,5 +1,5 @@
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, apiSuccess } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 
 /**
  * GET /api/bookmarks
@@ -26,8 +26,7 @@ export const GET = withAuth(async (_req, { user, supabase }) => {
  * Body: { posting_id: string }
  */
 export const POST = withAuth(async (req, { user, supabase }) => {
-  const body = await req.json();
-  const { posting_id } = body;
+  const { posting_id } = await parseBody<{ posting_id?: string }>(req);
 
   if (!posting_id || typeof posting_id !== "string") {
     return apiError("VALIDATION", "posting_id is required", 400);

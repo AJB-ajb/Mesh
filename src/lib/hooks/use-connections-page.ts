@@ -77,79 +77,123 @@ async function fetchConnectionsPageData(): Promise<ConnectionsPageData> {
     }
   }
 
+  // Collect IDs for batch queries
+  const convIds: string[] = [];
+  const postingIds: string[] = [];
+  for (const conv of conversations) {
+    convIds.push(conv.id);
+    if (conv.posting_id) postingIds.push(conv.posting_id);
+  }
+
+  // Batch fetch: last messages, unread counts, and posting titles (3 queries total)
+  const [lastMsgsResult, unreadMsgsResult, postingsResult] = await Promise.all([
+    convIds.length > 0
+      ? supabase
+          .from("messages")
+          .select("conversation_id, content, created_at, sender_id")
+          .in("conversation_id", convIds)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({
+          data: [] as {
+            conversation_id: string;
+            content: string;
+            created_at: string;
+            sender_id: string;
+          }[],
+        }),
+    convIds.length > 0
+      ? supabase
+          .from("messages")
+          .select("conversation_id")
+          .in("conversation_id", convIds)
+          .eq("read", false)
+          .neq("sender_id", user.id)
+      : Promise.resolve({ data: [] as { conversation_id: string }[] }),
+    postingIds.length > 0
+      ? supabase.from("postings").select("id, title").in("id", postingIds)
+      : Promise.resolve({ data: [] as { id: string; title: string }[] }),
+  ]);
+
+  // Build lookup maps
+  const lastMessageMap = new Map<
+    string,
+    { content: string; created_at: string; sender_id: string }
+  >();
+  for (const msg of lastMsgsResult.data ?? []) {
+    // First occurrence per conversation is the latest (ordered desc)
+    if (!lastMessageMap.has(msg.conversation_id)) {
+      lastMessageMap.set(msg.conversation_id, {
+        content: msg.content,
+        created_at: msg.created_at,
+        sender_id: msg.sender_id,
+      });
+    }
+  }
+
+  const unreadCountMap = new Map<string, number>();
+  for (const msg of unreadMsgsResult.data ?? []) {
+    unreadCountMap.set(
+      msg.conversation_id,
+      (unreadCountMap.get(msg.conversation_id) ?? 0) + 1,
+    );
+  }
+
+  const postingTitleMap = new Map<string, string>();
+  for (const p of postingsResult.data ?? []) {
+    postingTitleMap.set(p.id, p.title);
+  }
+
   // Enrich each accepted connection with conversation data
-  const mergedConnections = await Promise.all(
-    accepted.map(async (f) => {
-      const otherUser =
-        f.user_id === user.id
-          ? (f.friend as {
-              user_id: string;
-              full_name: string | null;
-              headline: string | null;
-            } | null)
-          : (f.user as {
-              user_id: string;
-              full_name: string | null;
-              headline: string | null;
-            } | null);
+  const mergedConnections: MergedConnection[] = accepted.map((f) => {
+    const otherUser =
+      f.user_id === user.id
+        ? (f.friend as {
+            user_id: string;
+            full_name: string | null;
+            headline: string | null;
+          } | null)
+        : (f.user as {
+            user_id: string;
+            full_name: string | null;
+            headline: string | null;
+          } | null);
 
-      const otherUserId = f.user_id === user.id ? f.friend_id : f.user_id;
-      const conv = convByUserId.get(otherUserId) ?? null;
+    const otherUserId = f.user_id === user.id ? f.friend_id : f.user_id;
+    const conv = convByUserId.get(otherUserId) ?? null;
 
-      let lastMessage: MergedConnection["lastMessage"] = null;
-      let unreadCount = 0;
-      let posting: { title: string } | undefined;
+    let lastMessage: MergedConnection["lastMessage"] = null;
+    let unreadCount = 0;
+    let posting: { title: string } | undefined;
 
-      if (conv) {
-        const [lastMsgResult, unreadResult, postingResult] = await Promise.all([
-          supabase
-            .from("messages")
-            .select("content, created_at, sender_id")
-            .eq("conversation_id", conv.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-          supabase
-            .from("messages")
-            .select("*", { count: "exact", head: true })
-            .eq("conversation_id", conv.id)
-            .eq("read", false)
-            .neq("sender_id", user.id),
-          conv.posting_id
-            ? supabase
-                .from("postings")
-                .select("title")
-                .eq("id", conv.posting_id)
-                .maybeSingle()
-            : Promise.resolve({ data: null }),
-        ]);
-
-        lastMessage = lastMsgResult.data ?? null;
-        unreadCount = unreadResult.count ?? 0;
-        posting = postingResult.data ?? undefined;
+    if (conv) {
+      lastMessage = lastMessageMap.get(conv.id) ?? null;
+      unreadCount = unreadCountMap.get(conv.id) ?? 0;
+      if (conv.posting_id) {
+        const title = postingTitleMap.get(conv.posting_id);
+        if (title) posting = { title };
       }
+    }
 
-      return {
-        friendshipId: f.id,
-        otherUser: {
-          user_id: otherUser?.user_id ?? otherUserId,
-          full_name: otherUser?.full_name ?? null,
-          headline: otherUser?.headline ?? null,
-        },
-        conversation: conv
-          ? {
-              id: conv.id,
-              posting_id: conv.posting_id ?? null,
-              posting,
-              participant_1: conv.participant_1,
-              participant_2: conv.participant_2,
-            }
-          : null,
-        lastMessage,
-        unreadCount,
-      } satisfies MergedConnection;
-    }),
-  );
+    return {
+      friendshipId: f.id,
+      otherUser: {
+        user_id: otherUser?.user_id ?? otherUserId,
+        full_name: otherUser?.full_name ?? null,
+        headline: otherUser?.headline ?? null,
+      },
+      conversation: conv
+        ? {
+            id: conv.id,
+            posting_id: conv.posting_id ?? null,
+            posting,
+            participant_1: conv.participant_1,
+            participant_2: conv.participant_2,
+          }
+        : null,
+      lastMessage,
+      unreadCount,
+    } satisfies MergedConnection;
+  });
 
   // Sort: connections with messages by last_message.created_at desc, rest alphabetically
   mergedConnections.sort((a, b) => {

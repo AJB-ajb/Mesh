@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError } from "@/lib/errors";
+import { apiError, parseBody } from "@/lib/errors";
 
 /**
  * PATCH /api/friendships/[id]
@@ -10,14 +10,7 @@ import { apiError } from "@/lib/errors";
 export const PATCH = withAuth(async (req, { user, supabase, params }) => {
   const { id } = params;
 
-  let body: { status?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return apiError("VALIDATION", "Invalid JSON body", 400);
-  }
-
-  const { status } = body;
+  const { status } = await parseBody<{ status?: string }>(req);
   const allowed = ["accepted", "declined", "blocked"];
 
   if (!status || !allowed.includes(status)) {

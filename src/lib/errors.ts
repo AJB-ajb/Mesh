@@ -16,7 +16,7 @@ export class AppError extends Error {
   constructor(
     public code: ErrorCode,
     message: string,
-    public statusCode: number = 500
+    public statusCode: number = 500,
   ) {
     super(message);
     this.name = "AppError";
@@ -29,11 +29,11 @@ export class AppError extends Error {
 export function apiError(
   code: ErrorCode,
   message: string,
-  statusCode: number = 500
+  statusCode: number = 500,
 ): NextResponse {
   return NextResponse.json(
     { error: { code, message } },
-    { status: statusCode }
+    { status: statusCode },
   );
 }
 
@@ -42,4 +42,18 @@ export function apiError(
  */
 export function apiSuccess<T>(data: T, statusCode: number = 200): NextResponse {
   return NextResponse.json(data, { status: statusCode });
+}
+
+/**
+ * Parse JSON body from a request, throwing an AppError on invalid JSON.
+ * Use inside `withAuth` handlers — the error is caught and returned as 400.
+ */
+export async function parseBody<T = Record<string, unknown>>(
+  req: Request,
+): Promise<T> {
+  try {
+    return await req.json();
+  } catch {
+    throw new AppError("VALIDATION", "Invalid JSON body", 400);
+  }
 }

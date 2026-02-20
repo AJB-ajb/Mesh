@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError } from "@/lib/errors";
+import { apiError, parseBody } from "@/lib/errors";
 
 /** POST: Submit or update a response to a proposal */
 export const POST = withAuth(async (req, { user, supabase, params }) => {
@@ -33,8 +33,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     return apiError("VALIDATION", "Can only respond to proposed meetings", 400);
   }
 
-  const body = await req.json();
-  const { response } = body as { response: string };
+  const { response } = await parseBody<{ response: string }>(req);
 
   if (!response || !["available", "unavailable"].includes(response)) {
     return apiError(

@@ -8,7 +8,7 @@ import * as Sentry from "@sentry/nextjs";
 import type { User } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { apiError } from "@/lib/errors";
+import { apiError, AppError } from "@/lib/errors";
 
 export interface AuthContext {
   user: User;
@@ -45,6 +45,9 @@ export function withAuth(handler: AuthHandler) {
 
       return await handler(req, { user, supabase, params });
     } catch (error) {
+      if (error instanceof AppError) {
+        return apiError(error.code, error.message, error.statusCode);
+      }
       console.error("Route handler error:", error);
       Sentry.captureException(error, {
         extra: { url: req.url, method: req.method },

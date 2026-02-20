@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError } from "@/lib/errors";
+import { apiError, parseBody } from "@/lib/errors";
 import { SCHEDULING } from "@/lib/constants";
 
 /** GET: List proposals with responses for a posting */
@@ -55,12 +55,11 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     );
   }
 
-  const body = await req.json();
-  const { title, startTime, endTime } = body as {
+  const { title, startTime, endTime } = await parseBody<{
     title?: string;
     startTime: string;
     endTime: string;
-  };
+  }>(req);
 
   if (!startTime || !endTime) {
     return apiError("VALIDATION", "startTime and endTime are required", 400);

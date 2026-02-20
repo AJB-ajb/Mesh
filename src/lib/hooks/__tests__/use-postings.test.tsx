@@ -129,12 +129,17 @@ describe("usePostings", () => {
     });
 
     mockRpc.mockResolvedValue({
-      data: {
-        semantic: 0.8,
-        availability: 0.7,
-        skill_level: 0.9,
-        location: 0.6,
-      },
+      data: [
+        {
+          posting_id: "p1",
+          breakdown: {
+            semantic: 0.8,
+            availability: 0.7,
+            skill_level: 0.9,
+            location: 0.6,
+          },
+        },
+      ],
       error: null,
     });
 

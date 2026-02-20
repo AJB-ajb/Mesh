@@ -15,14 +15,12 @@ import {
   LinkedInIcon,
   LoaderIcon,
 } from "@/components/icons/auth-icons";
-
-type OAuthProvider = "google" | "github" | "linkedin" | null;
+import { useOAuthSignIn } from "@/lib/hooks/use-oauth-sign-in";
 
 function LoginForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingProvider, setLoadingProvider] = useState<OAuthProvider>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
@@ -34,6 +32,8 @@ function LoginForm() {
       ? `${origin}/callback?next=${encodeURIComponent(next)}`
       : `${origin}/callback`;
   };
+  const { loadingProvider, signIn, isOAuthLoading } =
+    useOAuthSignIn(getCallbackUrl);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,56 +53,6 @@ function LoginForm() {
       router.push(next || "/active");
     }
   };
-
-  const handleGoogleSignIn = async () => {
-    setLoadingProvider("google");
-
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: getCallbackUrl(),
-      },
-    });
-
-    if (signInError) {
-      setLoadingProvider(null);
-    }
-  };
-
-  const handleGitHubSignIn = async () => {
-    setLoadingProvider("github");
-
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: {
-        redirectTo: getCallbackUrl(),
-      },
-    });
-
-    if (signInError) {
-      setLoadingProvider(null);
-    }
-  };
-
-  const handleLinkedInSignIn = async () => {
-    setLoadingProvider("linkedin");
-
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithOAuth({
-      provider: "linkedin_oidc",
-      options: {
-        redirectTo: getCallbackUrl(),
-      },
-    });
-
-    if (signInError) {
-      setLoadingProvider(null);
-    }
-  };
-
-  const isOAuthLoading = loadingProvider !== null;
 
   return (
     <AuthLayout
@@ -188,7 +138,7 @@ function LoginForm() {
           type="button"
           variant="outline"
           className="flex-1"
-          onClick={handleGoogleSignIn}
+          onClick={() => signIn("google")}
           disabled={isLoading || isOAuthLoading}
         >
           {loadingProvider === "google" ? (
@@ -201,7 +151,7 @@ function LoginForm() {
           type="button"
           variant="outline"
           className="flex-1"
-          onClick={handleGitHubSignIn}
+          onClick={() => signIn("github")}
           disabled={isLoading || isOAuthLoading}
         >
           {loadingProvider === "github" ? (
@@ -214,7 +164,7 @@ function LoginForm() {
           type="button"
           variant="outline"
           className="flex-1"
-          onClick={handleLinkedInSignIn}
+          onClick={() => signIn("linkedin")}
           disabled={isLoading || isOAuthLoading}
         >
           {loadingProvider === "linkedin" ? (

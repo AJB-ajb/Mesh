@@ -2,7 +2,7 @@ import { generateStructuredJSON } from "@/lib/ai/gemini";
 import { postingExtractionSchema } from "@/lib/ai/extraction-schemas";
 import { POSTING_UPDATE_SYSTEM_PROMPT } from "@/lib/ai/extraction-prompts";
 import { withAiExtraction } from "@/lib/api/with-ai-extraction";
-import { apiError, apiSuccess } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 
 /**
  * POST /api/extract/posting/update
@@ -10,7 +10,11 @@ import { apiError, apiSuccess } from "@/lib/errors";
  * then extracts structured fields from the result.
  */
 export const POST = withAiExtraction(async (req, { user, supabase }) => {
-  const { postingId, sourceText, updateInstruction } = await req.json();
+  const { postingId, sourceText, updateInstruction } = await parseBody<{
+    postingId?: string;
+    sourceText?: string;
+    updateInstruction?: string;
+  }>(req);
 
   if (!postingId || typeof postingId !== "string") {
     return apiError("VALIDATION", "postingId is required", 400);
