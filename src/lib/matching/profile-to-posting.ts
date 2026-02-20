@@ -6,6 +6,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Posting, ScoreBreakdown } from "@/lib/supabase/types";
 import { MATCH_SCORE_THRESHOLD } from "@/lib/matching/scoring";
+import { MATCHING } from "@/lib/constants";
 
 export interface MatchFilters {
   category?: string;
@@ -32,7 +33,7 @@ export interface ProfileToPostingMatch {
  */
 export async function matchProfileToPostings(
   userId: string,
-  limit: number = 10,
+  limit: number = MATCHING.DEFAULT_RESULT_LIMIT,
   filters?: MatchFilters,
 ): Promise<ProfileToPostingMatch[]> {
   const supabase = await createClient();

@@ -8,6 +8,7 @@ import {
   isGeminiConfigured,
 } from "@/lib/ai/gemini";
 import type { Profile } from "@/lib/supabase/types";
+import { AI } from "@/lib/constants";
 
 export type MatchExplanationProfile = Pick<
   Profile,
@@ -59,10 +60,10 @@ Explanation:`;
   const result = await generateContentWithFallback({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: {
-      temperature: 0.7,
-      topK: 40,
-      topP: 0.95,
-      maxOutputTokens: 200,
+      temperature: AI.TEMPERATURE,
+      topK: AI.TOP_K,
+      topP: AI.TOP_P,
+      maxOutputTokens: AI.MAX_OUTPUT_TOKENS,
     },
   });
 

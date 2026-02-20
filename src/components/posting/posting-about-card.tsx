@@ -11,6 +11,7 @@ import { LocationAutocomplete } from "@/components/location/location-autocomplet
 import { NOT_SPECIFIED } from "@/lib/format";
 import { reverseGeocode, type GeocodingResult } from "@/lib/geocoding";
 import { labels } from "@/lib/labels";
+import { LOCATION } from "@/lib/constants";
 import { getLocationModeDisplay } from "@/lib/posting/location";
 import type {
   PostingDetail,
@@ -89,7 +90,11 @@ function LocationEditFields({
         setGeoError(errorMessage);
         setIsGeolocating(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+      {
+        enableHighAccuracy: true,
+        timeout: LOCATION.GEOLOCATION_TIMEOUT_MS,
+        maximumAge: 0,
+      },
     );
   }, [onFormChange]);
 

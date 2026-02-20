@@ -5,6 +5,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, ScoreBreakdown } from "@/lib/supabase/types";
+import { MATCHING } from "@/lib/constants";
 
 export interface PostingToProfileMatch {
   profile: Profile;
@@ -23,7 +24,7 @@ export interface PostingToProfileMatch {
  */
 export async function matchPostingToProfiles(
   postingId: string,
-  limit: number = 10,
+  limit: number = MATCHING.DEFAULT_RESULT_LIMIT,
 ): Promise<PostingToProfileMatch[]> {
   const supabase = await createClient();
 

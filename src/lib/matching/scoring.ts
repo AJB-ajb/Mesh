@@ -5,6 +5,7 @@
  */
 
 import type { ScoreBreakdown } from "@/lib/supabase/types";
+import { MATCHING } from "@/lib/constants";
 import { haversineDistance } from "./similarity";
 
 /**
@@ -19,15 +20,10 @@ export interface DimensionWeights {
   location: number;
 }
 
-export const DEFAULT_WEIGHTS: DimensionWeights = {
-  semantic: 1.0,
-  availability: 1.0,
-  skill_level: 0.7,
-  location: 0.7,
-};
+export const DEFAULT_WEIGHTS: DimensionWeights = MATCHING.WEIGHTS;
 
 /** Minimum match score threshold — matches below this are filtered out */
-export const MATCH_SCORE_THRESHOLD = 0.05;
+export const MATCH_SCORE_THRESHOLD = MATCHING.MIN_SCORE_THRESHOLD;
 
 const DIMENSIONS: (keyof ScoreBreakdown)[] = [
   "semantic",
@@ -114,7 +110,7 @@ export function formatScore(score: number): string {
 export function getScoreColorVariant(
   score: number,
 ): "success" | "warning" | "destructive" {
-  if (score >= 0.7) return "success";
-  if (score >= 0.5) return "warning";
+  if (score >= MATCHING.SCORE_COLOR_SUCCESS) return "success";
+  if (score >= MATCHING.SCORE_COLOR_WARNING) return "warning";
   return "destructive";
 }
