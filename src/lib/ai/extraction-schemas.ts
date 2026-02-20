@@ -97,7 +97,7 @@ export function profileExtractionSchema(mode: ExtractionMode): ObjectSchema {
         required: ["day_of_week", "start_minutes", "end_minutes"],
       },
       description:
-        "Weekly recurring availability windows extracted from text like 'weekday evenings' or 'Saturday 2-4pm'",
+        "Weekly recurring UNAVAILABILITY windows — times the person is NOT available. Extract from text like 'busy weekday evenings' or 'not free Saturday 2-4pm'. If the text says they ARE available at certain times, invert: extract the complement as blocked windows.",
     },
     timezone: {
       type: SchemaType.STRING,

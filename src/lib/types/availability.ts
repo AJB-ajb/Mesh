@@ -31,6 +31,7 @@ export type AvailabilityWindow = RecurringWindow | SpecificWindow;
 // ---------------------------------------------------------------------------
 
 export const QUICK_MODE_SLOTS = {
+  night: { start: 0, end: 360 }, // 00:00-06:00
   morning: { start: 360, end: 720 }, // 06:00-12:00
   afternoon: { start: 720, end: 1080 }, // 12:00-18:00
   evening: { start: 1080, end: 1440 }, // 18:00-24:00

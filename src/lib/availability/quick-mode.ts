@@ -55,6 +55,46 @@ export function windowsToGrid(windows: RecurringWindow[]): AvailabilitySlots {
   return grid;
 }
 
+export type GridCellState = "none" | "partial" | "full";
+
+/**
+ * Determine 3-state grid: for each day+slot, whether windows fully cover,
+ * partially overlap, or don't overlap the slot range.
+ */
+export function windowsToGridWithPartial(
+  windows: RecurringWindow[],
+): Record<string, Record<string, GridCellState>> {
+  const result: Record<string, Record<string, GridCellState>> = {};
+
+  for (const w of windows) {
+    if (w.window_type !== "recurring") continue;
+    const dayName = DAY_MAP_REVERSE[w.day_of_week];
+    if (!dayName) continue;
+
+    for (const [slotName, range] of Object.entries(QUICK_MODE_SLOTS)) {
+      // Check overlap: window overlaps slot if start < slot.end && end > slot.start
+      const overlaps =
+        w.start_minutes < range.end && w.end_minutes > range.start;
+      if (!overlaps) continue;
+
+      // Check full coverage
+      const fullyCovered =
+        w.start_minutes <= range.start && w.end_minutes >= range.end;
+
+      if (!result[dayName]) result[dayName] = {};
+      const current = result[dayName][slotName];
+
+      if (fullyCovered) {
+        result[dayName][slotName] = "full";
+      } else if (current !== "full") {
+        result[dayName][slotName] = "partial";
+      }
+    }
+  }
+
+  return result;
+}
+
 /**
  * Toggle a grid slot and return updated RecurringWindow[].
  * Adds or removes the window corresponding to the given day + slot.

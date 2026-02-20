@@ -3,7 +3,11 @@
 import { useState } from "react";
 import type { RecurringWindow } from "@/lib/types/availability";
 import type { AvailabilitySlots } from "@/lib/types/profile";
-import { windowsToGrid, toggleGridSlot } from "@/lib/availability/quick-mode";
+import {
+  windowsToGrid,
+  toggleGridSlot,
+  windowsToGridWithPartial,
+} from "@/lib/availability/quick-mode";
 import { ProfileFormAvailability } from "@/components/profile/profile-form-availability";
 import { CalendarWeekView } from "./calendar-week-view";
 import { labels } from "@/lib/labels";
@@ -30,6 +34,7 @@ export function AvailabilityEditor({
 
   // Derive grid state from windows for quick mode
   const grid: AvailabilitySlots = windowsToGrid(windows);
+  const partialGrid = windowsToGridWithPartial(windows);
 
   const handleToggleSlot = (day: string, slot: string) => {
     onChange(toggleGridSlot(windows, day, slot));
@@ -75,6 +80,7 @@ export function AvailabilityEditor({
         <ProfileFormAvailability
           availabilitySlots={grid}
           onToggleSlot={handleToggleSlot}
+          partialGrid={partialGrid}
         />
       ) : (
         <CalendarWeekView windows={windows} onChange={onChange} />

@@ -671,8 +671,7 @@ export const labels = {
     locationModeTitle: "Location Mode",
     locationModeDescription: "Where do you prefer to collaborate?",
     availabilityTitle: "Availability",
-    availabilityDescription:
-      "Click cells to toggle when you are typically available.",
+    availabilityDescription: "Mark the times you are unavailable.",
     locationModeOptions: {
       remote: "Remote",
       in_person: "In-person",
@@ -1069,9 +1068,9 @@ export const labels = {
     // Quick/Detailed mode toggle
     quickMode: "Quick",
     detailedMode: "Detailed",
-    quickModeHint: "Toggle morning, afternoon, and evening slots for each day.",
+    quickModeHint: "Toggle time blocks when you are NOT available.",
     detailedModeHint:
-      "Drag to create precise time windows on the weekly calendar.",
+      "Drag to block out times you are not available on the weekly calendar.",
 
     // Posting availability mode
     postingAvailabilityTitle: "Availability",

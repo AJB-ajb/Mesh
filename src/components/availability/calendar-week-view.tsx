@@ -8,7 +8,7 @@ import { CalendarWeekViewBlock } from "./calendar-week-view-block";
 import { useCalendarDrag } from "./use-calendar-drag";
 
 const HOUR_HEIGHT = 48; // px per hour
-const START_HOUR = 6; // 06:00
+const START_HOUR = 0; // 00:00
 const END_HOUR = 24; // midnight
 const TOTAL_HOURS = END_HOUR - START_HOUR;
 const DAYS = [0, 1, 2, 3, 4, 5, 6]; // Mon-Sun
