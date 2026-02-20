@@ -13,7 +13,7 @@
 CREATE TABLE IF NOT EXISTS meeting_proposals (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   posting_id uuid NOT NULL REFERENCES postings(id) ON DELETE CASCADE,
-  proposed_by uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  proposed_by uuid NOT NULL REFERENCES profiles(user_id) ON DELETE CASCADE,
   title text,
   start_time timestamptz NOT NULL,
   end_time timestamptz NOT NULL,
@@ -33,7 +33,7 @@ CREATE INDEX idx_meeting_proposals_status ON meeting_proposals (posting_id, stat
 CREATE TABLE IF NOT EXISTS meeting_responses (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   proposal_id uuid NOT NULL REFERENCES meeting_proposals(id) ON DELETE CASCADE,
-  responder_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  responder_id uuid NOT NULL REFERENCES profiles(user_id) ON DELETE CASCADE,
   response text NOT NULL CHECK (response IN ('available', 'unavailable')),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
