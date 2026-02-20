@@ -48,7 +48,7 @@ User profile information including skills, preferences, and matching-related dat
 
 ### availability_windows
 
-Minute-level recurring (or specific) availability windows for profiles and postings. Used for overlap-based matching scoring.
+Minute-level recurring (or specific) time windows for profiles and postings. **Dual semantics**: profile windows represent **unavailable/blocked time** (when the user is NOT free); posting windows represent **required available time** (when the team should be free). Used for overlap-based matching scoring.
 
 | Field             | Type        | Nullable | Default           | Description                                                 |
 | ----------------- | ----------- | -------- | ----------------- | ----------------------------------------------------------- |
@@ -88,9 +88,9 @@ Minute-level recurring (or specific) availability windows for profiles and posti
 
 **RPC Functions:**
 
-| Function                     | Parameters                             | Returns  | Description                                                 |
-| ---------------------------- | -------------------------------------- | -------- | ----------------------------------------------------------- |
-| `compute_availability_score` | `p_profile_id uuid, p_posting_id uuid` | `float8` | Overlap minutes / posting total minutes (1.0 if no windows) |
+| Function                     | Parameters                             | Returns  | Description                                                                                                                                 |
+| ---------------------------- | -------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `compute_availability_score` | `p_profile_id uuid, p_posting_id uuid` | `float8` | `1 - (blocked_overlap / posting_total)`. Profile windows are blocked time; posting windows are required time. 1.0 if either has no windows. |
 
 ---
 

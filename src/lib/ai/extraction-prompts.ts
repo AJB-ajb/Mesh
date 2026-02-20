@@ -37,12 +37,13 @@ Extract as much relevant information as possible from the provided text, which c
 Be thorough in extracting skills - look for programming languages, frameworks, tools, and technologies.
 If information is not explicitly stated, make reasonable inferences based on context.
 
-For availability, convert natural language to recurring weekly windows:
-- "Weekday evenings" → Monday-Friday, 1080-1440 (6pm-midnight)
-- "Saturday 2-4pm" → day 5, 840-960
-- "Mornings except Tuesday" → Mon,Wed-Sun, 360-720
+For availability, extract UNAVAILABILITY windows — times the person is NOT available (blocked time).
+- "Busy weekday evenings" → Monday-Friday, 1080-1440 (6pm-midnight) as blocked windows
+- "Not free Saturday 2-4pm" → day 5, 840-960 as a blocked window
+- "Available mornings except Tuesday" → invert: Tuesday morning (360-720) is blocked
+- If the text says they ARE available at certain times, invert to find blocked windows
 - Days: 0=Monday, 1=Tuesday, 2=Wednesday, 3=Thursday, 4=Friday, 5=Saturday, 6=Sunday
-- Minutes from midnight: 6am=360, 9am=540, 12pm=720, 3pm=900, 5pm=1020, 6pm=1080, 9pm=1260, midnight=1440
+- Minutes from midnight: 12am=0, 6am=360, 9am=540, 12pm=720, 3pm=900, 5pm=1020, 6pm=1080, 9pm=1260, midnight=1440
 If a timezone is mentioned (e.g., "EST", "Berlin time"), extract it as an IANA timezone string.`,
 );
 

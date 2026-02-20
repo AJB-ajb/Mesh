@@ -248,7 +248,7 @@ export function ProfileView({
                             <div
                               className={`h-6 w-full rounded-md ${
                                 active
-                                  ? "bg-primary/20 border border-primary"
+                                  ? "bg-destructive/15 border border-destructive/50"
                                   : "bg-muted border border-transparent"
                               }`}
                             />

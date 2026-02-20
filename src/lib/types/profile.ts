@@ -52,12 +52,20 @@ export const DAY_LABELS: Record<string, string> = {
   sun: "Sun",
 };
 
-export const TIME_SLOTS = ["morning", "afternoon", "evening"] as const;
+export const TIME_SLOTS = ["night", "morning", "afternoon", "evening"] as const;
 
 export const TIME_SLOT_LABELS: Record<string, string> = {
+  night: "Night",
   morning: "Morning",
   afternoon: "Afternoon",
   evening: "Evening",
+};
+
+export const TIME_SLOT_RANGE_LABELS: Record<string, string> = {
+  night: "12am\u20136am",
+  morning: "6am\u201312pm",
+  afternoon: "12pm\u20136pm",
+  evening: "6pm\u201312am",
 };
 
 // ---------------------------------------------------------------------------
