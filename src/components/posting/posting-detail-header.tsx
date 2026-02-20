@@ -460,6 +460,8 @@ type PostingDetailHeaderProps = {
   error: string | null;
   hideApplySection?: boolean;
   hideEditButton?: boolean;
+  backHref?: string;
+  backLabel?: string;
 };
 
 export function PostingDetailHeader({
@@ -493,17 +495,19 @@ export function PostingDetailHeader({
   error,
   hideApplySection,
   hideEditButton,
+  backHref,
+  backLabel,
 }: PostingDetailHeaderProps) {
   const creatorName = posting.profiles?.full_name || "Unknown";
 
   return (
     <>
       <Link
-        href="/my-postings"
+        href={backHref ?? "/my-postings"}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        {labels.common.backToPostings}
+        {backLabel ?? labels.common.backToPostings}
       </Link>
 
       {error && (

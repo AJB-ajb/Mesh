@@ -61,6 +61,14 @@ function PostingDetailInner() {
       ? tabParam
       : "manage";
 
+  // Context-aware back navigation
+  const fromParam = searchParams.get("from");
+  const backHref = fromParam === "discover" ? "/discover" : "/my-postings";
+  const backLabel =
+    fromParam === "discover"
+      ? labels.common.backToDiscover
+      : labels.common.backToPostings;
+
   // Local UI state
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -675,10 +683,10 @@ function PostingDetailInner() {
     return (
       <div className="space-y-6">
         <Link
-          href="/my-postings"
+          href={backHref}
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
-          Back to postings
+          {backLabel}
         </Link>
         <Card>
           <CardContent className="flex min-h-[200px] flex-col items-center justify-center py-12">
@@ -729,6 +737,8 @@ function PostingDetailInner() {
           onWithdraw={handleWithdrawApplication}
           error={error}
           hideApplySection={posting.mode === "friend_ask"}
+          backHref={backHref}
+          backLabel={backLabel}
         />
 
         {posting.mode === "friend_ask" && currentUserId && (
@@ -833,6 +843,8 @@ function PostingDetailInner() {
         onWithdraw={handleWithdrawApplication}
         error={error}
         hideApplySection={false}
+        backHref={backHref}
+        backLabel={backLabel}
       />
 
       <Tabs defaultValue={defaultTab}>
