@@ -118,109 +118,26 @@ export function usePostingActions(
     setError(null);
     setIsSaving(true);
 
-    const supabase = createClient();
-    const lookingFor = Math.max(1, Math.min(10, Number(form.lookingFor) || 3));
-    const locationLat = parseFloat(form.locationLat);
-    const locationLng = parseFloat(form.locationLng);
-    const maxDistanceKm = parseInt(form.maxDistanceKm, 10);
+    try {
+      const res = await fetch(`/api/postings/${postingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-    const { error: updateError } = await supabase
-      .from("postings")
-      .update({
-        title: form.title.trim(),
-        description: form.description.trim(),
-        estimated_time: form.estimatedTime || null,
-        team_size_min: Math.max(
-          1,
-          Math.min(lookingFor, Number(form.teamSizeMin) || 1),
-        ),
-        team_size_max: lookingFor,
-        category: form.category,
-        visibility: form.visibility,
-        mode: form.visibility === "private" ? "friend_ask" : "open",
-        status: form.status,
-        expires_at: form.expiresAt
-          ? new Date(form.expiresAt + "T23:59:59").toISOString()
-          : undefined,
-        location_mode: form.locationMode || "either",
-        location_name: form.locationName.trim() || null,
-        location_lat: Number.isFinite(locationLat) ? locationLat : null,
-        location_lng: Number.isFinite(locationLng) ? locationLng : null,
-        max_distance_km:
-          Number.isFinite(maxDistanceKm) && maxDistanceKm > 0
-            ? maxDistanceKm
-            : null,
-        tags: form.tags
-          ? form.tags
-              .split(",")
-              .map((t: string) => t.trim())
-              .filter(Boolean)
-          : [],
-        context_identifier: form.contextIdentifier.trim() || null,
-        auto_accept: form.autoAccept === "true",
-        availability_mode: form.availabilityMode,
-        timezone: form.timezone || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", postingId);
-
-    if (updateError) {
-      setIsSaving(false);
-      setError("Failed to update posting. Please try again.");
-      return;
-    }
-
-    const { error: deleteError } = await supabase
-      .from("posting_skills")
-      .delete()
-      .eq("posting_id", postingId);
-
-    if (deleteError) {
-      setIsSaving(false);
-      setError("Failed to update skills. Please try again.");
-      return;
-    }
-
-    if (form.selectedSkills.length > 0) {
-      const postingSkillRows = form.selectedSkills.map((s) => ({
-        posting_id: postingId,
-        skill_id: s.skillId,
-        level_min: s.levelMin,
-      }));
-      const { error: insertError } = await supabase
-        .from("posting_skills")
-        .insert(postingSkillRows);
-
-      if (insertError) {
-        setIsSaving(false);
-        setError("Failed to save skills. Please try again.");
+      if (!res.ok) {
+        const body = await res.json();
+        setError(body.error?.message || "Failed to update posting.");
         return;
       }
+
+      setIsEditing(false);
+      mutate();
+    } catch {
+      setError("Failed to update posting. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
-
-    // Sync availability windows
-    await supabase
-      .from("availability_windows")
-      .delete()
-      .eq("posting_id", postingId);
-
-    if (
-      form.availabilityMode !== "flexible" &&
-      form.availabilityWindows.length > 0
-    ) {
-      const windowRows = form.availabilityWindows.map((w) => ({
-        posting_id: postingId,
-        window_type: "recurring" as const,
-        day_of_week: w.day_of_week,
-        start_minutes: w.start_minutes,
-        end_minutes: w.end_minutes,
-      }));
-      await supabase.from("availability_windows").insert(windowRows);
-    }
-
-    setIsSaving(false);
-    setIsEditing(false);
-    mutate();
   };
 
   const handleDelete = async () => {
@@ -232,19 +149,24 @@ export function usePostingActions(
       return;
 
     setIsDeleting(true);
-    const supabase = createClient();
-    const { error: deleteError } = await supabase
-      .from("postings")
-      .delete()
-      .eq("id", postingId);
 
-    if (deleteError) {
-      setIsDeleting(false);
+    try {
+      const res = await fetch(`/api/postings/${postingId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const body = await res.json();
+        setError(body.error?.message || "Failed to delete posting.");
+        setIsDeleting(false);
+        return;
+      }
+
+      router.push("/my-postings");
+    } catch {
       setError("Failed to delete posting. Please try again.");
-      return;
+      setIsDeleting(false);
     }
-
-    router.push("/my-postings");
   };
 
   const handleExtendDeadline = async (days: number) => {
