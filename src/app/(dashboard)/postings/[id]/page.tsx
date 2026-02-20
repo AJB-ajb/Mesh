@@ -11,10 +11,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { createClient } from "@/lib/supabase/client";
 import { labels } from "@/lib/labels";
 import { usePostingDetail } from "@/lib/hooks/use-posting-detail";
-import {
-  type NotificationPreferences,
-  shouldNotify,
-} from "@/lib/notifications/preferences";
 import type { PostingFormState } from "@/lib/hooks/use-posting-detail";
 import type { RecurringWindow } from "@/lib/types/availability";
 import { PostingDetailHeader } from "@/components/posting/posting-detail-header";
@@ -155,87 +151,6 @@ function PostingDetailInner() {
   const projectEnabled =
     posting != null && acceptedCount >= posting.team_size_min;
 
-  // Promote the first waitlisted user when a spot opens
-  const promoteFromWaitlist = async (
-    supabase: ReturnType<typeof createClient>,
-    pId: string,
-    p: NonNullable<typeof posting>,
-  ) => {
-    const { data: waitlisted } = await supabase
-      .from("applications")
-      .select("id, applicant_id")
-      .eq("posting_id", pId)
-      .eq("status", "waitlisted")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
-    if (!waitlisted) {
-      if (p.status === "filled") {
-        await supabase
-          .from("postings")
-          .update({ status: "open" })
-          .eq("id", pId);
-      }
-      return;
-    }
-
-    if (p.auto_accept) {
-      await supabase
-        .from("applications")
-        .update({ status: "accepted" })
-        .eq("id", waitlisted.id);
-
-      const { data: promotedProfile } = await supabase
-        .from("profiles")
-        .select("notification_preferences")
-        .eq("user_id", waitlisted.applicant_id)
-        .single();
-
-      const promotedPrefs =
-        promotedProfile?.notification_preferences as NotificationPreferences | null;
-
-      if (shouldNotify(promotedPrefs, "application_accepted", "in_app")) {
-        await supabase.from("notifications").insert({
-          user_id: waitlisted.applicant_id,
-          type: "application_accepted",
-          title: "You're in! 🎉",
-          body: `A spot opened on "${p.title}" and you've been promoted from the waitlist!`,
-          related_posting_id: pId,
-          related_application_id: waitlisted.id,
-        });
-      }
-    } else {
-      const { data: ownerProfile } = await supabase
-        .from("profiles")
-        .select("notification_preferences")
-        .eq("user_id", p.creator_id)
-        .single();
-
-      const ownerPrefs =
-        ownerProfile?.notification_preferences as NotificationPreferences | null;
-
-      if (shouldNotify(ownerPrefs, "interest_received", "in_app")) {
-        await supabase.from("notifications").insert({
-          user_id: p.creator_id,
-          type: "application_received",
-          title: "Spot opened — waitlist ready",
-          body: `A spot opened on "${p.title}". You have waitlisted people ready to accept.`,
-          related_posting_id: pId,
-        });
-      }
-
-      if (p.status === "filled") {
-        await supabase
-          .from("postings")
-          .update({ status: "open" })
-          .eq("id", pId);
-      }
-    }
-
-    mutate();
-  };
-
   const handleFormChange = (field: keyof PostingFormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
@@ -297,109 +212,29 @@ function PostingDetailInner() {
     setError(null);
     setIsSaving(true);
 
-    const supabase = createClient();
-    const lookingFor = Math.max(1, Math.min(10, Number(form.lookingFor) || 3));
-    const locationLat = parseFloat(form.locationLat);
-    const locationLng = parseFloat(form.locationLng);
-    const maxDistanceKm = parseInt(form.maxDistanceKm, 10);
+    try {
+      const res = await fetch(`/api/postings/${postingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-    const { error: updateError } = await supabase
-      .from("postings")
-      .update({
-        title: form.title.trim(),
-        description: form.description.trim(),
-        estimated_time: form.estimatedTime || null,
-        team_size_min: Math.max(
-          1,
-          Math.min(lookingFor, Number(form.teamSizeMin) || 1),
-        ),
-        team_size_max: lookingFor,
-        category: form.category,
-        visibility: form.visibility,
-        mode: form.visibility === "private" ? "friend_ask" : "open",
-        status: form.status,
-        expires_at: form.expiresAt
-          ? new Date(form.expiresAt + "T23:59:59").toISOString()
-          : undefined,
-        location_mode: form.locationMode || "either",
-        location_name: form.locationName.trim() || null,
-        location_lat: Number.isFinite(locationLat) ? locationLat : null,
-        location_lng: Number.isFinite(locationLng) ? locationLng : null,
-        max_distance_km:
-          Number.isFinite(maxDistanceKm) && maxDistanceKm > 0
-            ? maxDistanceKm
-            : null,
-        tags: form.tags
-          ? form.tags
-              .split(",")
-              .map((t: string) => t.trim())
-              .filter(Boolean)
-          : [],
-        context_identifier: form.contextIdentifier.trim() || null,
-        auto_accept: form.autoAccept === "true",
-        availability_mode: form.availabilityMode,
-        timezone: form.timezone || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", postingId);
-
-    if (updateError) {
-      setIsSaving(false);
-      setError("Failed to update posting. Please try again.");
-      return;
-    }
-
-    const { error: deleteError } = await supabase
-      .from("posting_skills")
-      .delete()
-      .eq("posting_id", postingId);
-
-    if (deleteError) {
-      setIsSaving(false);
-      setError("Failed to update skills. Please try again.");
-      return;
-    }
-
-    if (form.selectedSkills.length > 0) {
-      const postingSkillRows = form.selectedSkills.map((s) => ({
-        posting_id: postingId,
-        skill_id: s.skillId,
-        level_min: s.levelMin,
-      }));
-      const { error: insertError } = await supabase
-        .from("posting_skills")
-        .insert(postingSkillRows);
-
-      if (insertError) {
+      if (!res.ok) {
+        const data = await res.json();
         setIsSaving(false);
-        setError("Failed to save skills. Please try again.");
+        setError(
+          data.error?.message || "Failed to update posting. Please try again.",
+        );
         return;
       }
+
+      setIsSaving(false);
+      setIsEditing(false);
+      mutate();
+    } catch {
+      setIsSaving(false);
+      setError("Failed to update posting. Please try again.");
     }
-
-    // Sync availability windows
-    await supabase
-      .from("availability_windows")
-      .delete()
-      .eq("posting_id", postingId);
-
-    if (
-      form.availabilityMode !== "flexible" &&
-      form.availabilityWindows.length > 0
-    ) {
-      const windowRows = form.availabilityWindows.map((w) => ({
-        posting_id: postingId,
-        window_type: "recurring" as const,
-        day_of_week: w.day_of_week,
-        start_minutes: w.start_minutes,
-        end_minutes: w.end_minutes,
-      }));
-      await supabase.from("availability_windows").insert(windowRows);
-    }
-
-    setIsSaving(false);
-    setIsEditing(false);
-    mutate();
   };
 
   const handleDelete = async () => {
@@ -411,19 +246,26 @@ function PostingDetailInner() {
       return;
 
     setIsDeleting(true);
-    const supabase = createClient();
-    const { error: deleteError } = await supabase
-      .from("postings")
-      .delete()
-      .eq("id", postingId);
 
-    if (deleteError) {
+    try {
+      const res = await fetch(`/api/postings/${postingId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setIsDeleting(false);
+        setError(
+          data.error?.message || "Failed to delete posting. Please try again.",
+        );
+        return;
+      }
+
+      router.push("/my-postings");
+    } catch {
       setIsDeleting(false);
       setError("Failed to delete posting. Please try again.");
-      return;
     }
-
-    router.push("/my-postings");
   };
 
   const handleExtendDeadline = async (days: number) => {
@@ -535,23 +377,27 @@ function PostingDetailInner() {
         : "Are you sure you want to withdraw your request?";
     if (!confirm(confirmMsg)) return;
 
-    const wasAccepted = myApplication.status === "accepted";
+    try {
+      const res = await fetch(
+        `/api/applications/${myApplication.id}/withdraw`,
+        {
+          method: "PATCH",
+        },
+      );
 
-    const supabase = createClient();
-    const { error: withdrawError } = await supabase
-      .from("applications")
-      .update({ status: "withdrawn" })
-      .eq("id", myApplication.id);
+      if (!res.ok) {
+        const data = await res.json();
+        setError(
+          data.error?.message ||
+            "Failed to withdraw request. Please try again.",
+        );
+        return;
+      }
 
-    if (withdrawError) {
+      setLocalMyApplication({ ...myApplication, status: "withdrawn" });
+      mutate();
+    } catch {
       setError("Failed to withdraw request. Please try again.");
-      return;
-    }
-
-    setLocalMyApplication({ ...myApplication, status: "withdrawn" });
-
-    if (wasAccepted && posting) {
-      await promoteFromWaitlist(supabase, postingId, posting);
     }
   };
 
@@ -560,79 +406,34 @@ function PostingDetailInner() {
     newStatus: "accepted" | "rejected",
   ) => {
     setIsUpdatingApplication(applicationId);
-    const supabase = createClient();
 
-    const { error: updateError } = await supabase
-      .from("applications")
-      .update({ status: newStatus })
-      .eq("id", applicationId);
+    try {
+      const res = await fetch(`/api/applications/${applicationId}/decide`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
 
-    if (updateError) {
+      if (!res.ok) {
+        const data = await res.json();
+        setError(
+          data.error?.message || "Failed to update request. Please try again.",
+        );
+        setIsUpdatingApplication(null);
+        return;
+      }
+
+      setLocalApplications((prev) =>
+        (prev ?? applications).map((app) =>
+          app.id === applicationId ? { ...app, status: newStatus } : app,
+        ),
+      );
+      setIsUpdatingApplication(null);
+      mutate();
+    } catch {
       setError("Failed to update request. Please try again.");
       setIsUpdatingApplication(null);
-      return;
     }
-
-    const application = effectiveApplications.find(
-      (a) => a.id === applicationId,
-    );
-
-    if (application && posting) {
-      const notifType =
-        newStatus === "accepted"
-          ? ("application_accepted" as const)
-          : ("application_rejected" as const);
-
-      const { data: recipientProfile } = await supabase
-        .from("profiles")
-        .select("notification_preferences")
-        .eq("user_id", application.applicant_id)
-        .single();
-
-      const recipientPrefs =
-        recipientProfile?.notification_preferences as NotificationPreferences | null;
-
-      if (shouldNotify(recipientPrefs, notifType, "in_app")) {
-        await supabase.from("notifications").insert({
-          user_id: application.applicant_id,
-          type: notifType,
-          title:
-            newStatus === "accepted"
-              ? "Request Accepted! \uD83C\uDF89"
-              : "Request Update",
-          body:
-            newStatus === "accepted"
-              ? `Your request to join "${posting.title}" has been accepted!`
-              : `Your request to join "${posting.title}" was not selected.`,
-          related_posting_id: postingId,
-          related_application_id: applicationId,
-          related_user_id: posting.creator_id,
-        });
-      }
-    }
-
-    if (newStatus === "accepted" && posting) {
-      const { count } = await supabase
-        .from("applications")
-        .select("*", { count: "exact", head: true })
-        .eq("posting_id", postingId)
-        .eq("status", "accepted");
-
-      if (count && count >= posting.team_size_max) {
-        await supabase
-          .from("postings")
-          .update({ status: "filled" })
-          .eq("id", postingId);
-      }
-    }
-
-    setLocalApplications((prev) =>
-      (prev ?? applications).map((app) =>
-        app.id === applicationId ? { ...app, status: newStatus } : app,
-      ),
-    );
-    setIsUpdatingApplication(null);
-    mutate();
   };
 
   const handleStartConversation = async (otherUserId: string) => {
