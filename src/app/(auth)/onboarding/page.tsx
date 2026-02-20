@@ -39,7 +39,7 @@ function OnboardingContent() {
         .single();
 
       if (profile) {
-        router.replace(next || "/dashboard");
+        router.replace(next || "/active");
         return;
       }
 
@@ -51,7 +51,7 @@ function OnboardingContent() {
         .limit(1);
 
       if (postings && postings.length > 0) {
-        router.replace(next || "/dashboard");
+        router.replace(next || "/active");
         return;
       }
 
@@ -64,7 +64,7 @@ function OnboardingContent() {
         return;
       }
 
-      router.replace(next || "/dashboard");
+      router.replace(next || "/active");
     };
 
     checkUser().catch(() => {

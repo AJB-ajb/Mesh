@@ -7,10 +7,13 @@ import {
   Sparkles,
   Send,
   Check,
+  Bookmark,
+  BookmarkCheck,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { BadgeList } from "@/components/ui/badge-list";
 import {
   Card,
   CardContent,
@@ -19,48 +22,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatScore } from "@/lib/matching/scoring";
-import { getInitials } from "@/lib/format";
+import { getInitials, formatDateAgo } from "@/lib/format";
+import { labels } from "@/lib/labels";
+import { categoryStyles } from "@/lib/posting/styles";
+import { getLocationLabel } from "@/lib/posting/location";
 import type { PostingWithScore } from "@/lib/hooks/use-postings";
-
-const categoryStyles: Record<string, string> = {
-  study: "bg-blue-500/10 text-blue-700 border-blue-500/20 dark:text-blue-400",
-  hackathon:
-    "bg-purple-500/10 text-purple-700 border-purple-500/20 dark:text-purple-400",
-  personal:
-    "bg-green-500/10 text-green-700 border-green-500/20 dark:text-green-400",
-  professional:
-    "bg-orange-500/10 text-orange-700 border-orange-500/20 dark:text-orange-400",
-  social: "bg-pink-500/10 text-pink-700 border-pink-500/20 dark:text-pink-400",
-};
-
-function getLocationLabel(
-  locationMode: string | null,
-  locationName: string | null,
-) {
-  switch (locationMode) {
-    case "remote":
-      return "🏠 Remote";
-    case "in_person":
-      return `📍 ${locationName || "In-person"}`;
-    case "either":
-      return `🌐 ${locationName || "Flexible"}`;
-    default:
-      return null;
-  }
-}
-
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-  return date.toLocaleDateString();
-};
 
 export interface PostingDiscoverCardProps {
   posting: PostingWithScore;
@@ -70,6 +36,8 @@ export interface PostingDiscoverCardProps {
   showInterestButton: boolean;
   onExpressInterest: (postingId: string) => void;
   activeTab: "discover" | "my-postings";
+  isBookmarked?: boolean;
+  onToggleBookmark?: (postingId: string) => void;
 }
 
 export function PostingDiscoverCard({
@@ -80,6 +48,8 @@ export function PostingDiscoverCard({
   showInterestButton,
   onExpressInterest,
   activeTab,
+  isBookmarked,
+  onToggleBookmark,
 }: PostingDiscoverCardProps) {
   const creatorName = posting.profiles?.full_name || "Unknown";
   const locationLabel = getLocationLabel(
@@ -90,12 +60,16 @@ export function PostingDiscoverCard({
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-4">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="space-y-1 flex-1">
             <div className="flex items-center gap-3 flex-wrap">
               <CardTitle className="text-xl">
                 <Link
-                  href={`/postings/${posting.id}`}
+                  href={
+                    activeTab === "discover"
+                      ? `/postings/${posting.id}?from=discover`
+                      : `/postings/${posting.id}`
+                  }
                   className="hover:underline cursor-pointer"
                 >
                   {posting.title}
@@ -111,12 +85,13 @@ export function PostingDiscoverCard({
                   {posting.context_identifier}
                 </Badge>
               )}
-              {posting.mode === "friend_ask" && (
+              {(posting.visibility === "private" ||
+                posting.mode === "friend_ask") && (
                 <Badge
                   variant="outline"
                   className="border-amber-500/30 text-amber-600 dark:text-amber-400"
                 >
-                  Sequential Invite
+                  Private
                 </Badge>
               )}
               {posting.status !== "open" && (
@@ -139,7 +114,21 @@ export function PostingDiscoverCard({
               )}
             </div>
           </div>
-          <div className="flex gap-2 shrink-0">
+          <div className="flex gap-2 w-full sm:w-auto">
+            {!isOwner && onToggleBookmark && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onToggleBookmark(posting.id)}
+                aria-label={isBookmarked ? "Remove bookmark" : "Bookmark"}
+              >
+                {isBookmarked ? (
+                  <BookmarkCheck className="h-4 w-4 text-primary" />
+                ) : (
+                  <Bookmark className="h-4 w-4" />
+                )}
+              </Button>
+            )}
             {showInterestButton && (
               <Button
                 variant="outline"
@@ -157,11 +146,17 @@ export function PostingDiscoverCard({
             {!isOwner && activeTab === "discover" && isAlreadyInterested && (
               <Button variant="secondary" disabled>
                 <Check className="h-4 w-4" />
-                Pending
+                {labels.joinRequest.action.requested}
               </Button>
             )}
             <Button variant="outline" asChild>
-              <Link href={`/postings/${posting.id}`}>
+              <Link
+                href={
+                  activeTab === "discover"
+                    ? `/postings/${posting.id}?from=discover`
+                    : `/postings/${posting.id}`
+                }
+              >
                 {isOwner ? "Edit" : "View Details"}
               </Link>
             </Button>
@@ -181,47 +176,27 @@ export function PostingDiscoverCard({
               Your Compatibility Breakdown
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              <div className="flex flex-col">
-                <span className="text-muted-foreground">Relevance</span>
-                <span className="font-medium text-foreground">
-                  {formatScore(posting.score_breakdown.semantic)}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-muted-foreground">Availability</span>
-                <span className="font-medium text-foreground">
-                  {formatScore(posting.score_breakdown.availability)}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-muted-foreground">Skill Level</span>
-                <span className="font-medium text-foreground">
-                  {formatScore(posting.score_breakdown.skill_level)}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-muted-foreground">Location</span>
-                <span className="font-medium text-foreground">
-                  {formatScore(posting.score_breakdown.location)}
-                </span>
-              </div>
+              {(
+                [
+                  ["Relevance", posting.score_breakdown.semantic],
+                  ["Availability", posting.score_breakdown.availability],
+                  ["Skill Level", posting.score_breakdown.skill_level],
+                  ["Location", posting.score_breakdown.location],
+                ] as const
+              ).map(([label, score]) => (
+                <div key={label} className="flex flex-col">
+                  <span className="text-muted-foreground">{label}</span>
+                  <span className="font-medium text-foreground">
+                    {score != null ? formatScore(score) : "N/A"}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
         {/* Skills */}
-        {posting.skills.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {posting.skills.slice(0, 5).map((skill: string) => (
-              <Badge key={skill} variant="secondary">
-                {skill}
-              </Badge>
-            ))}
-            {posting.skills.length > 5 && (
-              <Badge variant="outline">+{posting.skills.length - 5}</Badge>
-            )}
-          </div>
-        )}
+        {posting.skills.length > 0 && <BadgeList items={posting.skills} />}
 
         {/* Tags */}
         {posting.tags && posting.tags.length > 0 && (
@@ -279,7 +254,7 @@ export function PostingDiscoverCard({
                 </Link>
               </>
             )}{" "}
-            • {formatDate(posting.created_at)}
+            • {formatDateAgo(posting.created_at)}
           </span>
         </div>
       </CardContent>

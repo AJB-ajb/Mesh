@@ -138,9 +138,9 @@ describe("PostingFormCard", () => {
     expect(screen.getByDisplayValue("5")).toBeInTheDocument();
   });
 
-  it("renders mode selector", () => {
+  it("renders visibility toggle", () => {
     renderCard();
-    expect(screen.getByLabelText("Mode")).toBeInTheDocument();
+    expect(screen.getByText("Visibility")).toBeInTheDocument();
   });
 
   it("renders expires on date input", () => {
@@ -202,10 +202,10 @@ describe("PostingFormCard", () => {
     expect(submitBtn).toBeDisabled();
   });
 
-  it("renders Cancel link to /postings", () => {
+  it("renders Cancel link to /my-postings", () => {
     renderCard();
     const cancelLink = screen.getByText("Cancel");
-    expect(cancelLink.closest("a")).toHaveAttribute("href", "/postings");
+    expect(cancelLink.closest("a")).toHaveAttribute("href", "/my-postings");
   });
 
   it("calls onSubmit when form is submitted", () => {

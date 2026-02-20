@@ -52,6 +52,15 @@ function mockQuery(result: { data: unknown; error: unknown }) {
   return chain;
 }
 
+function mockListQuery(result: { data: unknown; error: unknown }) {
+  const chain: Record<string, ReturnType<typeof vi.fn>> = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+  };
+  chain.then = vi.fn((resolve: (v: unknown) => void) => resolve(result));
+  return chain;
+}
+
 const fakeUser = {
   id: "user-1",
   email: "user@test.com",
@@ -101,7 +110,11 @@ describe("useProfileData", () => {
 
   it("fetches profile data successfully", async () => {
     mockGetUser.mockResolvedValue({ data: { user: fakeUser } });
-    mockFrom.mockReturnValue(mockQuery({ data: fakeProfileData, error: null }));
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "profiles")
+        return mockQuery({ data: fakeProfileData, error: null });
+      return mockListQuery({ data: [], error: null });
+    });
 
     const { result } = renderHook(() => useProfileData(), { wrapper });
 
@@ -120,7 +133,11 @@ describe("useProfileData", () => {
 
   it("maps profile data to form state", async () => {
     mockGetUser.mockResolvedValue({ data: { user: fakeUser } });
-    mockFrom.mockReturnValue(mockQuery({ data: fakeProfileData, error: null }));
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "profiles")
+        return mockQuery({ data: fakeProfileData, error: null });
+      return mockListQuery({ data: [], error: null });
+    });
 
     const { result } = renderHook(() => useProfileData(), { wrapper });
 
@@ -159,7 +176,10 @@ describe("useProfileData", () => {
 
   it("returns default form when no profile data exists", async () => {
     mockGetUser.mockResolvedValue({ data: { user: fakeUser } });
-    mockFrom.mockReturnValue(mockQuery({ data: null, error: null }));
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "profiles") return mockQuery({ data: null, error: null });
+      return mockListQuery({ data: [], error: null });
+    });
 
     const { result } = renderHook(() => useProfileData(), { wrapper });
 

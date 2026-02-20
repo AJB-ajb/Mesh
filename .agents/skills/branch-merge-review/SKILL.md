@@ -3,7 +3,7 @@ name: branch-merge-review
 description: Reviews PRs from parallel branches. Identifies merge conflicts, integration issues, and issue updates needed. Critical review focused on correctness after concurrent development.
 metadata:
   version: "1.0.0"
-  scope: MeshIt-specific
+  scope: Mesh-specific
 ---
 
 # Branch Merge Review
@@ -95,7 +95,7 @@ Use this format for the review comment:
 
 ## Parallel Branch Patterns
 
-MeshIt uses parallel development via:
+Mesh uses parallel development via:
 
 - Multiple Claude Code sessions (`.handoffs/` briefs)
 - Feature branches from `dev`

@@ -1,15 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { Loader2, MapPin, Search } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
-import { LocationAutocomplete } from "@/components/location/location-autocomplete";
-import { SkillPicker } from "@/components/skill/skill-picker";
-import type { GeocodingResult } from "@/lib/geocoding";
-import type { SelectedPostingSkill } from "@/lib/types/skill";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -17,6 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { labels } from "@/lib/labels";
+import type { SelectedPostingSkill } from "@/lib/types/skill";
 
 import {
   type PostingFormState,
@@ -24,6 +19,17 @@ import {
 } from "@/lib/types/posting";
 export type { PostingFormState };
 export { defaultPostingFormState as defaultFormState };
+
+import type {
+  AvailabilityMode,
+  RecurringWindow,
+} from "@/lib/types/availability";
+import { PostingFormBasic } from "./posting-form-basic";
+import { PostingFormSkills } from "./posting-form-skills";
+import { PostingFormMeta } from "./posting-form-meta";
+import { PostingFormTeam } from "./posting-form-team";
+import { PostingFormLocation } from "./posting-form-location";
+import { PostingFormAvailability } from "./posting-form-availability";
 
 type PostingFormCardProps = {
   form: PostingFormState;
@@ -34,109 +40,6 @@ type PostingFormCardProps = {
   isExtracting: boolean;
 };
 
-function LocationSection({
-  form,
-  onChange,
-}: {
-  form: PostingFormState;
-  onChange: (field: keyof PostingFormState, value: string) => void;
-}) {
-  const [showAutocomplete, setShowAutocomplete] = useState(false);
-  const showLocation =
-    form.locationMode === "in_person" || form.locationMode === "either";
-  const showMaxDistance = form.locationMode === "in_person";
-
-  const handleLocationSelect = (result: GeocodingResult) => {
-    onChange("locationName", result.displayName);
-    onChange("locationLat", result.lat.toString());
-    onChange("locationLng", result.lng.toString());
-    setShowAutocomplete(false);
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <label htmlFor="location-mode" className="text-sm font-medium">
-          Location Mode
-        </label>
-        <select
-          id="location-mode"
-          value={form.locationMode}
-          onChange={(e) => onChange("locationMode", e.target.value)}
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        >
-          <option value="either">Flexible</option>
-          <option value="remote">Remote</option>
-          <option value="in_person">In-person</option>
-        </select>
-      </div>
-
-      {showLocation && (
-        <div className="space-y-2">
-          <label htmlFor="location-name" className="text-sm font-medium">
-            Location
-          </label>
-          {showAutocomplete ? (
-            <LocationAutocomplete
-              value={form.locationName}
-              onSelect={handleLocationSelect}
-              onChange={(value) => onChange("locationName", value)}
-              placeholder="Search for a location..."
-            />
-          ) : (
-            <Input
-              id="location-name"
-              value={form.locationName}
-              onChange={(e) => onChange("locationName", e.target.value)}
-              placeholder="e.g., Berlin, Germany"
-            />
-          )}
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setShowAutocomplete(!showAutocomplete)}
-            >
-              {showAutocomplete ? (
-                <>
-                  <MapPin className="mr-1 h-3 w-3" />
-                  Manual entry
-                </>
-              ) : (
-                <>
-                  <Search className="mr-1 h-3 w-3" />
-                  Search location
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {showMaxDistance && (
-        <div className="space-y-2">
-          <label htmlFor="max-distance" className="text-sm font-medium">
-            Max Distance (km)
-          </label>
-          <Input
-            id="max-distance"
-            type="number"
-            min={1}
-            value={form.maxDistanceKm}
-            onChange={(e) => onChange("maxDistanceKm", e.target.value)}
-            placeholder="e.g., 50"
-          />
-          <p className="text-xs text-muted-foreground">
-            Maximum distance for in-person collaboration. Used as a hard filter
-            in matching.
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function PostingFormCard({
   form,
   setForm,
@@ -145,7 +48,6 @@ export function PostingFormCard({
   isSaving,
   isExtracting,
 }: PostingFormCardProps) {
-  // --- Selected skills handlers ---
   const handleAddSkill = (skill: SelectedPostingSkill) => {
     setForm((prev) => ({
       ...prev,
@@ -169,211 +71,47 @@ export function PostingFormCard({
     }));
   };
 
+  const handleAvailabilityModeChange = (mode: AvailabilityMode) => {
+    setForm((prev) => ({ ...prev, availabilityMode: mode }));
+  };
+
+  const handleRecurringWindowsChange = (windows: RecurringWindow[]) => {
+    setForm((prev) => ({ ...prev, availabilityWindows: windows }));
+  };
+
   return (
     <form onSubmit={onSubmit}>
       <Card>
         <CardHeader>
-          <CardTitle>Posting Details</CardTitle>
+          <CardTitle>{labels.postingForm.cardTitle}</CardTitle>
           <CardDescription>
-            Tell us about your posting in plain language. You can paste from
-            Slack, Discord, or describe it yourself.
+            {labels.postingForm.cardDescription}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Title */}
-          <div className="space-y-2">
-            <label htmlFor="title" className="text-sm font-medium">
-              Posting Title
-            </label>
-            <Input
-              id="title"
-              value={form.title}
-              onChange={(e) => onChange("title", e.target.value)}
-              placeholder="Optional — auto-generated from description"
-              className="text-lg"
-            />
-          </div>
+          <PostingFormBasic form={form} onChange={onChange} />
 
-          {/* Description */}
-          <div className="space-y-2">
-            <label htmlFor="description" className="text-sm font-medium">
-              Description <span className="text-destructive">*</span>
-            </label>
-            <Textarea
-              id="description"
-              rows={6}
-              value={form.description}
-              onChange={(e) => onChange("description", e.target.value)}
-              placeholder="Describe your project and what kind of collaborators you're looking for...
+          <PostingFormSkills
+            selectedSkills={form.selectedSkills}
+            onAdd={handleAddSkill}
+            onRemove={handleRemoveSkill}
+            onUpdateLevel={handleUpdateSkillLevel}
+          />
 
-Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebGL or game dev experience, hackathon this weekend."
-              enableMic
-              onTranscriptionChange={(text) =>
-                onChange(
-                  "description",
-                  form.description ? form.description + " " + text : text,
-                )
-              }
-            />
-            <p className="text-xs text-muted-foreground">
-              Our AI will extract skills, team size, and timeline from your
-              description.
-            </p>
-          </div>
+          <PostingFormMeta form={form} onChange={onChange} />
 
-          {/* Skills */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Required Skills</label>
-            <p className="text-xs text-muted-foreground">
-              Search or browse the skill tree. Set an optional minimum level per
-              skill.
-            </p>
-            <SkillPicker
-              mode="posting"
-              selectedSkills={form.selectedSkills}
-              onAdd={handleAddSkill}
-              onRemove={handleRemoveSkill}
-              onUpdateLevel={handleUpdateSkillLevel}
-              placeholder="Search skills (e.g., React, Python, Design)..."
-            />
-          </div>
+          <PostingFormTeam form={form} onChange={onChange} />
 
-          {/* Tags */}
-          <div className="space-y-2">
-            <label htmlFor="tags" className="text-sm font-medium">
-              Tags (comma-separated)
-            </label>
-            <Input
-              id="tags"
-              value={form.tags}
-              onChange={(e) => onChange("tags", e.target.value)}
-              placeholder="e.g., beginner-friendly, weekend, remote, sustainability"
-            />
-            <p className="text-xs text-muted-foreground">
-              Free-form tags to help people discover your posting.
-            </p>
-          </div>
+          <PostingFormLocation form={form} onChange={onChange} />
 
-          {/* Estimated Time and Category */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label htmlFor="estimated-time" className="text-sm font-medium">
-                Estimated Time
-              </label>
-              <Input
-                id="estimated-time"
-                value={form.estimatedTime}
-                onChange={(e) => onChange("estimatedTime", e.target.value)}
-                placeholder="e.g., 2 weeks, 1 month"
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="category" className="text-sm font-medium">
-                Category
-              </label>
-              <select
-                id="category"
-                value={form.category}
-                onChange={(e) => onChange("category", e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <option value="study">Study</option>
-                <option value="hackathon">Hackathon</option>
-                <option value="personal">Personal</option>
-                <option value="professional">Professional</option>
-                <option value="social">Social</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Context Identifier */}
-          <div className="space-y-2">
-            <label htmlFor="context-identifier" className="text-sm font-medium">
-              Context (optional)
-            </label>
-            <Input
-              id="context-identifier"
-              value={form.contextIdentifier}
-              onChange={(e) => onChange("contextIdentifier", e.target.value)}
-              placeholder="e.g., CS101, HackMIT 2026, Book Club #3"
-            />
-            <p className="text-xs text-muted-foreground">
-              Course code, hackathon name, or group identifier for exact-match
-              filtering.
-            </p>
-          </div>
-
-          {/* Looking for, Mode, and Expires */}
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="space-y-2">
-              <label htmlFor="looking-for" className="text-sm font-medium">
-                Looking for
-              </label>
-              <Input
-                id="looking-for"
-                type="number"
-                min={1}
-                max={10}
-                value={form.lookingFor}
-                onChange={(e) => onChange("lookingFor", e.target.value)}
-                placeholder="e.g., 3"
-              />
-              <p className="text-xs text-muted-foreground">
-                Number of people (1-10)
-              </p>
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="mode" className="text-sm font-medium">
-                Mode
-              </label>
-              <select
-                id="mode"
-                value={form.mode}
-                onChange={(e) => onChange("mode", e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <option value="open">Open</option>
-                <option value="friend_ask">Sequential Invite</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="expires-at" className="text-sm font-medium">
-                Expires on
-              </label>
-              <Input
-                id="expires-at"
-                type="date"
-                value={form.expiresAt}
-                onChange={(e) => onChange("expiresAt", e.target.value)}
-                min={new Date().toISOString().slice(0, 10)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Default: 90 days from today
-              </p>
-            </div>
-          </div>
-
-          {/* Location */}
-          <LocationSection form={form} onChange={onChange} />
-
-          {/* Auto-Accept */}
-          <div className="flex items-center gap-3">
-            <input
-              id="auto-accept"
-              type="checkbox"
-              checked={form.autoAccept === "true"}
-              onChange={(e) =>
-                onChange("autoAccept", e.target.checked ? "true" : "false")
-              }
-              className="h-4 w-4 rounded border border-input"
-            />
-            <label htmlFor="auto-accept" className="text-sm font-medium">
-              Auto-accept
-            </label>
-            <p className="text-xs text-muted-foreground">
-              Instantly accept anyone who joins (no manual review)
-            </p>
-          </div>
+          <PostingFormAvailability
+            availabilityMode={form.availabilityMode}
+            onModeChange={handleAvailabilityModeChange}
+            recurringWindows={form.availabilityWindows}
+            onRecurringWindowsChange={handleRecurringWindowsChange}
+            specificWindows={form.specificWindows}
+            onSpecificWindowsChange={() => {}}
+          />
 
           {/* Submit */}
           <div className="flex gap-4 pt-4">
@@ -385,14 +123,14 @@ Example: Building a Minecraft-style collaborative IDE, need 2-3 people with WebG
               {isSaving ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Creating...
+                  {labels.postingForm.creatingButton}
                 </>
               ) : (
-                "Create Posting"
+                labels.postingForm.createButton
               )}
             </Button>
             <Button type="button" variant="outline" asChild>
-              <Link href="/postings">Cancel</Link>
+              <Link href="/my-postings">{labels.postingForm.cancelButton}</Link>
             </Button>
           </div>
         </CardContent>

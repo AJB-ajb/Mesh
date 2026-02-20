@@ -1,4 +1,4 @@
-# MeshIt Browser Test — Quick Handoff
+# Mesh Browser Test — Quick Handoff
 
 Use this prompt with a browser agent (Antigravity, Gemini Flash/Pro, etc.) for a quick UI test pass.
 

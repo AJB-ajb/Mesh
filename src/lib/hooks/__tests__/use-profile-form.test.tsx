@@ -16,6 +16,7 @@ import { useProfileForm } from "../use-profile-form";
 // ---------------------------------------------------------------------------
 
 const fakeProfileData: ProfileFetchResult = {
+  profileId: "test-user-id",
   form: {
     fullName: "Test User",
     headline: "Developer",
@@ -31,8 +32,10 @@ const fakeProfileData: ProfileFetchResult = {
     skillLevels: [{ name: "React", level: 8 }],
     locationMode: "remote",
     availabilitySlots: { mon: ["morning"] },
+    timezone: "",
     selectedSkills: [],
   },
+  recurringWindows: [],
   userEmail: "user@test.com",
   connectedProviders: { github: true, google: false, linkedin: false },
   isGithubProvider: true,

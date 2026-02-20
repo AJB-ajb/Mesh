@@ -8,13 +8,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { labels } from "@/lib/labels";
 
 export function QuickActions() {
   return (
     <Card data-testid="quick-actions">
       <CardHeader>
-        <CardTitle>Quick Actions</CardTitle>
-        <CardDescription>Common tasks to get started</CardDescription>
+        <CardTitle>{labels.quickActions.title}</CardTitle>
+        <CardDescription>{labels.quickActions.subtitle}</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Button
@@ -25,9 +26,11 @@ export function QuickActions() {
           <Link href="/postings/new">
             <FolderKanban className="h-5 w-5" />
             <div className="text-left">
-              <div className="font-medium">Create Posting</div>
+              <div className="font-medium">
+                {labels.quickActions.createPosting}
+              </div>
               <div className="text-xs text-muted-foreground">
-                Find collaborators for your idea
+                {labels.quickActions.createPostingDescription}
               </div>
             </div>
             <ArrowRight className="ml-auto h-4 w-4" />
@@ -38,12 +41,14 @@ export function QuickActions() {
           className="justify-start gap-3 h-auto py-4"
           asChild
         >
-          <Link href="/matches">
+          <Link href="/discover">
             <Users className="h-5 w-5" />
             <div className="text-left">
-              <div className="font-medium">Review Matches</div>
+              <div className="font-medium">
+                {labels.quickActions.reviewMatches}
+              </div>
               <div className="text-xs text-muted-foreground">
-                See postings that match your profile
+                {labels.quickActions.reviewMatchesDescription}
               </div>
             </div>
             <ArrowRight className="ml-auto h-4 w-4" />
@@ -54,12 +59,14 @@ export function QuickActions() {
           className="justify-start gap-3 h-auto py-4"
           asChild
         >
-          <Link href="/postings">
+          <Link href="/my-postings">
             <TrendingUp className="h-5 w-5" />
             <div className="text-left">
-              <div className="font-medium">Browse Postings</div>
+              <div className="font-medium">
+                {labels.quickActions.browsePostings}
+              </div>
               <div className="text-xs text-muted-foreground">
-                Discover postings looking for people like you
+                {labels.quickActions.browsePostingsDescription}
               </div>
             </div>
             <ArrowRight className="ml-auto h-4 w-4" />

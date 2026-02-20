@@ -1,9 +1,10 @@
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, apiSuccess } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 import {
   type NotificationPreferences,
   shouldNotify,
 } from "@/lib/notifications/preferences";
+import { sendNotification } from "@/lib/notifications/create";
 
 /**
  * POST /api/applications
@@ -14,8 +15,10 @@ import {
  *   - filled → "waitlisted"
  */
 export const POST = withAuth(async (req, { user, supabase }) => {
-  const body = await req.json();
-  const { posting_id, cover_message } = body;
+  const { posting_id, cover_message } = await parseBody<{
+    posting_id?: string;
+    cover_message?: string;
+  }>(req);
 
   if (!posting_id || typeof posting_id !== "string") {
     return apiError("VALIDATION", "posting_id is required", 400);
@@ -127,15 +130,18 @@ export const POST = withAuth(async (req, { user, supabase }) => {
         ? `${applicantName} has joined your posting "${posting.title}"`
         : `${applicantName} has requested to join "${posting.title}"`;
 
-    await supabase.from("notifications").insert({
-      user_id: posting.creator_id,
-      type: "application_received",
-      title: notifTitle,
-      body: notifBody,
-      related_posting_id: posting_id,
-      related_application_id: application.id,
-      related_user_id: user.id,
-    });
+    sendNotification(
+      {
+        userId: posting.creator_id,
+        type: "application_received",
+        title: notifTitle,
+        body: notifBody,
+        relatedPostingId: posting_id,
+        relatedApplicationId: application.id,
+        relatedUserId: user.id,
+      },
+      supabase,
+    );
   }
 
   // Auto-accept: check if posting should be marked as filled

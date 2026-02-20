@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { apiError, apiSuccess } from "@/lib/errors";
 import { SchemaType, type Schema } from "@google/generative-ai";
 import { generateStructuredJSON, isGeminiConfigured } from "@/lib/ai/gemini";
 import type { PostingFilters } from "@/lib/types/filters";
@@ -39,14 +39,6 @@ const filterSchema: Schema = {
       items: { type: SchemaType.STRING },
       description: "Skills to filter by (e.g. React, Python, TypeScript)",
     },
-    skill_level_min: {
-      type: SchemaType.NUMBER,
-      description: "Minimum skill level (0-10)",
-    },
-    skill_level_max: {
-      type: SchemaType.NUMBER,
-      description: "Maximum skill level (0-10)",
-    },
     languages: {
       type: SchemaType.ARRAY,
       items: { type: SchemaType.STRING },
@@ -83,10 +75,7 @@ const filterSchema: Schema = {
 export async function POST(request: Request) {
   try {
     if (!isGeminiConfigured()) {
-      return NextResponse.json(
-        { error: "Gemini API key not configured" },
-        { status: 503 },
-      );
+      return apiError("INTERNAL", "Gemini API key not configured", 503);
     }
 
     const supabase = await createClient();
@@ -97,15 +86,16 @@ export async function POST(request: Request) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiError("UNAUTHORIZED", "Unauthorized", 401);
     }
 
     const { query } = await request.json();
 
     if (!query || typeof query !== "string" || query.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Please provide a search query to translate into filters" },
-        { status: 400 },
+      return apiError(
+        "VALIDATION",
+        "Please provide a search query to translate into filters",
+        400,
       );
     }
 
@@ -126,20 +116,16 @@ Rules:
       temperature: 0.3,
     });
 
-    return NextResponse.json({
+    return apiSuccess({
       success: true,
       filters,
     });
   } catch (error) {
     console.error("Filter translation error:", error);
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to translate filters",
-      },
-      { status: 500 },
+    return apiError(
+      "INTERNAL",
+      error instanceof Error ? error.message : "Failed to translate filters",
+      500,
     );
   }
 }

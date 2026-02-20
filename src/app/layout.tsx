@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { SWRProvider } from "@/lib/swr/provider";
+import { FeedbackWidget } from "@/components/feedback/feedback-widget";
+import { labels } from "@/lib/labels";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,26 +19,25 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "MeshIt - Find Your Perfect Match",
-    template: "%s | MeshIt",
+    default: labels.meta.title,
+    template: "%s | Mesh",
   },
-  description:
-    "AI-powered matching connects developers with projects that fit their skills and interests. Stop posting 'looking for teammates' in Slack.",
+  description: labels.meta.description,
   keywords: [
     "collaboration",
     "project matching",
     "developers",
-    "AI matching",
+    "activity matching",
     "team building",
     "hackathon",
   ],
-  authors: [{ name: "MeshIt" }],
-  creator: "MeshIt",
+  authors: [{ name: labels.meta.appName }],
+  creator: labels.meta.appName,
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "MeshIt",
+    title: labels.meta.appName,
   },
   formatDetection: {
     telephone: false,
@@ -45,16 +46,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://meshit.app",
-    title: "MeshIt - Find Your Perfect Match",
-    description:
-      "AI-powered matching connects developers with projects that fit their skills and interests.",
-    siteName: "MeshIt",
+    title: labels.meta.title,
+    description: labels.meta.description,
+    siteName: labels.meta.appName,
   },
   twitter: {
     card: "summary_large_image",
-    title: "MeshIt - Find Your Perfect Match",
-    description:
-      "AI-powered matching connects developers with projects that fit their skills and interests.",
+    title: labels.meta.title,
+    description: labels.meta.description,
   },
   robots: {
     index: true,
@@ -95,7 +94,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
         <SWRProvider>
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>
+            {children}
+            <FeedbackWidget />
+          </ThemeProvider>
         </SWRProvider>
       </body>
     </html>

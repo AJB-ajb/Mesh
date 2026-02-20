@@ -83,6 +83,8 @@ describe("ProfileForm", () => {
         onChange={onChange}
         onCancel={onCancel}
         location={buildLocationProps(locationOverrides)}
+        availabilityWindows={[]}
+        onAvailabilityWindowsChange={vi.fn()}
       />,
     );
 
@@ -169,6 +171,8 @@ describe("ProfileForm", () => {
         onChange={onChange}
         onCancel={onCancel}
         location={buildLocationProps()}
+        availabilityWindows={[]}
+        onAvailabilityWindowsChange={vi.fn()}
       />,
     );
     expect(screen.getByText("Saving...")).toBeInTheDocument();

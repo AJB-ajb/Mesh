@@ -2,12 +2,11 @@ import type { PostingFilters } from "@/lib/types/filters";
 
 interface FilterablePosting {
   category?: string | null;
-  mode?: string;
+  visibility?: string;
   location_mode?: string | null;
   location_preference?: number | null;
   location_name?: string | null;
-  skills: string[];
-  skill_level_min?: number | null;
+  skills?: string[];
   tags?: string[];
   estimated_time?: string | null;
   team_size_min?: number;
@@ -87,8 +86,8 @@ export function applyFilters<T extends FilterablePosting>(
       return false;
     }
 
-    // Mode: exact match
-    if (filters.mode && posting.mode !== filters.mode) {
+    // Visibility: exact match
+    if (filters.visibility && posting.visibility !== filters.visibility) {
       return false;
     }
 
@@ -112,19 +111,11 @@ export function applyFilters<T extends FilterablePosting>(
 
     // Skills: intersection check (posting has at least one of the filter skills)
     if (filters.skills && filters.skills.length > 0) {
-      const postingSkills = posting.skills.map((s) => s.toLowerCase());
+      const postingSkills = (posting.skills || []).map((s) => s.toLowerCase());
       const hasMatch = filters.skills.some((skill) =>
         postingSkills.includes(skill.toLowerCase()),
       );
       if (!hasMatch) return false;
-    }
-
-    // Skill level: range check on posting's skill_level_min
-    if (filters.skill_level_min != null && posting.skill_level_min != null) {
-      if (posting.skill_level_min < filters.skill_level_min) return false;
-    }
-    if (filters.skill_level_max != null && posting.skill_level_min != null) {
-      if (posting.skill_level_min > filters.skill_level_max) return false;
     }
 
     // Tags: intersection check

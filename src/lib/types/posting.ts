@@ -1,4 +1,9 @@
 import type { SelectedPostingSkill } from "@/lib/types/skill";
+import type {
+  AvailabilityMode,
+  RecurringWindow,
+  SpecificWindow,
+} from "@/lib/types/availability";
 
 export type PostingFormState = {
   title: string;
@@ -10,6 +15,7 @@ export type PostingFormState = {
   lookingFor: string;
   category: string;
   mode: string;
+  visibility: string;
   status: string;
   expiresAt: string;
   locationMode: string;
@@ -21,6 +27,10 @@ export type PostingFormState = {
   contextIdentifier: string;
   skillLevelMin: string;
   autoAccept: string;
+  availabilityMode: AvailabilityMode;
+  timezone: string;
+  availabilityWindows: RecurringWindow[];
+  specificWindows: SpecificWindow[];
   /** Skills selected from the skill tree (new normalized model) */
   selectedSkills: SelectedPostingSkill[];
 };
@@ -32,7 +42,7 @@ function defaultExpiresAt(): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Extracted posting fields from AI update */
+/** Extracted posting fields from AI extraction/update */
 export type ExtractedPosting = {
   title?: string;
   description?: string;
@@ -41,10 +51,18 @@ export type ExtractedPosting = {
   estimated_time?: string;
   team_size_min?: number;
   team_size_max?: number;
-  skill_level_min?: number;
   tags?: string[];
   context_identifier?: string;
   mode?: string;
+  visibility?: string;
+  invitees?: string[];
+  availability_mode?: AvailabilityMode;
+  availability_windows?: {
+    day_of_week: number;
+    start_minutes: number;
+    end_minutes: number;
+  }[];
+  timezone?: string;
 };
 
 export type PostingUpdateResponse = {
@@ -63,6 +81,7 @@ export const defaultPostingFormState: PostingFormState = {
   lookingFor: "3",
   category: "personal",
   mode: "open",
+  visibility: "public",
   status: "open",
   expiresAt: defaultExpiresAt(),
   locationMode: "either",
@@ -74,5 +93,9 @@ export const defaultPostingFormState: PostingFormState = {
   contextIdentifier: "",
   skillLevelMin: "",
   autoAccept: "false",
+  availabilityMode: "flexible",
+  timezone: "",
+  availabilityWindows: [],
+  specificWindows: [],
   selectedSkills: [],
 };

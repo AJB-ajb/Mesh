@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { labels } from "@/lib/labels";
 
 type AiExtractionCardProps = {
   aiText: string;
@@ -18,6 +19,7 @@ type AiExtractionCardProps = {
   extractionSuccess: boolean;
   onExtract: () => void;
   onSwitchToForm: () => void;
+  variant?: "posting" | "profile";
 };
 
 export function AiExtractionCard({
@@ -27,37 +29,40 @@ export function AiExtractionCard({
   extractionSuccess,
   onExtract,
   onSwitchToForm,
+  variant = "posting",
 }: AiExtractionCardProps) {
+  const isProfile = variant === "profile";
+  const cardTitle = isProfile
+    ? labels.extraction.profileCardTitle
+    : labels.extraction.postingCardTitle;
+  const cardDescription = isProfile
+    ? labels.extraction.profileDescription
+    : labels.extraction.postingDescription;
+  const placeholder = isProfile
+    ? labels.extraction.profilePlaceholder
+    : labels.extraction.postingPlaceholder;
+  const extractButton = isProfile
+    ? labels.extraction.extractProfileButton
+    : labels.extraction.extractPostingButton;
+  const helpText = isProfile
+    ? labels.extraction.profileHelpText
+    : labels.extraction.postingHelpText;
+
   return (
     <Card className="border-primary/20 bg-primary/5">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
-          AI Posting Extraction
+          {cardTitle}
         </CardTitle>
-        <CardDescription>
-          Paste your posting description from Slack, Discord, a GitHub README,
-          or use the mic to describe it. Our AI will automatically extract
-          posting details.
-        </CardDescription>
+        <CardDescription>{cardDescription}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Textarea
           rows={12}
           value={aiText}
           onChange={(e) => onAiTextChange(e.target.value)}
-          placeholder={`Paste your posting text here, or use the mic to describe it...
-
-Example:
-Hey everyone! Looking for 2-3 devs to join my hackathon project this weekend \u{1F680}
-
-Building an AI-powered recipe generator that suggests meals based on what's in your fridge.
-
-Tech stack: React, TypeScript, OpenAI API, Supabase
-Need: Frontend dev + someone with AI/ML experience
-Commitment: ~10 hrs over the weekend
-
-DM if interested!`}
+          placeholder={placeholder}
           enableMic
           onTranscriptionChange={(text) =>
             onAiTextChange(aiText ? aiText + " " + text : text)
@@ -73,28 +78,25 @@ DM if interested!`}
             {isExtracting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Extracting...
+                {labels.extraction.extractingButton}
               </>
             ) : extractionSuccess ? (
               <>
                 <CheckCircle className="h-4 w-4" />
-                Extracted!
+                {labels.extraction.extractedButton}
               </>
             ) : (
               <>
                 <Sparkles className="h-4 w-4" />
-                Extract Posting Details
+                {extractButton}
               </>
             )}
           </Button>
           <Button type="button" variant="outline" onClick={onSwitchToForm}>
-            Switch to Form
+            {labels.extraction.switchToFormButton}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          After extraction, youll be able to review and edit the extracted
-          information before creating your posting.
-        </p>
+        <p className="text-xs text-muted-foreground">{helpText}</p>
       </CardContent>
     </Card>
   );

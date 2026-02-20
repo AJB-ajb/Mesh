@@ -1,6 +1,6 @@
 import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
-import { formatScore } from "@/lib/matching/scoring";
+import { computeWeightedScore, formatScore } from "@/lib/matching/scoring";
 import type { ScoreBreakdown } from "@/lib/supabase/types";
 import { deriveSkillNames } from "@/lib/skills/derive";
 
@@ -19,12 +19,12 @@ type Posting = {
     | "social"
     | null;
   tags: string[];
+  visibility: "public" | "private";
   mode: "open" | "friend_ask";
   location_preference: number | null;
   location_mode: string | null;
   location_name: string | null;
   estimated_time: string | null;
-  skill_level_min: number | null;
   context_identifier: string | null;
   natural_language_criteria: string | null;
   status: string;
@@ -43,6 +43,16 @@ type PostingWithScore = Posting & {
 
 type TabId = "discover" | "my-postings";
 
+/** Query-level filters applied at the database (more efficient than client-side). */
+export interface QueryFilters {
+  /** Skill node IDs to filter by (use /api/skills/descendants to resolve tree). */
+  skillNodeIds?: string[];
+  /** Location mode: "remote", "in_person", "either". */
+  locationMode?: string;
+  /** Context identifier (e.g. university, org). */
+  contextIdentifier?: string;
+}
+
 type PostingsResult = {
   postings: PostingWithScore[];
   userId: string | null;
@@ -54,11 +64,19 @@ async function fetchPostings(key: string): Promise<PostingsResult> {
   const parts = key.split("/");
   const tab = parts[1] as TabId;
   const category = parts[2] || null;
+  // Query-level filters are JSON-encoded in parts[3] if present
+  const queryFilters: QueryFilters = parts[3] ? JSON.parse(parts[3]) : {};
   const supabase = createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Use !inner join when filtering by skill IDs so only matching postings return
+  const skillJoin =
+    queryFilters.skillNodeIds && queryFilters.skillNodeIds.length > 0
+      ? "posting_skills!inner(skill_id, skill_nodes(name))"
+      : "posting_skills(skill_nodes(name))";
 
   let query = supabase
     .from("postings")
@@ -69,7 +87,7 @@ async function fetchPostings(key: string): Promise<PostingsResult> {
         full_name,
         user_id
       ),
-      posting_skills(skill_nodes(name))
+      ${skillJoin}
     `,
     )
     .order("created_at", { ascending: false });
@@ -83,11 +101,35 @@ async function fetchPostings(key: string): Promise<PostingsResult> {
     if (user) {
       query = query.neq("creator_id", user.id);
     }
+    // Exclude private postings from discover
+    query = query.or("visibility.is.null,visibility.neq.private");
   }
 
   // Category filter at query level
   if (category) {
     query = query.eq("category", category);
+  }
+
+  // Skill node IDs filter — posting must have at least one matching skill
+  if (queryFilters.skillNodeIds && queryFilters.skillNodeIds.length > 0) {
+    query = query.in("posting_skills.skill_id", queryFilters.skillNodeIds);
+  }
+
+  // Location mode filter at query level
+  if (queryFilters.locationMode) {
+    if (queryFilters.locationMode !== "either") {
+      // Match exact or "either" (flexible)
+      query = query.or(
+        `location_mode.eq.${queryFilters.locationMode},location_mode.eq.either,location_mode.is.null`,
+      );
+    }
+  }
+
+  // Context identifier filter at query level
+  if (queryFilters.contextIdentifier) {
+    query = query.or(
+      `context_identifier.eq.${queryFilters.contextIdentifier},context_identifier.is.null`,
+    );
   }
 
   const { data, error } = await query;
@@ -97,11 +139,11 @@ async function fetchPostings(key: string): Promise<PostingsResult> {
   }
 
   const postings = (data || []).map((row) => {
-    // Derive skills from join table, fall back to old column
+    // Derive skills from join table
     const joinSkills = deriveSkillNames(row.posting_skills);
     return {
       ...row,
-      skills: joinSkills.length > 0 ? joinSkills : row.skills || [],
+      skills: joinSkills,
     };
   }) as PostingWithScore[];
 
@@ -125,40 +167,34 @@ async function fetchPostings(key: string): Promise<PostingsResult> {
       .eq("user_id", user.id)
       .single();
 
-    if (profile) {
-      const scored = await Promise.all(
-        postings.map(async (posting) => {
-          try {
-            const { data: breakdown, error: rpcError } = await supabase.rpc(
-              "compute_match_breakdown",
-              {
-                profile_user_id: user.id,
-                target_posting_id: posting.id,
-              },
-            );
-
-            if (!rpcError && breakdown) {
-              const overallScore =
-                breakdown.semantic * 0.3 +
-                breakdown.availability * 0.3 +
-                breakdown.skill_level * 0.2 +
-                breakdown.location * 0.2;
-
-              return {
-                ...posting,
-                compatibility_score: overallScore,
-                score_breakdown: breakdown as ScoreBreakdown,
-              };
-            }
-          } catch (err) {
-            console.error(
-              `Failed to compute score for posting ${posting.id}:`,
-              err,
-            );
-          }
-          return posting;
-        }),
+    if (profile && postings.length > 0) {
+      const postingIds = postings.map((p) => p.id);
+      const { data: batchResults } = await supabase.rpc(
+        "compute_match_breakdowns_batch",
+        {
+          profile_user_id: user.id,
+          posting_ids: postingIds,
+        },
       );
+
+      const breakdownMap = new Map<string, ScoreBreakdown>(
+        batchResults?.map(
+          (r: { posting_id: string; breakdown: ScoreBreakdown }) =>
+            [r.posting_id, r.breakdown] as const,
+        ) ?? [],
+      );
+
+      const scored = postings.map((posting) => {
+        const bd = breakdownMap.get(posting.id);
+        return bd
+          ? {
+              ...posting,
+              compatibility_score: computeWeightedScore(bd),
+              score_breakdown: bd,
+            }
+          : posting;
+      });
+
       return {
         postings: scored,
         userId: user?.id ?? null,
@@ -176,11 +212,18 @@ async function fetchPostings(key: string): Promise<PostingsResult> {
   };
 }
 
-export function usePostings(tab: TabId, category?: string) {
-  const key =
-    category && category !== "all"
-      ? `postings/${tab}/${category}`
-      : `postings/${tab}`;
+export function usePostings(
+  tab: TabId,
+  category?: string,
+  queryFilters?: QueryFilters,
+) {
+  const cat = category && category !== "all" ? category : "";
+  // Serialize query filters to include in SWR key for proper caching
+  const filterKey =
+    queryFilters && Object.keys(queryFilters).length > 0
+      ? JSON.stringify(queryFilters)
+      : "";
+  const key = `postings/${tab}${cat ? `/${cat}` : ""}${filterKey ? `/${filterKey}` : ""}`;
 
   const { data, error, isLoading, mutate } = useSWR(key, fetchPostings, {
     keepPreviousData: true,

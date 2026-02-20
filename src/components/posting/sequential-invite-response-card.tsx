@@ -6,6 +6,7 @@ import { Check, X, Loader2, ListOrdered } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
+import { labels } from "@/lib/labels";
 
 interface SequentialInviteResponseCardProps {
   postingId: string;
@@ -37,7 +38,9 @@ export function SequentialInviteResponseCard({
       // Look for a pending friend_ask where the user is the current invitee
       const { data: friendAsks } = await supabase
         .from("friend_asks")
-        .select("id, ordered_friend_list, current_request_index, status")
+        .select(
+          "id, ordered_friend_list, current_request_index, status, invite_mode, declined_list",
+        )
         .eq("posting_id", postingId)
         .in("status", ["pending", "accepted"]);
 
@@ -48,40 +51,64 @@ export function SequentialInviteResponseCard({
         return;
       }
 
-      // Check if user is the currently-asked person in a pending friend_ask
-      const pendingAsk = friendAsks.find(
-        (fa) =>
-          fa.status === "pending" &&
-          fa.ordered_friend_list[fa.current_request_index] === currentUserId,
-      );
+      // Check each friend_ask for user's status
+      for (const fa of friendAsks) {
+        const inviteMode = fa.invite_mode ?? "sequential";
+        const declinedList: string[] = fa.declined_list ?? [];
 
-      if (pendingAsk) {
-        setState({ type: "pending", friendAskId: pendingAsk.id });
-        return;
-      }
+        if (inviteMode === "parallel") {
+          // Parallel: user is invited if in the list
+          if (!fa.ordered_friend_list.includes(currentUserId)) continue;
 
-      // Check if user accepted a friend_ask
-      const acceptedAsk = friendAsks.find(
-        (fa) =>
-          fa.status === "accepted" &&
-          fa.ordered_friend_list[fa.current_request_index] === currentUserId,
-      );
+          // Accepted?
+          if (
+            fa.status === "accepted" &&
+            fa.ordered_friend_list[fa.current_request_index] === currentUserId
+          ) {
+            setState({ type: "accepted" });
+            return;
+          }
 
-      if (acceptedAsk) {
-        setState({ type: "accepted" });
-        return;
-      }
+          // Declined?
+          if (declinedList.includes(currentUserId)) {
+            setState({ type: "declined" });
+            return;
+          }
 
-      // Check if user was previously asked (earlier index) — they declined
-      const wasAsked = friendAsks.some((fa) =>
-        fa.ordered_friend_list
-          .slice(0, fa.current_request_index)
-          .includes(currentUserId),
-      );
+          // Still pending and user hasn't responded?
+          if (fa.status === "pending") {
+            setState({ type: "pending", friendAskId: fa.id });
+            return;
+          }
+        } else {
+          // Sequential: user is the current invitee
+          if (
+            fa.status === "pending" &&
+            fa.ordered_friend_list[fa.current_request_index] === currentUserId
+          ) {
+            setState({ type: "pending", friendAskId: fa.id });
+            return;
+          }
 
-      if (wasAsked) {
-        setState({ type: "declined" });
-        return;
+          // User accepted
+          if (
+            fa.status === "accepted" &&
+            fa.ordered_friend_list[fa.current_request_index] === currentUserId
+          ) {
+            setState({ type: "accepted" });
+            return;
+          }
+
+          // User was previously asked (earlier index) — they declined
+          if (
+            fa.ordered_friend_list
+              .slice(0, fa.current_request_index)
+              .includes(currentUserId)
+          ) {
+            setState({ type: "declined" });
+            return;
+          }
+        }
       }
 
       setState({ type: "not_invited" });
@@ -141,8 +168,7 @@ export function SequentialInviteResponseCard({
         <CardContent className="py-6">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <ListOrdered className="h-4 w-4" />
-            This posting uses Sequential Invite — the poster will invite
-            connections directly.
+            {labels.invite.notInvitedMessage}
           </div>
         </CardContent>
       </Card>
@@ -155,7 +181,7 @@ export function SequentialInviteResponseCard({
         <CardContent className="py-6">
           <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
             <Check className="h-4 w-4" />
-            You joined this posting!
+            {labels.invite.joinedMessage}
           </div>
         </CardContent>
       </Card>
@@ -168,7 +194,7 @@ export function SequentialInviteResponseCard({
         <CardContent className="py-6">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <X className="h-4 w-4" />
-            You declined this invite.
+            {labels.invite.declinedMessage}
           </div>
         </CardContent>
       </Card>
@@ -181,12 +207,12 @@ export function SequentialInviteResponseCard({
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <ListOrdered className="h-5 w-5 text-blue-600" />
-          You&apos;ve been invited!
+          {labels.invite.invitedTitle}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          The posting creator has invited you to join. Would you like to accept?
+          {labels.invite.invitedDescription}
         </p>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
@@ -201,14 +227,14 @@ export function SequentialInviteResponseCard({
             ) : (
               <Check className="h-4 w-4" />
             )}
-            Join
+            {labels.invite.joinButton}
           </Button>
           <Button
             variant="outline"
             onClick={() => handleRespond("decline")}
             disabled={isResponding}
           >
-            Do not join
+            {labels.invite.declineButton}
           </Button>
         </div>
       </CardContent>

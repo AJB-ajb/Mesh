@@ -26,7 +26,7 @@ test.describe("Feature: Authentication Flow", () => {
     // Check page title and subtitle
     await expect(page.locator('h1:has-text("Welcome back")')).toBeVisible();
     await expect(
-      page.locator("text=Sign in to continue to MeshIt"),
+      page.locator("text=Sign in to continue to Mesh"),
     ).toBeVisible();
 
     // Check email/password form
@@ -37,10 +37,8 @@ test.describe("Feature: Authentication Flow", () => {
     // Check forgot password link
     await expect(page.locator('a:has-text("Forgot password?")')).toBeVisible();
 
-    // Check OAuth buttons (should have icons, no text)
-    const oauthButtons = page
-      .locator('button[type="button"]')
-      .filter({ has: page.locator("svg") });
+    // Check OAuth buttons (3 in the flex row below "Or continue with")
+    const oauthButtons = page.locator('.flex.gap-3 > button[type="button"]');
     await expect(oauthButtons).toHaveCount(3); // Google, GitHub, LinkedIn
 
     // Check signup link
@@ -48,7 +46,7 @@ test.describe("Feature: Authentication Flow", () => {
   });
 
   // Test 2: Email/password login success (requires seeded test user)
-  test("2. Email/password login redirects to dashboard on success", async ({
+  test("2. Email/password login redirects to active page on success", async ({
     page,
   }) => {
     const password = process.env.TEST_USER_PASSWORD;
@@ -59,8 +57,8 @@ test.describe("Feature: Authentication Flow", () => {
       password: password!,
     });
 
-    // loginAsUser waits for /dashboard — verify we arrived
-    expect(page.url()).toContain("/dashboard");
+    // loginAsUser waits for /active — verify we arrived
+    expect(page.url()).toContain("/active");
   });
 
   // Test 3: Email/password login with invalid credentials
@@ -228,11 +226,11 @@ test.describe("Feature: Authentication Flow", () => {
     await page.context().clearCookies();
 
     const protectedRoutes = [
-      "/dashboard",
+      "/discover",
+      "/my-postings",
+      "/active",
+      "/connections",
       "/profile",
-      "/postings",
-      "/matches",
-      "/inbox",
     ];
 
     for (const route of protectedRoutes) {
@@ -261,8 +259,8 @@ test.describe("Feature: Authentication Flow", () => {
     // Verify we landed on /login
     expect(page.url()).toContain("/login");
 
-    // Verify dashboard is no longer accessible
-    await page.goto("/dashboard");
+    // Verify active page is no longer accessible
+    await page.goto("/active");
     await page.waitForURL(/\/login/, { timeout: 10000 });
     expect(page.url()).toContain("/login");
   });

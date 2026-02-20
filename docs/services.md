@@ -1,6 +1,6 @@
 # External Services
 
-Reference table of third-party services used by MeshIt.
+Reference table of third-party services used by Mesh.
 
 | Service           | Purpose                                                          | Pricing                  | Docs                                                         |
 | ----------------- | ---------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------ |

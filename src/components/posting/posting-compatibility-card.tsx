@@ -10,17 +10,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { MatchBreakdown } from "@/components/match/match-breakdown";
-import { formatScore } from "@/lib/matching/scoring";
+import { computeWeightedScore, formatScore } from "@/lib/matching/scoring";
 import type { ScoreBreakdown } from "@/lib/supabase/types";
-
-function computeOverallScore(breakdown: ScoreBreakdown): number {
-  return (
-    breakdown.semantic * 0.3 +
-    breakdown.availability * 0.3 +
-    breakdown.skill_level * 0.2 +
-    breakdown.location * 0.2
-  );
-}
 
 type PostingCompatibilityCardProps = {
   matchBreakdown: ScoreBreakdown | null;
@@ -53,7 +44,7 @@ export function PostingCompatibilityCard({
                 Overall Match
               </p>
               <p className="text-2xl font-bold text-green-600">
-                {formatScore(computeOverallScore(matchBreakdown))}
+                {formatScore(computeWeightedScore(matchBreakdown))}
               </p>
             </div>
             <MatchBreakdown breakdown={matchBreakdown} />

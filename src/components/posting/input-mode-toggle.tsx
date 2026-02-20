@@ -1,6 +1,7 @@
 "use client";
 
 import { FileText, Sparkles } from "lucide-react";
+import { labels } from "@/lib/labels";
 
 export type InputMode = "form" | "ai";
 
@@ -25,7 +26,7 @@ export function InputModeToggle({
         }`}
       >
         <FileText className="h-4 w-4" />
-        Fill Form
+        {labels.inputModeToggle.formButton}
       </button>
       <button
         type="button"
@@ -37,7 +38,7 @@ export function InputModeToggle({
         }`}
       >
         <Sparkles className="h-4 w-4" />
-        AI Extract
+        {labels.inputModeToggle.aiButton}
       </button>
     </div>
   );

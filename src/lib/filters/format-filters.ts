@@ -42,10 +42,10 @@ export function filtersToFilterPills(filters: PostingFilters): FilterPill[] {
     });
   }
 
-  if (filters.mode) {
+  if (filters.visibility) {
     pills.push({
-      key: "mode",
-      label: filters.mode === "open" ? "Open" : "Sequential Invite",
+      key: "visibility",
+      label: filters.visibility === "public" ? "Public" : "Private",
     });
   }
 
@@ -79,18 +79,6 @@ export function filtersToFilterPills(filters: PostingFilters): FilterPill[] {
     pills.push({
       key: "skills",
       label: `Skills: ${filters.skills.join(", ")}`,
-    });
-  }
-
-  if (filters.skill_level_min != null || filters.skill_level_max != null) {
-    const parts: string[] = [];
-    if (filters.skill_level_min != null)
-      parts.push(`${filters.skill_level_min}+`);
-    if (filters.skill_level_max != null)
-      parts.push(`up to ${filters.skill_level_max}`);
-    pills.push({
-      key: "skill_level",
-      label: `Skill level: ${parts.join(", ")}`,
     });
   }
 
@@ -172,8 +160,8 @@ export function removeFilterByKey(
     case "category":
       delete updated.category;
       break;
-    case "mode":
-      delete updated.mode;
+    case "visibility":
+      delete updated.visibility;
       break;
     case "location_mode":
       delete updated.location_mode;
@@ -186,10 +174,6 @@ export function removeFilterByKey(
       break;
     case "skills":
       delete updated.skills;
-      break;
-    case "skill_level":
-      delete updated.skill_level_min;
-      delete updated.skill_level_max;
       break;
     case "languages":
       delete updated.languages;

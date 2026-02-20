@@ -19,9 +19,15 @@ vi.mock("@/lib/supabase/client", () => ({
   }),
 }));
 
-vi.mock("@/lib/matching/scoring", () => ({
-  formatScore: (n: number) => `${Math.round(n * 100)}%`,
-}));
+vi.mock("@/lib/matching/scoring", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/matching/scoring")>(
+    "@/lib/matching/scoring",
+  );
+  return {
+    ...actual,
+    formatScore: (n: number) => `${Math.round(n * 100)}%`,
+  };
+});
 
 import { usePostings } from "../use-postings";
 
@@ -45,6 +51,7 @@ function mockQuery(result: { data: unknown; error: unknown }) {
     neq: vi.fn().mockReturnThis(),
     gt: vi.fn().mockReturnThis(),
     in: vi.fn().mockReturnThis(),
+    or: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     single: vi.fn().mockResolvedValue(result),
     limit: vi.fn().mockReturnThis(),
@@ -92,6 +99,7 @@ describe("usePostings", () => {
       neq: vi.fn().mockReturnThis(),
       gt: vi.fn().mockReturnThis(),
       in: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnValue(new Promise(() => {})),
     });
 
@@ -123,12 +131,17 @@ describe("usePostings", () => {
     });
 
     mockRpc.mockResolvedValue({
-      data: {
-        semantic: 0.8,
-        availability: 0.7,
-        skill_level: 0.9,
-        location: 0.6,
-      },
+      data: [
+        {
+          posting_id: "p1",
+          breakdown: {
+            semantic: 0.8,
+            availability: 0.7,
+            skill_level: 0.9,
+            location: 0.6,
+          },
+        },
+      ],
       error: null,
     });
 
@@ -141,7 +154,7 @@ describe("usePostings", () => {
     expect(result.current.postings).toHaveLength(1);
     expect(result.current.postings[0].title).toBe("Study Group");
     expect(result.current.userId).toBe("user-1");
-    // Score = 0.8*0.3 + 0.7*0.3 + 0.9*0.2 + 0.6*0.2 = 0.24+0.21+0.18+0.12 = 0.75
+    // Score = (0.8*1.0 + 0.7*1.0 + 0.9*0.7 + 0.6*0.7) / (1.0+1.0+0.7+0.7) = 2.55/3.4 = 0.75
     expect(result.current.postings[0].compatibility_score).toBeCloseTo(0.75);
   });
 

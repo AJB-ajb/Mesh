@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles, Loader2, MessageSquare } from "lucide-react";
+import { Sparkles, Loader2, MessageSquare, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { formatScore } from "@/lib/matching/scoring";
 import { getInitials } from "@/lib/format";
 import type { MatchedProfile } from "@/lib/hooks/use-posting-detail";
@@ -45,12 +46,12 @@ export function PostingMatchedProfilesCard({
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : matchedProfiles.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-sm text-muted-foreground">
-              No matched profiles found yet. Complete profiles will appear here
-              as they match your posting.
-            </p>
-          </div>
+          <EmptyState
+            icon={<Users />}
+            title="No matches yet"
+            description="Complete profiles will appear here as they match your posting."
+            className="py-8"
+          />
         ) : (
           <div className="space-y-4">
             {matchedProfiles.map((matchedProfile) => (
@@ -77,67 +78,41 @@ export function PostingMatchedProfilesCard({
                           {matchedProfile.headline}
                         </p>
                       )}
-                      {matchedProfile.skills &&
-                        matchedProfile.skills.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {matchedProfile.skills.slice(0, 4).map((skill) => (
-                              <Badge
-                                key={skill}
-                                variant="outline"
-                                className="text-xs"
-                              >
-                                {skill}
-                              </Badge>
-                            ))}
-                            {matchedProfile.skills.length > 4 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{matchedProfile.skills.length - 4} more
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-
                       {/* Match Breakdown */}
                       <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">
-                            Semantic:
-                          </span>
-                          <span className="font-medium">
-                            {formatScore(matchedProfile.breakdown.semantic)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">
-                            Availability:
-                          </span>
-                          <span className="font-medium">
-                            {formatScore(matchedProfile.breakdown.availability)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">
-                            Skill Level:
-                          </span>
-                          <span className="font-medium">
-                            {formatScore(matchedProfile.breakdown.skill_level)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">
-                            Location:
-                          </span>
-                          <span className="font-medium">
-                            {formatScore(matchedProfile.breakdown.location)}
-                          </span>
-                        </div>
+                        {(
+                          [
+                            ["Semantic", matchedProfile.breakdown.semantic],
+                            [
+                              "Availability",
+                              matchedProfile.breakdown.availability,
+                            ],
+                            [
+                              "Skill Level",
+                              matchedProfile.breakdown.skill_level,
+                            ],
+                            ["Location", matchedProfile.breakdown.location],
+                          ] as const
+                        ).map(([label, score]) => (
+                          <div
+                            key={label}
+                            className="flex items-center justify-between"
+                          >
+                            <span className="text-muted-foreground">
+                              {label}:
+                            </span>
+                            <span className="font-medium">
+                              {score != null ? formatScore(score) : "N/A"}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Action buttons */}
-                <div className="mt-4 flex gap-2">
+                <div className="mt-4 flex flex-wrap gap-2">
                   <Button
                     size="sm"
                     variant="outline"

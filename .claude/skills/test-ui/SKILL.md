@@ -1,6 +1,6 @@
 ---
 name: test-ui
-description: Browser-based UI testing for MeshIt. Tests user flows and visual integrity, producing structured bug reports.
+description: Browser-based UI testing for Mesh. Tests user flows and visual integrity, producing structured bug reports.
 argument-hint: "[flows|visual]"
 ---
 
@@ -111,7 +111,7 @@ After all tests complete, generate a report file:
 Use this template:
 
 ```markdown
-# MeshIt UI Test Report - YYYY-MM-DD
+# Mesh UI Test Report - YYYY-MM-DD
 
 ## Summary
 

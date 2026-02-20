@@ -24,13 +24,3 @@ export function deriveSkillNames(
     })
     .filter((n): n is string => !!n);
 }
-
-/** Derive names with a fallback when join rows are empty/absent. */
-export function deriveSkillsWithFallback(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  joinRows: JoinSkillRow[] | any[] | null | undefined,
-  fallback: string[] | null,
-): string[] | null {
-  const names = deriveSkillNames(joinRows);
-  return names.length > 0 ? names : fallback;
-}

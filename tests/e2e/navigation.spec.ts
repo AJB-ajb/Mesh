@@ -13,7 +13,7 @@ test.describe("Navigation", () => {
       page.locator('a[href*="/login"]:has-text("Post something")').first(),
     ).toBeVisible();
     await expect(
-      page.locator('a[href="/postings"]:has-text("Explore postings")'),
+      page.locator('a[href="/my-postings"]:has-text("Explore postings")'),
     ).toBeVisible();
   });
 
@@ -24,8 +24,12 @@ test.describe("Navigation", () => {
     await expect(
       page.getByRole("heading", { name: "Describe what you want to do" }),
     ).toBeVisible();
-    await expect(page.locator("text=AI finds compatible people")).toBeVisible();
-    await expect(page.locator("text=Connect and collaborate")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Get matched with the right people" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Connect and collaborate" }),
+    ).toBeVisible();
   });
 
   test("landing page footer links are present", async ({ page }) => {
@@ -53,10 +57,8 @@ test.describe("Navigation", () => {
     const oauthSection = page.locator("text=Or continue with");
     await expect(oauthSection).toBeVisible();
 
-    // OAuth buttons are present
-    const oauthButtons = page
-      .locator('button[type="button"]')
-      .filter({ has: page.locator("svg") });
+    // OAuth buttons are present (3 in the flex row below "Or continue with")
+    const oauthButtons = page.locator('.flex.gap-3 > button[type="button"]');
     await expect(oauthButtons).toHaveCount(3);
   });
 
@@ -79,7 +81,7 @@ test.describe("Navigation", () => {
   }) => {
     await page.context().clearCookies();
 
-    await page.goto("/dashboard");
+    await page.goto("/active");
     await page.waitForURL(/\/login/, { timeout: 10000 });
     expect(page.url()).toContain("/login");
   });

@@ -3,10 +3,11 @@
 import { useState, useCallback } from "react";
 import { reverseGeocode, type GeocodingResult } from "@/lib/geocoding";
 import type { ProfileFormState } from "@/lib/types/profile";
+import { LOCATION } from "@/lib/constants";
 
 export function useLocation(
   setForm: React.Dispatch<React.SetStateAction<ProfileFormState>>,
-  setSuccess: (success: boolean) => void
+  setSuccess: (success: boolean) => void,
 ) {
   const [isGeolocating, setIsGeolocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
@@ -66,9 +67,9 @@ export function useLocation(
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
+        timeout: LOCATION.GEOLOCATION_TIMEOUT_MS,
         maximumAge: 0,
-      }
+      },
     );
   }, [setForm, setSuccess]);
 
@@ -83,7 +84,7 @@ export function useLocation(
       setShowAutocomplete(false);
       setSuccess(false);
     },
-    [setForm, setSuccess]
+    [setForm, setSuccess],
   );
 
   const handleLocationInputChange = useCallback(
@@ -91,7 +92,7 @@ export function useLocation(
       setForm((prev) => ({ ...prev, location: value }));
       setSuccess(false);
     },
-    [setForm, setSuccess]
+    [setForm, setSuccess],
   );
 
   return {

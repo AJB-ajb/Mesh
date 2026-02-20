@@ -18,21 +18,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getInitials } from "@/lib/format";
+import { getInitials, formatDateAgo } from "@/lib/format";
+import { labels } from "@/lib/labels";
 import type { Application } from "@/lib/hooks/use-posting-detail";
-
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-  return date.toLocaleDateString();
-};
 
 type PostingApplicationsCardProps = {
   applications: Application[];
@@ -74,14 +62,14 @@ export function PostingApplicationsCard({
               <Users className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle>Join Requests</CardTitle>
+              <CardTitle>{labels.joinRequest.title}</CardTitle>
               <CardDescription>
                 {pendingCount > 0 ? (
                   <span className="text-primary font-medium">
-                    {pendingCount} pending review
+                    {labels.joinRequest.pendingReview(pendingCount)}
                   </span>
                 ) : (
-                  `${applications.length} join request${applications.length !== 1 ? "s" : ""} received`
+                  labels.joinRequest.received(applications.length)
                 )}
               </CardDescription>
             </div>
@@ -93,10 +81,10 @@ export function PostingApplicationsCard({
           <div className="text-center py-8">
             <Users className="h-12 w-12 mx-auto text-muted-foreground/50" />
             <p className="mt-4 text-sm text-muted-foreground">
-              No join requests yet
+              {labels.joinRequest.emptyState}
             </p>
             <p className="text-xs text-muted-foreground">
-              Share your posting to attract collaborators!
+              {labels.joinRequest.emptyHint}
             </p>
           </div>
         ) : (
@@ -125,7 +113,7 @@ export function PostingApplicationsCard({
                             variant="secondary"
                             className="text-xs shrink-0"
                           >
-                            New
+                            {labels.joinRequest.ownerBadge.pending}
                           </Badge>
                         )}
                       </div>
@@ -141,37 +129,16 @@ export function PostingApplicationsCard({
                           </p>
                         </div>
                       )}
-                      {application.profiles?.skills &&
-                        application.profiles.skills.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {application.profiles.skills
-                              .slice(0, 5)
-                              .map((skill) => (
-                                <Badge
-                                  key={skill}
-                                  variant="outline"
-                                  className="text-xs"
-                                >
-                                  {skill}
-                                </Badge>
-                              ))}
-                            {application.profiles.skills.length > 5 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{application.profiles.skills.length - 5} more
-                              </Badge>
-                            )}
-                          </div>
-                        )}
                       <p className="mt-2 text-xs text-muted-foreground">
-                        Requested {formatDate(application.created_at)}
+                        Requested {formatDateAgo(application.created_at)}
                       </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Action buttons */}
-                <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
-                  <div className="flex gap-2">
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-border pt-4">
+                  <div className="flex gap-2 w-full sm:w-auto">
                     <Button
                       size="sm"
                       variant="outline"
@@ -181,7 +148,7 @@ export function PostingApplicationsCard({
                       Message
                     </Button>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
                     {application.status === "pending" ? (
                       <>
                         <Button
@@ -198,7 +165,7 @@ export function PostingApplicationsCard({
                           ) : (
                             <>
                               <CheckCircle className="h-4 w-4" />
-                              Accept
+                              {labels.joinRequest.action.accept}
                             </>
                           )}
                         </Button>
@@ -216,7 +183,7 @@ export function PostingApplicationsCard({
                           ) : (
                             <>
                               <XCircle className="h-4 w-4" />
-                              Decline
+                              {labels.joinRequest.action.decline}
                             </>
                           )}
                         </Button>
@@ -230,9 +197,10 @@ export function PostingApplicationsCard({
                               ? "destructive"
                               : "secondary"
                         }
-                        className="capitalize"
                       >
-                        {application.status}
+                        {labels.joinRequest.ownerBadge[
+                          application.status as keyof typeof labels.joinRequest.ownerBadge
+                        ] || application.status}
                       </Badge>
                     )}
                   </div>
@@ -255,7 +223,7 @@ export function PostingApplicationsCard({
                         key={application.id}
                         className="rounded-lg border border-border p-3"
                       >
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium shrink-0">
                               #{index + 1}
@@ -271,7 +239,7 @@ export function PostingApplicationsCard({
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
                             <Button
                               size="sm"
                               variant="outline"
@@ -297,7 +265,7 @@ export function PostingApplicationsCard({
                               ) : (
                                 <>
                                   <CheckCircle className="h-3 w-3" />
-                                  Accept
+                                  {labels.joinRequest.action.accept}
                                 </>
                               )}
                             </Button>

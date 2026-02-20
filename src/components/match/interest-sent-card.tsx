@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { BadgeList } from "@/components/ui/badge-list";
 import {
   Card,
   CardContent,
@@ -10,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { getInitials } from "@/lib/format";
 import { formatTimeAgo } from "@/lib/format";
+import { labels } from "@/lib/labels";
 import type { MyInterest } from "@/lib/hooks/use-interests";
 
 export interface InterestSentCardProps {
@@ -23,7 +25,7 @@ export function InterestSentCard({ interest }: InterestSentCardProps) {
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-4">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="space-y-1 flex-1">
             <div className="flex items-center gap-3 flex-wrap">
               <CardTitle className="text-xl">
@@ -38,11 +40,11 @@ export function InterestSentCard({ interest }: InterestSentCardProps) {
                 <Badge variant="secondary">{posting.category}</Badge>
               )}
               <Badge variant="outline" className="text-xs">
-                Pending
+                {labels.joinRequest.action.requested}
               </Badge>
             </div>
           </div>
-          <div className="flex gap-2 shrink-0">
+          <div className="flex gap-2 w-full sm:w-auto">
             {posting && (
               <Button variant="outline" asChild>
                 <Link href={`/postings/${posting.id}`}>View Details</Link>
@@ -59,16 +61,7 @@ export function InterestSentCard({ interest }: InterestSentCardProps) {
         )}
 
         {posting?.skills && posting.skills.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {posting.skills.slice(0, 5).map((skill) => (
-              <Badge key={skill} variant="secondary">
-                {skill}
-              </Badge>
-            ))}
-            {posting.skills.length > 5 && (
-              <Badge variant="outline">+{posting.skills.length - 5}</Badge>
-            )}
-          </div>
+          <BadgeList items={posting.skills} />
         )}
 
         <div className="flex items-center gap-2 border-t border-border pt-4">

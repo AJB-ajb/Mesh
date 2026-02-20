@@ -1,6 +1,6 @@
 import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
-import { deriveSkillsWithFallback } from "@/lib/skills/derive";
+import { deriveSkillNames } from "@/lib/skills/derive";
 
 type SearchResult = {
   id: string;
@@ -22,14 +22,14 @@ async function fetchSearchResults(key: string): Promise<SearchResult[]> {
     supabase
       .from("postings")
       .select(
-        "id, title, description, skills, status, posting_skills(skill_nodes(name))",
+        "id, title, description, status, posting_skills(skill_nodes(name))",
       )
       .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
       .limit(5),
     supabase
       .from("profiles")
       .select(
-        "user_id, full_name, headline, skills, profile_skills(skill_nodes(name))",
+        "user_id, full_name, headline, profile_skills(skill_nodes(name))",
       )
       .or(`full_name.ilike.${searchTerm},headline.ilike.${searchTerm}`)
       .limit(5),
@@ -42,7 +42,7 @@ async function fetchSearchResults(key: string): Promise<SearchResult[]> {
     subtitle:
       p.description?.slice(0, 80) + (p.description?.length > 80 ? "..." : "") ||
       "",
-    skills: deriveSkillsWithFallback(p.posting_skills, p.skills) || [],
+    skills: deriveSkillNames(p.posting_skills),
     status: p.status,
   }));
 
@@ -51,7 +51,7 @@ async function fetchSearchResults(key: string): Promise<SearchResult[]> {
     type: "profile",
     title: p.full_name || "Unknown",
     subtitle: p.headline || "",
-    skills: deriveSkillsWithFallback(p.profile_skills, p.skills) || [],
+    skills: deriveSkillNames(p.profile_skills),
   }));
 
   return [...postingResults, ...profileResults];

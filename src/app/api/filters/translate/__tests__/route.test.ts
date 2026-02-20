@@ -51,7 +51,7 @@ describe("POST /api/filters/translate", () => {
     expect(res.status).toBe(503);
 
     const body = await res.json();
-    expect(body.error).toContain("Gemini");
+    expect(body.error.message).toContain("Gemini");
   });
 
   it("returns 401 when not authenticated", async () => {
@@ -71,7 +71,7 @@ describe("POST /api/filters/translate", () => {
     expect(res.status).toBe(400);
 
     const body = await res.json();
-    expect(body.error).toContain("query");
+    expect(body.error.message).toContain("query");
   });
 
   it("returns 400 when query is empty string", async () => {
@@ -129,6 +129,6 @@ describe("POST /api/filters/translate", () => {
     expect(res.status).toBe(500);
 
     const body = await res.json();
-    expect(body.error).toBe("API error");
+    expect(body.error.message).toBe("API error");
   });
 });

@@ -3,40 +3,15 @@ import { Check, MessageSquare, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { MatchResponse, Posting } from "@/lib/supabase/types";
+import { BadgeList } from "@/components/ui/badge-list";
+import { formatTimeAgo } from "@/lib/format";
+import { statusColors, statusLabels } from "@/lib/posting/styles";
+import type {
+  MatchResponse,
+  Posting as BasePosting,
+} from "@/lib/supabase/types";
 
-const statusColors: Record<string, string> = {
-  pending: "bg-warning/10 text-warning",
-  applied: "bg-info/10 text-info",
-  accepted: "bg-success/10 text-success",
-  declined: "bg-muted text-muted-foreground",
-};
-
-const statusLabels: Record<string, string> = {
-  pending: "Pending",
-  applied: "Requested",
-  accepted: "Accepted",
-  declined: "Declined",
-};
-
-function formatTimeAgo(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (diffInSeconds < 60) {
-    return "just now";
-  } else if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60);
-    return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`;
-  } else if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600);
-    return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
-  } else {
-    const days = Math.floor(diffInSeconds / 86400);
-    return `${days} ${days === 1 ? "day" : "days"} ago`;
-  }
-}
+type Posting = BasePosting & { skills?: string[] };
 
 export interface AiMatchCardProps {
   match: MatchResponse;
@@ -52,9 +27,9 @@ export function AiMatchCard({ match, isApplying, onApply }: AiMatchCardProps) {
   return (
     <Card>
       <CardHeader className="pb-4">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <CardTitle className="text-xl">
                 <Link href={`/matches/${match.id}`} className="hover:underline">
                   {posting.title}
@@ -93,25 +68,11 @@ export function AiMatchCard({ match, isApplying, onApply }: AiMatchCardProps) {
 
         {/* Skills */}
         {posting.skills && posting.skills.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {posting.skills.slice(0, 5).map((skill) => (
-              <span
-                key={skill}
-                className="rounded-md border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium"
-              >
-                {skill}
-              </span>
-            ))}
-            {posting.skills.length > 5 && (
-              <span className="rounded-md border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium">
-                +{posting.skills.length - 5}
-              </span>
-            )}
-          </div>
+          <BadgeList items={posting.skills} />
         )}
 
         {/* Actions */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {match.status === "pending" && (
             <Button
               className="flex-1 sm:flex-none"

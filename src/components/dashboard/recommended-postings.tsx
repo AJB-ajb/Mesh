@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PostingCard } from "@/components/posting/posting-card";
 
 export type RecommendedPosting = {
@@ -35,7 +36,7 @@ export function RecommendedPostings({
           </p>
         </div>
         <Button variant="outline" asChild>
-          <Link href="/postings">Browse all postings</Link>
+          <Link href="/my-postings">Browse all postings</Link>
         </Button>
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
@@ -45,11 +46,12 @@ export function RecommendedPostings({
           ))
         ) : (
           <Card>
-            <CardContent className="flex min-h-[200px] flex-col items-center justify-center py-12">
-              <p className="text-muted-foreground">
-                No recommended postings yet. Complete your profile to get
-                personalized recommendations!
-              </p>
+            <CardContent className="p-0">
+              <EmptyState
+                title="No recommendations yet"
+                description="Complete your profile to get personalized posting recommendations."
+                className="min-h-[200px]"
+              />
             </CardContent>
           </Card>
         )}

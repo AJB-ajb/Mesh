@@ -4,6 +4,7 @@ import * as React from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 
+import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +30,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
         disabled
       >
         <Sun className="h-5 w-5" />
-        <span className="sr-only">Toggle theme</span>
+        <span className="sr-only">{labels.a11y.toggleTheme}</span>
       </Button>
     );
   }

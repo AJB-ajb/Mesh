@@ -5,9 +5,9 @@ import Link from "next/link";
 import { Share2, Flag, MessageSquare, Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getInitials } from "@/lib/format";
+import { labels } from "@/lib/labels";
 import type { PostingDetail } from "@/lib/hooks/use-posting-detail";
 
 type PostingSidebarProps = {
@@ -23,12 +23,11 @@ export function PostingSidebar({
 }: PostingSidebarProps) {
   const creatorName = posting.profiles?.full_name || "Unknown";
   const creatorHeadline = posting.profiles?.headline || "";
-  const creatorSkills = posting.profiles?.skills || [];
   const [shared, setShared] = useState(false);
 
   const handleShare = async () => {
     const url = window.location.href;
-    const title = posting.title || "Check out this posting on MeshIt";
+    const title = posting.title || labels.postingDetail.shareTitle;
 
     if (navigator.share) {
       try {
@@ -48,7 +47,9 @@ export function PostingSidebar({
       {/* Creator */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Posting Creator</CardTitle>
+          <CardTitle className="text-base">
+            {labels.postingDetail.postingCreator}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-3">
@@ -69,22 +70,10 @@ export function PostingSidebar({
               )}
             </div>
           </div>
-          {creatorSkills.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Skills</p>
-              <div className="flex flex-wrap gap-1">
-                {creatorSkills.slice(0, 5).map((skill) => (
-                  <Badge key={skill} variant="outline" className="text-xs">
-                    {skill}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
           {!isOwner && (
             <Button className="w-full" onClick={onContactCreator}>
               <MessageSquare className="h-4 w-4" />
-              Contact Creator
+              {labels.postingDetail.contactCreator}
             </Button>
           )}
         </CardContent>
@@ -93,7 +82,9 @@ export function PostingSidebar({
       {/* Actions */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Actions</CardTitle>
+          <CardTitle className="text-base">
+            {labels.postingDetail.actionsTitle}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <Button
@@ -104,12 +95,12 @@ export function PostingSidebar({
             {shared ? (
               <>
                 <Check className="h-4 w-4" />
-                Link Copied!
+                {labels.postingDetail.linkCopied}
               </>
             ) : (
               <>
                 <Share2 className="h-4 w-4" />
-                Share Posting
+                {labels.postingDetail.sharePosting}
               </>
             )}
           </Button>
@@ -120,7 +111,7 @@ export function PostingSidebar({
             title="Coming soon"
           >
             <Flag className="h-4 w-4" />
-            Report Issue
+            {labels.postingDetail.reportIssue}
           </Button>
         </CardContent>
       </Card>

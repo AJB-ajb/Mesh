@@ -5,6 +5,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, ScoreBreakdown } from "@/lib/supabase/types";
+import { MATCHING } from "@/lib/constants";
 
 export interface PostingToProfileMatch {
   profile: Profile;
@@ -23,14 +24,16 @@ export interface PostingToProfileMatch {
  */
 export async function matchPostingToProfiles(
   postingId: string,
-  limit: number = 10,
+  limit: number = MATCHING.DEFAULT_RESULT_LIMIT,
 ): Promise<PostingToProfileMatch[]> {
   const supabase = await createClient();
 
   // First, get the posting and its embedding
   const { data: posting, error: postingError } = await supabase
     .from("postings")
-    .select("embedding, creator_id, title, description, skills")
+    .select(
+      "embedding, creator_id, title, description, location_mode, location_lat, location_lng, max_distance_km",
+    )
     .eq("id", postingId)
     .single();
 
@@ -47,12 +50,29 @@ export async function matchPostingToProfiles(
     );
   }
 
-  // Call the database function to find matching profiles
-  const { data, error } = await supabase.rpc("match_users_to_posting", {
+  // Build RPC params with hard filters from posting's location data
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rpcParams: Record<string, any> = {
     posting_embedding: embedding,
     posting_id_param: postingId,
     match_limit: limit,
-  });
+  };
+
+  if (posting.location_mode) {
+    rpcParams.location_mode_filter = posting.location_mode;
+  }
+  if (posting.location_lat != null && posting.location_lng != null) {
+    rpcParams.posting_location_lat = posting.location_lat;
+    rpcParams.posting_location_lng = posting.location_lng;
+  }
+  if (posting.max_distance_km != null) {
+    rpcParams.max_distance_km = posting.max_distance_km;
+  }
+
+  const { data, error } = await supabase.rpc(
+    "match_users_to_posting",
+    rpcParams,
+  );
 
   if (error) {
     throw new Error(`Failed to match profiles: ${error.message}`);
@@ -81,25 +101,24 @@ export async function matchPostingToProfiles(
         full_name: row.full_name,
         headline: row.headline,
         bio: row.bio,
-        location: row.location || null,
-        location_lat: row.location_lat || null,
-        location_lng: row.location_lng || null,
-        skills: row.skills || [],
-        skill_levels: row.skill_levels || null,
-        interests: row.interests || null,
-        languages: row.languages || null,
-        portfolio_url: row.portfolio_url || null,
-        github_url: row.github_url || null,
+        location: null,
+        location_lat: row.location_lat ?? null,
+        location_lng: row.location_lng ?? null,
+        interests: null,
+        languages: null,
+        portfolio_url: null,
+        github_url: null,
         location_preference: row.location_preference ?? null,
         location_mode: row.location_mode ?? null,
         availability_slots: row.availability_slots || null,
         source_text: null,
         previous_source_text: null,
         previous_profile_snapshot: null,
-        embedding: null, // Don't return embedding in response
-        notification_preferences: row.notification_preferences || null,
-        created_at: row.created_at || "",
-        updated_at: row.updated_at || "",
+        embedding: null,
+        timezone: null,
+        notification_preferences: null,
+        created_at: "",
+        updated_at: "",
       };
 
       const existingMatch = matchMap.get(row.user_id);

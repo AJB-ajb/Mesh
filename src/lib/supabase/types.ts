@@ -13,9 +13,6 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-/** Typed alias for Profile.skill_levels — { "domain": 0-10 } */
-export type SkillLevelsMap = Record<string, number>;
-
 /** Typed alias for Profile.availability_slots — { "mon": ["morning", "afternoon"] } */
 export type AvailabilitySlotsMap = Record<string, string[]>;
 
@@ -47,6 +44,10 @@ export interface Database {
         Insert: FriendshipInsert;
         Update: Partial<FriendshipInsert>;
       };
+      feedback: {
+        Row: Feedback;
+        Insert: FeedbackInsert;
+      };
     };
   };
 }
@@ -65,13 +66,12 @@ export interface Profile {
   location_lat: number | null;
   location_lng: number | null;
   // Skills and matching
-  skills: string[] | null;
   interests: string[] | null;
   languages: string[] | null;
-  skill_levels: SkillLevelsMap | null;
   location_preference: number | null; // 0-1 float (0=in-person, 0.5=either, 1=remote)
   location_mode: "remote" | "in_person" | "either" | null;
   availability_slots: AvailabilitySlotsMap | null;
+  timezone: string | null;
   // Links
   portfolio_url: string | null;
   github_url: string | null;
@@ -96,13 +96,12 @@ export interface ProfileInsert {
   location?: string | null;
   location_lat?: number | null;
   location_lng?: number | null;
-  skills?: string[] | null;
   interests?: string[] | null;
   languages?: string[] | null;
-  skill_levels?: SkillLevelsMap | null;
   location_preference?: number | null;
   location_mode?: "remote" | "in_person" | "either" | null;
   availability_slots?: AvailabilitySlotsMap | null;
+  timezone?: string | null;
   portfolio_url?: string | null;
   github_url?: string | null;
   source_text?: string | null;
@@ -122,13 +121,12 @@ export interface ProfileUpdate {
   location?: string | null;
   location_lat?: number | null;
   location_lng?: number | null;
-  skills?: string[] | null;
   interests?: string[] | null;
   languages?: string[] | null;
-  skill_levels?: SkillLevelsMap | null;
   location_preference?: number | null;
   location_mode?: "remote" | "in_person" | "either" | null;
   availability_slots?: AvailabilitySlotsMap | null;
+  timezone?: string | null;
   portfolio_url?: string | null;
   github_url?: string | null;
   source_text?: string | null;
@@ -158,16 +156,18 @@ export interface Posting {
     | null;
   context_identifier: string | null;
   tags: string[];
-  skills: string[];
   team_size_min: number;
   team_size_max: number;
   mode: "open" | "friend_ask";
+  /** New visibility column — replaces mode. Read this; write both during expand phase. */
+  visibility: "public" | "private";
   location_preference: number | null; // 0-1 float (0=in-person, 0.5=either, 1=remote)
   natural_language_criteria: string | null;
   estimated_time: string | null;
-  skill_level_min: number | null; // 0-10
   auto_accept: boolean;
   embedding: number[] | null;
+  availability_mode: "flexible" | "recurring" | "specific_dates";
+  timezone: string | null;
   status: "open" | "closed" | "filled" | "expired" | "paused";
   created_at: string;
   updated_at: string;
@@ -188,15 +188,16 @@ export interface PostingInsert {
     | null;
   context_identifier?: string | null;
   tags?: string[];
-  skills?: string[];
   team_size_min?: number;
   team_size_max?: number;
   mode?: "open" | "friend_ask";
+  visibility?: "public" | "private";
   location_preference?: number | null;
   natural_language_criteria?: string | null;
   estimated_time?: string | null;
-  skill_level_min?: number | null;
   auto_accept?: boolean;
+  availability_mode?: "flexible" | "recurring" | "specific_dates";
+  timezone?: string | null;
   embedding?: number[] | null;
   status?: "open" | "closed" | "filled" | "expired" | "paused";
   created_at?: string;
@@ -218,15 +219,16 @@ export interface PostingUpdate {
     | null;
   context_identifier?: string | null;
   tags?: string[];
-  skills?: string[];
   team_size_min?: number;
   team_size_max?: number;
   mode?: "open" | "friend_ask";
+  visibility?: "public" | "private";
   location_preference?: number | null;
   natural_language_criteria?: string | null;
   estimated_time?: string | null;
-  skill_level_min?: number | null;
   auto_accept?: boolean;
+  availability_mode?: "flexible" | "recurring" | "specific_dates";
+  timezone?: string | null;
   embedding?: number[] | null;
   status?: "open" | "closed" | "filled" | "expired" | "paused";
   created_at?: string;
@@ -239,10 +241,10 @@ export interface PostingUpdate {
 // ============================================
 
 export interface ScoreBreakdown {
-  semantic: number; // pgvector cosine similarity (0-1)
-  availability: number; // time slot overlap fraction (0-1)
-  skill_level: number; // 1 - |levelA - levelB| / 10 (0-1)
-  location: number; // 1 - |prefA - prefB| (0-1)
+  semantic: number | null; // pgvector cosine similarity (0-1), null if embeddings missing
+  availability: number | null; // time slot overlap fraction (0-1), null if data missing
+  skill_level: number | null; // 1 - |levelA - levelB| / 10 (0-1), null if data missing
+  location: number | null; // 1 - |prefA - prefB| (0-1), null if data missing
 }
 
 export interface Match {
@@ -294,6 +296,8 @@ export interface FriendAsk {
   creator_id: string;
   ordered_friend_list: string[];
   current_request_index: number;
+  invite_mode: "sequential" | "parallel";
+  declined_list: string[];
   status: "pending" | "accepted" | "completed" | "cancelled";
   created_at: string;
   updated_at: string;
@@ -305,6 +309,8 @@ export interface FriendAskInsert {
   creator_id: string;
   ordered_friend_list: string[];
   current_request_index?: number;
+  invite_mode?: "sequential" | "parallel";
+  declined_list?: string[];
   status?: "pending" | "accepted" | "completed" | "cancelled";
   created_at?: string;
   updated_at?: string;
@@ -327,6 +333,32 @@ export interface FriendshipInsert {
   user_id: string;
   friend_id: string;
   status?: "pending" | "accepted" | "declined" | "blocked";
+  created_at?: string;
+}
+
+// ============================================
+// FEEDBACK TYPES
+// ============================================
+
+export type FeedbackMood = "frustrated" | "neutral" | "happy";
+
+export interface Feedback {
+  id: string;
+  user_id: string | null;
+  message: string;
+  mood: FeedbackMood | null;
+  page_url: string;
+  user_agent: string | null;
+  created_at: string;
+}
+
+export interface FeedbackInsert {
+  id?: string;
+  user_id?: string | null;
+  message: string;
+  mood?: FeedbackMood | null;
+  page_url: string;
+  user_agent?: string | null;
   created_at?: string;
 }
 

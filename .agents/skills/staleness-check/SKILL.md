@@ -3,7 +3,7 @@ name: staleness-check
 description: Checks for stale artifacts across the repo — outdated docs, orphaned issues, stale branches, and repo structure drift. Run weekly or before releases.
 metadata:
   version: "1.0.0"
-  scope: MeshIt-specific
+  scope: Mesh-specific
 ---
 
 # Staleness Check

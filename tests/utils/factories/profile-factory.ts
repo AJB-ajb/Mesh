@@ -1,6 +1,6 @@
 /**
  * Profile Factory
- * Creates test profile data for MeshIt profiles table
+ * Creates test profile data for Mesh profiles table
  */
 
 import { faker } from "@faker-js/faker";

@@ -51,10 +51,8 @@ function makeProfile(overrides: Partial<Profile> = {}): Profile {
     location: "Berlin",
     location_lat: 52.52,
     location_lng: 13.405,
-    skills: ["JavaScript", "React"],
     interests: ["AI", "Web Development"],
     languages: ["en", "de"],
-    skill_levels: null,
     location_preference: null,
     location_mode: null,
     availability_slots: null,
@@ -64,6 +62,7 @@ function makeProfile(overrides: Partial<Profile> = {}): Profile {
     previous_source_text: null,
     previous_profile_snapshot: null,
     embedding: null,
+    timezone: null,
     notification_preferences: null,
     created_at: "2025-01-01T00:00:00Z",
     updated_at: "2025-01-01T00:00:00Z",
@@ -77,37 +76,12 @@ describe("Profile Merger", () => {
       const githubData = makeGitHubProfileData();
       const update = mergeWithExistingProfile(null, githubData);
 
-      expect(update.skills).toBeDefined();
-      expect(update.skills!.length).toBeGreaterThan(0);
       expect(update.interests).toBeDefined();
       expect(update.interests!.length).toBeGreaterThan(0);
       expect(update.github_url).toBe("https://github.com/testuser");
       expect(update.bio).toBe(
         "A passionate developer specializing in web technologies.",
       );
-    });
-
-    it("merges skills with deduplication (case-insensitive)", () => {
-      const existing = makeProfile({
-        skills: ["React", "JavaScript"],
-      });
-      const githubData = makeGitHubProfileData({
-        primaryLanguages: ["TypeScript", "javascript"], // 'javascript' should dedupe
-        inferredSkills: ["react", "Docker"], // 'react' should dedupe
-      });
-
-      const update = mergeWithExistingProfile(existing, githubData);
-
-      // Should keep existing React, JavaScript and add new TypeScript, Docker
-      expect(update.skills).toContain("React");
-      expect(update.skills).toContain("JavaScript");
-      expect(update.skills).toContain("TypeScript");
-      expect(update.skills).toContain("Docker");
-
-      // Should not have duplicates (case-insensitive)
-      const lowered = update.skills!.map((s) => s.toLowerCase());
-      const uniqueLowered = [...new Set(lowered)];
-      expect(lowered.length).toBe(uniqueLowered.length);
     });
 
     it("merges interests with deduplication", () => {
@@ -154,28 +128,17 @@ describe("Profile Merger", () => {
       expect(update.bio).toBeUndefined();
     });
 
-    it("handles null existing skills and interests", () => {
-      const existing = makeProfile({ skills: null, interests: null });
+    it("handles null existing interests", () => {
+      const existing = makeProfile({ interests: null });
       const githubData = makeGitHubProfileData();
 
       const update = mergeWithExistingProfile(existing, githubData);
 
-      expect(update.skills!.length).toBeGreaterThan(0);
       expect(update.interests!.length).toBeGreaterThan(0);
     });
   });
 
   describe("shouldUpdateProfile", () => {
-    it("returns true when 3+ new skills are available", () => {
-      const existing = makeProfile({ skills: ["JavaScript"] });
-      const githubData = makeGitHubProfileData({
-        primaryLanguages: ["TypeScript", "Python", "Go"],
-        inferredSkills: ["Docker"],
-      });
-
-      expect(shouldUpdateProfile(existing, githubData)).toBe(true);
-    });
-
     it("returns true when 2+ new interests are available", () => {
       const existing = makeProfile({ interests: ["AI"] });
       const githubData = makeGitHubProfileData({
@@ -187,26 +150,20 @@ describe("Profile Merger", () => {
 
     it("returns false when no significant new data", () => {
       const existing = makeProfile({
-        skills: ["TypeScript", "Python", "Go", "React", "Node.js", "Docker"],
         interests: ["Web Development", "Cloud Computing"],
       });
       const githubData = makeGitHubProfileData({
-        primaryLanguages: ["TypeScript", "Python"],
-        inferredSkills: ["React"],
         inferredInterests: ["Web Development"],
       });
 
       expect(shouldUpdateProfile(existing, githubData)).toBe(false);
     });
 
-    it("returns false when existing profile already has all skills", () => {
+    it("returns false when existing profile already has all interests", () => {
       const existing = makeProfile({
-        skills: ["TypeScript", "Python", "Go", "React", "Node.js", "Docker"],
         interests: ["Web Development", "Cloud Computing"],
       });
       const githubData = makeGitHubProfileData({
-        primaryLanguages: ["typescript", "python"], // case-insensitive match
-        inferredSkills: ["react"],
         inferredInterests: ["web development"],
       });
 
@@ -215,8 +172,8 @@ describe("Profile Merger", () => {
   });
 
   describe("getProfileSuggestions", () => {
-    it("suggests new skills not in existing profile", () => {
-      const existing = makeProfile({ skills: ["React"] });
+    it("suggests skills from GitHub data", () => {
+      const existing = makeProfile();
       const githubData = makeGitHubProfileData({
         primaryLanguages: ["TypeScript"],
         inferredSkills: ["Docker", "React"],
@@ -226,7 +183,7 @@ describe("Profile Merger", () => {
 
       expect(suggestions.suggestedSkills).toContain("TypeScript");
       expect(suggestions.suggestedSkills).toContain("Docker");
-      expect(suggestions.suggestedSkills).not.toContain("React");
+      expect(suggestions.suggestedSkills).toContain("React");
     });
 
     it("suggests new interests not in existing profile", () => {
@@ -284,7 +241,7 @@ describe("Profile Merger", () => {
     });
 
     it("limits suggestions to 10 skills and 5 interests", () => {
-      const existing = makeProfile({ skills: [], interests: [] });
+      const existing = makeProfile({ interests: [] });
       const githubData = makeGitHubProfileData({
         primaryLanguages: Array.from({ length: 10 }, (_, i) => `Lang${i}`),
         inferredSkills: Array.from({ length: 10 }, (_, i) => `Skill${i}`),

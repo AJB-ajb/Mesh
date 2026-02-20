@@ -68,7 +68,7 @@ export function useSkillSearch() {
           error: err instanceof Error ? err.message : "Search failed",
         }));
       }
-    }, 300);
+    }, 150);
   }, []);
 
   const browseChildren = useCallback(async (parentId: string | null) => {

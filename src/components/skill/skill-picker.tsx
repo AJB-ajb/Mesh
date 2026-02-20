@@ -1,34 +1,27 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import {
-  Search,
-  Loader2,
-  X,
-  ChevronRight,
-  Plus,
-  FolderTree,
-} from "lucide-react";
+import { Search, Loader2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { useSkillSearch } from "@/lib/hooks/use-skill-search";
-import type { SkillNode } from "@/lib/types/skill";
+import { labels } from "@/lib/labels";
 import type {
   SelectedProfileSkill,
   SelectedPostingSkill,
 } from "@/lib/types/skill";
+import { useSkillPickerState } from "@/lib/hooks/use-skill-picker-state";
+import { SkillPickerDropdown } from "./skill-picker-dropdown";
 
 // ---------------------------------------------------------------------------
 // Skill level reference labels (shared with profile form)
 // ---------------------------------------------------------------------------
 
 function skillLevelLabel(level: number): string {
-  if (level <= 2) return "Beginner";
-  if (level <= 4) return "Can follow tutorials";
-  if (level <= 6) return "Intermediate";
-  if (level <= 8) return "Advanced";
-  return "Expert";
+  if (level <= 2) return labels.skill.levelLabels.beginner;
+  if (level <= 4) return labels.skill.levelLabels.canFollowTutorials;
+  if (level <= 6) return labels.skill.levelLabels.intermediate;
+  if (level <= 8) return labels.skill.levelLabels.advanced;
+  return labels.skill.levelLabels.expert;
 }
 
 // ---------------------------------------------------------------------------
@@ -72,237 +65,36 @@ export function SkillPicker(props: SkillPickerProps) {
     disabled = false,
   } = props;
 
-  const [inputValue, setInputValue] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [isBrowseMode, setIsBrowseMode] = useState(false);
-
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
   const {
-    results,
-    browseNodes,
-    browsePath,
-    isSearching,
-    isBrowsing,
+    // Refs
+    wrapperRef,
+    inputRef,
+    // State
+    inputValue,
+    showDropdown,
+    selectedIndex,
+    isLoading,
     isNormalizing,
-    error,
-    search,
-    browseChildren,
-    normalize,
-    clearResults,
-  } = useSkillSearch();
-
-  const selectedIds = useMemo(
-    () => new Set(selectedSkills.map((s) => s.skillId)),
-    [selectedSkills],
-  );
-
-  // Filter out already-selected skills from search results
-  const filteredResults = results.filter((r) => !selectedIds.has(r.id));
-  const filteredBrowseNodes = browseNodes.filter(
-    (n) => !selectedIds.has(n.id) || !n.isLeaf,
-  );
-
-  // Determine what to show in dropdown
-  const isLoading = isSearching || isBrowsing || isNormalizing;
-  const showSearchResults = !isBrowseMode && inputValue.trim().length > 0;
-  const showBrowse = isBrowseMode || (!inputValue.trim() && showDropdown);
-
-  // Compute dropdown items for keyboard navigation
-  const dropdownItems = showSearchResults
-    ? filteredResults
-    : filteredBrowseNodes;
-  const hasAddCustom =
-    showSearchResults &&
-    inputValue.trim().length > 0 &&
-    !results.some(
-      (r) => r.name.toLowerCase() === inputValue.trim().toLowerCase(),
-    );
-  const totalItems = dropdownItems.length + (hasAddCustom ? 1 : 0);
-
-  // Input change handler
-  const handleInputChange = (value: string) => {
-    setInputValue(value);
-    setSelectedIndex(-1);
-    if (value.trim()) {
-      setIsBrowseMode(false);
-      search(value);
-      setShowDropdown(true);
-    } else {
-      clearResults();
-      if (showDropdown) {
-        setIsBrowseMode(true);
-        browseChildren(null);
-      }
-    }
-  };
-
-  // Select a skill from search results
-  const handleSelectSkill = useCallback(
-    (node: SkillNode) => {
-      if (selectedIds.has(node.id)) return;
-      if (!node.isLeaf) return; // Can't select grouping nodes
-
-      if (mode === "profile") {
-        (onAdd as SkillPickerProfileProps["onAdd"])({
-          skillId: node.id,
-          name: node.name,
-          path: node.path,
-          level: 5,
-        });
-      } else {
-        (onAdd as SkillPickerPostingProps["onAdd"])({
-          skillId: node.id,
-          name: node.name,
-          path: node.path,
-          levelMin: null,
-        });
-      }
-
-      setInputValue("");
-      clearResults();
-      setSelectedIndex(-1);
-      setShowDropdown(false);
-      inputRef.current?.focus();
-    },
-    [mode, onAdd, selectedIds, clearResults],
-  );
-
-  // Browse into a category
-  const handleBrowseInto = useCallback(
-    (nodeId: string) => {
-      setSelectedIndex(-1);
-      browseChildren(nodeId);
-    },
-    [browseChildren],
-  );
-
-  // Navigate back in browse tree
-  const handleBrowseBack = useCallback(() => {
-    // Go up one level — we need to find the grandparent
-    // For now, go to root if at depth 1, otherwise we'd need parent tracking
-    setSelectedIndex(-1);
-    browseChildren(null);
-  }, [browseChildren]);
-
-  // Add custom skill via normalize API
-  const handleAddCustom = useCallback(async () => {
-    const skill = inputValue.trim();
-    if (!skill) return;
-
-    const result = await normalize(skill);
-    if (result?.node) {
-      handleSelectSkill(result.node);
-    }
-  }, [inputValue, normalize, handleSelectSkill]);
-
-  // Keyboard navigation
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showDropdown || totalItems === 0) {
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-        e.preventDefault();
-        setShowDropdown(true);
-        if (!isBrowseMode && !inputValue.trim()) {
-          setIsBrowseMode(true);
-          browseChildren(null);
-        }
-      }
-      return;
-    }
-
-    switch (e.key) {
-      case "ArrowDown":
-        e.preventDefault();
-        setSelectedIndex((prev) => (prev < totalItems - 1 ? prev + 1 : prev));
-        break;
-      case "ArrowUp":
-        e.preventDefault();
-        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-        break;
-      case "Enter":
-        e.preventDefault();
-        if (selectedIndex >= 0 && selectedIndex < dropdownItems.length) {
-          const item = dropdownItems[selectedIndex];
-          if (showSearchResults) {
-            handleSelectSkill(item as SkillNode);
-          } else {
-            // Browse mode
-            const browseItem = item as (typeof filteredBrowseNodes)[number];
-            if (browseItem.isLeaf) {
-              // Need to fetch full node info to select
-              handleBrowseSelect(browseItem.id, browseItem.name);
-            } else {
-              handleBrowseInto(browseItem.id);
-            }
-          }
-        } else if (hasAddCustom && selectedIndex === dropdownItems.length) {
-          handleAddCustom();
-        }
-        break;
-      case "Escape":
-        setShowDropdown(false);
-        setSelectedIndex(-1);
-        break;
-    }
-  };
-
-  // Select a leaf node from browse mode (needs to fetch path)
-  const handleBrowseSelect = useCallback(
-    async (nodeId: string, nodeName: string) => {
-      if (selectedIds.has(nodeId)) return;
-
-      // We have the browse path + the node name
-      const path = [...browsePath];
-
-      if (mode === "profile") {
-        (onAdd as SkillPickerProfileProps["onAdd"])({
-          skillId: nodeId,
-          name: nodeName,
-          path,
-          level: 5,
-        });
-      } else {
-        (onAdd as SkillPickerPostingProps["onAdd"])({
-          skillId: nodeId,
-          name: nodeName,
-          path,
-          levelMin: null,
-        });
-      }
-
-      setInputValue("");
-      setSelectedIndex(-1);
-      inputRef.current?.focus();
-    },
-    [mode, onAdd, selectedIds, browsePath],
-  );
-
-  // Focus handler — show browse mode when empty
-  const handleFocus = () => {
-    setShowDropdown(true);
-    if (!inputValue.trim()) {
-      setIsBrowseMode(true);
-      browseChildren(null);
-    }
-  };
-
-  // Click outside to close
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(event.target as Node)
-      ) {
-        setShowDropdown(false);
-        setSelectedIndex(-1);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    error: searchError,
+    // Derived
+    showSearchResults,
+    showBrowse,
+    filteredResults,
+    filteredBrowseNodes,
+    browsePath,
+    dropdownItems,
+    hasAddCustom,
+    totalItems,
+    // Handlers
+    handleInputChange,
+    handleSelectSkill,
+    handleBrowseInto,
+    handleBrowseBack,
+    handleBrowseSelect,
+    handleAddCustom,
+    handleKeyDown,
+    handleFocus,
+  } = useSkillPickerState(mode, selectedSkills, onAdd);
 
   return (
     <div className="space-y-3">
@@ -325,143 +117,31 @@ export function SkillPicker(props: SkillPickerProps) {
           )}
         </div>
 
-        {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
+        {searchError && (
+          <p className="mt-1 text-xs text-destructive">{searchError}</p>
+        )}
 
         {/* Dropdown */}
         {showDropdown && (
-          <div className="absolute z-50 mt-1 w-full rounded-md border border-input bg-popover shadow-lg">
-            {/* Browse mode breadcrumb */}
-            {showBrowse && browsePath.length > 0 && (
-              <div className="flex items-center gap-1 border-b px-3 py-2 text-xs text-muted-foreground">
-                <button
-                  type="button"
-                  onClick={handleBrowseBack}
-                  className="hover:text-foreground"
-                >
-                  All
-                </button>
-                {browsePath.map((segment, i) => (
-                  <span key={i} className="flex items-center gap-1">
-                    <ChevronRight className="h-3 w-3" />
-                    <span
-                      className={
-                        i === browsePath.length - 1
-                          ? "font-medium text-foreground"
-                          : ""
-                      }
-                    >
-                      {segment}
-                    </span>
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <div className="max-h-60 overflow-y-auto p-1">
-              {/* Search results */}
-              {showSearchResults &&
-                filteredResults.map((result, index) => (
-                  <button
-                    key={result.id}
-                    type="button"
-                    onClick={() => handleSelectSkill(result)}
-                    className={`flex w-full items-start gap-2 rounded-sm px-3 py-2 text-left text-sm transition-colors ${
-                      index === selectedIndex
-                        ? "bg-accent text-accent-foreground"
-                        : "hover:bg-accent hover:text-accent-foreground"
-                    }`}
-                  >
-                    <div className="flex-1 overflow-hidden">
-                      <div className="truncate font-medium">{result.name}</div>
-                      {result.path.length > 0 && (
-                        <div className="truncate text-xs text-muted-foreground">
-                          {result.path.join(" > ")}
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                ))}
-
-              {/* Browse nodes */}
-              {showBrowse &&
-                filteredBrowseNodes.map((node, index) => (
-                  <button
-                    key={node.id}
-                    type="button"
-                    onClick={() => {
-                      if (node.isLeaf) {
-                        handleBrowseSelect(node.id, node.name);
-                      } else {
-                        handleBrowseInto(node.id);
-                      }
-                    }}
-                    className={`flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm transition-colors ${
-                      index === selectedIndex
-                        ? "bg-accent text-accent-foreground"
-                        : "hover:bg-accent hover:text-accent-foreground"
-                    }`}
-                  >
-                    {!node.isLeaf && (
-                      <FolderTree className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                    )}
-                    <span className="flex-1 truncate">{node.name}</span>
-                    {!node.isLeaf && (
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        {node.childCount}
-                        <ChevronRight className="h-3 w-3" />
-                      </span>
-                    )}
-                  </button>
-                ))}
-
-              {/* Add custom skill option */}
-              {hasAddCustom && (
-                <button
-                  type="button"
-                  onClick={handleAddCustom}
-                  className={`flex w-full items-center gap-2 rounded-sm border-t px-3 py-2 text-left text-sm transition-colors ${
-                    selectedIndex === dropdownItems.length
-                      ? "bg-accent text-accent-foreground"
-                      : "hover:bg-accent hover:text-accent-foreground"
-                  }`}
-                >
-                  <Plus className="h-4 w-4 flex-shrink-0" />
-                  <span>
-                    Add &quot;{inputValue.trim()}&quot; as a new skill
-                  </span>
-                  {isNormalizing && (
-                    <Loader2 className="ml-auto h-4 w-4 animate-spin" />
-                  )}
-                </button>
-              )}
-
-              {/* Empty state */}
-              {!isLoading && dropdownItems.length === 0 && !hasAddCustom && (
-                <div className="px-3 py-4 text-center text-sm text-muted-foreground">
-                  {showSearchResults
-                    ? "No skills found"
-                    : "No categories available"}
-                </div>
-              )}
-
-              {/* Loading state */}
-              {isLoading && dropdownItems.length === 0 && (
-                <div className="flex items-center justify-center px-3 py-4 text-sm text-muted-foreground">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isNormalizing ? "Adding skill..." : "Searching..."}
-                </div>
-              )}
-            </div>
-
-            {/* Keyboard hints */}
-            {totalItems > 0 && (
-              <div className="border-t px-3 py-1.5 text-[10px] text-muted-foreground">
-                <kbd className="rounded border px-1">↑↓</kbd> navigate{" "}
-                <kbd className="rounded border px-1">↵</kbd> select{" "}
-                <kbd className="rounded border px-1">esc</kbd> close
-              </div>
-            )}
-          </div>
+          <SkillPickerDropdown
+            showSearchResults={showSearchResults}
+            showBrowse={showBrowse}
+            filteredResults={filteredResults}
+            filteredBrowseNodes={filteredBrowseNodes}
+            browsePath={browsePath}
+            selectedIndex={selectedIndex}
+            isLoading={isLoading}
+            isNormalizing={isNormalizing}
+            hasAddCustom={hasAddCustom}
+            inputValue={inputValue}
+            dropdownItems={dropdownItems}
+            totalItems={totalItems}
+            onSelectSkill={handleSelectSkill}
+            onBrowseInto={handleBrowseInto}
+            onBrowseBack={handleBrowseBack}
+            onBrowseSelect={handleBrowseSelect}
+            onAddCustom={handleAddCustom}
+          />
         )}
       </div>
 
@@ -524,7 +204,7 @@ export function SkillPicker(props: SkillPickerProps) {
                   <span className="w-28 text-right text-sm font-medium tabular-nums">
                     {(skill as SelectedPostingSkill).levelMin != null
                       ? `Min: ${(skill as SelectedPostingSkill).levelMin}/10`
-                      : "Any level"}
+                      : labels.skill.anyLevel}
                   </span>
                 </div>
               )}
@@ -533,8 +213,12 @@ export function SkillPicker(props: SkillPickerProps) {
                 {mode === "profile"
                   ? skillLevelLabel((skill as SelectedProfileSkill).level)
                   : (skill as SelectedPostingSkill).levelMin != null
-                    ? `Requires at least: ${skillLevelLabel((skill as SelectedPostingSkill).levelMin!)}`
-                    : "Any level welcome"}
+                    ? labels.skill.requiresAtLeast(
+                        skillLevelLabel(
+                          (skill as SelectedPostingSkill).levelMin!,
+                        ),
+                      )
+                    : labels.skill.anyLevelWelcome}
               </p>
             </div>
           ))}

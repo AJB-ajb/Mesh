@@ -25,7 +25,7 @@ async function triggerGitHubSync(origin: string): Promise<void> {
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const next = searchParams.get("next") ?? "/active";
   const isLinking = searchParams.get("link") === "true";
 
   if (code) {
@@ -110,7 +110,7 @@ export async function GET(request: Request) {
       if (!profileCompleted) {
         // Brand new user - send directly to posting creation for fast onboarding
         // Profile will be auto-created when they submit their first posting
-        const destination = next === "/dashboard" ? "/postings/new" : next;
+        const destination = next === "/active" ? "/postings/new" : next;
         return NextResponse.redirect(`${origin}${destination}`);
       }
 

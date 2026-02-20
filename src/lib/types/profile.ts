@@ -52,12 +52,20 @@ export const DAY_LABELS: Record<string, string> = {
   sun: "Sun",
 };
 
-export const TIME_SLOTS = ["morning", "afternoon", "evening"] as const;
+export const TIME_SLOTS = ["night", "morning", "afternoon", "evening"] as const;
 
 export const TIME_SLOT_LABELS: Record<string, string> = {
+  night: "Night",
   morning: "Morning",
   afternoon: "Afternoon",
   evening: "Evening",
+};
+
+export const TIME_SLOT_RANGE_LABELS: Record<string, string> = {
+  night: "12am\u20136am",
+  morning: "6am\u201312pm",
+  afternoon: "12pm\u20136pm",
+  evening: "6pm\u201312am",
 };
 
 // ---------------------------------------------------------------------------
@@ -80,6 +88,7 @@ export type ProfileFormState = {
   skillLevels: SkillLevel[];
   locationMode: LocationMode;
   availabilitySlots: AvailabilitySlots;
+  timezone: string;
   /** Skills selected from the skill tree (new normalized model) */
   selectedSkills: import("./skill").SelectedProfileSkill[];
 };
@@ -99,6 +108,7 @@ export const defaultFormState: ProfileFormState = {
   skillLevels: [],
   locationMode: "either",
   availabilitySlots: {},
+  timezone: "",
   selectedSkills: [],
 };
 
@@ -123,6 +133,12 @@ export type ExtractedProfileV2 = {
   location_preference?: number;
   location_mode?: LocationMode;
   availability_slots?: Record<string, unknown>;
+  availability_windows?: {
+    day_of_week: number;
+    start_minutes: number;
+    end_minutes: number;
+  }[];
+  timezone?: string;
 };
 
 export type ProfileUpdateResponse = {
@@ -154,7 +170,9 @@ export function mapExtractedToFormState(
     ...(extracted.headline != null && { headline: extracted.headline }),
     ...(extracted.bio != null && { bio: extracted.bio }),
     ...(extracted.location != null && { location: extracted.location }),
-    ...(extracted.skills != null && { skills: extracted.skills.join(", ") }),
+    ...(extracted.skills != null && {
+      skills: extracted.skills.join(", "),
+    }),
     ...(extracted.interests != null && {
       interests: extracted.interests.join(", "),
     }),
@@ -165,14 +183,10 @@ export function mapExtractedToFormState(
       portfolioUrl: extracted.portfolio_url,
     }),
     ...(extracted.github_url != null && { githubUrl: extracted.github_url }),
-    ...(extracted.skill_levels != null && {
-      skillLevels: Object.entries(extracted.skill_levels).map(
-        ([name, level]) => ({ name, level }),
-      ),
-    }),
     locationMode,
     ...(extracted.availability_slots != null && {
       availabilitySlots: extracted.availability_slots as AvailabilitySlots,
     }),
+    ...(extracted.timezone != null && { timezone: extracted.timezone }),
   };
 }

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { ScoreBreakdown, Profile } from "@/lib/supabase/types";
 import type { SelectedPostingSkill } from "@/lib/types/skill";
 import { deriveSkillNames } from "@/lib/skills/derive";
+import { computeWeightedScore } from "@/lib/matching/scoring";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -17,6 +18,7 @@ export type PostingDetail = {
   team_size_max: number;
   estimated_time: string;
   category: string;
+  visibility: string;
   mode: string;
   status: string;
   created_at: string;
@@ -29,8 +31,9 @@ export type PostingDetail = {
   max_distance_km: number | null;
   tags?: string[];
   context_identifier?: string | null;
-  skill_level_min?: number | null;
   auto_accept: boolean;
+  availability_mode?: string | null;
+  timezone?: string | null;
   source_text?: string | null;
   previous_source_text?: string | null;
   previous_posting_snapshot?: Record<string, unknown> | null;
@@ -38,7 +41,6 @@ export type PostingDetail = {
   profiles?: {
     full_name: string | null;
     headline: string | null;
-    skills: string[] | null;
     user_id: string;
   };
 };
@@ -52,7 +54,6 @@ export type Application = {
   profiles?: {
     full_name: string | null;
     headline: string | null;
-    skills: string[] | null;
     user_id: string;
   };
 };
@@ -62,7 +63,6 @@ export type MatchedProfile = {
   user_id: string;
   full_name: string | null;
   headline: string | null;
-  skills: string[] | null;
   overall_score: number;
   breakdown: ScoreBreakdown;
 };
@@ -82,6 +82,7 @@ export type PostingDetailData = {
   myApplication: Application | null;
   hasApplied: boolean;
   waitlistPosition: number | null;
+  acceptedCount: number | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -107,7 +108,6 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
       profiles:creator_id (
         full_name,
         headline,
-        skills,
         user_id
       ),
       posting_skills(skill_id, level_min, skill_nodes(id, name, parent_id, depth))
@@ -140,7 +140,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
 
     posting = {
       ...rawPosting,
-      skills: joinSkills.length > 0 ? joinSkills : rawPosting.skills || [],
+      skills: joinSkills,
       selectedPostingSkills,
     };
   }
@@ -157,6 +157,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
       myApplication: null,
       hasApplied: false,
       waitlistPosition: null,
+      acceptedCount: null,
     };
   }
 
@@ -169,18 +170,28 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
   let matchBreakdown: ScoreBreakdown | null = null;
   let applications: Application[] = [];
   let matchedProfiles: MatchedProfile[] = [];
+  let acceptedCount: number | null = null;
 
   if (user && !isOwner) {
-    // Non-owner: check application, fetch profile, compute match
-    const [applicationResult, profileResult] = await Promise.all([
-      supabase
-        .from("applications")
-        .select("*")
-        .eq("posting_id", postingId)
-        .eq("applicant_id", user.id)
-        .maybeSingle(),
-      supabase.from("profiles").select("*").eq("user_id", user.id).single(),
-    ]);
+    // Non-owner: check application, fetch profile, compute match, count accepted
+    const [applicationResult, profileResult, acceptedCountResult] =
+      await Promise.all([
+        supabase
+          .from("applications")
+          .select("*")
+          .eq("posting_id", postingId)
+          .eq("applicant_id", user.id)
+          .maybeSingle(),
+        supabase.from("profiles").select("*").eq("user_id", user.id).single(),
+        supabase
+          .from("applications")
+          .select("*", { count: "exact" })
+          .eq("posting_id", postingId)
+          .eq("status", "accepted")
+          .limit(0),
+      ]);
+
+    acceptedCount = acceptedCountResult.count ?? 0;
 
     if (applicationResult.data && !applicationResult.error) {
       const appData = applicationResult.data;
@@ -233,8 +244,9 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
       supabase
         .from("profiles")
         .select(
-          "user_id, full_name, headline, skills, skill_levels, location_preference, availability_slots, profile_skills(skill_nodes(name))",
-        ),
+          "user_id, full_name, headline, location_preference, availability_slots, profile_skills(skill_nodes(name))",
+        )
+        .limit(50),
     ]);
 
     // Enrich applications with profiles
@@ -243,7 +255,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
       const { data: profilesData } = await supabase
         .from("profiles")
         .select(
-          "full_name, headline, skills, user_id, profile_skills(skill_nodes(name))",
+          "full_name, headline, user_id, profile_skills(skill_nodes(name))",
         )
         .in("user_id", applicantIds);
 
@@ -252,60 +264,49 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
           (p) => p.user_id === app.applicant_id,
         );
         if (!rawProfile) return { ...app, profiles: undefined };
-        const joinSkills = deriveSkillNames(rawProfile.profile_skills);
         return {
           ...app,
           profiles: {
             ...rawProfile,
-            skills: joinSkills.length > 0 ? joinSkills : rawProfile.skills,
           },
         };
       });
     }
 
-    // Compute matched profiles
+    // Compute matched profiles (parallelized)
     if (allProfilesResult.data) {
-      const scored: MatchedProfile[] = [];
+      const profiles = allProfilesResult.data.filter(
+        (p) => p.user_id !== currentUserId,
+      );
 
-      for (const profile of allProfilesResult.data) {
-        if (profile.user_id === currentUserId) continue;
+      const results = await Promise.all(
+        profiles.map(async (profile) => {
+          try {
+            const { data: breakdown, error: breakdownError } =
+              await supabase.rpc("compute_match_breakdown", {
+                profile_user_id: profile.user_id,
+                target_posting_id: postingId,
+              });
 
-        try {
-          const { data: breakdown, error: breakdownError } = await supabase.rpc(
-            "compute_match_breakdown",
-            {
-              profile_user_id: profile.user_id,
-              target_posting_id: postingId,
-            },
-          );
-
-          if (!breakdownError && breakdown) {
-            const overallScore =
-              breakdown.semantic * 0.3 +
-              breakdown.availability * 0.3 +
-              breakdown.skill_level * 0.2 +
-              breakdown.location * 0.2;
-
-            const profJoinSkills = deriveSkillNames(profile.profile_skills);
-            scored.push({
-              profile_id: profile.user_id,
-              user_id: profile.user_id,
-              full_name: profile.full_name,
-              headline: profile.headline,
-              skills:
-                profJoinSkills.length > 0 ? profJoinSkills : profile.skills,
-              overall_score: overallScore,
-              breakdown: breakdown as ScoreBreakdown,
-            });
+            if (!breakdownError && breakdown) {
+              const bd = breakdown as ScoreBreakdown;
+              return {
+                profile_id: profile.user_id,
+                user_id: profile.user_id,
+                full_name: profile.full_name,
+                headline: profile.headline,
+                overall_score: computeWeightedScore(bd),
+                breakdown: bd,
+              } satisfies MatchedProfile;
+            }
+          } catch {
+            // Skip profiles that fail to compute
           }
-        } catch (err) {
-          console.error(
-            `Failed to compute match for profile ${profile.user_id}:`,
-            err,
-          );
-        }
-      }
+          return null;
+        }),
+      );
 
+      const scored = results.filter((r): r is MatchedProfile => r !== null);
       scored.sort((a, b) => b.overall_score - a.overall_score);
       matchedProfiles = scored.slice(0, 10);
     }
@@ -322,6 +323,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
     myApplication,
     hasApplied,
     waitlistPosition,
+    acceptedCount,
   };
 }
 
@@ -346,6 +348,7 @@ export function usePostingDetail(postingId: string) {
     myApplication: data?.myApplication ?? null,
     hasApplied: data?.hasApplied ?? false,
     waitlistPosition: data?.waitlistPosition ?? null,
+    acceptedCount: data?.acceptedCount ?? null,
     error,
     isLoading,
     mutate,

@@ -15,24 +15,11 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
+import { labels } from "@/lib/labels";
+import { formatTimeAgoShort } from "@/lib/format";
 import type { Notification } from "@/lib/supabase/realtime";
-
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-};
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
@@ -122,7 +109,7 @@ export function NotificationsList({
         <div className="flex justify-end">
           <Button variant="ghost" size="sm" onClick={onMarkAllAsRead}>
             <CheckCheck className="h-4 w-4" />
-            Mark all as read
+            {labels.inbox.markAllAsRead}
           </Button>
         </div>
       )}
@@ -130,9 +117,12 @@ export function NotificationsList({
       {/* Notifications list */}
       {notifications.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Inbox className="h-12 w-12 text-muted-foreground/50" />
-            <p className="mt-4 text-muted-foreground">No notifications yet</p>
+          <CardContent className="p-0">
+            <EmptyState
+              icon={<Inbox />}
+              title={labels.inbox.noNotifications}
+              description="You're all caught up!"
+            />
           </CardContent>
         </Card>
       ) : (
@@ -173,14 +163,14 @@ export function NotificationsList({
                       )}
                     </div>
                     <span className="text-xs text-muted-foreground shrink-0">
-                      {formatDate(notification.created_at)}
+                      {formatTimeAgoShort(notification.created_at)}
                     </span>
                   </div>
 
                   {/* Inline actions for sequential invite */}
                   {showActions && (
                     <div
-                      className="flex gap-2 mt-2"
+                      className="flex flex-wrap gap-2 mt-2"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Button
@@ -195,7 +185,7 @@ export function NotificationsList({
                         ) : (
                           <Check className="h-3 w-3" />
                         )}
-                        Join
+                        {labels.inbox.joinAction}
                       </Button>
                       <Button
                         size="sm"
@@ -205,7 +195,7 @@ export function NotificationsList({
                           handleInviteResponse(notification, "decline")
                         }
                       >
-                        Do not join
+                        {labels.inbox.doNotJoinAction}
                       </Button>
                     </div>
                   )}

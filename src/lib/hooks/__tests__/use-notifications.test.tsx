@@ -55,6 +55,21 @@ function mockCountQuery(result: { count: number | null; error: unknown }) {
   const chain: Record<string, ReturnType<typeof vi.fn>> = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+  };
+  chain.then = vi.fn((resolve: (v: unknown) => void) => resolve(result));
+  return chain;
+}
+
+function mockNotificationsListQuery(result: {
+  data: unknown[];
+  error: unknown;
+}) {
+  const chain: Record<string, ReturnType<typeof vi.fn>> = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    order: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
   };
   chain.then = vi.fn((resolve: (v: unknown) => void) => resolve(result));
   return chain;
@@ -83,7 +98,11 @@ describe("useNotifications", () => {
     const fakeUser = { id: "user-1" };
     mockGetUser.mockResolvedValue({ data: { user: fakeUser } });
 
-    // mockFrom is called twice in Promise.all — once for profiles, once for notifications
+    // mockFrom is called three times in Promise.all:
+    // 1. profiles (select -> eq -> single)
+    // 2. notifications count (select -> eq -> eq)
+    // 3. notifications list (select -> eq -> order -> limit)
+    let notifCallCount = 0;
     mockFrom.mockImplementation((table: string) => {
       if (table === "profiles") {
         return mockProfileQuery({
@@ -91,8 +110,12 @@ describe("useNotifications", () => {
           error: null,
         });
       }
-      // notifications query
-      return mockCountQuery({ count: 3, error: null });
+      // notifications table — first call is count, second is list
+      notifCallCount++;
+      if (notifCallCount === 1) {
+        return mockCountQuery({ count: 3, error: null });
+      }
+      return mockNotificationsListQuery({ data: [], error: null });
     });
 
     const { result } = renderHook(() => useNotifications(), { wrapper });
@@ -103,6 +126,7 @@ describe("useNotifications", () => {
 
     expect(result.current.unreadCount).toBe(3);
     expect(result.current.userInitials).toBe("JD");
+    expect(result.current.notifications).toEqual([]);
   });
 
   it("returns defaults when not authenticated", async () => {

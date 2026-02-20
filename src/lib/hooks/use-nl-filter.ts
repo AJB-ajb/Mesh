@@ -8,7 +8,7 @@ import type { FilterPill } from "@/lib/filters/format-filters";
 
 export interface UseNlFilterOptions {
   onCategoryChange?: (category: string | undefined) => void;
-  onModeChange?: (mode: string | undefined) => void;
+  onVisibilityChange?: (visibility: string | undefined) => void;
 }
 
 export interface UseNlFilterReturn {
@@ -26,7 +26,7 @@ export interface UseNlFilterReturn {
 export function useNlFilter(
   options: UseNlFilterOptions = {},
 ): UseNlFilterReturn {
-  const { onCategoryChange, onModeChange } = options;
+  const { onCategoryChange, onVisibilityChange } = options;
 
   const [nlQuery, setNlQuery] = useState("");
   const [nlFilters, setNlFilters] = useState<PostingFilters>({});
@@ -62,8 +62,8 @@ export function useNlFilter(
           if (data.filters.category) {
             onCategoryChange?.(data.filters.category);
           }
-          if (data.filters.mode) {
-            onModeChange?.(data.filters.mode);
+          if (data.filters.visibility) {
+            onVisibilityChange?.(data.filters.visibility);
           }
         }
       } catch {
@@ -72,7 +72,7 @@ export function useNlFilter(
         setIsTranslating(false);
       }
     },
-    [onCategoryChange, onModeChange],
+    [onCategoryChange, onVisibilityChange],
   );
 
   const handleRemoveNlFilter = useCallback(
@@ -82,19 +82,19 @@ export function useNlFilter(
       if (key === "category") {
         onCategoryChange?.(undefined);
       }
-      if (key === "mode") {
-        onModeChange?.(undefined);
+      if (key === "visibility") {
+        onVisibilityChange?.(undefined);
       }
     },
-    [nlFilters, onCategoryChange, onModeChange],
+    [nlFilters, onCategoryChange, onVisibilityChange],
   );
 
   const clearFilters = useCallback(() => {
     setNlFilters({});
     setNlQuery("");
     onCategoryChange?.(undefined);
-    onModeChange?.(undefined);
-  }, [onCategoryChange, onModeChange]);
+    onVisibilityChange?.(undefined);
+  }, [onCategoryChange, onVisibilityChange]);
 
   return {
     nlQuery,

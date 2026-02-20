@@ -105,6 +105,3 @@ public/swe-worker*
 test-results/
 unit-test-results/
 junit.xml
-
-# UI test reports
-.reports/

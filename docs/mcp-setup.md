@@ -1,6 +1,6 @@
-# MCP Server Configuration for MeshIt
+# MCP Server Configuration for Mesh
 
-This document describes the Model Context Protocol (MCP) servers configured for the MeshIt project.
+This document describes the Model Context Protocol (MCP) servers configured for the Mesh project.
 
 ## Overview
 

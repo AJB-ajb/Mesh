@@ -2,7 +2,7 @@
 
 ## Overview
 
-PR and merge review skill for MeshIt. Focused on catching integration issues from parallel branch development. Includes issue management (close/update/create issues based on merge outcomes).
+PR and merge review skill for Mesh. Focused on catching integration issues from parallel branch development. Includes issue management (close/update/create issues based on merge outcomes).
 
 ## Structure
 

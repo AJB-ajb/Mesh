@@ -1,5 +1,5 @@
 /**
- * Batch Discord Message Importer for MeshIt Hackathon
+ * Batch Discord Message Importer for Mesh Hackathon
  *
  * Paste Discord messages below and run: set -a && source .env && set +a && npx tsx scripts/batch-discord-import.ts
  */
@@ -174,7 +174,7 @@ async function createProfile(
 
 async function main() {
   console.log("\n╔══════════════════════════════════════════════════════════╗");
-  console.log("║  Discord Batch Importer for MeshIt Hackathon           ║");
+  console.log("║  Discord Batch Importer for Mesh Hackathon             ║");
   console.log("╚══════════════════════════════════════════════════════════╝\n");
 
   // Parse messages
@@ -231,7 +231,7 @@ async function main() {
   console.log("\n✨ Batch Import Complete!\n");
   console.log(`   ✅ Success: ${successCount} profiles`);
   console.log(`   ❌ Errors: ${errorCount} profiles`);
-  console.log("\n🚀 Users can now be matched on MeshIt!\n");
+  console.log("\n🚀 Users can now be matched on Mesh!\n");
 }
 
 main().catch(console.error);

@@ -9,19 +9,18 @@
  * 3. Updates records with embeddings and marks needs_embedding = false
  */
 
-import { NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import {
   generateEmbeddingsBatch,
   composeProfileText,
   composePostingText,
 } from "@/lib/ai/embeddings";
-import { apiError } from "@/lib/errors";
+import { apiError, apiSuccess } from "@/lib/errors";
 
 const BATCH_LIMIT = 50;
 const MAX_RETRIES = 2;
 
-import { deriveSkillsWithFallback } from "@/lib/skills/derive";
+import { deriveSkillNames } from "@/lib/skills/derive";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JoinSkillRow = { skill_nodes: any };
@@ -29,7 +28,6 @@ type JoinSkillRow = { skill_nodes: any };
 interface ProfileRow {
   user_id: string;
   bio: string | null;
-  skills: string[] | null;
   interests: string[] | null;
   headline: string | null;
   profile_skills?: JoinSkillRow[] | null;
@@ -39,7 +37,6 @@ interface PostingRow {
   id: string;
   title: string;
   description: string;
-  skills: string[] | null;
   posting_skills?: JoinSkillRow[] | null;
 }
 
@@ -104,7 +101,7 @@ export async function POST(req: Request) {
     const { data: pendingProfiles, error: profilesError } = await supabase
       .from("profiles")
       .select(
-        "user_id, bio, skills, interests, headline, profile_skills(skill_nodes(name))",
+        "user_id, bio, interests, headline, profile_skills(skill_nodes(name))",
       )
       .eq("needs_embedding", true)
       .limit(BATCH_LIMIT);
@@ -119,9 +116,7 @@ export async function POST(req: Request) {
     // Fetch pending postings with join table skills
     const { data: pendingPostings, error: postingsError } = await supabase
       .from("postings")
-      .select(
-        "id, title, description, skills, posting_skills(skill_nodes(name))",
-      )
+      .select("id, title, description, posting_skills(skill_nodes(name))")
       .eq("needs_embedding", true)
       .limit(BATCH_LIMIT);
 
@@ -136,7 +131,7 @@ export async function POST(req: Request) {
     const postings = (pendingPostings ?? []) as PostingRow[];
 
     if (profiles.length === 0 && postings.length === 0) {
-      return NextResponse.json({
+      return apiSuccess({
         processed: { profiles: 0, postings: 0 },
         errors: [],
       });
@@ -152,7 +147,7 @@ export async function POST(req: Request) {
     for (const profile of profiles) {
       const text = composeProfileText(
         profile.bio,
-        deriveSkillsWithFallback(profile.profile_skills, profile.skills),
+        deriveSkillNames(profile.profile_skills),
         profile.interests,
         profile.headline,
       );
@@ -171,7 +166,7 @@ export async function POST(req: Request) {
       const text = composePostingText(
         posting.title,
         posting.description,
-        deriveSkillsWithFallback(posting.posting_skills, posting.skills),
+        deriveSkillNames(posting.posting_skills),
       );
       if (text.trim()) {
         postingTexts.push({
@@ -270,7 +265,7 @@ export async function POST(req: Request) {
         .eq("id", postingId);
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       processed: { profiles: processedProfiles, postings: processedPostings },
       skipped: {
         profiles: skippedProfiles.length,

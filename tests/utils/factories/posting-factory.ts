@@ -1,6 +1,6 @@
 /**
  * Posting Factory
- * Creates test posting data for MeshIt postings table
+ * Creates test posting data for Mesh postings table
  */
 
 import { faker } from "@faker-js/faker";

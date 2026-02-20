@@ -3,12 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 const PROTECTED_ROUTES = [
-  "/dashboard",
+  "/discover",
+  "/my-postings",
+  "/active",
+  "/connections",
   "/profile",
   "/postings",
-  "/matches",
-  "/bookmarks",
-  "/inbox",
   "/settings",
   "/onboarding",
 ];
@@ -30,7 +30,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isAuthRoute && user) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL("/active", request.url));
   }
 
   return response;

@@ -8,10 +8,11 @@ import {
   isGeminiConfigured,
 } from "@/lib/ai/gemini";
 import type { Profile } from "@/lib/supabase/types";
+import { AI } from "@/lib/constants";
 
 export type MatchExplanationProfile = Pick<
   Profile,
-  "skills" | "skill_levels" | "location_preference" | "interests" | "bio"
+  "location_preference" | "interests" | "bio"
 >;
 
 export interface PostingData {
@@ -41,14 +42,6 @@ export async function generateMatchExplanation(
   const prompt = `Given this user profile and posting, explain in 2-3 sentences why they are a good match. Focus on specific skill overlaps and relevant experience. Be concise and friendly.
 
 User Profile:
-- Skills: ${profile.skills?.join(", ") || "Not specified"}
-- Skill Levels: ${
-    profile.skill_levels
-      ? Object.entries(profile.skill_levels)
-          .map(([k, v]) => `${k}: ${v}`)
-          .join(", ")
-      : "Not specified"
-  }
 - Location Preference: ${profile.location_preference ?? "Not specified"}
 - Interests: ${profile.interests?.join(", ") || "Not specified"}
 - Bio: ${profile.bio || "Not provided"}
@@ -67,10 +60,10 @@ Explanation:`;
   const result = await generateContentWithFallback({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: {
-      temperature: 0.7,
-      topK: 40,
-      topP: 0.95,
-      maxOutputTokens: 200,
+      temperature: AI.TEMPERATURE,
+      topK: AI.TOP_K,
+      topP: AI.TOP_P,
+      maxOutputTokens: AI.MAX_OUTPUT_TOKENS,
     },
   });
 

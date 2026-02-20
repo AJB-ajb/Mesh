@@ -1,52 +1,19 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  CalendarPlus,
-  Check,
-  Sparkles,
-  Loader2,
-  Pencil,
-  Trash2,
-  Send,
-  Clock,
-  RefreshCw,
-} from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { formatScore } from "@/lib/matching/scoring";
+import { computeWeightedScore, formatScore } from "@/lib/matching/scoring";
+import { labels } from "@/lib/labels";
 import type {
   PostingDetail,
   Application,
 } from "@/lib/hooks/use-posting-detail";
+import { formatDateAgo } from "@/lib/format";
 import type { ScoreBreakdown } from "@/lib/supabase/types";
-
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-  return date.toLocaleDateString();
-};
+import { OwnerActions } from "./owner-actions";
+import { ApplySection } from "./apply-section";
 
 const isExpired = (expiresAt: string | null) => {
   if (!expiresAt) return false;
@@ -68,366 +35,6 @@ const formatExpiry = (expiresAt: string | null) => {
   if (diffDays < 30) return `Expires in ${Math.floor(diffDays / 7)} weeks`;
   return `Expires ${date.toLocaleDateString()}`;
 };
-
-function computeOverallScore(breakdown: ScoreBreakdown): number {
-  return (
-    breakdown.semantic * 0.3 +
-    breakdown.availability * 0.3 +
-    breakdown.skill_level * 0.2 +
-    breakdown.location * 0.2
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Extend Deadline Picker
-// ---------------------------------------------------------------------------
-
-const EXTEND_OPTIONS = [
-  { label: "7 days", days: 7 },
-  { label: "14 days", days: 14 },
-  { label: "30 days", days: 30 },
-] as const;
-
-function ExtendDeadlineButtons({
-  isExtending,
-  onExtend,
-}: {
-  isExtending: boolean;
-  onExtend: (days: number) => void;
-}) {
-  const [selectedDays, setSelectedDays] = useState<number | null>(null);
-
-  return (
-    <div className="flex items-center gap-1 flex-wrap">
-      {EXTEND_OPTIONS.map((opt) => (
-        <Button
-          key={opt.days}
-          size="sm"
-          variant={selectedDays === opt.days ? "default" : "outline"}
-          disabled={isExtending}
-          onClick={() => {
-            setSelectedDays(opt.days);
-            onExtend(opt.days);
-          }}
-        >
-          {isExtending && selectedDays === opt.days ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <CalendarPlus className="h-3 w-3" />
-          )}
-          +{opt.label}
-        </Button>
-      ))}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Owner Actions
-// ---------------------------------------------------------------------------
-
-type OwnerActionsProps = {
-  posting: PostingDetail;
-  isEditing: boolean;
-  isSaving: boolean;
-  isDeleting: boolean;
-  isExtending: boolean;
-  isReposting: boolean;
-  onSave: () => void;
-  onCancelEdit: () => void;
-  onStartEdit: () => void;
-  onDelete: () => void;
-  onExtendDeadline: (days: number) => void;
-  onRepost: () => void;
-};
-
-function OwnerActions({
-  posting,
-  isEditing,
-  isSaving,
-  isDeleting,
-  isExtending,
-  isReposting,
-  onSave,
-  onCancelEdit,
-  onStartEdit,
-  onDelete,
-  onExtendDeadline,
-  onRepost,
-}: OwnerActionsProps) {
-  if (isEditing) {
-    return (
-      <div className="flex gap-2">
-        <Button onClick={onSave} disabled={isSaving}>
-          {isSaving ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Check className="h-4 w-4" />
-              Save
-            </>
-          )}
-        </Button>
-        <Button variant="outline" onClick={onCancelEdit}>
-          Cancel
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-2 items-end">
-      {isExpired(posting.expires_at) && (
-        <div className="flex gap-2 items-center flex-wrap justify-end">
-          <ExtendDeadlineButtons
-            isExtending={isExtending}
-            onExtend={onExtendDeadline}
-          />
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" disabled={isReposting}>
-                {isReposting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-                Repost
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Repost this posting?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will remove all existing join requests and repost the
-                  posting as fresh. This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={onRepost}>Repost</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      )}
-      <div className="flex gap-2">
-        <Button variant="outline" onClick={onStartEdit}>
-          <Pencil className="h-4 w-4" />
-          Edit
-        </Button>
-        <Button variant="destructive" onClick={onDelete} disabled={isDeleting}>
-          {isDeleting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Trash2 className="h-4 w-4" />
-          )}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Apply Section (non-owner)
-// ---------------------------------------------------------------------------
-
-type ApplySectionProps = {
-  posting: PostingDetail;
-  hasApplied: boolean;
-  myApplication: Application | null;
-  waitlistPosition: number | null;
-  showApplyForm: boolean;
-  coverMessage: string;
-  isApplying: boolean;
-  onShowApplyForm: () => void;
-  onHideApplyForm: () => void;
-  onCoverMessageChange: (value: string) => void;
-  onApply: () => void;
-  onWithdraw: () => void;
-};
-
-function ApplySection({
-  posting,
-  hasApplied,
-  myApplication,
-  waitlistPosition,
-  showApplyForm,
-  coverMessage,
-  isApplying,
-  onShowApplyForm,
-  onHideApplyForm,
-  onCoverMessageChange,
-  onApply,
-  onWithdraw,
-}: ApplySectionProps) {
-  if (hasApplied) {
-    return (
-      <div className="flex items-center gap-2">
-        <Badge
-          variant={
-            myApplication?.status === "accepted"
-              ? "default"
-              : myApplication?.status === "rejected"
-                ? "destructive"
-                : myApplication?.status === "withdrawn"
-                  ? "outline"
-                  : "secondary"
-          }
-          className="px-3 py-1"
-        >
-          {myApplication?.status === "pending" && "Request pending"}
-          {myApplication?.status === "accepted" && "\u2713 Accepted"}
-          {myApplication?.status === "rejected" && "Not Selected"}
-          {myApplication?.status === "withdrawn" && "Withdrawn"}
-          {myApplication?.status === "waitlisted" && (
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              Waitlisted
-              {waitlistPosition ? ` — #${waitlistPosition} in line` : ""}
-            </span>
-          )}
-        </Badge>
-        {(myApplication?.status === "pending" ||
-          myApplication?.status === "waitlisted") && (
-          <Button variant="outline" size="sm" onClick={onWithdraw}>
-            Withdraw request
-          </Button>
-        )}
-      </div>
-    );
-  }
-
-  // Filled posting: show waitlist CTA
-  if (posting.status === "filled") {
-    if (posting.auto_accept) {
-      return (
-        <Button onClick={onApply} disabled={isApplying}>
-          {isApplying ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Joining waitlist...
-            </>
-          ) : (
-            <>
-              <Clock className="h-4 w-4" />
-              Join waitlist
-            </>
-          )}
-        </Button>
-      );
-    }
-
-    // Manual review: show cover message form for waitlist
-    if (showApplyForm) {
-      return (
-        <div className="flex flex-col gap-2 w-full max-w-md">
-          <textarea
-            value={coverMessage}
-            onChange={(e) => onCoverMessageChange(e.target.value)}
-            placeholder="Tell the posting creator why you'd like to join... (optional)"
-            rows={3}
-            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          />
-          <div className="flex gap-2">
-            <Button onClick={onApply} disabled={isApplying}>
-              {isApplying ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Requesting...
-                </>
-              ) : (
-                <>
-                  <Clock className="h-4 w-4" />
-                  Request to join waitlist
-                </>
-              )}
-            </Button>
-            <Button variant="outline" onClick={onHideApplyForm}>
-              Cancel
-            </Button>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <Button onClick={onShowApplyForm}>
-        <Clock className="h-4 w-4" />
-        Request to join waitlist
-      </Button>
-    );
-  }
-
-  // Non-open, non-filled (e.g. closed, expired)
-  if (posting.status !== "open") {
-    return <Badge variant="secondary">Posting {posting.status}</Badge>;
-  }
-
-  // Auto-accept: instant join, no cover message form
-  if (posting.auto_accept) {
-    return (
-      <Button onClick={onApply} disabled={isApplying}>
-        {isApplying ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Joining...
-          </>
-        ) : (
-          <>
-            <Send className="h-4 w-4" />
-            Join
-          </>
-        )}
-      </Button>
-    );
-  }
-
-  if (showApplyForm) {
-    return (
-      <div className="flex flex-col gap-2 w-full max-w-md">
-        <textarea
-          value={coverMessage}
-          onChange={(e) => onCoverMessageChange(e.target.value)}
-          placeholder="Tell the posting creator why you'd like to join... (optional)"
-          rows={3}
-          className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        />
-        <div className="flex gap-2">
-          <Button onClick={onApply} disabled={isApplying}>
-            {isApplying ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Requesting to join...
-              </>
-            ) : (
-              <>
-                <Send className="h-4 w-4" />
-                Request to join
-              </>
-            )}
-          </Button>
-          <Button variant="outline" onClick={onHideApplyForm}>
-            Cancel
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <Button onClick={onShowApplyForm}>
-      <Send className="h-4 w-4" />
-      Request to join
-    </Button>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Main Header
-// ---------------------------------------------------------------------------
 
 type PostingDetailHeaderProps = {
   posting: PostingDetail;
@@ -460,6 +67,9 @@ type PostingDetailHeaderProps = {
   onWithdraw: () => void;
   error: string | null;
   hideApplySection?: boolean;
+  hideEditButton?: boolean;
+  backHref?: string;
+  backLabel?: string;
 };
 
 export function PostingDetailHeader({
@@ -492,17 +102,20 @@ export function PostingDetailHeader({
   onWithdraw,
   error,
   hideApplySection,
+  hideEditButton,
+  backHref,
+  backLabel,
 }: PostingDetailHeaderProps) {
   const creatorName = posting.profiles?.full_name || "Unknown";
 
   return (
     <>
       <Link
-        href="/postings"
+        href={backHref ?? "/my-postings"}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to postings
+        {backLabel ?? labels.common.backToPostings}
       </Link>
 
       {error && (
@@ -536,8 +149,14 @@ export function PostingDetailHeader({
                     : "outline"
               }
             >
-              {isExpired(posting.expires_at) ? "Expired" : posting.status}
+              {isExpired(posting.expires_at)
+                ? labels.common.expired
+                : posting.status}
             </Badge>
+            {(posting.visibility === "private" ||
+              posting.mode === "friend_ask") && (
+              <Badge variant="outline">{labels.invite.privateBadge}</Badge>
+            )}
             {posting.expires_at && (
               <span
                 className={`text-xs ${isExpired(posting.expires_at) ? "text-destructive" : "text-muted-foreground"}`}
@@ -551,19 +170,20 @@ export function PostingDetailHeader({
                 className="bg-green-500 hover:bg-green-600 flex items-center gap-1"
               >
                 <Sparkles className="h-4 w-4" />
-                {formatScore(computeOverallScore(matchBreakdown))} match
+                {formatScore(computeWeightedScore(matchBreakdown))}{" "}
+                {labels.postingDetail.match}
               </Badge>
             )}
           </div>
           <p className="text-muted-foreground">
-            Posted by{" "}
+            {labels.postingDetail.postedBy}{" "}
             <Link
               href={`/profile/${posting.profiles?.user_id}`}
               className="hover:underline text-foreground"
             >
               {creatorName}
             </Link>{" "}
-            &bull; {formatDate(posting.created_at)}
+            &bull; {formatDateAgo(posting.created_at)}
           </p>
         </div>
 
@@ -581,10 +201,11 @@ export function PostingDetailHeader({
             onDelete={onDelete}
             onExtendDeadline={onExtendDeadline}
             onRepost={onRepost}
+            hideEditButton={hideEditButton}
           />
         ) : (
           !hideApplySection && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <ApplySection
                 posting={posting}
                 hasApplied={hasApplied}

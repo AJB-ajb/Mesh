@@ -10,7 +10,7 @@ Claude GitHub integration enables automated PR review and @claude mentions in is
 
 ### 1. Install the Claude GitHub App
 
-Visit https://github.com/apps/claude and install on the MeshIt repository.
+Visit https://github.com/apps/claude and install on the Mesh repository.
 
 Permissions needed:
 

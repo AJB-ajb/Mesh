@@ -22,6 +22,7 @@ const basePosting: PostingDetail = {
   team_size_max: 3,
   estimated_time: "2 weeks",
   category: "hackathon",
+  visibility: "public",
   mode: "open",
   status: "open",
   created_at: "2025-01-01T00:00:00Z",
@@ -44,6 +45,7 @@ const baseForm: PostingFormState = {
   teamSizeMax: "3",
   lookingFor: "3",
   category: "hackathon",
+  visibility: "public",
   mode: "open",
   status: "open",
   expiresAt: "2025-04-01",
@@ -56,6 +58,10 @@ const baseForm: PostingFormState = {
   contextIdentifier: "",
   skillLevelMin: "",
   autoAccept: "false",
+  availabilityMode: "flexible",
+  timezone: "",
+  availabilityWindows: [],
+  specificWindows: [],
   selectedSkills: [],
 };
 
@@ -123,11 +129,11 @@ describe("PostingAboutCard", () => {
         onFormChange={onFormChange}
       />,
     );
-    expect(screen.getByText("3 people")).toBeInTheDocument();
+    expect(screen.getByText(/Min 1 · Looking for 3/)).toBeInTheDocument();
   });
 
-  it("renders singular 'person' for team_size_max of 1", () => {
-    const posting = { ...basePosting, team_size_max: 1 };
+  it("renders team size with different min/max values", () => {
+    const posting = { ...basePosting, team_size_min: 2, team_size_max: 5 };
     render(
       <PostingAboutCard
         posting={posting}
@@ -136,7 +142,7 @@ describe("PostingAboutCard", () => {
         onFormChange={onFormChange}
       />,
     );
-    expect(screen.getByText("1 person")).toBeInTheDocument();
+    expect(screen.getByText(/Min 2 · Looking for 5/)).toBeInTheDocument();
   });
 
   it("renders estimated time", () => {
@@ -239,18 +245,7 @@ describe("PostingAboutCard", () => {
     expect(screen.getByText("CS101")).toBeInTheDocument();
   });
 
-  it("renders skill level minimum in view mode", () => {
-    const posting = { ...basePosting, skill_level_min: 5 };
-    render(
-      <PostingAboutCard
-        posting={posting}
-        isEditing={false}
-        form={baseForm}
-        onFormChange={onFormChange}
-      />,
-    );
-    expect(screen.getByText("5/10")).toBeInTheDocument();
-  });
+  // skill_level_min column dropped — now per-skill in posting_skills join table
 
   it("renders textarea in editing mode", () => {
     render(

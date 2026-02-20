@@ -2,7 +2,7 @@
 
 import useSWR from "swr";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { getUserOrThrow } from "@/lib/supabase/auth";
 import {
   type ProfileFormState,
   type SkillLevel,
@@ -11,13 +11,21 @@ import {
   defaultFormState,
 } from "@/lib/types/profile";
 import type { SelectedProfileSkill } from "@/lib/types/skill";
+import type {
+  RecurringWindow,
+  AvailabilityWindowRow,
+} from "@/lib/types/availability";
+import { parseWindowRow } from "@/lib/types/availability";
+import { windowsToGrid } from "@/lib/availability/quick-mode";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 export type ProfileFetchResult = {
+  profileId: string;
   form: ProfileFormState;
+  recurringWindows: RecurringWindow[];
   userEmail: string | null;
   connectedProviders: {
     github: boolean;
@@ -70,15 +78,7 @@ function parseAvailabilitySlots(raw: unknown): AvailabilitySlots {
 // ---------------------------------------------------------------------------
 
 async function fetchProfile(): Promise<ProfileFetchResult> {
-  const supabase = createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("Not authenticated");
-  }
+  const { supabase, user } = await getUserOrThrow();
 
   const identities = user.identities || [];
   const connectedProviders = {
@@ -151,6 +151,18 @@ async function fetchProfile(): Promise<ProfileFetchResult> {
       });
   }
 
+  // Load availability windows
+  const { data: windowRows } = await supabase
+    .from("availability_windows")
+    .select("*")
+    .eq("profile_id", user.id);
+
+  const recurringWindows: RecurringWindow[] = [];
+  for (const row of (windowRows ?? []) as AvailabilityWindowRow[]) {
+    const parsed = parseWindowRow(row);
+    if (parsed?.window_type === "recurring") recurringWindows.push(parsed);
+  }
+
   let form = defaultFormState;
   let sourceText: string | null = null;
   let canUndo = false;
@@ -158,6 +170,13 @@ async function fetchProfile(): Promise<ProfileFetchResult> {
   if (data) {
     sourceText = data.source_text ?? null;
     canUndo = !!data.previous_source_text;
+
+    // Derive grid from windows if available, fallback to DB slots
+    const gridFromWindows =
+      recurringWindows.length > 0
+        ? windowsToGrid(recurringWindows)
+        : parseAvailabilitySlots(data.availability_slots);
+
     form = {
       fullName: data.full_name ?? "",
       headline: data.headline ?? "",
@@ -172,13 +191,16 @@ async function fetchProfile(): Promise<ProfileFetchResult> {
       githubUrl: data.github_url ?? "",
       skillLevels: parseSkillLevels(data.skill_levels),
       locationMode: parseLocationMode(data.location_mode),
-      availabilitySlots: parseAvailabilitySlots(data.availability_slots),
+      availabilitySlots: gridFromWindows,
+      timezone: data.timezone ?? "",
       selectedSkills,
     };
   }
 
   return {
+    profileId: user.id,
     form,
+    recurringWindows,
     userEmail: user.email ?? null,
     connectedProviders,
     isGithubProvider,

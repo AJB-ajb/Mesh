@@ -26,6 +26,14 @@ export type Message = {
   created_at: string;
 };
 
+export type GroupMessage = {
+  id: string;
+  posting_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+};
+
 export type Notification = {
   id: string;
   user_id: string;
@@ -99,12 +107,25 @@ function isPresenceStateArray(value: unknown): value is PresenceState[] {
   );
 }
 
+function isGroupMessage(value: unknown): value is GroupMessage {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.id === "string" &&
+    typeof v.posting_id === "string" &&
+    typeof v.sender_id === "string" &&
+    typeof v.content === "string" &&
+    typeof v.created_at === "string"
+  );
+}
+
 // Exported for testing
 export const _typeGuards = {
   isMessage,
   isNotification,
   isConversation,
   isPresenceStateArray,
+  isGroupMessage,
 };
 
 /**
@@ -435,4 +456,49 @@ export function showBrowserNotification(
 
   // Auto-close after 5 seconds
   setTimeout(() => notification.close(), 5000);
+}
+
+/**
+ * Subscribe to real-time group messages for a posting
+ */
+export function subscribeToGroupMessages(
+  postingId: string,
+  onNewMessage: (message: GroupMessage) => void,
+): RealtimeChannel {
+  const supabase = createClient();
+
+  const channel = supabase
+    .channel(`group-messages:${postingId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "group_messages",
+        filter: `posting_id=eq.${postingId}`,
+      },
+      (payload) => {
+        if (isGroupMessage(payload.new)) {
+          onNewMessage(payload.new);
+        } else {
+          console.warn(
+            "[Realtime] Unexpected group message payload shape:",
+            payload.new,
+          );
+        }
+      },
+    )
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        console.log(
+          `[Realtime] Subscribed to group messages for posting ${postingId}`,
+        );
+      } else if (status === "CHANNEL_ERROR") {
+        console.error(
+          `[Realtime] Error subscribing to group messages for posting ${postingId}`,
+        );
+      }
+    });
+
+  return channel;
 }

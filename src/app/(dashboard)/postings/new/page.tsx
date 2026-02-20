@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-import { createClient } from "@/lib/supabase/client";
+import { labels } from "@/lib/labels";
 import { InputModeToggle } from "@/components/posting/input-mode-toggle";
 import { AiExtractionCard } from "@/components/posting/ai-extraction-card";
 import {
@@ -14,12 +14,6 @@ import {
 } from "@/components/posting/posting-form-card";
 import type { InputMode } from "@/components/posting/input-mode-toggle";
 import type { PostingFormState } from "@/components/posting/posting-form-card";
-
-const parseList = (value: string) =>
-  value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
 
 export default function NewPostingPage() {
   const router = useRouter();
@@ -50,7 +44,7 @@ export default function NewPostingPage() {
 
   const handleAiExtract = async () => {
     if (!aiText.trim()) {
-      setError("Please paste some text to extract posting information from.");
+      setError(labels.postingCreation.errorEmptyText);
       return;
     }
 
@@ -84,20 +78,38 @@ export default function NewPostingPage() {
           ? extracted.skills.join(", ")
           : prev.skills,
         estimatedTime: extracted.estimated_time || prev.estimatedTime,
-        teamSizeMin: "1",
+        teamSizeMin: extracted.team_size_min?.toString() || prev.teamSizeMin,
         teamSizeMax: extractedMax,
         lookingFor: extractedMax,
         category: extracted.category || prev.category,
-        mode: extracted.mode || prev.mode,
+        visibility:
+          extracted.visibility ||
+          (Array.isArray(extracted.invitees) && extracted.invitees.length > 0
+            ? "private"
+            : extracted.mode === "friend_ask"
+              ? "private"
+              : prev.visibility),
         tags: Array.isArray(extracted.tags)
           ? extracted.tags.join(", ")
           : prev.tags,
         contextIdentifier:
           extracted.context_identifier || prev.contextIdentifier,
-        skillLevelMin:
-          extracted.skill_level_min != null
-            ? extracted.skill_level_min.toString()
-            : prev.skillLevelMin,
+        skillLevelMin: prev.skillLevelMin,
+        availabilityMode: extracted.availability_mode || prev.availabilityMode,
+        timezone: extracted.timezone || prev.timezone,
+        availabilityWindows: Array.isArray(extracted.availability_windows)
+          ? extracted.availability_windows.map(
+              (w: {
+                day_of_week: number;
+                start_minutes: number;
+                end_minutes: number;
+              }) => ({
+                day_of_week: w.day_of_week,
+                start_minutes: w.start_minutes,
+                end_minutes: w.end_minutes,
+              }),
+            )
+          : prev.availabilityWindows,
       }));
 
       setExtractionSuccess(true);
@@ -120,179 +132,53 @@ export default function NewPostingPage() {
     setError(null);
 
     if (!form.description.trim()) {
-      setError("Please enter a posting description.");
+      setError(labels.postingCreation.errorEmptyDescription);
       return;
     }
-
-    // Auto-generate title from description if not provided
-    const title =
-      form.title.trim() ||
-      form.description.trim().split(/[.\n]/)[0].slice(0, 100) ||
-      "Untitled Posting";
 
     setIsSaving(true);
 
-    const supabase = createClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      setIsSaving(false);
-      setError("Please sign in to create a posting.");
-      return;
-    }
-
-    // First check if user has a profile (required for creator_id foreign key)
-    const { data: profile, error: profileCheckError } = await supabase
-      .from("profiles")
-      .select("user_id")
-      .eq("user_id", user.id)
-      .single();
-
-    if (profileCheckError && profileCheckError.code !== "PGRST116") {
-      // PGRST116 is "not found" which is expected if profile doesn't exist
-      setIsSaving(false);
-      console.error("Profile check error:", profileCheckError);
-      setError("Failed to verify your profile. Please try again.");
-      return;
-    }
-
-    if (!profile) {
-      // Create a minimal profile if it doesn't exist
-      const { error: profileError } = await supabase.from("profiles").insert({
-        user_id: user.id,
-        full_name:
-          user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
+    try {
+      const res = await fetch("/api/postings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
       });
 
-      if (profileError) {
+      const data = await res.json();
+
+      if (!res.ok) {
         setIsSaving(false);
-        console.error("Profile creation error:", profileError);
-        setError(
-          `Failed to create user profile: ${profileError.message || "Please try again."}`,
-        );
+        setError(data.error?.message || labels.postingCreation.errorGeneric);
         return;
       }
+
+      setIsSaving(false);
+      router.push(`/postings/${data.posting.id}`);
+    } catch {
+      setIsSaving(false);
+      setError(labels.postingCreation.errorGeneric);
     }
-
-    // Use the form's expiry date, falling back to 90 days from now
-    const lookingFor = Math.max(1, Math.min(10, Number(form.lookingFor) || 3));
-    const expiresAt = form.expiresAt
-      ? new Date(form.expiresAt + "T23:59:59")
-      : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
-
-    const locationLat = parseFloat(form.locationLat);
-    const locationLng = parseFloat(form.locationLng);
-    const maxDistanceKm = parseInt(form.maxDistanceKm, 10);
-
-    // Derive backward-compat skills array from selectedSkills (+ any free-form text)
-    const selectedSkillNames = form.selectedSkills.map((s) => s.name);
-    const freeFormSkills = parseList(form.skills);
-    const allSkillNames = [
-      ...new Set([...selectedSkillNames, ...freeFormSkills]),
-    ];
-
-    const { data: posting, error: insertError } = await supabase
-      .from("postings")
-      .insert({
-        creator_id: user.id,
-        title,
-        description: form.description.trim(),
-        skills: allSkillNames,
-        estimated_time: form.estimatedTime || null,
-        team_size_min: 1,
-        team_size_max: lookingFor,
-        category: form.category,
-        mode: form.mode,
-        status: "open",
-        expires_at: expiresAt.toISOString(),
-        location_mode: form.locationMode || "either",
-        location_name: form.locationName.trim() || null,
-        location_lat: Number.isFinite(locationLat) ? locationLat : null,
-        location_lng: Number.isFinite(locationLng) ? locationLng : null,
-        max_distance_km:
-          Number.isFinite(maxDistanceKm) && maxDistanceKm > 0
-            ? maxDistanceKm
-            : null,
-        tags: form.tags
-          ? form.tags
-              .split(",")
-              .map((t) => t.trim())
-              .filter(Boolean)
-          : [],
-        context_identifier: form.contextIdentifier.trim() || null,
-        skill_level_min: form.skillLevelMin
-          ? parseInt(form.skillLevelMin, 10)
-          : null,
-        auto_accept: form.autoAccept === "true",
-      })
-      .select()
-      .single();
-
-    setIsSaving(false);
-
-    if (insertError) {
-      console.error("Insert error:", insertError);
-
-      // Provide more specific error messages
-      let errorMessage = "Failed to create posting. Please try again.";
-
-      if (insertError.code === "23503") {
-        // Foreign key violation - profile doesn't exist
-        errorMessage =
-          "Your profile is missing. Please complete your profile first.";
-      } else if (insertError.code === "23505") {
-        // Unique violation
-        errorMessage = "A posting with this information already exists.";
-      } else if (insertError.code === "23514") {
-        // Check constraint violation
-        errorMessage = `Invalid posting data: ${insertError.message}`;
-      } else if (insertError.message) {
-        errorMessage = `Failed to create posting: ${insertError.message}`;
-      }
-
-      setError(errorMessage);
-      return;
-    }
-
-    // Insert posting_skills join table rows
-    if (form.selectedSkills.length > 0) {
-      const postingSkillRows = form.selectedSkills.map((s) => ({
-        posting_id: posting.id,
-        skill_id: s.skillId,
-        level_min: s.levelMin,
-      }));
-      await supabase.from("posting_skills").insert(postingSkillRows);
-    }
-
-    // Trigger embedding generation (fire-and-forget, non-blocking)
-    fetch("/api/embeddings/process", {
-      method: "POST",
-      headers: { "x-internal-call": "true" },
-    }).catch(() => {});
-
-    // Redirect to the new posting's page
-    router.push(`/postings/${posting.id}`);
   };
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       {/* Back link */}
       <Link
-        href="/postings"
+        href="/my-postings"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to postings
+        {labels.postingCreation.backButton}
       </Link>
 
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Create Posting</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {labels.postingCreation.pageTitle}
+        </h1>
         <p className="mt-1 text-muted-foreground">
-          Describe your posting and let AI find the perfect collaborators
+          {labels.postingCreation.subtitle}
         </p>
       </div>
 
@@ -332,8 +218,8 @@ export default function NewPostingPage() {
       {/* Info */}
       <p className="text-center text-sm text-muted-foreground">
         {inputMode === "ai"
-          ? "Paste your posting description and let AI extract the details automatically."
-          : "After creating your posting, our AI will immediately start finding matching collaborators based on your description."}
+          ? labels.postingCreation.infoAiMode
+          : labels.postingCreation.infoFormMode}
       </p>
     </div>
   );

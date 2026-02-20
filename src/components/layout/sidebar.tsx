@@ -3,11 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  LayoutDashboard,
+  Compass,
   FolderKanban,
+  Zap,
   Users,
-  Bookmark,
-  Inbox,
   Plus,
   Menu,
   X,
@@ -17,21 +16,21 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { Logo } from "./logo";
 import { NavItem } from "./nav-item";
 
 const navigation = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/postings", icon: FolderKanban, label: "Postings" },
-  { href: "/matches", icon: Users, label: "Matches" },
-  { href: "/bookmarks", icon: Bookmark, label: "Bookmarks" },
-  { href: "/inbox", icon: Inbox, label: "Inbox" },
+  { href: "/discover", icon: Compass, label: labels.nav.discover },
+  { href: "/my-postings", icon: FolderKanban, label: labels.nav.myPostings },
+  { href: "/active", icon: Zap, label: labels.nav.active },
+  { href: "/connections", icon: Users, label: labels.nav.connections },
 ];
 
 const secondaryNavigation = [
-  { href: "/profile", icon: User, label: "Profile" },
-  { href: "/settings", icon: Settings, label: "Settings" },
+  { href: "/profile", icon: User, label: labels.nav.profile },
+  { href: "/settings", icon: Settings, label: labels.nav.settings },
 ];
 
 interface SidebarProps {
@@ -70,7 +69,7 @@ export function Sidebar({ className }: SidebarProps) {
         ) : (
           <Menu className="h-5 w-5" />
         )}
-        <span className="sr-only">Toggle menu</span>
+        <span className="sr-only">{labels.nav.toggleMenu}</span>
       </Button>
 
       {/* Mobile overlay */}
@@ -106,7 +105,7 @@ export function Sidebar({ className }: SidebarProps) {
               isCollapsed ? "md:opacity-0 md:w-0" : "opacity-100",
             )}
           >
-            <Logo href="/dashboard" />
+            <Logo href="/active" />
           </div>
           {/* Collapse toggle - desktop only */}
           <Button
@@ -141,7 +140,7 @@ export function Sidebar({ className }: SidebarProps) {
                   isCollapsed && "md:hidden",
                 )}
               >
-                New Posting
+                {labels.common.newPosting}
               </span>
             </Link>
           </Button>
@@ -151,7 +150,7 @@ export function Sidebar({ className }: SidebarProps) {
         <nav
           className="flex-1 space-y-1 px-3"
           role="navigation"
-          aria-label="Main navigation"
+          aria-label={labels.nav.mainNavigation}
         >
           {navigation.map((item) => (
             <NavItem
@@ -166,7 +165,10 @@ export function Sidebar({ className }: SidebarProps) {
 
         {/* Secondary Navigation */}
         <div className="border-t border-sidebar-border px-3 py-4">
-          <nav className="space-y-1" aria-label="Secondary navigation">
+          <nav
+            className="space-y-1"
+            aria-label={labels.nav.secondaryNavigation}
+          >
             {secondaryNavigation.map((item) => (
               <NavItem
                 key={item.href}
@@ -186,7 +188,9 @@ export function Sidebar({ className }: SidebarProps) {
             isCollapsed && "md:opacity-0",
           )}
         >
-          <p className="text-xs text-muted-foreground">© 2026 MeshIt</p>
+          <p className="text-xs text-muted-foreground">
+            {labels.nav.copyright}
+          </p>
         </div>
       </aside>
     </>

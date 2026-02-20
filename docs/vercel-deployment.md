@@ -1,4 +1,4 @@
-# Deploying MeshIt to Vercel
+# Deploying Mesh to Vercel
 
 ## Prerequisites
 
@@ -124,7 +124,7 @@ pnpm vercel env add NEXT_PUBLIC_VERCEL_URL
 pnpm vercel --prod
 ```
 
-After redeployment, the banner will disappear and the app will show "MeshIt" instead of "MeshIt - Test".
+After redeployment, the banner will disappear and the app will show "Mesh" instead of "Mesh - Test".
 
 **Verification:** Visit `https://mesh-it.vercel.app/api/debug/env` to see environment detection status.
 

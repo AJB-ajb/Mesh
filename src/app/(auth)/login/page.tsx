@@ -4,7 +4,8 @@ import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
-import { Logo } from "@/components/layout/logo";
+import { AuthLayout } from "@/components/auth/auth-layout";
+import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
@@ -14,14 +15,12 @@ import {
   LinkedInIcon,
   LoaderIcon,
 } from "@/components/icons/auth-icons";
-
-type OAuthProvider = "google" | "github" | "linkedin" | null;
+import { useOAuthSignIn } from "@/lib/hooks/use-oauth-sign-in";
 
 function LoginForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingProvider, setLoadingProvider] = useState<OAuthProvider>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
@@ -33,6 +32,8 @@ function LoginForm() {
       ? `${origin}/callback?next=${encodeURIComponent(next)}`
       : `${origin}/callback`;
   };
+  const { loadingProvider, signIn, isOAuthLoading } =
+    useOAuthSignIn(getCallbackUrl);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,69 +50,26 @@ function LoginForm() {
       setFormError(signInError.message);
       setIsLoading(false);
     } else {
-      router.push(next || "/dashboard");
+      router.push(next || "/active");
     }
   };
-
-  const handleGoogleSignIn = async () => {
-    setLoadingProvider("google");
-
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: getCallbackUrl(),
-      },
-    });
-
-    if (signInError) {
-      setLoadingProvider(null);
-    }
-  };
-
-  const handleGitHubSignIn = async () => {
-    setLoadingProvider("github");
-
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: {
-        redirectTo: getCallbackUrl(),
-      },
-    });
-
-    if (signInError) {
-      setLoadingProvider(null);
-    }
-  };
-
-  const handleLinkedInSignIn = async () => {
-    setLoadingProvider("linkedin");
-
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithOAuth({
-      provider: "linkedin_oidc",
-      options: {
-        redirectTo: getCallbackUrl(),
-      },
-    });
-
-    if (signInError) {
-      setLoadingProvider(null);
-    }
-  };
-
-  const isOAuthLoading = loadingProvider !== null;
 
   return (
-    <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
-      <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-semibold">Welcome back</h1>
-        <p className="text-sm text-muted-foreground">
-          Sign in to continue to MeshIt.
-        </p>
-      </div>
-
+    <AuthLayout
+      title={labels.auth.login.title}
+      subtitle={labels.auth.login.subtitle}
+      footer={
+        <>
+          {labels.auth.login.noAccount}{" "}
+          <Link
+            href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"}
+            className="text-primary hover:underline"
+          >
+            {labels.common.signUp}
+          </Link>
+        </>
+      }
+    >
       {error || formError ? (
         <p className="mt-6 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error || formError}
@@ -121,7 +79,7 @@ function LoginForm() {
       <form onSubmit={handleEmailSignIn} className="mt-6 space-y-4">
         <div className="space-y-2">
           <label htmlFor="email" className="text-sm font-medium">
-            Email
+            {labels.common.emailLabel}
           </label>
           <Input
             id="email"
@@ -136,13 +94,13 @@ function LoginForm() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label htmlFor="password" className="text-sm font-medium">
-              Password
+              {labels.common.passwordLabel}
             </label>
             <Link
               href="/forgot-password"
               className="text-sm text-primary hover:underline"
             >
-              Forgot password?
+              {labels.auth.login.forgotPassword}
             </Link>
           </div>
           <Input
@@ -160,7 +118,7 @@ function LoginForm() {
           className="w-full"
           disabled={isLoading || isOAuthLoading}
         >
-          {isLoading ? "Signing in..." : "Sign in"}
+          {isLoading ? labels.auth.login.signingIn : labels.common.signIn}
         </Button>
       </form>
 
@@ -170,7 +128,7 @@ function LoginForm() {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-card px-2 text-muted-foreground">
-            Or continue with
+            {labels.common.orContinueWith}
           </span>
         </div>
       </div>
@@ -180,7 +138,7 @@ function LoginForm() {
           type="button"
           variant="outline"
           className="flex-1"
-          onClick={handleGoogleSignIn}
+          onClick={() => signIn("google")}
           disabled={isLoading || isOAuthLoading}
         >
           {loadingProvider === "google" ? (
@@ -193,7 +151,7 @@ function LoginForm() {
           type="button"
           variant="outline"
           className="flex-1"
-          onClick={handleGitHubSignIn}
+          onClick={() => signIn("github")}
           disabled={isLoading || isOAuthLoading}
         >
           {loadingProvider === "github" ? (
@@ -206,7 +164,7 @@ function LoginForm() {
           type="button"
           variant="outline"
           className="flex-1"
-          onClick={handleLinkedInSignIn}
+          onClick={() => signIn("linkedin")}
           disabled={isLoading || isOAuthLoading}
         >
           {loadingProvider === "linkedin" ? (
@@ -216,48 +174,27 @@ function LoginForm() {
           )}
         </Button>
       </div>
-
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
-        <Link
-          href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"}
-          className="text-primary hover:underline"
-        >
-          Sign up
-        </Link>
-      </p>
-    </div>
+    </AuthLayout>
   );
 }
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <header className="flex h-16 items-center justify-between border-b border-border/50 px-6 lg:px-8">
-        <Logo />
-      </header>
-
-      <main className="flex flex-1 items-center justify-center px-6 py-16 lg:px-8">
-        <Suspense
-          fallback={
-            <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
-              <div className="space-y-2 text-center">
-                <h1 className="text-2xl font-semibold">Welcome back</h1>
-                <p className="text-sm text-muted-foreground">
-                  Sign in to continue to MeshIt.
-                </p>
-              </div>
-              <div className="mt-6 space-y-3">
-                <Button type="button" className="w-full" disabled>
-                  Loading...
-                </Button>
-              </div>
-            </div>
-          }
+    <Suspense
+      fallback={
+        <AuthLayout
+          title={labels.auth.login.title}
+          subtitle={labels.auth.login.subtitle}
         >
-          <LoginForm />
-        </Suspense>
-      </main>
-    </div>
+          <div className="mt-6 space-y-3">
+            <Button type="button" className="w-full" disabled>
+              {labels.common.loading}
+            </Button>
+          </div>
+        </AuthLayout>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

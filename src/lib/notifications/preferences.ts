@@ -2,6 +2,8 @@
  * Notification preference types and utility functions.
  */
 
+import { labels } from "@/lib/labels";
+
 export type NotificationType =
   | "interest_received"
   | "application_accepted"
@@ -9,6 +11,7 @@ export type NotificationType =
   | "friend_request"
   | "sequential_invite"
   | "new_message"
+  | "new_group_message"
   | "match_found";
 
 export type NotificationChannel = "in_app" | "browser";
@@ -28,6 +31,7 @@ export const defaultNotificationPreferences: NotificationPreferences = {
     friend_request: true,
     sequential_invite: true,
     new_message: true,
+    new_group_message: true,
     match_found: true,
   },
   browser: {
@@ -37,6 +41,7 @@ export const defaultNotificationPreferences: NotificationPreferences = {
     friend_request: true,
     sequential_invite: true,
     new_message: true,
+    new_group_message: true,
     match_found: false,
   },
 };
@@ -58,15 +63,8 @@ export function shouldNotify(
 }
 
 /** Human-readable labels for notification types. */
-export const notificationTypeLabels: Record<NotificationType, string> = {
-  interest_received: "Interest Received",
-  application_accepted: "Application Accepted",
-  application_rejected: "Application Rejected",
-  friend_request: "Connection Request",
-  sequential_invite: "Sequential Invite",
-  new_message: "New Message",
-  match_found: "Match Found",
-};
+export const notificationTypeLabels: Record<NotificationType, string> =
+  labels.notification.typeLabels;
 
 /** All notification types in display order. */
 export const allNotificationTypes: NotificationType[] = [
@@ -76,5 +74,6 @@ export const allNotificationTypes: NotificationType[] = [
   "friend_request",
   "sequential_invite",
   "new_message",
+  "new_group_message",
   "match_found",
 ];

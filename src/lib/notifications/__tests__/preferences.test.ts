@@ -58,6 +58,26 @@ describe("shouldNotify", () => {
     expect(shouldNotify(prefs, "new_message", "in_app")).toBe(false);
   });
 
+  it("returns true for new_group_message in_app with default prefs", () => {
+    expect(
+      shouldNotify(
+        defaultNotificationPreferences,
+        "new_group_message",
+        "in_app",
+      ),
+    ).toBe(true);
+  });
+
+  it("returns true for new_group_message browser with default prefs", () => {
+    expect(
+      shouldNotify(
+        defaultNotificationPreferences,
+        "new_group_message",
+        "browser",
+      ),
+    ).toBe(true);
+  });
+
   it("falls back to true for unknown type", () => {
     const prefs = defaultNotificationPreferences;
     // Cast to simulate a type that doesn't exist in the preferences

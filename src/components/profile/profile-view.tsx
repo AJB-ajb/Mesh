@@ -10,6 +10,8 @@ import {
   TIME_SLOTS,
   TIME_SLOT_LABELS,
 } from "@/lib/types/profile";
+import type { RecurringWindow } from "@/lib/types/availability";
+import { CalendarWeekView } from "@/components/availability/calendar-week-view";
 
 const LOCATION_MODE_DISPLAY: Record<string, string> = {
   remote: "Remote",
@@ -25,7 +27,15 @@ function skillLevelLabel(level: number): string {
   return "Expert";
 }
 
-export function ProfileView({ form }: { form: ProfileFormState }) {
+export function ProfileView({
+  form,
+  availabilityWindows,
+  busyBlocks,
+}: {
+  form: ProfileFormState;
+  availabilityWindows?: RecurringWindow[];
+  busyBlocks?: RecurringWindow[];
+}) {
   const skillsList = parseList(form.skills);
   const interestsList = parseList(form.interests);
 
@@ -80,6 +90,31 @@ export function ProfileView({ form }: { form: ProfileFormState }) {
               </p>
             </div>
           </div>
+
+          {/* Tree-based skills */}
+          {form.selectedSkills.length > 0 && (
+            <div>
+              <p className="mb-2 text-sm text-muted-foreground">Skills</p>
+              <div className="space-y-2">
+                {form.selectedSkills.map((skill) => (
+                  <div key={skill.skillId} className="flex items-center gap-3">
+                    <span className="w-32 truncate text-sm font-medium">
+                      {skill.name}
+                    </span>
+                    <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{ width: `${(skill.level / 10) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground w-24 text-right">
+                      {skill.level}/10 ({skillLevelLabel(skill.level)})
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Skill levels */}
           {form.skillLevels.length > 0 && (
@@ -167,8 +202,22 @@ export function ProfileView({ form }: { form: ProfileFormState }) {
         </CardContent>
       </Card>
 
-      {/* Availability */}
-      {hasAvailability && (
+      {/* Availability — prefer CalendarWeekView if windows are available */}
+      {availabilityWindows && availabilityWindows.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Availability</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CalendarWeekView
+              windows={availabilityWindows}
+              onChange={() => {}}
+              readOnly
+              busyBlocks={busyBlocks}
+            />
+          </CardContent>
+        </Card>
+      ) : hasAvailability ? (
         <Card>
           <CardHeader>
             <CardTitle>Availability</CardTitle>
@@ -202,7 +251,7 @@ export function ProfileView({ form }: { form: ProfileFormState }) {
                             <div
                               className={`h-6 w-full rounded-md ${
                                 active
-                                  ? "bg-primary/20 border border-primary"
+                                  ? "bg-destructive/15 border border-destructive/50"
                                   : "bg-muted border border-transparent"
                               }`}
                             />
@@ -216,7 +265,7 @@ export function ProfileView({ form }: { form: ProfileFormState }) {
             </div>
           </CardContent>
         </Card>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -1,10 +1,9 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 
 /**
  * GET /api/friend-ask
- * List sequential invite sequences created by the authenticated user.
+ * List invite sequences created by the authenticated user.
  */
 export const GET = withAuth(async (_req, { user, supabase }) => {
   const { data, error } = await supabase
@@ -15,23 +14,20 @@ export const GET = withAuth(async (_req, { user, supabase }) => {
 
   if (error) return apiError("INTERNAL", error.message, 500);
 
-  return NextResponse.json({ friend_asks: data });
+  return apiSuccess({ friend_asks: data });
 });
 
 /**
  * POST /api/friend-ask
- * Create a sequential invite for a posting.
- * Body: { posting_id: string, ordered_friend_list: string[] }
+ * Create an invite for a posting (sequential or parallel).
+ * Body: { posting_id: string, ordered_friend_list: string[], invite_mode?: "sequential" | "parallel" }
  */
 export const POST = withAuth(async (req, { user, supabase }) => {
-  let body: { posting_id?: string; ordered_friend_list?: string[] };
-  try {
-    body = await req.json();
-  } catch {
-    return apiError("VALIDATION", "Invalid JSON body", 400);
-  }
-
-  const { posting_id, ordered_friend_list } = body;
+  const { posting_id, ordered_friend_list, invite_mode } = await parseBody<{
+    posting_id?: string;
+    ordered_friend_list?: string[];
+    invite_mode?: string;
+  }>(req);
 
   if (!posting_id) {
     return apiError("VALIDATION", "posting_id is required", 400);
@@ -49,10 +45,20 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     );
   }
 
+  // Validate invite_mode if provided
+  const resolvedInviteMode = invite_mode || "sequential";
+  if (!["sequential", "parallel"].includes(resolvedInviteMode)) {
+    return apiError(
+      "VALIDATION",
+      "invite_mode must be 'sequential' or 'parallel'",
+      400,
+    );
+  }
+
   // Verify the posting exists and belongs to the user
   const { data: posting, error: postingError } = await supabase
     .from("postings")
-    .select("id, creator_id, mode")
+    .select("id, creator_id")
     .eq("id", posting_id)
     .single();
 
@@ -63,20 +69,12 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   if (posting.creator_id !== user.id) {
     return apiError(
       "FORBIDDEN",
-      "You can only create sequential invites for your own postings",
+      "You can only create invites for your own postings",
       403,
     );
   }
 
-  // Set the posting mode to friend_ask
-  if (posting.mode !== "friend_ask") {
-    await supabase
-      .from("postings")
-      .update({ mode: "friend_ask" })
-      .eq("id", posting_id);
-  }
-
-  // Check for an existing active sequential invite on this posting
+  // Check for an existing active invite on this posting
   const { data: existing } = await supabase
     .from("friend_asks")
     .select("id")
@@ -88,7 +86,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   if (existing) {
     return apiError(
       "CONFLICT",
-      "An active sequential invite already exists for this posting",
+      "An active invite already exists for this posting",
       409,
     );
   }
@@ -99,11 +97,12 @@ export const POST = withAuth(async (req, { user, supabase }) => {
       posting_id,
       creator_id: user.id,
       ordered_friend_list,
+      invite_mode: resolvedInviteMode,
     })
     .select()
     .single();
 
   if (error) return apiError("INTERNAL", error.message, 500);
 
-  return NextResponse.json({ friend_ask: data }, { status: 201 });
+  return apiSuccess({ friend_ask: data }, 201);
 });

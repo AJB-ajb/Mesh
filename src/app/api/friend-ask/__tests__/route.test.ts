@@ -177,7 +177,7 @@ describe("POST /api/friend-ask", () => {
 
   it("creates a friend-ask on success", async () => {
     authedUser();
-    const posting = { id: "p1", creator_id: "user-1", mode: "open" };
+    const posting = { id: "p1", creator_id: "user-1" };
     const newFA = {
       id: "fa-new",
       posting_id: "p1",
@@ -191,14 +191,7 @@ describe("POST /api/friend-ask", () => {
     mockFrom.mockImplementation(() => {
       callCount++;
       if (callCount === 1) return chain({ data: posting, error: null }); // posting check
-      if (callCount === 2) {
-        // update posting mode
-        const q = chain({ data: null, error: null });
-        q.then = (resolve: (v: unknown) => void) =>
-          resolve({ data: null, error: null });
-        return q;
-      }
-      if (callCount === 3) return chain({ data: null, error: null }); // existing check → not found
+      if (callCount === 2) return chain({ data: null, error: null }); // existing check → not found
       return chain({ data: newFA, error: null }); // insert
     });
 

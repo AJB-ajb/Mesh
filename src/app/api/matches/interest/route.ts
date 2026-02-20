@@ -1,5 +1,5 @@
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, apiSuccess } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 
 /**
  * POST /api/matches/interest
@@ -7,8 +7,7 @@ import { apiError, apiSuccess } from "@/lib/errors";
  * Creates a match record with status: 'interested'.
  */
 export const POST = withAuth(async (req, { user, supabase }) => {
-  const body = await req.json();
-  const { posting_id } = body;
+  const { posting_id } = await parseBody<{ posting_id?: string }>(req);
 
   if (!posting_id || typeof posting_id !== "string") {
     return apiError("VALIDATION", "posting_id is required", 400);
@@ -17,7 +16,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   // Fetch the posting
   const { data: posting, error: postingError } = await supabase
     .from("postings")
-    .select("id, creator_id, mode, status")
+    .select("id, creator_id, mode, visibility, status")
     .eq("id", posting_id)
     .single();
 
@@ -25,11 +24,14 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     return apiError("NOT_FOUND", "Posting not found", 404);
   }
 
-  // Must be an open-mode posting
-  if (posting.mode !== "open") {
+  // Must be a public posting (not private/invite-only)
+  const postingVisibility =
+    posting.visibility ??
+    (posting.mode === "friend_ask" ? "private" : "public");
+  if (postingVisibility === "private") {
     return apiError(
       "VALIDATION",
-      "Can only express interest in open-mode postings",
+      "Can only express interest in public postings",
       400,
     );
   }

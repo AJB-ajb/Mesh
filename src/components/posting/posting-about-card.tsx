@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Users, Calendar, Clock, MapPin, Search } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Users, Calendar, Clock, MapPin, Search, Loader2 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LocationAutocomplete } from "@/components/location/location-autocomplete";
 import { NOT_SPECIFIED } from "@/lib/format";
-import type { GeocodingResult } from "@/lib/geocoding";
+import { reverseGeocode, type GeocodingResult } from "@/lib/geocoding";
+import { labels } from "@/lib/labels";
+import { LOCATION } from "@/lib/constants";
+import { getLocationModeDisplay } from "@/lib/posting/location";
 import type {
   PostingDetail,
   PostingFormState,
@@ -22,18 +25,6 @@ type PostingAboutCardProps = {
   onFormChange: (field: keyof PostingFormState, value: string) => void;
 };
 
-function getLocationModeDisplay(mode: string | null) {
-  switch (mode) {
-    case "remote":
-      return { icon: "🏠", label: "Remote" };
-    case "in_person":
-      return { icon: "📍", label: "In-person" };
-    case "either":
-    default:
-      return { icon: "🌐", label: "Flexible" };
-  }
-}
-
 function LocationEditFields({
   form,
   onFormChange,
@@ -42,6 +33,8 @@ function LocationEditFields({
   onFormChange: (field: keyof PostingFormState, value: string) => void;
 }) {
   const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [isGeolocating, setIsGeolocating] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
   const showLocation =
     form.locationMode === "in_person" || form.locationMode === "either";
   const showMaxDistance = form.locationMode === "in_person";
@@ -52,6 +45,58 @@ function LocationEditFields({
     onFormChange("locationLng", result.lng.toString());
     setShowAutocomplete(false);
   };
+
+  const handleUseCurrentLocation = useCallback(async () => {
+    setIsGeolocating(true);
+    setGeoError(null);
+
+    if (!navigator.geolocation) {
+      setGeoError("Geolocation is not supported by your browser");
+      setIsGeolocating(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        try {
+          const result = await reverseGeocode(lat, lng);
+          onFormChange("locationName", result.displayName);
+          onFormChange("locationLat", lat.toString());
+          onFormChange("locationLng", lng.toString());
+          setShowAutocomplete(false);
+        } catch {
+          setGeoError("Failed to get address from coordinates");
+        } finally {
+          setIsGeolocating(false);
+        }
+      },
+      (error) => {
+        let errorMessage = "Failed to get your location";
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage =
+              "Location permission denied. Please use search or manual entry.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage =
+              "Location information unavailable. Please try search instead.";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "Location request timed out. Please try again.";
+            break;
+        }
+        setGeoError(errorMessage);
+        setIsGeolocating(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: LOCATION.GEOLOCATION_TIMEOUT_MS,
+        maximumAge: 0,
+      },
+    );
+  }, [onFormChange]);
 
   return (
     <>
@@ -84,24 +129,41 @@ function LocationEditFields({
               placeholder="e.g., Berlin, Germany"
             />
           )}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAutocomplete(!showAutocomplete)}
-          >
-            {showAutocomplete ? (
-              <>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAutocomplete(!showAutocomplete)}
+            >
+              {showAutocomplete ? (
+                <>
+                  <MapPin className="mr-1 h-3 w-3" />
+                  Manual entry
+                </>
+              ) : (
+                <>
+                  <Search className="mr-1 h-3 w-3" />
+                  Search location
+                </>
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleUseCurrentLocation}
+              disabled={isGeolocating}
+            >
+              {isGeolocating ? (
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+              ) : (
                 <MapPin className="mr-1 h-3 w-3" />
-                Manual entry
-              </>
-            ) : (
-              <>
-                <Search className="mr-1 h-3 w-3" />
-                Search location
-              </>
-            )}
-          </Button>
+              )}
+              {labels.profileForm.useCurrentLocation}
+            </Button>
+          </div>
+          {geoError && <p className="text-xs text-destructive">{geoError}</p>}
         </div>
       )}
       {showMaxDistance && (
@@ -194,14 +256,6 @@ export function PostingAboutCard({
           </div>
         )}
 
-        {/* Skill Level Minimum */}
-        {!isEditing && posting.skill_level_min != null && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Minimum Skill Level</h4>
-            <span className="text-sm">{posting.skill_level_min}/10</span>
-          </div>
-        )}
-
         {/* Meta */}
         {isEditing ? (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -226,6 +280,17 @@ export function PostingAboutCard({
                 <option value="professional">Professional</option>
                 <option value="social">Social</option>
               </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Min team size</label>
+              <Input
+                type="number"
+                min={1}
+                max={10}
+                value={form.teamSizeMin}
+                onChange={(e) => onFormChange("teamSizeMin", e.target.value)}
+                placeholder="Min people needed (1-10)"
+              />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Looking for</label>
@@ -329,10 +394,10 @@ export function PostingAboutCard({
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg border border-border p-4">
               <Users className="h-5 w-5 text-muted-foreground" />
-              <p className="mt-2 text-sm text-muted-foreground">Looking for</p>
+              <p className="mt-2 text-sm text-muted-foreground">Team size</p>
               <p className="font-medium">
-                {posting.team_size_max}{" "}
-                {posting.team_size_max === 1 ? "person" : "people"}
+                Min {posting.team_size_min} · Looking for{" "}
+                {posting.team_size_max}
               </p>
             </div>
             <div className="rounded-lg border border-border p-4">

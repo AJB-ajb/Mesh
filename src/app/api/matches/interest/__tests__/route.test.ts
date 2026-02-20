@@ -85,13 +85,14 @@ describe("POST /api/matches/interest", () => {
     expect(body.error.code).toBe("NOT_FOUND");
   });
 
-  it("returns 400 when posting is not open mode", async () => {
-    // First call: fetch posting — returns friend_ask mode
+  it("returns 400 when posting is private", async () => {
+    // First call: fetch posting — returns private visibility
     const postingQuery = mockQuery({
       data: {
         id: "posting-1",
         creator_id: "other-user",
         mode: "friend_ask",
+        visibility: "private",
         status: "open",
       },
       error: null,
@@ -103,7 +104,7 @@ describe("POST /api/matches/interest", () => {
     const body = await response.json();
 
     expect(response.status).toBe(400);
-    expect(body.error.message).toContain("open-mode");
+    expect(body.error.message).toContain("public");
   });
 
   it("returns 400 when user tries to express interest in own posting", async () => {

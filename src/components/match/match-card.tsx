@@ -1,5 +1,6 @@
 import { Check, X, MessageSquare } from "lucide-react";
 
+import { labels } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +40,7 @@ export function MatchCard({
   return (
     <Card className={cn("overflow-hidden", className)}>
       <CardHeader className="pb-4">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="flex items-center gap-3">
             <Avatar className="h-12 w-12">
               {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
@@ -48,7 +49,10 @@ export function MatchCard({
             <div>
               <div className="flex items-center gap-2">
                 <CardTitle className="text-lg">{name}</CardTitle>
-                <Badge variant="success">{matchScore}% match</Badge>
+                <Badge variant="success">
+                  {matchScore}
+                  {labels.matchCard.matchSuffix}
+                </Badge>
               </div>
               <p className="text-sm text-muted-foreground line-clamp-1">
                 {description}
@@ -57,12 +61,12 @@ export function MatchCard({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             {status === "pending" && onAccept && (
               <>
                 <Button size="sm" onClick={onAccept}>
                   <Check className="h-4 w-4" />
-                  Accept
+                  {labels.matchCard.accept}
                 </Button>
                 {onDecline && (
                   <Button size="sm" variant="outline" onClick={onDecline}>
@@ -74,7 +78,7 @@ export function MatchCard({
             {status === "accepted" && onMessage && (
               <Button size="sm" onClick={onMessage}>
                 <MessageSquare className="h-4 w-4" />
-                Message
+                {labels.matchCard.message}
               </Button>
             )}
           </div>
@@ -95,7 +99,8 @@ export function MatchCard({
 
         {/* Availability */}
         <p className="text-xs text-muted-foreground">
-          Available: {availability}
+          {labels.matchCard.availablePrefix}
+          {availability}
         </p>
       </CardContent>
     </Card>
