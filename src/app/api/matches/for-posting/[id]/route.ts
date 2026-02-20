@@ -1,11 +1,10 @@
-import { NextResponse } from "next/server";
 import {
   matchPostingToProfiles,
   createMatchRecordsForPosting,
 } from "@/lib/matching/posting-to-profile";
 import type { MatchResponse } from "@/lib/supabase/types";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError } from "@/lib/errors";
+import { apiError, apiSuccess } from "@/lib/errors";
 
 /**
  * GET /api/matches/for-posting/[id]
@@ -46,5 +45,5 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
     created_at: new Date().toISOString(),
   }));
 
-  return NextResponse.json({ matches: response });
+  return apiSuccess({ matches: response });
 });

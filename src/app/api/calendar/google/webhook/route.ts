@@ -4,7 +4,8 @@
  * When Google detects changes, it POSTs here. We trigger a sync.
  */
 
-import { NextResponse, type NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
+import { apiError, apiSuccess } from "@/lib/errors";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import {
   fetchFreeBusy,
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
   const resourceId = req.headers.get("x-goog-resource-id");
 
   if (!channelId || !resourceId) {
-    return NextResponse.json({ error: "Missing headers" }, { status: 400 });
+    return apiError("VALIDATION", "Missing headers", 400);
   }
 
   try {
@@ -38,14 +39,14 @@ export async function POST(req: NextRequest) {
 
     if (fetchError || !connection) {
       // Channel may have been removed — acknowledge anyway
-      return NextResponse.json({ ok: true });
+      return apiSuccess({ ok: true });
     }
 
     if (
       !connection.access_token_encrypted ||
       !connection.refresh_token_encrypted
     ) {
-      return NextResponse.json({ ok: true });
+      return apiSuccess({ ok: true });
     }
 
     await updateConnectionSyncStatus(supabase, connection.id, "syncing");
@@ -109,5 +110,5 @@ export async function POST(req: NextRequest) {
     // Still return 200 to acknowledge the notification
   }
 
-  return NextResponse.json({ ok: true });
+  return apiSuccess({ ok: true });
 }

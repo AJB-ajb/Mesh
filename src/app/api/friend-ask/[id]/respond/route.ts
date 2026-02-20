@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, parseBody } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 import {
   type NotificationPreferences,
   shouldNotify,
@@ -167,7 +166,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
         `${responderName} has joined "${postingTitle}"`,
       );
 
-      return NextResponse.json({
+      return apiSuccess({
         friend_ask: data,
         message: "Invite accepted",
       });
@@ -190,7 +189,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       `${responderName} has joined "${postingTitle}"`,
     );
 
-    return NextResponse.json({
+    return apiSuccess({
       friend_ask: data,
       message: "Invite accepted",
     });
@@ -223,7 +222,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       if (!data)
         return apiError("NOT_FOUND", "Failed to read back updated invite", 404);
 
-      return NextResponse.json({
+      return apiSuccess({
         friend_ask: data,
         message: "Declined. All connections have responded — invite completed.",
       });
@@ -240,7 +239,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     if (!data)
       return apiError("NOT_FOUND", "Failed to read back updated invite", 404);
 
-    return NextResponse.json({
+    return apiSuccess({
       friend_ask: data,
       message: "Declined. Other connections can still accept.",
     });
@@ -262,7 +261,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     if (!data)
       return apiError("NOT_FOUND", "Failed to read back updated invite", 404);
 
-    return NextResponse.json({
+    return apiSuccess({
       friend_ask: data,
       message:
         "Declined. No more connections in the list — sequence completed.",
@@ -285,7 +284,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
   const nextFriendId = friendAsk.ordered_friend_list[nextIndex];
   await notifyFriend(nextFriendId);
 
-  return NextResponse.json({
+  return apiSuccess({
     friend_ask: data,
     message: "Declined. Next connection will be asked.",
     next_friend_id: nextFriendId,

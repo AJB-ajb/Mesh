@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, parseBody } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 import { sendNotification } from "@/lib/notifications/create";
 
 /**
@@ -17,7 +16,7 @@ export const GET = withAuth(async (_req, { user, supabase }) => {
 
   if (error) return apiError("INTERNAL", error.message, 500);
 
-  return NextResponse.json({ friendships: data });
+  return apiSuccess({ friendships: data });
 });
 
 /**
@@ -83,5 +82,5 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     supabase,
   );
 
-  return NextResponse.json({ friendship: data }, { status: 201 });
+  return apiSuccess({ friendship: data }, 201);
 });

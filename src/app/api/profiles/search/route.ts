@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError } from "@/lib/errors";
+import { apiError, apiSuccess } from "@/lib/errors";
 
 /**
  * GET /api/profiles/search?q=<query>
@@ -25,7 +24,7 @@ export const GET = withAuth(async (req, { user, supabase }) => {
   if (error) return apiError("INTERNAL", error.message, 500);
 
   if (!profiles || profiles.length === 0) {
-    return NextResponse.json({ profiles: [] });
+    return apiSuccess({ profiles: [] });
   }
 
   // Fetch all existing friendships with these users in one query
@@ -54,8 +53,11 @@ export const GET = withAuth(async (req, { user, supabase }) => {
 
   const enriched = profiles.map((p) => {
     const f = friendshipMap.get(p.user_id);
-    let connectionStatus: "none" | "pending_sent" | "pending_incoming" | "accepted" =
-      "none";
+    let connectionStatus:
+      | "none"
+      | "pending_sent"
+      | "pending_incoming"
+      | "accepted" = "none";
 
     if (f) {
       if (f.status === "accepted") {
@@ -69,5 +71,5 @@ export const GET = withAuth(async (req, { user, supabase }) => {
     return { ...p, connectionStatus };
   });
 
-  return NextResponse.json({ profiles: enriched });
+  return apiSuccess({ profiles: enriched });
 });

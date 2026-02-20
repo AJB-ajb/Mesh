@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError } from "@/lib/errors";
+import { apiError, apiSuccess } from "@/lib/errors";
 import {
   type NotificationPreferences,
   shouldNotify,
@@ -94,7 +93,7 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
 
     await Promise.all(toNotify.map(notifyConnection));
 
-    return NextResponse.json({
+    return apiSuccess({
       friend_ask: friendAsk,
       notified_count: toNotify.length,
     });
@@ -114,7 +113,7 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
 
     if (error) return apiError("INTERNAL", error.message, 500);
 
-    return NextResponse.json({
+    return apiSuccess({
       friend_ask: data,
       message: "All connections have been asked. Sequence completed.",
     });
@@ -123,7 +122,7 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
   const currentFriendId = friendAsk.ordered_friend_list[currentIndex];
   await notifyConnection(currentFriendId);
 
-  return NextResponse.json({
+  return apiSuccess({
     friend_ask: friendAsk,
     current_friend_id: currentFriendId,
   });

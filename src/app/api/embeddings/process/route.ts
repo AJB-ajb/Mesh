@@ -9,14 +9,13 @@
  * 3. Updates records with embeddings and marks needs_embedding = false
  */
 
-import { NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import {
   generateEmbeddingsBatch,
   composeProfileText,
   composePostingText,
 } from "@/lib/ai/embeddings";
-import { apiError } from "@/lib/errors";
+import { apiError, apiSuccess } from "@/lib/errors";
 
 const BATCH_LIMIT = 50;
 const MAX_RETRIES = 2;
@@ -117,9 +116,7 @@ export async function POST(req: Request) {
     // Fetch pending postings with join table skills
     const { data: pendingPostings, error: postingsError } = await supabase
       .from("postings")
-      .select(
-        "id, title, description, posting_skills(skill_nodes(name))",
-      )
+      .select("id, title, description, posting_skills(skill_nodes(name))")
       .eq("needs_embedding", true)
       .limit(BATCH_LIMIT);
 
@@ -134,7 +131,7 @@ export async function POST(req: Request) {
     const postings = (pendingPostings ?? []) as PostingRow[];
 
     if (profiles.length === 0 && postings.length === 0) {
-      return NextResponse.json({
+      return apiSuccess({
         processed: { profiles: 0, postings: 0 },
         errors: [],
       });
@@ -268,7 +265,7 @@ export async function POST(req: Request) {
         .eq("id", postingId);
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       processed: { profiles: processedProfiles, postings: processedPostings },
       skipped: {
         profiles: skippedProfiles.length,

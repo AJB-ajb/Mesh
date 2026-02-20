@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import {
   matchProfileToPostings,
   createMatchRecords,
@@ -6,6 +5,7 @@ import {
 } from "@/lib/matching/profile-to-posting";
 import type { MatchResponse } from "@/lib/supabase/types";
 import { withAuth } from "@/lib/api/with-auth";
+import { apiSuccess } from "@/lib/errors";
 import {
   type NotificationPreferences,
   shouldNotify,
@@ -37,26 +37,20 @@ export const GET = withAuth(async (req, { user, supabase }) => {
     .single();
 
   if (profileError || !profile) {
-    return NextResponse.json(
-      {
-        error: "Profile not found. Please complete your profile first.",
-        matches: [],
-      },
-      { status: 200 },
-    );
+    return apiSuccess({
+      error: "Profile not found. Please complete your profile first.",
+      matches: [],
+    });
   }
 
   // Check if profile has enough data for matching
   const hasData = profile.bio || profile.headline;
   if (!hasData) {
-    return NextResponse.json(
-      {
-        error:
-          "Please add a bio, skills, or headline to your profile to find matches.",
-        matches: [],
-      },
-      { status: 200 },
-    );
+    return apiSuccess({
+      error:
+        "Please add a bio, skills, or headline to your profile to find matches.",
+      matches: [],
+    });
   }
 
   // Find matching postings (with optional hard filters)
@@ -96,5 +90,5 @@ export const GET = withAuth(async (req, { user, supabase }) => {
     created_at: match.posting.created_at,
   }));
 
-  return NextResponse.json({ matches: response });
+  return apiSuccess({ matches: response });
 });
