@@ -3,6 +3,8 @@
  * Pure functions that can be tested without database dependencies
  */
 
+import { LOCATION, MATCHING } from "@/lib/constants";
+
 // ============================================
 // GEOGRAPHIC DISTANCE
 // ============================================
@@ -19,7 +21,7 @@ function toRadians(degrees: number): number {
 /**
  * Calculates the distance in kilometers between two geographic coordinates
  * using the Haversine formula.
- * 
+ *
  * @param lat1 Latitude of first point
  * @param lng1 Longitude of first point
  * @param lat2 Latitude of second point
@@ -30,7 +32,7 @@ export function haversineDistance(
   lat1: number | null,
   lng1: number | null,
   lat2: number | null,
-  lng2: number | null
+  lng2: number | null,
 ): number | null {
   if (lat1 === null || lng1 === null || lat2 === null || lng2 === null) {
     return null;
@@ -43,8 +45,10 @@ export function haversineDistance(
 
   const a =
     Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-    Math.cos(lat1Rad) * Math.cos(lat2Rad) *
-    Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+    Math.cos(lat1Rad) *
+      Math.cos(lat2Rad) *
+      Math.sin(deltaLng / 2) *
+      Math.sin(deltaLng / 2);
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
@@ -53,7 +57,7 @@ export function haversineDistance(
 
 /**
  * Calculates a location match score based on distance and remote preferences.
- * 
+ *
  * @param distanceKm Distance in kilometers between the two parties
  * @param remotePreference1 First party's remote preference (0-100)
  * @param remotePreference2 Second party's remote preference (0-100)
@@ -64,7 +68,7 @@ export function calculateLocationScore(
   distanceKm: number | null,
   remotePreference1: number | null,
   remotePreference2: number | null,
-  maxReferenceDistance: number = 5000
+  maxReferenceDistance: number = LOCATION.MAX_REFERENCE_DISTANCE_KM,
 ): number {
   // No distance data = no penalty
   if (distanceKm === null) {
@@ -72,9 +76,10 @@ export function calculateLocationScore(
   }
 
   // Calculate remote factor (0-1, higher = distance matters less)
-  const remoteFactor = (
-    (remotePreference1 ?? 50) + (remotePreference2 ?? 50)
-  ) / 200;
+  const remoteFactor =
+    ((remotePreference1 ?? LOCATION.DEFAULT_REMOTE_PREFERENCE) +
+      (remotePreference2 ?? LOCATION.DEFAULT_REMOTE_PREFERENCE)) /
+    LOCATION.REMOTE_CALC_DIVISOR;
 
   // Effective distance decreases as remote preference increases
   const effectiveDistance = distanceKm * (1 - remoteFactor);
@@ -90,9 +95,9 @@ export function calculateLocationScore(
 /**
  * Calculates cosine similarity between two vectors
  * Returns a value between -1 and 1, where 1 means identical direction
- * 
+ *
  * Formula: cos(θ) = (A · B) / (||A|| × ||B||)
- * 
+ *
  * @param a First vector
  * @param b Second vector
  * @returns Cosine similarity score between -1 and 1
@@ -128,9 +133,9 @@ export function cosineSimilarity(a: number[], b: number[]): number {
 /**
  * Calculates cosine distance between two vectors
  * This is what pgvector uses with the <=> operator
- * 
+ *
  * Formula: distance = 1 - cosine_similarity
- * 
+ *
  * @param a First vector
  * @param b Second vector
  * @returns Cosine distance (0 = identical, 2 = opposite)
@@ -142,7 +147,7 @@ export function cosineDistance(a: number[], b: number[]): number {
 /**
  * Converts cosine distance to similarity score (0-1 range)
  * This matches what the database functions return
- * 
+ *
  * @param distance Cosine distance from pgvector
  * @returns Similarity score between 0 and 1
  */
@@ -153,7 +158,7 @@ export function distanceToSimilarity(distance: number): number {
 /**
  * Normalizes a vector to unit length
  * Useful for ensuring consistent similarity calculations
- * 
+ *
  * @param vector Input vector
  * @returns Normalized unit vector
  */
@@ -178,7 +183,7 @@ export function normalizeVector(vector: number[]): number[] {
 /**
  * Calculates Euclidean (L2) distance between two vectors
  * Alternative distance metric
- * 
+ *
  * @param a First vector
  * @param b Second vector
  * @returns Euclidean distance
@@ -200,16 +205,18 @@ export function euclideanDistance(a: number[], b: number[]): number {
 /**
  * Finds the top N most similar vectors from a list
  * Useful for client-side matching or testing
- * 
+ *
  * @param target Target vector to match against
  * @param candidates Array of candidate vectors with IDs
  * @param limit Maximum number of results
  * @returns Sorted array of matches with similarity scores
  */
-export function findTopMatches<T extends { id: string; embedding: number[] | null }>(
+export function findTopMatches<
+  T extends { id: string; embedding: number[] | null },
+>(
   target: number[],
   candidates: T[],
-  limit: number = 10
+  limit: number = MATCHING.DEFAULT_RESULT_LIMIT,
 ): Array<{ item: T; similarity: number }> {
   const results = candidates
     .filter((c) => c.embedding !== null)
@@ -226,19 +233,22 @@ export function findTopMatches<T extends { id: string; embedding: number[] | nul
 /**
  * Calculates the average similarity between a target and multiple vectors
  * Useful for evaluating overall match quality
- * 
+ *
  * @param target Target vector
  * @param others Array of vectors to compare against
  * @returns Average similarity score
  */
-export function averageSimilarity(target: number[], others: number[][]): number {
+export function averageSimilarity(
+  target: number[],
+  others: number[][],
+): number {
   if (others.length === 0) {
     return 0;
   }
 
   const total = others.reduce(
     (sum, other) => sum + cosineSimilarity(target, other),
-    0
+    0,
   );
 
   return total / others.length;
@@ -246,26 +256,29 @@ export function averageSimilarity(target: number[], others: number[][]): number 
 
 /**
  * Checks if a similarity score meets a minimum threshold
- * 
+ *
  * @param similarity Similarity score (0-1)
  * @param threshold Minimum threshold (default: 0.7)
  * @returns True if similarity meets threshold
  */
-export function meetsThreshold(similarity: number, threshold: number = 0.7): boolean {
+export function meetsThreshold(
+  similarity: number,
+  threshold: number = MATCHING.DEFAULT_SIMILARITY_THRESHOLD,
+): boolean {
   return similarity >= threshold;
 }
 
 /**
  * Categorizes a similarity score into quality tiers
- * 
+ *
  * @param similarity Similarity score (0-1)
  * @returns Quality tier: 'excellent' | 'good' | 'fair' | 'poor'
  */
 export function categorizeMatch(
-  similarity: number
+  similarity: number,
 ): "excellent" | "good" | "fair" | "poor" {
-  if (similarity >= 0.9) return "excellent";
-  if (similarity >= 0.75) return "good";
-  if (similarity >= 0.5) return "fair";
+  if (similarity >= MATCHING.TIER_EXCELLENT) return "excellent";
+  if (similarity >= MATCHING.TIER_GOOD) return "good";
+  if (similarity >= MATCHING.TIER_FAIR) return "fair";
   return "poor";
 }

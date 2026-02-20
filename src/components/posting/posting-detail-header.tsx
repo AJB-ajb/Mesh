@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { computeWeightedScore, formatScore } from "@/lib/matching/scoring";
 import { labels } from "@/lib/labels";
+import { DEADLINES } from "@/lib/constants";
 import type {
   PostingDetail,
   Application,
@@ -64,11 +65,10 @@ const formatExpiry = (expiresAt: string | null) => {
 // Extend Deadline Picker
 // ---------------------------------------------------------------------------
 
-const EXTEND_OPTIONS = [
-  { label: "7 days", days: 7 },
-  { label: "14 days", days: 14 },
-  { label: "30 days", days: 30 },
-] as const;
+const EXTEND_OPTIONS = DEADLINES.EXTEND_OPTIONS.map((days) => ({
+  label: `${days} days`,
+  days,
+}));
 
 function ExtendDeadlineButtons({
   isExtending,

@@ -3,6 +3,8 @@
  * Computes urgency level and display properties based on time until expiry.
  */
 
+import { URGENCY } from "@/lib/constants";
+
 export type UrgencyLevel = "critical" | "high" | "medium" | "none";
 
 export type UrgencyBadge = {
@@ -37,7 +39,7 @@ export function getUrgencyBadge(
   const diffHours = diffMs / (1000 * 60 * 60);
   const diffDays = diffHours / 24;
 
-  if (diffHours < 24) {
+  if (diffHours < URGENCY.CRITICAL_HOURS) {
     const hours = Math.ceil(diffHours);
     return {
       level: "critical",
@@ -46,7 +48,7 @@ export function getUrgencyBadge(
     };
   }
 
-  if (diffDays < 3) {
+  if (diffDays < URGENCY.HIGH_DAYS) {
     const days = Math.ceil(diffDays);
     return {
       level: "high",
@@ -55,7 +57,7 @@ export function getUrgencyBadge(
     };
   }
 
-  if (diffDays < 7) {
+  if (diffDays < URGENCY.MEDIUM_DAYS) {
     const days = Math.ceil(diffDays);
     return {
       level: "medium",

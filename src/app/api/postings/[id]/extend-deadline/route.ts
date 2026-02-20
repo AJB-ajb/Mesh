@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
 import { apiError } from "@/lib/errors";
+import { DEADLINES } from "@/lib/constants";
 
 /**
  * PATCH /api/postings/[id]/extend-deadline
@@ -26,7 +27,8 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
       return apiError("VALIDATION", "New deadline must be in the future", 400);
     }
   } else {
-    const daysToExtend = days && days > 0 ? days : 7;
+    const daysToExtend =
+      days && days > 0 ? days : DEADLINES.DEFAULT_EXTENSION_DAYS;
     newExpiresAt = new Date(Date.now() + daysToExtend * 24 * 60 * 60 * 1000);
   }
 
