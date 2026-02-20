@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { apiError, apiSuccess } from "@/lib/errors";
 
 /**
  * GET /api/skills/search?q=react&limit=10
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiError("UNAUTHORIZED", "Unauthorized", 401);
   }
 
   const { searchParams } = new URL(request.url);
@@ -36,10 +36,10 @@ export async function GET(request: Request) {
       .order("name");
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiError("INTERNAL", error.message, 500);
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       results: (roots ?? []).map((n) => ({
         id: n.id,
         name: n.name,
@@ -68,15 +68,15 @@ export async function GET(request: Request) {
       .order("name");
 
     if (fbError) {
-      return NextResponse.json({ error: fbError.message }, { status: 500 });
+      return apiError("INTERNAL", fbError.message, 500);
     }
 
     // Build paths for fallback results
     const results = await buildPaths(supabase, fallback ?? []);
-    return NextResponse.json({ results });
+    return apiSuccess({ results });
   }
 
-  return NextResponse.json({ results: data ?? [] });
+  return apiSuccess({ results: data ?? [] });
 }
 
 /**

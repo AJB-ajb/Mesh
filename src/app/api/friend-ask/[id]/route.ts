@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError } from "@/lib/errors";
+import { apiError, apiSuccess } from "@/lib/errors";
 
 /**
  * PATCH /api/friend-ask/[id]
@@ -53,5 +52,5 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
 
   if (error) return apiError("INTERNAL", error.message, 500);
 
-  return NextResponse.json({ friend_ask: data });
+  return apiSuccess({ friend_ask: data });
 });

@@ -9,8 +9,8 @@
  * - Returns suggestions for user review
  */
 
-import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { apiError, apiSuccess } from "@/lib/errors";
 import {
   extractGitHubProfile,
   prepareAnalysisInput,
@@ -36,7 +36,7 @@ export async function POST() {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiError("UNAUTHORIZED", "Unauthorized", 401);
     }
 
     // Get GitHub access token from session
@@ -47,12 +47,10 @@ export async function POST() {
     const providerToken = session?.provider_token;
 
     if (!providerToken) {
-      return NextResponse.json(
-        {
-          error: "GitHub access token not available",
-          message: "Please sign in with GitHub to sync your profile",
-        },
-        { status: 400 },
+      return apiError(
+        "VALIDATION",
+        "GitHub access token not available. Please sign in with GitHub to sync your profile",
+        400,
       );
     }
 
@@ -64,13 +62,10 @@ export async function POST() {
     );
 
     if (!hasGithubIdentity) {
-      return NextResponse.json(
-        {
-          error: "GitHub account not linked",
-          message:
-            "Please link your GitHub account in Settings to sync your profile",
-        },
-        { status: 400 },
+      return apiError(
+        "VALIDATION",
+        "GitHub account not linked. Please link your GitHub account in Settings to sync your profile",
+        400,
       );
     }
 
@@ -128,7 +123,7 @@ export async function POST() {
     // Update sync status to 'completed'
     await updateSyncStatus(user.id, "completed");
 
-    return NextResponse.json({
+    return apiSuccess({
       success: true,
       message: "GitHub profile synced successfully",
       data: {
@@ -167,12 +162,10 @@ export async function POST() {
       // Ignore status update errors
     }
 
-    return NextResponse.json(
-      {
-        error: "Failed to sync GitHub profile",
-        message: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 },
+    return apiError(
+      "INTERNAL",
+      error instanceof Error ? error.message : "Failed to sync GitHub profile",
+      500,
     );
   }
 }
@@ -191,14 +184,14 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiError("UNAUTHORIZED", "Unauthorized", 401);
     }
 
     // Get GitHub profile
     const githubProfile = await getGitHubProfile(user.id);
 
     if (!githubProfile) {
-      return NextResponse.json({
+      return apiSuccess({
         synced: false,
         message: "No GitHub profile data found. Sync to get started.",
       });
@@ -210,7 +203,7 @@ export async function GET() {
       ? getProfileSuggestions(existingProfile, githubProfile)
       : null;
 
-    return NextResponse.json({
+    return apiSuccess({
       synced: true,
       lastSyncedAt: githubProfile.lastSyncedAt,
       syncStatus: githubProfile.syncStatus,
@@ -234,12 +227,10 @@ export async function GET() {
     });
   } catch (error) {
     console.error("[GitHub Sync] GET Error:", error);
-    return NextResponse.json(
-      {
-        error: "Failed to get GitHub profile",
-        message: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 },
+    return apiError(
+      "INTERNAL",
+      error instanceof Error ? error.message : "Failed to get GitHub profile",
+      500,
     );
   }
 }

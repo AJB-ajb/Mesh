@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, parseBody } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 
 /**
  * GET /api/friend-ask
@@ -15,7 +14,7 @@ export const GET = withAuth(async (_req, { user, supabase }) => {
 
   if (error) return apiError("INTERNAL", error.message, 500);
 
-  return NextResponse.json({ friend_asks: data });
+  return apiSuccess({ friend_asks: data });
 });
 
 /**
@@ -105,5 +104,5 @@ export const POST = withAuth(async (req, { user, supabase }) => {
 
   if (error) return apiError("INTERNAL", error.message, 500);
 
-  return NextResponse.json({ friend_ask: data }, { status: 201 });
+  return apiSuccess({ friend_ask: data }, 201);
 });

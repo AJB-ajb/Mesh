@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, parseBody } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 
 /** PATCH: Confirm or cancel a proposal (owner only) */
 export const PATCH = withAuth(async (req, { user, supabase, params }) => {
@@ -63,5 +62,5 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
     return apiError("INTERNAL", error.message, 500);
   }
 
-  return NextResponse.json({ proposal });
+  return apiSuccess({ proposal });
 });

@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError } from "@/lib/errors";
+import { apiError, apiSuccess } from "@/lib/errors";
 
 export const GET = withAuth(async (_req, { supabase, params }) => {
   const postingId = params.id;
@@ -25,5 +24,5 @@ export const GET = withAuth(async (_req, { supabase, params }) => {
     return apiError("INTERNAL", windowError.message, 500);
   }
 
-  return NextResponse.json({ windows: windows ?? [] });
+  return apiSuccess({ windows: windows ?? [] });
 });

@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, parseBody } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 
 /** POST: Submit or update a response to a proposal */
 export const POST = withAuth(async (req, { user, supabase, params }) => {
@@ -62,5 +61,5 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     return apiError("INTERNAL", error.message, 500);
   }
 
-  return NextResponse.json({ response: responseRecord });
+  return apiSuccess({ response: responseRecord });
 });

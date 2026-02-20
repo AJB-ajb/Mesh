@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { apiError, apiSuccess } from "@/lib/errors";
 import { SchemaType, type Schema } from "@google/generative-ai";
 import { generateStructuredJSON, isGeminiConfigured } from "@/lib/ai/gemini";
 
@@ -56,17 +56,14 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiError("UNAUTHORIZED", "Unauthorized", 401);
   }
 
   const body = await request.json();
   const skill = (body.skill as string)?.trim();
 
   if (!skill || skill.length < 1) {
-    return NextResponse.json(
-      { error: "Skill string is required" },
-      { status: 400 },
-    );
+    return apiError("VALIDATION", "Skill string is required", 400);
   }
 
   // Step 1: Check exact name match (case-insensitive)
@@ -79,7 +76,7 @@ export async function POST(request: Request) {
 
   if (nameMatch) {
     const path = await buildNodePath(supabase, nameMatch);
-    return NextResponse.json({
+    return apiSuccess({
       node: {
         id: nameMatch.id,
         name: nameMatch.name,
@@ -102,7 +99,7 @@ export async function POST(request: Request) {
 
   if (aliasMatch) {
     const path = await buildNodePath(supabase, aliasMatch);
-    return NextResponse.json({
+    return apiSuccess({
       node: {
         id: aliasMatch.id,
         name: aliasMatch.name,
@@ -116,9 +113,10 @@ export async function POST(request: Request) {
 
   // Step 3: LLM auto-adding
   if (!isGeminiConfigured()) {
-    return NextResponse.json(
-      { error: "Gemini API key not configured — cannot auto-add skills" },
-      { status: 503 },
+    return apiError(
+      "INTERNAL",
+      "Gemini API key not configured — cannot auto-add skills",
+      503,
     );
   }
 
@@ -130,10 +128,7 @@ export async function POST(request: Request) {
     .order("name");
 
   if (!allNodes) {
-    return NextResponse.json(
-      { error: "Failed to load skill tree" },
-      { status: 500 },
-    );
+    return apiError("INTERNAL", "Failed to load skill tree", 500);
   }
 
   // Build a compact tree representation for the LLM
@@ -195,7 +190,7 @@ ${treeText}`,
       }
 
       const path = await buildNodePath(supabase, mapped);
-      return NextResponse.json({
+      return apiSuccess({
         node: {
           id: mapped.id,
           name: mapped.name,
@@ -215,17 +210,19 @@ ${treeText}`,
     );
 
     if (!parent) {
-      return NextResponse.json(
-        { error: `Parent node "${llmResult.parent_name}" not found in tree` },
-        { status: 400 },
+      return apiError(
+        "VALIDATION",
+        `Parent node "${llmResult.parent_name}" not found in tree`,
+        400,
       );
     }
 
     const newDepth = parent.depth + 1;
     if (newDepth > 5) {
-      return NextResponse.json(
-        { error: "Maximum tree depth (5) would be exceeded" },
-        { status: 400 },
+      return apiError(
+        "VALIDATION",
+        "Maximum tree depth (5) would be exceeded",
+        400,
       );
     }
 
@@ -244,7 +241,7 @@ ${treeText}`,
       .single();
 
     if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
+      return apiError("INTERNAL", insertError.message, 500);
     }
 
     // Mark parent as non-leaf if it was a leaf
@@ -256,7 +253,7 @@ ${treeText}`,
     }
 
     const path = await buildNodePath(supabase, newNode);
-    return NextResponse.json({
+    return apiSuccess({
       node: {
         id: newNode.id,
         name: newNode.name,
@@ -268,10 +265,7 @@ ${treeText}`,
     });
   }
 
-  return NextResponse.json(
-    { error: "LLM could not classify this skill" },
-    { status: 400 },
-  );
+  return apiError("VALIDATION", "LLM could not classify this skill", 400);
 }
 
 async function buildNodePath(

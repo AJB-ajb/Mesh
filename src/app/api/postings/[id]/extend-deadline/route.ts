@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError } from "@/lib/errors";
+import { apiError, apiSuccess } from "@/lib/errors";
 import { DEADLINES } from "@/lib/constants";
 
 /**
@@ -71,5 +70,5 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
     return apiError("INTERNAL", "Failed to extend deadline", 500);
   }
 
-  return NextResponse.json({ posting: updated });
+  return apiSuccess({ posting: updated });
 });

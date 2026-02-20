@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { apiError, apiSuccess } from "@/lib/errors";
 
 /**
  * GET /api/skills/children?parentId=uuid
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiError("UNAUTHORIZED", "Unauthorized", 401);
   }
 
   const { searchParams } = new URL(request.url);
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
   const { data: children, error } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiError("INTERNAL", error.message, 500);
   }
 
   const childList = children ?? [];
@@ -96,5 +96,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ children: results, parentPath });
+  return apiSuccess({ children: results, parentPath });
 }

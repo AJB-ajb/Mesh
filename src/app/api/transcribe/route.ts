@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError } from "@/lib/errors";
+import { apiError, apiSuccess } from "@/lib/errors";
 
 export const POST = withAuth(async (req) => {
   const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY;
@@ -54,5 +53,5 @@ export const POST = withAuth(async (req) => {
   const transcript =
     result.results?.channels?.[0]?.alternatives?.[0]?.transcript || "";
 
-  return NextResponse.json({ transcript });
+  return apiSuccess({ transcript });
 });

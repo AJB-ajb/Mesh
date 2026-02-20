@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, parseBody } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 
 /**
  * PATCH /api/friendships/[id]
@@ -58,7 +57,7 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
 
   if (error) return apiError("INTERNAL", error.message, 500);
 
-  return NextResponse.json({ friendship: data });
+  return apiSuccess({ friendship: data });
 });
 
 /**
@@ -91,5 +90,5 @@ export const DELETE = withAuth(async (_req, { user, supabase, params }) => {
 
   if (error) return apiError("INTERNAL", error.message, 500);
 
-  return NextResponse.json({ success: true });
+  return apiSuccess({ success: true });
 });

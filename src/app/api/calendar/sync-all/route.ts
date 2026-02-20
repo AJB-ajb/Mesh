@@ -4,7 +4,8 @@
  * Syncs all active calendar connections.
  */
 
-import { NextResponse, type NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
+import { apiError, apiSuccess } from "@/lib/errors";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -68,7 +69,13 @@ async function syncGoogleConnection(
 
   const busyBlocks = await fetchFreeBusy(tokens.accessToken);
   const timezone = await getUserTimezone(supabase, conn.profile_id);
-  await storeBusyBlocks(supabase, conn.id, conn.profile_id, busyBlocks, timezone);
+  await storeBusyBlocks(
+    supabase,
+    conn.id,
+    conn.profile_id,
+    busyBlocks,
+    timezone,
+  );
   await updateConnectionSyncStatus(supabase, conn.id, "synced");
 }
 
@@ -82,7 +89,13 @@ async function syncIcalConnection(
 
   const busyBlocks = await fetchIcalBusyBlocks(conn.ical_url);
   const timezone = await getUserTimezone(supabase, conn.profile_id);
-  await storeBusyBlocks(supabase, conn.id, conn.profile_id, busyBlocks, timezone);
+  await storeBusyBlocks(
+    supabase,
+    conn.id,
+    conn.profile_id,
+    busyBlocks,
+    timezone,
+  );
   await updateConnectionSyncStatus(supabase, conn.id, "synced");
 }
 
@@ -91,7 +104,7 @@ export async function POST(req: NextRequest) {
   const secret = process.env.CALENDAR_SYNC_CRON_SECRET;
 
   if (!secret || authHeader !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiError("UNAUTHORIZED", "Unauthorized", 401);
   }
 
   const supabase = await createClient();
@@ -102,10 +115,7 @@ export async function POST(req: NextRequest) {
     .neq("sync_status", "error");
 
   if (fetchError || !connections) {
-    return NextResponse.json(
-      { error: fetchError?.message ?? "No connections" },
-      { status: 500 },
-    );
+    return apiError("INTERNAL", fetchError?.message ?? "No connections", 500);
   }
 
   const results: { id: string; status: string; error?: string }[] = [];
@@ -120,12 +130,11 @@ export async function POST(req: NextRequest) {
         results.push({ id: conn.id, status: "synced" });
       }
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unknown error";
+      const message = error instanceof Error ? error.message : "Unknown error";
       await updateConnectionSyncStatus(supabase, conn.id, "error", message);
       results.push({ id: conn.id, status: "error", error: message });
     }
   }
 
-  return NextResponse.json({ synced: results.length, results });
+  return apiSuccess({ synced: results.length, results });
 }

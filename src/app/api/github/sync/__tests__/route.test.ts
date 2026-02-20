@@ -81,7 +81,7 @@ describe("POST /api/github/sync", () => {
     const res = await POST();
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toContain("GitHub access token");
+    expect(body.error.message).toContain("GitHub access token");
   });
 
   it("returns 400 when no GitHub identity linked", async () => {
@@ -96,7 +96,7 @@ describe("POST /api/github/sync", () => {
     const res = await POST();
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toContain("not linked");
+    expect(body.error.message).toContain("not linked");
   });
 
   it("syncs GitHub profile successfully", async () => {
@@ -159,7 +159,7 @@ describe("POST /api/github/sync", () => {
     const body = await res.json();
 
     expect(res.status).toBe(500);
-    expect(body.message).toContain("rate limit");
+    expect(body.error.message).toContain("rate limit");
   });
 
   it("returns 500 when analysis fails", async () => {
@@ -176,7 +176,7 @@ describe("POST /api/github/sync", () => {
     const body = await res.json();
 
     expect(res.status).toBe(500);
-    expect(body.message).toContain("OpenAI down");
+    expect(body.error.message).toContain("OpenAI down");
   });
 });
 

@@ -1,7 +1,6 @@
-import { NextResponse } from "next/server";
 import type { MatchResponse } from "@/lib/supabase/types";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError } from "@/lib/errors";
+import { apiError, apiSuccess } from "@/lib/errors";
 
 /**
  * GET /api/matches/[id]
@@ -46,5 +45,5 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
     created_at: match.created_at,
   };
 
-  return NextResponse.json({ match: response });
+  return apiSuccess({ match: response });
 });

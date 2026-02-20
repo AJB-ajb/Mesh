@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, parseBody } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 import { SCHEDULING } from "@/lib/constants";
 
 /** GET: List proposals with responses for a posting */
@@ -33,7 +32,7 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
     return apiError("INTERNAL", error.message, 500);
   }
 
-  return NextResponse.json({ proposals: proposals ?? [] });
+  return apiSuccess({ proposals: proposals ?? [] });
 });
 
 /** POST: Create a new meeting proposal (owner only) */
@@ -107,5 +106,5 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     return apiError("INTERNAL", error.message, 500);
   }
 
-  return NextResponse.json({ proposal }, { status: 201 });
+  return apiSuccess({ proposal }, 201);
 });

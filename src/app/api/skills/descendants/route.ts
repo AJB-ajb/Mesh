@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
+import { AppError, apiSuccess } from "@/lib/errors";
 
 /**
  * GET /api/skills/descendants?skill_id=uuid
@@ -11,10 +11,7 @@ export const GET = withAuth(async (req, { supabase }) => {
   const skillId = searchParams.get("skill_id");
 
   if (!skillId) {
-    return NextResponse.json(
-      { error: "skill_id parameter is required" },
-      { status: 400 },
-    );
+    throw new AppError("VALIDATION", "skill_id parameter is required", 400);
   }
 
   const { data, error } = await supabase.rpc("get_skill_descendants", {
@@ -22,13 +19,14 @@ export const GET = withAuth(async (req, { supabase }) => {
   });
 
   if (error) {
-    return NextResponse.json(
-      { error: `Failed to get descendants: ${error.message}` },
-      { status: 500 },
+    throw new AppError(
+      "INTERNAL",
+      `Failed to get descendants: ${error.message}`,
+      500,
     );
   }
 
   const descendantIds = (data || []).map((row: { id: string }) => row.id);
 
-  return NextResponse.json({ descendantIds });
+  return apiSuccess({ descendantIds });
 });
