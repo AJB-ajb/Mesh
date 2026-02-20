@@ -1,15 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import {
-  Calendar,
-  Loader2,
-  RefreshCw,
-  Trash2,
-  Plus,
-  Link2,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Calendar, Loader2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -17,8 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +24,9 @@ import { useCalendarConnections } from "@/lib/hooks/use-calendar-connections";
 import { createClient } from "@/lib/supabase/client";
 import type { CalendarConnection } from "@/lib/calendar/types";
 import type { CalendarVisibility } from "@/lib/calendar/types";
+import { GoogleCalendarSection } from "./google-calendar-section";
+import { ICalConnectionsSection } from "./ical-connections-section";
+import { CalendarVisibilitySection } from "./calendar-visibility-section";
 
 type CalendarSettingsCardProps = {
   onError: (msg: string) => void;
@@ -49,8 +42,6 @@ export function CalendarSettingsCard({
   const [disconnectingConn, setDisconnectingConn] =
     useState<CalendarConnection | null>(null);
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
-  const [icalUrl, setIcalUrl] = useState("");
-  const [isAddingIcal, setIsAddingIcal] = useState(false);
   const [visibility, setVisibility] =
     useState<CalendarVisibility>("match_only");
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
@@ -113,7 +104,6 @@ export function CalendarSettingsCard({
   const icalConnections = connections.filter((c) => c.provider === "ical");
 
   const handleConnectGoogle = () => {
-    // Redirect to the OAuth initiation endpoint
     window.location.href = "/api/calendar/google/authorize";
   };
 
@@ -156,47 +146,33 @@ export function CalendarSettingsCard({
     }
   };
 
-  const handleAddIcal = async () => {
-    const trimmed = icalUrl.trim();
-    if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+  const handleAddIcal = async (url: string) => {
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
       onError(labels.calendar.errorInvalidIcalUrl);
       return;
     }
 
-    setIsAddingIcal(true);
     try {
       const res = await fetch("/api/calendar/ical/connect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: trimmed }),
+        body: JSON.stringify({ url }),
       });
       if (!res.ok) {
         const data = await res.json();
         onError(data.error?.message ?? labels.calendar.errorGeneric);
       } else {
         onSuccess("iCal feed connected!");
-        setIcalUrl("");
         mutate();
       }
     } catch {
       onError(labels.calendar.errorGeneric);
-    } finally {
-      setIsAddingIcal(false);
     }
   };
 
-  const getSyncStatusBadge = (conn: CalendarConnection) => {
-    const variant =
-      conn.syncStatus === "synced"
-        ? "default"
-        : conn.syncStatus === "error"
-          ? "destructive"
-          : "secondary";
-    return (
-      <Badge variant={variant} className="text-xs">
-        {labels.calendar.syncStatusLabels[conn.syncStatus]}
-      </Badge>
-    );
+  const handleStartDisconnect = (conn: CalendarConnection) => {
+    setDisconnectingConn(conn);
+    setShowDisconnectDialog(true);
   };
 
   if (isLoading) {
@@ -228,132 +204,19 @@ export function CalendarSettingsCard({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Google Calendar */}
-          {googleConnection ? (
-            <div className="flex items-center justify-between rounded-lg border border-border p-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium">
-                    {labels.calendar.googleConnected}
-                  </p>
-                  {getSyncStatusBadge(googleConnection)}
-                </div>
-                {googleConnection.lastSyncedAt && (
-                  <p className="text-sm text-muted-foreground">
-                    {labels.calendar.lastSynced(
-                      new Date(googleConnection.lastSyncedAt).toLocaleString(),
-                    )}
-                  </p>
-                )}
-                {googleConnection.syncStatus === "error" &&
-                  googleConnection.syncError && (
-                    <p className="text-sm text-destructive">
-                      {labels.calendar.syncError(googleConnection.syncError)}
-                    </p>
-                  )}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleSync(googleConnection.id)}
-                  disabled={syncingId !== null}
-                >
-                  {syncingId === googleConnection.id ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {labels.calendar.syncing}
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      {labels.calendar.syncNow}
-                    </>
-                  )}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setDisconnectingConn(googleConnection);
-                    setShowDisconnectDialog(true);
-                  }}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  {labels.calendar.disconnect}
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <Button variant="outline" onClick={handleConnectGoogle}>
-              <Link2 className="mr-2 h-4 w-4" />
-              {labels.calendar.googleConnect}
-            </Button>
-          )}
+          <GoogleCalendarSection
+            googleConnection={googleConnection}
+            syncingId={syncingId}
+            onConnect={handleConnectGoogle}
+            onSync={handleSync}
+            onDisconnect={handleStartDisconnect}
+          />
 
-          {/* iCal connections */}
-          {icalConnections.map((conn) => (
-            <div
-              key={conn.id}
-              className="flex items-center justify-between rounded-lg border border-border p-4"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-sm truncate max-w-xs">
-                    {conn.icalUrl ?? "iCal Feed"}
-                  </p>
-                  {getSyncStatusBadge(conn)}
-                </div>
-                {conn.lastSyncedAt && (
-                  <p className="text-sm text-muted-foreground">
-                    {labels.calendar.lastSynced(
-                      new Date(conn.lastSyncedAt).toLocaleString(),
-                    )}
-                  </p>
-                )}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setDisconnectingConn(conn);
-                  setShowDisconnectDialog(true);
-                }}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                {labels.calendar.disconnect}
-              </Button>
-            </div>
-          ))}
-
-          {/* Add iCal feed */}
-          <div className="flex items-center gap-2">
-            <Input
-              type="url"
-              placeholder={labels.calendar.icalPlaceholder}
-              value={icalUrl}
-              onChange={(e) => setIcalUrl(e.target.value)}
-              className="flex-1"
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleAddIcal}
-              disabled={isAddingIcal || !icalUrl.trim()}
-            >
-              {isAddingIcal ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {labels.calendar.icalAdding}
-                </>
-              ) : (
-                <>
-                  <Plus className="mr-2 h-4 w-4" />
-                  {labels.calendar.icalSubmit}
-                </>
-              )}
-            </Button>
-          </div>
+          <ICalConnectionsSection
+            icalConnections={icalConnections}
+            onDisconnect={handleStartDisconnect}
+            onAddIcal={handleAddIcal}
+          />
 
           {connections.length === 0 && (
             <p className="text-sm text-muted-foreground">
@@ -361,66 +224,12 @@ export function CalendarSettingsCard({
             </p>
           )}
 
-          {/* Calendar Visibility */}
           {connections.length > 0 && (
-            <div className="space-y-2 border-t border-border pt-4">
-              <p className="text-sm font-medium">
-                {labels.calendar.visibilityTitle}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {labels.calendar.visibilityDescription}
-              </p>
-              <div className="flex flex-col gap-2">
-                {(
-                  [
-                    {
-                      value: "match_only" as const,
-                      label: labels.calendar.visibilityMatchOnly,
-                      description:
-                        labels.calendar.visibilityMatchOnlyDescription,
-                    },
-                    {
-                      value: "team_visible" as const,
-                      label: labels.calendar.visibilityTeamVisible,
-                      description:
-                        labels.calendar.visibilityTeamVisibleDescription,
-                    },
-                  ] as const
-                ).map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    disabled={isUpdatingVisibility}
-                    onClick={() => handleVisibilityChange(option.value)}
-                    className={`flex items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
-                      visibility === option.value
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-muted-foreground/30"
-                    }`}
-                  >
-                    <div
-                      className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 ${
-                        visibility === option.value
-                          ? "border-primary bg-primary"
-                          : "border-muted-foreground/40"
-                      }`}
-                    >
-                      {visibility === option.value && (
-                        <div className="flex h-full items-center justify-center">
-                          <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{option.label}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {option.description}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
+            <CalendarVisibilitySection
+              visibility={visibility}
+              isUpdating={isUpdatingVisibility}
+              onChange={handleVisibilityChange}
+            />
           )}
         </CardContent>
       </Card>
