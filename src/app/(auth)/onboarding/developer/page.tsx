@@ -21,7 +21,6 @@ import { createClient } from "@/lib/supabase/client";
 import {
   type ProfileFormState,
   defaultFormState,
-  parseList,
   mapExtractedToFormState,
   type ExtractedProfileV2,
 } from "@/lib/types/profile";
@@ -146,47 +145,26 @@ function DeveloperOnboardingContent() {
     setError(null);
     setIsSaving(true);
 
-    const supabase = createClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+    try {
+      const res = await fetch("/api/profiles/onboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-    if (userError || !user) {
-      setIsSaving(false);
-      setError(labels.onboarding.errorNotSignedIn);
-      return;
-    }
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error?.message || labels.onboarding.errorSaveFailed);
+        setIsSaving(false);
+        return;
+      }
 
-    const { error: upsertError } = await supabase.from("profiles").upsert(
-      {
-        user_id: user.id,
-        full_name: form.fullName.trim(),
-        headline: form.headline.trim(),
-        bio: form.bio.trim(),
-        location: form.location.trim(),
-        skills: parseList(form.skills),
-        interests: parseList(form.interests),
-        languages: parseList(form.languages),
-        portfolio_url: form.portfolioUrl.trim(),
-        github_url: form.githubUrl.trim(),
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" },
-    );
-
-    if (upsertError) {
-      setIsSaving(false);
+      const destination = next || "/active";
+      router.replace(destination);
+    } catch {
       setError(labels.onboarding.errorSaveFailed);
-      return;
+      setIsSaving(false);
     }
-
-    await supabase.auth.updateUser({
-      data: { profile_completed: true },
-    });
-
-    const destination = next || "/active";
-    router.replace(destination);
   };
 
   if (isLoading) {
