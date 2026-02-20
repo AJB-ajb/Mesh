@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-import { createClient } from "@/lib/supabase/client";
 import { labels } from "@/lib/labels";
 import { InputModeToggle } from "@/components/posting/input-mode-toggle";
 import { AiExtractionCard } from "@/components/posting/ai-extraction-card";
@@ -137,172 +136,29 @@ export default function NewPostingPage() {
       return;
     }
 
-    // Auto-generate title from description if not provided
-    const title =
-      form.title.trim() ||
-      form.description.trim().split(/[.\n]/)[0].slice(0, 100) ||
-      labels.postingCreation.untitledFallback;
-
     setIsSaving(true);
 
-    const supabase = createClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      setIsSaving(false);
-      setError(labels.postingCreation.errorNotSignedIn);
-      return;
-    }
-
-    // First check if user has a profile (required for creator_id foreign key)
-    const { data: profile, error: profileCheckError } = await supabase
-      .from("profiles")
-      .select("user_id")
-      .eq("user_id", user.id)
-      .single();
-
-    if (profileCheckError && profileCheckError.code !== "PGRST116") {
-      // PGRST116 is "not found" which is expected if profile doesn't exist
-      setIsSaving(false);
-      console.error("Profile check error:", profileCheckError);
-      setError(labels.postingCreation.errorProfileCheck);
-      return;
-    }
-
-    if (!profile) {
-      // Create a minimal profile if it doesn't exist
-      const { error: profileError } = await supabase.from("profiles").insert({
-        user_id: user.id,
-        full_name:
-          user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
+    try {
+      const res = await fetch("/api/postings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
       });
 
-      if (profileError) {
+      const data = await res.json();
+
+      if (!res.ok) {
         setIsSaving(false);
-        console.error("Profile creation error:", profileError);
-        setError(
-          labels.postingCreation.errorProfileCreation(
-            profileError.message || "Please try again.",
-          ),
-        );
+        setError(data.error?.message || labels.postingCreation.errorGeneric);
         return;
       }
+
+      setIsSaving(false);
+      router.push(`/postings/${data.posting.id}`);
+    } catch {
+      setIsSaving(false);
+      setError(labels.postingCreation.errorGeneric);
     }
-
-    // Use the form's expiry date, falling back to 90 days from now
-    const lookingFor = Math.max(1, Math.min(10, Number(form.lookingFor) || 3));
-    const expiresAt = form.expiresAt
-      ? new Date(form.expiresAt + "T23:59:59")
-      : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
-
-    const locationLat = parseFloat(form.locationLat);
-    const locationLng = parseFloat(form.locationLng);
-    const maxDistanceKm = parseInt(form.maxDistanceKm, 10);
-
-    const { data: posting, error: insertError } = await supabase
-      .from("postings")
-      .insert({
-        creator_id: user.id,
-        title,
-        description: form.description.trim(),
-        estimated_time: form.estimatedTime || null,
-        team_size_min: Math.max(
-          1,
-          Math.min(lookingFor, Number(form.teamSizeMin) || 1),
-        ),
-        team_size_max: lookingFor,
-        category: form.category,
-        visibility: form.visibility,
-        mode: form.visibility === "private" ? "friend_ask" : "open",
-        status: "open",
-        expires_at: expiresAt.toISOString(),
-        location_mode: form.locationMode || "either",
-        location_name: form.locationName.trim() || null,
-        location_lat: Number.isFinite(locationLat) ? locationLat : null,
-        location_lng: Number.isFinite(locationLng) ? locationLng : null,
-        max_distance_km:
-          Number.isFinite(maxDistanceKm) && maxDistanceKm > 0
-            ? maxDistanceKm
-            : null,
-        tags: form.tags
-          ? form.tags
-              .split(",")
-              .map((t) => t.trim())
-              .filter(Boolean)
-          : [],
-        context_identifier: form.contextIdentifier.trim() || null,
-        auto_accept: form.autoAccept === "true",
-        availability_mode: form.availabilityMode,
-        timezone: form.timezone || null,
-      })
-      .select()
-      .single();
-
-    setIsSaving(false);
-
-    if (insertError) {
-      console.error("Insert error:", insertError);
-
-      // Provide more specific error messages
-      let errorMessage: string = labels.postingCreation.errorGeneric;
-
-      if (insertError.code === "23503") {
-        // Foreign key violation - profile doesn't exist
-        errorMessage = labels.postingCreation.errorMissingProfile;
-      } else if (insertError.code === "23505") {
-        // Unique violation
-        errorMessage = labels.postingCreation.errorDuplicate;
-      } else if (insertError.code === "23514") {
-        // Check constraint violation
-        errorMessage = labels.postingCreation.errorInvalidData(
-          insertError.message,
-        );
-      } else if (insertError.message) {
-        errorMessage = labels.postingCreation.errorWithReason(
-          insertError.message,
-        );
-      }
-
-      setError(errorMessage);
-      return;
-    }
-
-    // Insert posting_skills join table rows
-    if (form.selectedSkills.length > 0) {
-      const postingSkillRows = form.selectedSkills.map((s) => ({
-        posting_id: posting.id,
-        skill_id: s.skillId,
-        level_min: s.levelMin,
-      }));
-      await supabase.from("posting_skills").insert(postingSkillRows);
-    }
-
-    // Insert availability_windows if mode is not flexible
-    if (
-      form.availabilityMode !== "flexible" &&
-      form.availabilityWindows.length > 0
-    ) {
-      const windowRows = form.availabilityWindows.map((w) => ({
-        posting_id: posting.id,
-        window_type: "recurring" as const,
-        day_of_week: w.day_of_week,
-        start_minutes: w.start_minutes,
-        end_minutes: w.end_minutes,
-      }));
-      await supabase.from("availability_windows").insert(windowRows);
-    }
-
-    // Trigger embedding generation (fire-and-forget, non-blocking)
-    fetch("/api/embeddings/process", {
-      method: "POST",
-      headers: { "x-internal-call": "true" },
-    }).catch(() => {});
-
-    // Redirect to the new posting's page
-    router.push(`/postings/${posting.id}`);
   };
 
   return (
