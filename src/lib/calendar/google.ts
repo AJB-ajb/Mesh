@@ -135,16 +135,15 @@ export function decryptTokens(
 /**
  * Fetch free/busy data from Google Calendar for the next N weeks.
  */
-export async function fetchFreeBusy(
-  accessToken: string,
-): Promise<BusyBlock[]> {
+export async function fetchFreeBusy(accessToken: string): Promise<BusyBlock[]> {
   const client = getOAuthClient();
   client.setCredentials({ access_token: accessToken });
 
   const calendar = google.calendar({ version: "v3", auth: client });
   const now = new Date();
   const horizon = new Date(
-    now.getTime() + CALENDAR_SYNC.FREEBUSY_HORIZON_WEEKS * 7 * 24 * 60 * 60 * 1000,
+    now.getTime() +
+      CALENDAR_SYNC.FREEBUSY_HORIZON_WEEKS * 7 * 24 * 60 * 60 * 1000,
   );
 
   const response = await calendar.freebusy.query({
@@ -155,8 +154,7 @@ export async function fetchFreeBusy(
     },
   });
 
-  const busyPeriods =
-    response.data.calendars?.["primary"]?.busy ?? [];
+  const busyPeriods = response.data.calendars?.["primary"]?.busy ?? [];
 
   return busyPeriods
     .filter(
@@ -168,3 +166,20 @@ export async function fetchFreeBusy(
       end: new Date(period.end),
     }));
 }
+
+// ---------------------------------------------------------------------------
+// Google Calendar Watch — NOT IMPLEMENTED
+// ---------------------------------------------------------------------------
+//
+// calendar.events.watch() requires the `calendar.events.readonly` scope (or
+// broader). The `calendar.freebusy` scope we use does not grant access to
+// the Events API, so watch/push notifications are unavailable.
+//
+// Instead, we sync via server-side polling (pg_cron):
+//   - Google Calendar: every 15 minutes (CALENDAR_SYNC.GOOGLE_POLL_INTERVAL_MINUTES)
+//   - iCal feeds: every 30 minutes (CALENDAR_SYNC.ICAL_POLL_INTERVAL_MINUTES)
+//
+// This approach avoids the additional OAuth scope, keeps the consent screen
+// minimal, and is sufficient for our use case (availability matching doesn't
+// need real-time precision).
+// ---------------------------------------------------------------------------

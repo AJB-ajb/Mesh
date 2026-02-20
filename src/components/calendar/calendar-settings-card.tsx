@@ -1,7 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { Calendar, Loader2, RefreshCw, Trash2, Plus, Link2 } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import {
+  Calendar,
+  Loader2,
+  RefreshCw,
+  Trash2,
+  Plus,
+  Link2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,7 +31,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { labels } from "@/lib/labels";
 import { useCalendarConnections } from "@/lib/hooks/use-calendar-connections";
+import { createClient } from "@/lib/supabase/client";
 import type { CalendarConnection } from "@/lib/calendar/types";
+import type { CalendarVisibility } from "@/lib/calendar/types";
 
 type CalendarSettingsCardProps = {
   onError: (msg: string) => void;
@@ -42,6 +51,63 @@ export function CalendarSettingsCard({
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
   const [icalUrl, setIcalUrl] = useState("");
   const [isAddingIcal, setIsAddingIcal] = useState(false);
+  const [visibility, setVisibility] =
+    useState<CalendarVisibility>("match_only");
+  const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
+
+  // Fetch current visibility setting on mount
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user || cancelled) return;
+      supabase
+        .from("profiles")
+        .select("calendar_visibility")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => {
+          if (!cancelled && data?.calendar_visibility) {
+            queueMicrotask(() => {
+              setVisibility(data.calendar_visibility as CalendarVisibility);
+            });
+          }
+        });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleVisibilityChange = useCallback(
+    async (value: CalendarVisibility) => {
+      setIsUpdatingVisibility(true);
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) {
+          onError(labels.calendar.errorGeneric);
+          return;
+        }
+        const { error } = await supabase
+          .from("profiles")
+          .update({ calendar_visibility: value })
+          .eq("id", user.id);
+        if (error) {
+          onError(labels.calendar.errorGeneric);
+        } else {
+          setVisibility(value);
+        }
+      } catch {
+        onError(labels.calendar.errorGeneric);
+      } finally {
+        setIsUpdatingVisibility(false);
+      }
+    },
+    [onError],
+  );
 
   const googleConnection = connections.find((c) => c.provider === "google");
   const icalConnections = connections.filter((c) => c.provider === "ical");
@@ -294,6 +360,68 @@ export function CalendarSettingsCard({
               {labels.calendar.noConnections}
             </p>
           )}
+
+          {/* Calendar Visibility */}
+          {connections.length > 0 && (
+            <div className="space-y-2 border-t border-border pt-4">
+              <p className="text-sm font-medium">
+                {labels.calendar.visibilityTitle}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {labels.calendar.visibilityDescription}
+              </p>
+              <div className="flex flex-col gap-2">
+                {(
+                  [
+                    {
+                      value: "match_only" as const,
+                      label: labels.calendar.visibilityMatchOnly,
+                      description:
+                        labels.calendar.visibilityMatchOnlyDescription,
+                    },
+                    {
+                      value: "team_visible" as const,
+                      label: labels.calendar.visibilityTeamVisible,
+                      description:
+                        labels.calendar.visibilityTeamVisibleDescription,
+                    },
+                  ] as const
+                ).map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    disabled={isUpdatingVisibility}
+                    onClick={() => handleVisibilityChange(option.value)}
+                    className={`flex items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
+                      visibility === option.value
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-muted-foreground/30"
+                    }`}
+                  >
+                    <div
+                      className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 ${
+                        visibility === option.value
+                          ? "border-primary bg-primary"
+                          : "border-muted-foreground/40"
+                      }`}
+                    >
+                      {visibility === option.value && (
+                        <div className="flex h-full items-center justify-center">
+                          <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{option.label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {option.description}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -312,9 +440,7 @@ export function CalendarSettingsCard({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => setDisconnectingConn(null)}
-            >
+            <AlertDialogCancel onClick={() => setDisconnectingConn(null)}>
               {labels.common.cancel}
             </AlertDialogCancel>
             <AlertDialogAction

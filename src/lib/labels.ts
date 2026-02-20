@@ -1115,8 +1115,7 @@ export const labels = {
     syncError: (msg: string) => `Sync error: ${msg}`,
     busyBlockLabel: "Calendar busy",
     visibilityTitle: "Calendar Visibility",
-    visibilityDescription:
-      "Control who can see your calendar busy times.",
+    visibilityDescription: "Control who can see your calendar busy times.",
     visibilityMatchOnly: "Match scoring only",
     visibilityMatchOnlyDescription:
       "Calendar data only affects match scores. No one sees your busy times.",
@@ -1128,6 +1127,32 @@ export const labels = {
       "This will remove the calendar connection and all imported busy blocks. Your availability windows will not be affected.",
     noConnections: "No calendars connected yet.",
     errorGeneric: "Something went wrong. Please try again.",
-    errorInvalidIcalUrl: "Please enter a valid iCal URL (must start with http:// or https://).",
+    errorInvalidIcalUrl:
+      "Please enter a valid iCal URL (must start with http:// or https://).",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Team scheduling (Phase 5)
+  // ---------------------------------------------------------------------------
+  scheduling: {
+    sectionTitle: "Team Scheduling",
+    commonAvailabilityTitle: "Common Availability",
+    noCommonSlots: "No common free time found across all team members.",
+    proposeButton: "Propose Meeting",
+    proposalsTitle: "Meeting Proposals",
+    noProposals: "No meetings proposed yet.",
+    titlePlaceholder: "Meeting title (optional)",
+    durationLabel: "Duration",
+    startLabel: "Start time",
+    responseAvailable: "Available",
+    responseUnavailable: "Unavailable",
+    statusProposed: "Proposed",
+    statusConfirmed: "Confirmed",
+    statusCancelled: "Cancelled",
+    confirmButton: "Confirm",
+    cancelButton: "Cancel Meeting",
+    exportGoogleCalendar: "Add to Google Calendar",
+    exportIcs: "Download .ics",
+    respondedCount: (n: number, total: number) => `${n} of ${total} responded`,
   },
 } as const;

@@ -30,6 +30,7 @@ export function ProfileForm({
   location,
   availabilityWindows,
   onAvailabilityWindowsChange,
+  busyBlocks,
 }: {
   form: ProfileFormState;
   setForm: React.Dispatch<React.SetStateAction<ProfileFormState>>;
@@ -48,6 +49,7 @@ export function ProfileForm({
   };
   availabilityWindows: RecurringWindow[];
   onAvailabilityWindowsChange: (windows: RecurringWindow[]) => void;
+  busyBlocks?: RecurringWindow[];
 }) {
   const handleAddSkill = (skill: SelectedProfileSkill) => {
     setForm((prev) => ({
@@ -141,6 +143,7 @@ export function ProfileForm({
           <AvailabilityEditor
             windows={availabilityWindows}
             onChange={onAvailabilityWindowsChange}
+            busyBlocks={busyBlocks}
           />
         </CardContent>
       </Card>

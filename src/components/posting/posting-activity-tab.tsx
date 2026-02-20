@@ -9,6 +9,7 @@ import { PostingTeamCard } from "@/components/posting/posting-team-card";
 import { PostingAboutCard } from "@/components/posting/posting-about-card";
 import { GroupChatPanel } from "@/components/posting/group-chat-panel";
 import { PostingSidebar } from "@/components/posting/posting-sidebar";
+import { TeamSchedulingSection } from "@/components/posting/team-scheduling-section";
 
 interface PostingActivityTabProps {
   posting: PostingDetail;
@@ -57,6 +58,15 @@ export function PostingActivityTab({
           teamSizeMin={posting.team_size_min}
           teamSizeMax={posting.team_size_max}
         />
+
+        {currentUserId && (
+          <TeamSchedulingSection
+            postingId={postingId}
+            postingTitle={posting.title}
+            isOwner={isOwner}
+            currentUserId={currentUserId}
+          />
+        )}
 
         <PostingAboutCard
           posting={posting}

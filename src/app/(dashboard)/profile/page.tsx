@@ -18,9 +18,11 @@ import { InputModeToggle } from "@/components/posting/input-mode-toggle";
 import { AiExtractionCard } from "@/components/posting/ai-extraction-card";
 import type { InputMode } from "@/components/posting/input-mode-toggle";
 import { mapExtractedToFormState } from "@/lib/types/profile";
+import { useCalendarBusyBlocks } from "@/lib/hooks/use-calendar-busy-blocks";
 
 export default function ProfilePage() {
   const {
+    profileId,
     form,
     setForm,
     isLoading,
@@ -43,6 +45,8 @@ export default function ProfilePage() {
     availabilityWindows,
     onAvailabilityWindowsChange,
   } = useProfile();
+
+  const { busyWindows } = useCalendarBusyBlocks(profileId);
 
   const {
     githubSync,
@@ -181,6 +185,7 @@ export default function ProfilePage() {
                 location={location}
                 availabilityWindows={availabilityWindows}
                 onAvailabilityWindowsChange={onAvailabilityWindowsChange}
+                busyBlocks={busyWindows}
               />
               <IntegrationsSection
                 connectedProviders={connectedProviders}
@@ -208,7 +213,11 @@ export default function ProfilePage() {
             onUpdate={applyFreeFormUpdate}
             onUndo={undoLastUpdate}
           />
-          <ProfileView form={form} availabilityWindows={availabilityWindows} />
+          <ProfileView
+            form={form}
+            availabilityWindows={availabilityWindows}
+            busyBlocks={busyWindows}
+          />
           <IntegrationsSection
             connectedProviders={connectedProviders}
             isEditing={false}

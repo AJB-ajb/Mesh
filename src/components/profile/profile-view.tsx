@@ -30,9 +30,11 @@ function skillLevelLabel(level: number): string {
 export function ProfileView({
   form,
   availabilityWindows,
+  busyBlocks,
 }: {
   form: ProfileFormState;
   availabilityWindows?: RecurringWindow[];
+  busyBlocks?: RecurringWindow[];
 }) {
   const skillsList = parseList(form.skills);
   const interestsList = parseList(form.interests);
@@ -211,6 +213,7 @@ export function ProfileView({
               windows={availabilityWindows}
               onChange={() => {}}
               readOnly
+              busyBlocks={busyBlocks}
             />
           </CardContent>
         </Card>

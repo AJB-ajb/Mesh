@@ -23,6 +23,7 @@ import { windowsToGrid } from "@/lib/availability/quick-mode";
 // ---------------------------------------------------------------------------
 
 export type ProfileFetchResult = {
+  profileId: string;
   form: ProfileFormState;
   recurringWindows: RecurringWindow[];
   userEmail: string | null;
@@ -197,6 +198,7 @@ async function fetchProfile(): Promise<ProfileFetchResult> {
   }
 
   return {
+    profileId: user.id,
     form,
     recurringWindows,
     userEmail: user.email ?? null,

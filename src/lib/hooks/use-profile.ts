@@ -82,6 +82,7 @@ export function useProfile() {
     (fetchError ? "Failed to load profile." : null);
 
   return {
+    profileId: data?.profileId ?? null,
     form: profileForm.form,
     setForm: profileForm.setForm,
     isLoading,

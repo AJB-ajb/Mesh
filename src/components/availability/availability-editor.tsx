@@ -16,6 +16,7 @@ type AvailabilityEditorProps = {
   windows: RecurringWindow[];
   onChange: (windows: RecurringWindow[]) => void;
   readOnly?: boolean;
+  busyBlocks?: RecurringWindow[];
 };
 
 type EditorMode = "quick" | "detailed";
@@ -24,12 +25,20 @@ export function AvailabilityEditor({
   windows,
   onChange,
   readOnly,
+  busyBlocks,
 }: AvailabilityEditorProps) {
   const [mode, setMode] = useState<EditorMode>("quick");
 
   if (readOnly) {
     // In read-only mode, show the calendar view
-    return <CalendarWeekView windows={windows} onChange={() => {}} readOnly />;
+    return (
+      <CalendarWeekView
+        windows={windows}
+        onChange={() => {}}
+        readOnly
+        busyBlocks={busyBlocks}
+      />
+    );
   }
 
   // Derive grid state from windows for quick mode
@@ -83,7 +92,11 @@ export function AvailabilityEditor({
           partialGrid={partialGrid}
         />
       ) : (
-        <CalendarWeekView windows={windows} onChange={onChange} />
+        <CalendarWeekView
+          windows={windows}
+          onChange={onChange}
+          busyBlocks={busyBlocks}
+        />
       )}
     </div>
   );

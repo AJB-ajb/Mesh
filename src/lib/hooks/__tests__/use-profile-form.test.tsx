@@ -16,6 +16,7 @@ import { useProfileForm } from "../use-profile-form";
 // ---------------------------------------------------------------------------
 
 const fakeProfileData: ProfileFetchResult = {
+  profileId: "test-user-id",
   form: {
     fullName: "Test User",
     headline: "Developer",

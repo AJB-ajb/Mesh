@@ -15,30 +15,30 @@ This document describes the database schema for the Mesh application. It covers 
 
 User profile information including skills, preferences, and matching-related data.
 
-| Field                       | Type             | Nullable | Default  | Description                                                     |
-| --------------------------- | ---------------- | -------- | -------- | --------------------------------------------------------------- |
-| `user_id`                   | uuid             | NO       | -        | Primary key, references `auth.users(id)`                        |
-| `full_name`                 | text             | YES      | null     | User's display name                                             |
-| `headline`                  | text             | YES      | null     | Short professional headline                                     |
-| `bio`                       | text             | YES      | null     | Longer biography/description                                    |
-| `location`                  | text             | YES      | null     | Human-readable location string for display                      |
-| `location_lat`              | double precision | YES      | null     | Latitude coordinate for matching                                |
-| `location_lng`              | double precision | YES      | null     | Longitude coordinate for matching                               |
-| `interests`                 | text[]           | YES      | null     | Array of interest strings                                       |
-| `languages`                 | text[]           | YES      | '{}'     | Spoken languages (ISO codes: en, de, es, etc.)                  |
-| `location_mode`             | text             | YES      | 'either' | One of: remote, in_person, either                               |
-| `location_preference`       | double precision | YES      | null     | 0.0 = in-person only, 0.5 = either, 1.0 = remote only           |
-| `availability_slots`        | jsonb            | YES      | null     | Weekly availability grid, e.g. `{"mon": ["morning","evening"]}` |
-| `collaboration_style`       | text             | YES      | null     | **Optional:** One of: async, sync, hybrid                       |
-| `portfolio_url`             | text             | YES      | null     | Link to portfolio                                               |
-| `github_url`                | text             | YES      | null     | Link to GitHub profile                                          |
-| `source_text`               | text             | YES      | null     | Free-form text description that profile fields are derived from |
-| `previous_source_text`      | text             | YES      | null     | Previous source_text for single-level undo                      |
-| `previous_profile_snapshot` | jsonb            | YES      | null     | Previous profile field values (JSON) for single-level undo      |
-| `embedding`                 | vector(1536)     | YES      | null     | OpenAI embedding for semantic matching                          |
-| `created_at`                | timestamptz      | NO       | now()    | Record creation timestamp                                       |
-| `updated_at`                | timestamptz      | NO       | now()    | Last update timestamp (auto-updated)                            |
-| `timezone`                  | text             | YES      | null     | IANA timezone string (e.g., 'Europe/Berlin')                    |
+| Field                       | Type             | Nullable | Default      | Description                                                                 |
+| --------------------------- | ---------------- | -------- | ------------ | --------------------------------------------------------------------------- |
+| `user_id`                   | uuid             | NO       | -            | Primary key, references `auth.users(id)`                                    |
+| `full_name`                 | text             | YES      | null         | User's display name                                                         |
+| `headline`                  | text             | YES      | null         | Short professional headline                                                 |
+| `bio`                       | text             | YES      | null         | Longer biography/description                                                |
+| `location`                  | text             | YES      | null         | Human-readable location string for display                                  |
+| `location_lat`              | double precision | YES      | null         | Latitude coordinate for matching                                            |
+| `location_lng`              | double precision | YES      | null         | Longitude coordinate for matching                                           |
+| `interests`                 | text[]           | YES      | null         | Array of interest strings                                                   |
+| `languages`                 | text[]           | YES      | '{}'         | Spoken languages (ISO codes: en, de, es, etc.)                              |
+| `location_mode`             | text             | YES      | 'either'     | One of: remote, in_person, either                                           |
+| `location_preference`       | double precision | YES      | null         | 0.0 = in-person only, 0.5 = either, 1.0 = remote only                       |
+| `availability_slots`        | jsonb            | YES      | null         | Weekly availability grid, e.g. `{"mon": ["morning","evening"]}`             |
+| `collaboration_style`       | text             | YES      | null         | **Optional:** One of: async, sync, hybrid                                   |
+| `portfolio_url`             | text             | YES      | null         | Link to portfolio                                                           |
+| `github_url`                | text             | YES      | null         | Link to GitHub profile                                                      |
+| `source_text`               | text             | YES      | null         | Free-form text description that profile fields are derived from             |
+| `previous_source_text`      | text             | YES      | null         | Previous source_text for single-level undo                                  |
+| `previous_profile_snapshot` | jsonb            | YES      | null         | Previous profile field values (JSON) for single-level undo                  |
+| `embedding`                 | vector(1536)     | YES      | null         | OpenAI embedding for semantic matching                                      |
+| `created_at`                | timestamptz      | NO       | now()        | Record creation timestamp                                                   |
+| `updated_at`                | timestamptz      | NO       | now()        | Last update timestamp (auto-updated)                                        |
+| `timezone`                  | text             | YES      | null         | IANA timezone string (e.g., 'Europe/Berlin')                                |
 | `calendar_visibility`       | text             | YES      | 'match_only' | `'match_only'` or `'team_visible'` — controls who sees calendar busy blocks |
 
 **RLS Policies:**
@@ -92,7 +92,7 @@ Minute-level recurring (or specific) time windows for profiles and postings. **D
 | Function                       | Parameters                             | Returns     | Description                                                                                                                                                             |
 | ------------------------------ | -------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `compute_availability_score`   | `p_profile_id uuid, p_posting_id uuid` | `float8`    | `1 - (blocked_overlap / posting_total)`. Uses `get_effective_blocked_ranges()` which unions manual windows + calendar busy blocks. 1.0 if either has no windows/blocks. |
-| `get_effective_blocked_ranges` | `p_profile_id uuid`                    | `int4range` | Returns all effective blocked canonical ranges for a profile: UNION of availability_windows + calendar_busy_blocks canonical projections.                                |
+| `get_effective_blocked_ranges` | `p_profile_id uuid`                    | `int4range` | Returns all effective blocked canonical ranges for a profile: UNION of availability_windows + calendar_busy_blocks canonical projections.                               |
 
 ---
 
@@ -100,23 +100,23 @@ Minute-level recurring (or specific) time windows for profiles and postings. **D
 
 External calendar connections (Google Calendar, iCal feeds) for availability sync.
 
-| Field                      | Type        | Nullable | Default           | Description                                             |
-| -------------------------- | ----------- | -------- | ----------------- | ------------------------------------------------------- |
-| `id`                       | uuid        | NO       | gen_random_uuid() | Primary key                                             |
-| `profile_id`               | uuid FK     | NO       | -                 | References `profiles(user_id)` ON DELETE CASCADE        |
-| `provider`                 | text        | NO       | -                 | `'google'` or `'ical'`                                  |
-| `access_token_encrypted`   | bytea       | YES      | null              | AES-256-GCM encrypted Google access token               |
-| `refresh_token_encrypted`  | bytea       | YES      | null              | AES-256-GCM encrypted Google refresh token              |
-| `token_expires_at`         | timestamptz | YES      | null              | Google token expiration time                            |
-| `ical_url`                 | text        | YES      | null              | iCal feed URL                                           |
-| `watch_channel_id`         | text        | YES      | null              | Google Calendar Watch channel ID                        |
-| `watch_resource_id`        | text        | YES      | null              | Google Calendar Watch resource ID                       |
-| `watch_expiration`         | timestamptz | YES      | null              | Google Watch channel expiration                         |
-| `last_synced_at`           | timestamptz | YES      | null              | Last successful sync timestamp                          |
-| `sync_status`              | text        | NO       | 'pending'         | One of: pending, syncing, synced, error                 |
-| `sync_error`               | text        | YES      | null              | Last sync error message                                 |
-| `created_at`               | timestamptz | NO       | now()             | Record creation timestamp                               |
-| `updated_at`               | timestamptz | NO       | now()             | Last update timestamp                                   |
+| Field                     | Type        | Nullable | Default           | Description                                      |
+| ------------------------- | ----------- | -------- | ----------------- | ------------------------------------------------ |
+| `id`                      | uuid        | NO       | gen_random_uuid() | Primary key                                      |
+| `profile_id`              | uuid FK     | NO       | -                 | References `profiles(user_id)` ON DELETE CASCADE |
+| `provider`                | text        | NO       | -                 | `'google'` or `'ical'`                           |
+| `access_token_encrypted`  | bytea       | YES      | null              | AES-256-GCM encrypted Google access token        |
+| `refresh_token_encrypted` | bytea       | YES      | null              | AES-256-GCM encrypted Google refresh token       |
+| `token_expires_at`        | timestamptz | YES      | null              | Google token expiration time                     |
+| `ical_url`                | text        | YES      | null              | iCal feed URL                                    |
+| `watch_channel_id`        | text        | YES      | null              | Google Calendar Watch channel ID                 |
+| `watch_resource_id`       | text        | YES      | null              | Google Calendar Watch resource ID                |
+| `watch_expiration`        | timestamptz | YES      | null              | Google Watch channel expiration                  |
+| `last_synced_at`          | timestamptz | YES      | null              | Last successful sync timestamp                   |
+| `sync_status`             | text        | NO       | 'pending'         | One of: pending, syncing, synced, error          |
+| `sync_error`              | text        | YES      | null              | Last sync error message                          |
+| `created_at`              | timestamptz | NO       | now()             | Record creation timestamp                        |
+| `updated_at`              | timestamptz | NO       | now()             | Last update timestamp                            |
 
 **Indexes:** Unique partial index on `(profile_id) WHERE provider = 'google'` (one Google connection per profile). B-tree on `profile_id`.
 
@@ -128,15 +128,15 @@ External calendar connections (Google Calendar, iCal feeds) for availability syn
 
 Busy time blocks imported from external calendars. Replaced on each sync cycle.
 
-| Field              | Type          | Nullable | Default           | Description                                          |
-| ------------------ | ------------- | -------- | ----------------- | ---------------------------------------------------- |
-| `id`               | uuid          | NO       | gen_random_uuid() | Primary key                                          |
-| `connection_id`    | uuid FK       | NO       | -                 | References `calendar_connections(id)` ON DELETE CASCADE |
-| `profile_id`       | uuid FK       | NO       | -                 | References `profiles(user_id)` ON DELETE CASCADE     |
-| `start_time`       | timestamptz   | NO       | -                 | Busy period start                                    |
-| `end_time`         | timestamptz   | NO       | -                 | Busy period end                                      |
-| `canonical_ranges` | int4range[]   | YES      | null              | Canonical week projection for scoring                |
-| `created_at`       | timestamptz   | NO       | now()             | Record creation timestamp                            |
+| Field              | Type        | Nullable | Default           | Description                                             |
+| ------------------ | ----------- | -------- | ----------------- | ------------------------------------------------------- |
+| `id`               | uuid        | NO       | gen_random_uuid() | Primary key                                             |
+| `connection_id`    | uuid FK     | NO       | -                 | References `calendar_connections(id)` ON DELETE CASCADE |
+| `profile_id`       | uuid FK     | NO       | -                 | References `profiles(user_id)` ON DELETE CASCADE        |
+| `start_time`       | timestamptz | NO       | -                 | Busy period start                                       |
+| `end_time`         | timestamptz | NO       | -                 | Busy period end                                         |
+| `canonical_ranges` | int4range[] | YES      | null              | Canonical week projection for scoring                   |
+| `created_at`       | timestamptz | NO       | now()             | Record creation timestamp                               |
 
 **Indexes:** B-tree on `profile_id`, B-tree on `connection_id`, GIN on `canonical_ranges`.
 
@@ -401,3 +401,71 @@ This guarantees complete isolation — dev/test data physically cannot appear in
 - `matches_status_idx` on `status`
 - `matches_user_status_idx` on `(user_id, status)`
 - `matches_project_status_idx` on `(project_id, status)`
+
+---
+
+### meeting_proposals
+
+Meeting proposals for team scheduling on active postings.
+
+| Field         | Type        | Nullable | Default           | Description                            |
+| ------------- | ----------- | -------- | ----------------- | -------------------------------------- |
+| `id`          | uuid        | NO       | gen_random_uuid() | Primary key                            |
+| `posting_id`  | uuid        | NO       | -                 | FK → postings(id), ON DELETE CASCADE   |
+| `proposed_by` | uuid        | NO       | -                 | FK → profiles(id), ON DELETE CASCADE   |
+| `title`       | text        | YES      | null              | Optional meeting title                 |
+| `start_time`  | timestamptz | NO       | -                 | Meeting start                          |
+| `end_time`    | timestamptz | NO       | -                 | Meeting end                            |
+| `status`      | text        | NO       | 'proposed'        | One of: proposed, confirmed, cancelled |
+| `created_at`  | timestamptz | NO       | now()             |                                        |
+| `updated_at`  | timestamptz | NO       | now()             |                                        |
+
+**RLS Policies:**
+
+- SELECT: team members (via `is_posting_team_member()`)
+- INSERT: posting owner only (`proposed_by = auth.uid()`)
+- UPDATE: posting owner only (status changes)
+
+**Indexes:**
+
+- `idx_meeting_proposals_posting` on `posting_id`
+- `idx_meeting_proposals_status` on `(posting_id, status)`
+
+### meeting_responses
+
+Per-member responses to meeting proposals.
+
+| Field          | Type        | Nullable | Default           | Description                                   |
+| -------------- | ----------- | -------- | ----------------- | --------------------------------------------- |
+| `id`           | uuid        | NO       | gen_random_uuid() | Primary key                                   |
+| `proposal_id`  | uuid        | NO       | -                 | FK → meeting_proposals(id), ON DELETE CASCADE |
+| `responder_id` | uuid        | NO       | -                 | FK → profiles(id), ON DELETE CASCADE          |
+| `response`     | text        | NO       | -                 | One of: available, unavailable                |
+| `created_at`   | timestamptz | NO       | now()             |                                               |
+| `updated_at`   | timestamptz | NO       | now()             |                                               |
+
+**Constraints:** UNIQUE on `(proposal_id, responder_id)`
+
+**RLS Policies:**
+
+- SELECT: team members (via proposal → posting)
+- INSERT: own response, team members only
+- UPDATE: own response only
+
+**Indexes:**
+
+- `idx_meeting_responses_proposal` on `proposal_id`
+
+## RPC Functions (Scheduling)
+
+### is_posting_team_member(p_posting_id, p_user_id)
+
+Returns boolean — checks if user is posting creator or accepted applicant.
+
+### get_posting_team_member_ids(p_posting_id)
+
+Returns `uuid[]` — array of team member IDs (creator + accepted applicants).
+
+### get_team_common_availability(p_profile_ids)
+
+Returns `TABLE(day_of_week int, start_minutes int, end_minutes int)` — 15-minute windows where no team member is blocked (uses `get_effective_blocked_ranges()` per member).

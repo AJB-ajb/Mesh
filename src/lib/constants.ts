@@ -96,6 +96,18 @@ export const CALENDAR_SYNC = {
   ICAL_POLL_INTERVAL_MINUTES: 30,
 } as const;
 
+/** Team scheduling constants */
+export const SCHEDULING = {
+  /** Common availability slot size in minutes (matches DB function) */
+  SLOT_SIZE_MINUTES: 15,
+  /** Maximum active (proposed/confirmed) proposals per posting */
+  MAX_PROPOSALS_PER_POSTING: 20,
+  /** Duration options in minutes for the meeting proposer */
+  DURATION_OPTIONS: [15, 30, 45, 60, 90, 120] as readonly number[],
+  /** Default meeting duration in minutes */
+  DEFAULT_DURATION_MINUTES: 60,
+} as const;
+
 /** AI generation parameters for match explanations */
 export const AI = {
   TEMPERATURE: 0.7,
