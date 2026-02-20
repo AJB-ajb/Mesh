@@ -1,14 +1,35 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { labels } from "@/lib/labels";
+import type { RecurringWindow } from "@/lib/types/availability";
 import { useCommonAvailability } from "@/lib/hooks/use-common-availability";
 import { useMeetingProposals } from "@/lib/hooks/use-meeting-proposals";
 import { TeamAvailabilityView } from "./team-availability-view";
 import { MeetingProposer } from "./meeting-proposer";
 import { MeetingProposalCard } from "./meeting-proposal-card";
+
+/**
+ * Convert a day-of-week (0=Mon..6=Sun) + minute-of-day to the next occurrence
+ * as a `YYYY-MM-DDTHH:mm` string suitable for datetime-local input.
+ * Always picks 1–7 days ahead to avoid proposing meetings in the past.
+ */
+function dayMinutesToNextISO(dayOfWeek: number, startMinutes: number): string {
+  const now = new Date();
+  // JS getDay(): 0=Sun,1=Mon..6=Sat → our 0=Mon..6=Sun
+  const jsDay = now.getDay();
+  const todayMon = jsDay === 0 ? 6 : jsDay - 1; // convert to 0=Mon
+  let daysAhead = dayOfWeek - todayMon;
+  if (daysAhead <= 0) daysAhead += 7;
+  const target = new Date(now);
+  target.setDate(target.getDate() + daysAhead);
+  target.setHours(Math.floor(startMinutes / 60), startMinutes % 60, 0, 0);
+  // Format as YYYY-MM-DDTHH:mm
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${target.getFullYear()}-${pad(target.getMonth() + 1)}-${pad(target.getDate())}T${pad(target.getHours())}:${pad(target.getMinutes())}`;
+}
 
 type TeamSchedulingSectionProps = {
   postingId: string;
@@ -30,6 +51,37 @@ export function TeamSchedulingSection({
     isLoading: isLoadingProposals,
     mutate,
   } = useMeetingProposals(postingId);
+
+  const [timeSelection, setTimeSelection] = useState<RecurringWindow | null>(
+    null,
+  );
+
+  const handleTimeSelect = useCallback(
+    (day: number, startMinutes: number, endMinutes: number) => {
+      setTimeSelection({
+        window_type: "recurring",
+        day_of_week: day,
+        start_minutes: startMinutes,
+        end_minutes: endMinutes,
+      });
+    },
+    [],
+  );
+
+  const handleClearSelection = useCallback(() => {
+    setTimeSelection(null);
+  }, []);
+
+  const meetingPrefill = useMemo(() => {
+    if (!timeSelection) return null;
+    return {
+      startTime: dayMinutesToNextISO(
+        timeSelection.day_of_week,
+        timeSelection.start_minutes,
+      ),
+      duration: timeSelection.end_minutes - timeSelection.start_minutes,
+    };
+  }, [timeSelection]);
 
   const handlePropose = useCallback(
     async (data: { title?: string; startTime: string; endTime: string }) => {
@@ -128,7 +180,11 @@ export function TeamSchedulingSection({
       </h3>
 
       {/* Common availability grid */}
-      <TeamAvailabilityView windows={windows} />
+      <TeamAvailabilityView
+        windows={windows}
+        onTimeSelect={isOwner ? handleTimeSelect : undefined}
+        timeSelection={timeSelection}
+      />
 
       {/* Meeting proposals section */}
       <div className="space-y-3">
@@ -136,7 +192,13 @@ export function TeamSchedulingSection({
           <h4 className="text-sm font-medium">
             {labels.scheduling.proposalsTitle}
           </h4>
-          {isOwner && <MeetingProposer onPropose={handlePropose} />}
+          {isOwner && (
+            <MeetingProposer
+              onPropose={handlePropose}
+              prefill={meetingPrefill}
+              onClear={handleClearSelection}
+            />
+          )}
         </div>
 
         {proposals.length === 0 ? (

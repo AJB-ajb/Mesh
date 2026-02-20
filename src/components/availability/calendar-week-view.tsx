@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useCallback, useRef } from "react";
 import type { RecurringWindow } from "@/lib/types/availability";
 import { DAY_MAP_REVERSE } from "@/lib/types/availability";
 import { DAY_LABELS } from "@/lib/types/profile";
@@ -19,6 +19,12 @@ type CalendarWeekViewProps = {
   onChange: (windows: RecurringWindow[]) => void;
   readOnly?: boolean;
   busyBlocks?: RecurringWindow[];
+  onTimeSelect?: (
+    day: number,
+    startMinutes: number,
+    endMinutes: number,
+  ) => void;
+  timeSelection?: RecurringWindow | null;
 };
 
 export function CalendarWeekView({
@@ -26,8 +32,24 @@ export function CalendarWeekView({
   onChange,
   readOnly,
   busyBlocks,
+  onTimeSelect,
+  timeSelection,
 }: CalendarWeekViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const selectOnChange = useCallback(
+    (newWindows: RecurringWindow[]) => {
+      if (onTimeSelect && newWindows.length > windows.length) {
+        const w = newWindows[newWindows.length - 1];
+        onTimeSelect(w.day_of_week, w.start_minutes, w.end_minutes);
+        return;
+      }
+      onChange(newWindows);
+    },
+    [windows.length, onTimeSelect, onChange],
+  );
+
+  const effectiveOnChange = onTimeSelect ? selectOnChange : onChange;
 
   const {
     handleMouseDown,
@@ -35,14 +57,14 @@ export function CalendarWeekView({
     handleMouseMove,
     handleMouseUp,
     previewWindow,
-  } = useCalendarDrag(windows, onChange);
+  } = useCalendarDrag(windows, effectiveOnChange);
 
   const handleDelete = (index: number) => {
     onChange(windows.filter((_, i) => i !== index));
   };
 
   const onColumnMouseDown = (e: React.MouseEvent, day: number) => {
-    if (readOnly) return;
+    if (readOnly && !onTimeSelect) return;
     handleMouseDown(e, day, containerRef, START_HOUR);
   };
 
@@ -172,6 +194,17 @@ export function CalendarWeekView({
                     />
                   ))}
 
+                {/* Persisted time selection block (blue) */}
+                {timeSelection?.day_of_week === day && (
+                  <CalendarWeekViewBlock
+                    window={timeSelection}
+                    index={-1}
+                    startHour={START_HOUR}
+                    readOnly
+                    variant="selection"
+                  />
+                )}
+
                 {/* Preview block during drag-to-create */}
                 {previewForDay && (
                   <CalendarWeekViewBlock
@@ -179,6 +212,7 @@ export function CalendarWeekView({
                     index={-1}
                     startHour={START_HOUR}
                     isPreview
+                    variant={onTimeSelect ? "selection" : "default"}
                   />
                 )}
               </div>

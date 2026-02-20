@@ -8,6 +8,12 @@ import type { RecurringWindow } from "@/lib/types/availability";
 
 type TeamAvailabilityViewProps = {
   windows: CommonAvailabilityWindow[];
+  onTimeSelect?: (
+    day: number,
+    startMinutes: number,
+    endMinutes: number,
+  ) => void;
+  timeSelection?: RecurringWindow | null;
 };
 
 /**
@@ -51,7 +57,11 @@ function invertWindows(
   return unavailable;
 }
 
-export function TeamAvailabilityView({ windows }: TeamAvailabilityViewProps) {
+export function TeamAvailabilityView({
+  windows,
+  onTimeSelect,
+  timeSelection,
+}: TeamAvailabilityViewProps) {
   if (windows.length === 0) {
     return (
       <Card>
@@ -83,7 +93,14 @@ export function TeamAvailabilityView({ windows }: TeamAvailabilityViewProps) {
           windows={unavailableWindows}
           onChange={() => {}}
           readOnly
+          onTimeSelect={onTimeSelect}
+          timeSelection={timeSelection}
         />
+        {onTimeSelect && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {labels.scheduling.dragToSelectHint}
+          </p>
+        )}
       </CardContent>
     </Card>
   );

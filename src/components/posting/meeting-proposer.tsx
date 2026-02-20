@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,9 +13,15 @@ type MeetingProposerProps = {
     startTime: string;
     endTime: string;
   }) => Promise<void>;
+  prefill?: { startTime: string; duration: number } | null;
+  onClear?: () => void;
 };
 
-export function MeetingProposer({ onPropose }: MeetingProposerProps) {
+export function MeetingProposer({
+  onPropose,
+  prefill,
+  onClear,
+}: MeetingProposerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [startTime, setStartTime] = useState("");
@@ -23,6 +29,20 @@ export function MeetingProposer({ onPropose }: MeetingProposerProps) {
     SCHEDULING.DEFAULT_DURATION_MINUTES,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!prefill) return;
+    queueMicrotask(() => {
+      setIsOpen(true);
+      setStartTime(prefill.startTime);
+      const closest = SCHEDULING.DURATION_OPTIONS.reduce((prev, curr) =>
+        Math.abs(curr - prefill.duration) < Math.abs(prev - prefill.duration)
+          ? curr
+          : prev,
+      );
+      setDuration(closest);
+    });
+  }, [prefill]);
 
   const handleSubmit = async () => {
     if (!startTime) return;
@@ -43,6 +63,7 @@ export function MeetingProposer({ onPropose }: MeetingProposerProps) {
       setStartTime("");
       setDuration(SCHEDULING.DEFAULT_DURATION_MINUTES);
       setIsOpen(false);
+      onClear?.();
     } finally {
       setIsSubmitting(false);
     }
@@ -109,7 +130,10 @@ export function MeetingProposer({ onPropose }: MeetingProposerProps) {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setIsOpen(false)}
+          onClick={() => {
+            setIsOpen(false);
+            onClear?.();
+          }}
           disabled={isSubmitting}
         >
           {labels.common.cancel}

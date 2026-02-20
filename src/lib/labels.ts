@@ -1164,5 +1164,6 @@ export const labels = {
     exportGoogleCalendar: "Add to Google Calendar",
     exportIcs: "Download .ics",
     respondedCount: (n: number, total: number) => `${n} of ${total} responded`,
+    dragToSelectHint: "Drag on the calendar to select a meeting time.",
   },
 } as const;

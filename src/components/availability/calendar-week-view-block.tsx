@@ -17,6 +17,7 @@ type CalendarWeekViewBlockProps = {
   startHour: number;
   readOnly?: boolean;
   isPreview?: boolean;
+  variant?: "default" | "selection";
   onDelete?: (index: number) => void;
   onResizeTopStart?: (
     e: React.MouseEvent,
@@ -41,6 +42,7 @@ export function CalendarWeekViewBlock({
   startHour,
   readOnly,
   isPreview,
+  variant = "default",
   onDelete,
   onResizeTopStart,
   onResizeBottomStart,
@@ -56,13 +58,21 @@ export function CalendarWeekViewBlock({
     onMoveStart?.(e, index, w);
   };
 
+  const colorClasses =
+    variant === "selection"
+      ? isPreview
+        ? "border-primary/40 bg-primary/5"
+        : "border-primary/50 bg-primary/10 hover:bg-primary/15"
+      : isPreview
+        ? "border-destructive/40 bg-destructive/5"
+        : "border-destructive/50 bg-destructive/10 hover:bg-destructive/15";
+
+  const textColor =
+    variant === "selection" ? "text-primary/70" : "text-destructive/70";
+
   return (
     <div
-      className={`absolute left-0.5 right-0.5 rounded-sm border text-xs select-none ${
-        isPreview
-          ? "border-destructive/40 bg-destructive/5"
-          : "border-destructive/50 bg-destructive/10 hover:bg-destructive/15"
-      } ${readOnly ? "" : "cursor-grab active:cursor-grabbing"}`}
+      className={`absolute left-0.5 right-0.5 rounded-sm border text-xs select-none ${colorClasses} ${readOnly ? "" : "cursor-grab active:cursor-grabbing"}`}
       style={{ top: `${top}px`, height: `${Math.max(height, 12)}px` }}
       onMouseDown={handleMouseDown}
     >
@@ -76,7 +86,7 @@ export function CalendarWeekViewBlock({
 
       {/* Content */}
       <div className="flex items-start justify-between px-1 pt-0.5 overflow-hidden">
-        <span className="truncate text-[10px] font-medium text-destructive/70">
+        <span className={`truncate text-[10px] font-medium ${textColor}`}>
           {formatTime(w.start_minutes)}-{formatTime(w.end_minutes)}
         </span>
         {!readOnly && !isPreview && (
