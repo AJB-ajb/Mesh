@@ -82,6 +82,7 @@ export type PostingDetailData = {
   myApplication: Application | null;
   hasApplied: boolean;
   waitlistPosition: number | null;
+  acceptedCount: number | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -156,6 +157,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
       myApplication: null,
       hasApplied: false,
       waitlistPosition: null,
+      acceptedCount: null,
     };
   }
 
@@ -168,18 +170,28 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
   let matchBreakdown: ScoreBreakdown | null = null;
   let applications: Application[] = [];
   let matchedProfiles: MatchedProfile[] = [];
+  let acceptedCount: number | null = null;
 
   if (user && !isOwner) {
-    // Non-owner: check application, fetch profile, compute match
-    const [applicationResult, profileResult] = await Promise.all([
-      supabase
-        .from("applications")
-        .select("*")
-        .eq("posting_id", postingId)
-        .eq("applicant_id", user.id)
-        .maybeSingle(),
-      supabase.from("profiles").select("*").eq("user_id", user.id).single(),
-    ]);
+    // Non-owner: check application, fetch profile, compute match, count accepted
+    const [applicationResult, profileResult, acceptedCountResult] =
+      await Promise.all([
+        supabase
+          .from("applications")
+          .select("*")
+          .eq("posting_id", postingId)
+          .eq("applicant_id", user.id)
+          .maybeSingle(),
+        supabase.from("profiles").select("*").eq("user_id", user.id).single(),
+        supabase
+          .from("applications")
+          .select("*", { count: "exact" })
+          .eq("posting_id", postingId)
+          .eq("status", "accepted")
+          .limit(0),
+      ]);
+
+    acceptedCount = acceptedCountResult.count ?? 0;
 
     if (applicationResult.data && !applicationResult.error) {
       const appData = applicationResult.data;
@@ -311,6 +323,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
     myApplication,
     hasApplied,
     waitlistPosition,
+    acceptedCount,
   };
 }
 
@@ -335,6 +348,7 @@ export function usePostingDetail(postingId: string) {
     myApplication: data?.myApplication ?? null,
     hasApplied: data?.hasApplied ?? false,
     waitlistPosition: data?.waitlistPosition ?? null,
+    acceptedCount: data?.acceptedCount ?? null,
     error,
     isLoading,
     mutate,

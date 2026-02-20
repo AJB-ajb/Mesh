@@ -545,6 +545,10 @@ export function PostingDetailHeader({
                 ? labels.common.expired
                 : posting.status}
             </Badge>
+            {(posting.visibility === "private" ||
+              posting.mode === "friend_ask") && (
+              <Badge variant="outline">{labels.invite.privateBadge}</Badge>
+            )}
             {posting.expires_at && (
               <span
                 className={`text-xs ${isExpired(posting.expires_at) ? "text-destructive" : "text-muted-foreground"}`}

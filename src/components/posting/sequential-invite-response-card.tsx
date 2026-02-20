@@ -6,6 +6,7 @@ import { Check, X, Loader2, ListOrdered } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
+import { labels } from "@/lib/labels";
 
 interface SequentialInviteResponseCardProps {
   postingId: string;
@@ -167,8 +168,7 @@ export function SequentialInviteResponseCard({
         <CardContent className="py-6">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <ListOrdered className="h-4 w-4" />
-            This posting uses Sequential Invite — the poster will invite
-            connections directly.
+            {labels.invite.notInvitedMessage}
           </div>
         </CardContent>
       </Card>
@@ -181,7 +181,7 @@ export function SequentialInviteResponseCard({
         <CardContent className="py-6">
           <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
             <Check className="h-4 w-4" />
-            You joined this posting!
+            {labels.invite.joinedMessage}
           </div>
         </CardContent>
       </Card>
@@ -194,7 +194,7 @@ export function SequentialInviteResponseCard({
         <CardContent className="py-6">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <X className="h-4 w-4" />
-            You declined this invite.
+            {labels.invite.declinedMessage}
           </div>
         </CardContent>
       </Card>
@@ -207,12 +207,12 @@ export function SequentialInviteResponseCard({
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <ListOrdered className="h-5 w-5 text-blue-600" />
-          You&apos;ve been invited!
+          {labels.invite.invitedTitle}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          The posting creator has invited you to join. Would you like to accept?
+          {labels.invite.invitedDescription}
         </p>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
@@ -227,14 +227,14 @@ export function SequentialInviteResponseCard({
             ) : (
               <Check className="h-4 w-4" />
             )}
-            Join
+            {labels.invite.joinButton}
           </Button>
           <Button
             variant="outline"
             onClick={() => handleRespond("decline")}
             disabled={isResponding}
           >
-            Do not join
+            {labels.invite.declineButton}
           </Button>
         </div>
       </CardContent>

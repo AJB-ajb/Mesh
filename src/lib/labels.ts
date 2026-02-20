@@ -875,6 +875,16 @@ export const labels = {
     completedSummary: (count: number) =>
       `All ${count} connections were asked \u2014 no one accepted`,
     cancelledSummary: "This invite was cancelled",
+    privateBadge: "Private",
+    invitedTitle: "You\u2019ve been invited!",
+    invitedDescription:
+      "The posting creator has invited you to join. Would you like to accept?",
+    joinButton: "Join",
+    declineButton: "Do not join",
+    joinedMessage: "You joined this posting!",
+    declinedMessage: "You declined this invite.",
+    notInvitedMessage:
+      "This posting uses Invite \u2014 the poster will invite connections directly.",
     waitingSummary: (current: number, total: number) =>
       `${current} of ${total} \u2014 waiting for response`,
     parallelWaitingSummary: (responded: number, total: number) =>

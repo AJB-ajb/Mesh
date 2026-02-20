@@ -55,6 +55,7 @@ function mockCountQuery(result: { count: number | null; error: unknown }) {
   const chain: Record<string, ReturnType<typeof vi.fn>> = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
   };
   chain.then = vi.fn((resolve: (v: unknown) => void) => resolve(result));
   return chain;

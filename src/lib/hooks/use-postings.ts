@@ -101,6 +101,8 @@ async function fetchPostings(key: string): Promise<PostingsResult> {
     if (user) {
       query = query.neq("creator_id", user.id);
     }
+    // Exclude private postings from discover
+    query = query.or("visibility.is.null,visibility.neq.private");
   }
 
   // Category filter at query level

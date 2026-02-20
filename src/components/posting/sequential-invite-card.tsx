@@ -157,8 +157,12 @@ export function SequentialInviteCard({
     );
   }
 
-  // Active or completed sequential invite — show status
-  if (sequentialInvite) {
+  // Active invite (pending/accepted) — show status and cancel button
+  if (
+    sequentialInvite &&
+    (sequentialInvite.status === "pending" ||
+      sequentialInvite.status === "accepted")
+  ) {
     return (
       <Card>
         <CardHeader>
@@ -195,7 +199,7 @@ export function SequentialInviteCard({
     );
   }
 
-  // No invite yet — show creation UI
+  // No active invite (or cancelled/completed) — show creation UI
   return (
     <Card>
       <CardHeader>
@@ -205,6 +209,15 @@ export function SequentialInviteCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Previous invite summary for cancelled/completed */}
+        {sequentialInvite && (
+          <div className="rounded-md border border-muted bg-muted/30 px-3 py-2">
+            <SequentialInviteStatus
+              friendAsk={sequentialInvite}
+              connectionNames={connectionNames}
+            />
+          </div>
+        )}
         {/* Invite mode toggle */}
         <div className="space-y-2">
           <label className="text-sm font-medium">
