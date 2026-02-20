@@ -10,16 +10,45 @@ type TeamAvailabilityViewProps = {
   windows: CommonAvailabilityWindow[];
 };
 
-/** Convert CommonAvailabilityWindow to RecurringWindow for CalendarWeekView */
-function toRecurringWindows(
-  windows: CommonAvailabilityWindow[],
+/**
+ * Invert available windows into unavailable windows.
+ * The RPC returns when the team IS available; CalendarWeekView renders blocks
+ * in red (destructive). We need to show UNavailable time as red, so we compute
+ * the complement of each day's available windows within 0–1440 minutes.
+ */
+function invertWindows(
+  available: CommonAvailabilityWindow[],
 ): RecurringWindow[] {
-  return windows.map((w) => ({
-    window_type: "recurring" as const,
-    day_of_week: w.day_of_week,
-    start_minutes: w.start_minutes,
-    end_minutes: w.end_minutes,
-  }));
+  const unavailable: RecurringWindow[] = [];
+
+  for (let day = 0; day <= 6; day++) {
+    const dayWindows = available
+      .filter((w) => w.day_of_week === day)
+      .sort((a, b) => a.start_minutes - b.start_minutes);
+
+    let cursor = 0;
+    for (const w of dayWindows) {
+      if (w.start_minutes > cursor) {
+        unavailable.push({
+          window_type: "recurring",
+          day_of_week: day,
+          start_minutes: cursor,
+          end_minutes: w.start_minutes,
+        });
+      }
+      cursor = Math.max(cursor, w.end_minutes);
+    }
+    if (cursor < 1440) {
+      unavailable.push({
+        window_type: "recurring",
+        day_of_week: day,
+        start_minutes: cursor,
+        end_minutes: 1440,
+      });
+    }
+  }
+
+  return unavailable;
 }
 
 export function TeamAvailabilityView({ windows }: TeamAvailabilityViewProps) {
@@ -40,7 +69,7 @@ export function TeamAvailabilityView({ windows }: TeamAvailabilityViewProps) {
     );
   }
 
-  const recurringWindows = toRecurringWindows(windows);
+  const unavailableWindows = invertWindows(windows);
 
   return (
     <Card>
@@ -51,7 +80,7 @@ export function TeamAvailabilityView({ windows }: TeamAvailabilityViewProps) {
       </CardHeader>
       <CardContent>
         <CalendarWeekView
-          windows={recurringWindows}
+          windows={unavailableWindows}
           onChange={() => {}}
           readOnly
         />
