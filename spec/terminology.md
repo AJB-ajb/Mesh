@@ -49,13 +49,25 @@ The primary CTA depends on a per-posting `auto_accept` setting:
 | Not Selected                | Keep as-is (good euphemism)  |
 | Accepted / Declined         | Keep as-is                   |
 
-### Sequential Invite (not "Friend Ask" or "Cascading Invites")
+### Invite (sequential + parallel)
 
-Use "Sequential Invite" in UI and specs.
+Use "Invite" in UI and specs. Two sub-modes:
 
-"Friend Ask" is informal jargon — a user seeing this badge won't know what it means. "Cascading Invites" is more descriptive but still technical. "Sequential Invite" clearly communicates the mechanism: invites sent one-by-one in a ranked order until enough people accept. Also works for groups (not just pairs).
+- **Sequential**: invites sent one-by-one in ranked order until someone accepts. The next connection is auto-invited on decline.
+- **Parallel**: all selected connections invited at once. First to accept wins.
 
-- **DB column**: `mode: "friend_ask"` stays for now (internal, no user impact).
+"Friend Ask" was informal jargon — replaced with "Invite" for clarity. The user chooses the mode via a toggle when creating an invite.
+
+- **DB column**: `mode: "friend_ask"` is being replaced by `visibility: "private"` (expand-contract migration). During the transition, both columns exist; code reads `visibility` and writes both.
+
+### Visibility (not "Mode")
+
+Use "Visibility" for the public/private toggle on postings.
+
+- **Public**: the posting appears in Discover for anyone to find and request to join.
+- **Private**: the posting is invite-only. The poster invites connections directly.
+
+Previously called `mode: "open" | "friend_ask"`, which was confusing. The new `visibility` column uses clear, well-understood terminology. Invites are decoupled from visibility — you can invite connections on any posting, regardless of visibility.
 
 ### Relevance (not "Semantic" or "Semantic similarity")
 

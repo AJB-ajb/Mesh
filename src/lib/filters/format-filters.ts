@@ -42,10 +42,10 @@ export function filtersToFilterPills(filters: PostingFilters): FilterPill[] {
     });
   }
 
-  if (filters.mode) {
+  if (filters.visibility) {
     pills.push({
-      key: "mode",
-      label: filters.mode === "open" ? "Open" : "Sequential Invite",
+      key: "visibility",
+      label: filters.visibility === "public" ? "Public" : "Private",
     });
   }
 
@@ -160,8 +160,8 @@ export function removeFilterByKey(
     case "category":
       delete updated.category;
       break;
-    case "mode":
-      delete updated.mode;
+    case "visibility":
+      delete updated.visibility;
       break;
     case "location_mode":
       delete updated.location_mode;

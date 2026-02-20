@@ -18,6 +18,7 @@ export type PostingDetail = {
   team_size_max: number;
   estimated_time: string;
   category: string;
+  visibility: string;
   mode: string;
   status: string;
   created_at: string;

@@ -2,7 +2,7 @@ import type { PostingFilters } from "@/lib/types/filters";
 
 interface FilterablePosting {
   category?: string | null;
-  mode?: string;
+  visibility?: string;
   location_mode?: string | null;
   location_preference?: number | null;
   location_name?: string | null;
@@ -86,8 +86,8 @@ export function applyFilters<T extends FilterablePosting>(
       return false;
     }
 
-    // Mode: exact match
-    if (filters.mode && posting.mode !== filters.mode) {
+    // Visibility: exact match
+    if (filters.visibility && posting.visibility !== filters.visibility) {
       return false;
     }
 

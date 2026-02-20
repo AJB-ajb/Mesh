@@ -17,7 +17,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   // Fetch the posting
   const { data: posting, error: postingError } = await supabase
     .from("postings")
-    .select("id, creator_id, mode, status")
+    .select("id, creator_id, mode, visibility, status")
     .eq("id", posting_id)
     .single();
 
@@ -25,11 +25,14 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     return apiError("NOT_FOUND", "Posting not found", 404);
   }
 
-  // Must be an open-mode posting
-  if (posting.mode !== "open") {
+  // Must be a public posting (not private/invite-only)
+  const postingVisibility =
+    posting.visibility ??
+    (posting.mode === "friend_ask" ? "private" : "public");
+  if (postingVisibility === "private") {
     return apiError(
       "VALIDATION",
-      "Can only express interest in open-mode postings",
+      "Can only express interest in public postings",
       400,
     );
   }

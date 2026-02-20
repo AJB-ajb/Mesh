@@ -21,23 +21,106 @@ const statusConfig = {
 };
 
 /**
- * Displays the progress of a sequential invite: who was asked,
- * current position, and responses.
+ * Displays the progress of an invite (sequential or parallel).
  */
 export function SequentialInviteStatus({
   friendAsk,
   connectionNames,
 }: SequentialInviteStatusProps) {
   const { ordered_friend_list, current_request_index, status } = friendAsk;
+  const inviteMode = friendAsk.invite_mode ?? "sequential";
+  const declinedSet = new Set(friendAsk.declined_list ?? []);
   const config = statusConfig[status];
 
+  if (inviteMode === "parallel") {
+    // Parallel mode: show all connections with their status simultaneously
+    const respondedCount = declinedSet.size + (status === "accepted" ? 1 : 0);
+
+    return (
+      <div className="space-y-3">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h4 className="text-sm font-medium">{labels.invite.progressTitle}</h4>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">Parallel</Badge>
+            <Badge variant={config.variant}>{config.label}</Badge>
+          </div>
+        </div>
+
+        {/* All connections */}
+        <div className="space-y-1">
+          {ordered_friend_list.map((connectionId) => {
+            const name =
+              connectionNames[connectionId] ?? connectionId.slice(0, 8);
+            const isDeclined = declinedSet.has(connectionId);
+            const isAccepted =
+              status === "accepted" &&
+              ordered_friend_list[current_request_index] === connectionId;
+            const isWaiting =
+              !isDeclined && !isAccepted && status === "pending";
+
+            return (
+              <div
+                key={connectionId}
+                className={cn(
+                  "flex items-center gap-3 rounded-md p-2 text-sm transition-colors",
+                  isWaiting && "bg-primary/10 border border-primary/20",
+                  isAccepted &&
+                    "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800",
+                )}
+              >
+                {isAccepted ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+                ) : isDeclined ? (
+                  <XCircle className="h-4 w-4 text-muted-foreground shrink-0" />
+                ) : isWaiting ? (
+                  <Clock className="h-4 w-4 text-primary shrink-0" />
+                ) : (
+                  <Circle className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+                )}
+
+                <span
+                  className={cn(
+                    "truncate",
+                    isDeclined && "text-muted-foreground line-through",
+                    isAccepted &&
+                      "font-medium text-green-700 dark:text-green-400",
+                    isWaiting && "font-medium",
+                  )}
+                >
+                  {name}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Summary */}
+        <p className="text-xs text-muted-foreground">
+          {status === "accepted"
+            ? labels.invite.acceptedSummary(
+                connectionNames[ordered_friend_list[current_request_index]] ??
+                  "Connection",
+              )
+            : status === "completed"
+              ? labels.invite.completedSummary(ordered_friend_list.length)
+              : status === "cancelled"
+                ? labels.invite.cancelledSummary
+                : labels.invite.parallelWaitingSummary(
+                    respondedCount,
+                    ordered_friend_list.length,
+                  )}
+        </p>
+      </div>
+    );
+  }
+
+  // Sequential mode: original timeline display
   return (
     <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium">
-          {labels.sequentialInvite.progressTitle}
-        </h4>
+        <h4 className="text-sm font-medium">{labels.invite.progressTitle}</h4>
         <Badge variant={config.variant}>{config.label}</Badge>
       </div>
 
@@ -103,17 +186,15 @@ export function SequentialInviteStatus({
       {/* Summary */}
       <p className="text-xs text-muted-foreground">
         {status === "accepted"
-          ? labels.sequentialInvite.acceptedSummary(
+          ? labels.invite.acceptedSummary(
               connectionNames[ordered_friend_list[current_request_index]] ??
                 "Connection",
             )
           : status === "completed"
-            ? labels.sequentialInvite.completedSummary(
-                ordered_friend_list.length,
-              )
+            ? labels.invite.completedSummary(ordered_friend_list.length)
             : status === "cancelled"
-              ? labels.sequentialInvite.cancelledSummary
-              : labels.sequentialInvite.waitingSummary(
+              ? labels.invite.cancelledSummary
+              : labels.invite.waitingSummary(
                   current_request_index + 1,
                   ordered_friend_list.length,
                 )}

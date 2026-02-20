@@ -159,6 +159,8 @@ export interface Posting {
   team_size_min: number;
   team_size_max: number;
   mode: "open" | "friend_ask";
+  /** New visibility column — replaces mode. Read this; write both during expand phase. */
+  visibility: "public" | "private";
   location_preference: number | null; // 0-1 float (0=in-person, 0.5=either, 1=remote)
   natural_language_criteria: string | null;
   estimated_time: string | null;
@@ -189,6 +191,7 @@ export interface PostingInsert {
   team_size_min?: number;
   team_size_max?: number;
   mode?: "open" | "friend_ask";
+  visibility?: "public" | "private";
   location_preference?: number | null;
   natural_language_criteria?: string | null;
   estimated_time?: string | null;
@@ -219,6 +222,7 @@ export interface PostingUpdate {
   team_size_min?: number;
   team_size_max?: number;
   mode?: "open" | "friend_ask";
+  visibility?: "public" | "private";
   location_preference?: number | null;
   natural_language_criteria?: string | null;
   estimated_time?: string | null;
@@ -292,6 +296,8 @@ export interface FriendAsk {
   creator_id: string;
   ordered_friend_list: string[];
   current_request_index: number;
+  invite_mode: "sequential" | "parallel";
+  declined_list: string[];
   status: "pending" | "accepted" | "completed" | "cancelled";
   created_at: string;
   updated_at: string;
@@ -303,6 +309,8 @@ export interface FriendAskInsert {
   creator_id: string;
   ordered_friend_list: string[];
   current_request_index?: number;
+  invite_mode?: "sequential" | "parallel";
+  declined_list?: string[];
   status?: "pending" | "accepted" | "completed" | "cancelled";
   created_at?: string;
   updated_at?: string;

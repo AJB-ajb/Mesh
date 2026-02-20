@@ -59,7 +59,7 @@ export const labels = {
       application_accepted: "Join Request Accepted",
       application_rejected: "Join Request Declined",
       friend_request: "Connection Request",
-      sequential_invite: "Sequential Invite",
+      sequential_invite: "Invite",
       new_message: "New Message",
       new_group_message: "New Team Message",
       match_found: "Match Found",
@@ -220,7 +220,8 @@ export const labels = {
     lookingForLabel: "Looking for",
     lookingForPlaceholder: "e.g., 3",
     lookingForHelp: "Number of people (1-10)",
-    modeLabel: "Mode",
+    visibilityLabel: "Visibility",
+    visibilityHelp: "Public = discoverable by everyone. Private = invite only.",
     expiresOnLabel: "Expires on",
     expiresOnHelp: "Default: 90 days from today",
     autoAcceptLabel: "Auto-accept",
@@ -252,9 +253,9 @@ export const labels = {
       remote: "Remote",
       in_person: "In-person",
     } as const,
-    modeOptions: {
-      open: "Open",
-      friend_ask: "Sequential Invite",
+    visibilityOptions: {
+      public: "Public",
+      private: "Private",
     } as const,
   },
 
@@ -715,10 +716,10 @@ export const labels = {
       social: "Social",
     } as const,
     filtersTitle: "Filters",
-    modeLabel: "Mode",
-    modeAny: "Any mode",
-    modeOpen: "Open",
-    modeSequentialInvite: "Sequential Invite",
+    visibilityLabel: "Visibility",
+    visibilityAny: "Any",
+    visibilityPublic: "Public",
+    visibilityPrivate: "Private",
     noPostingsOwner: "You haven\u2019t created any postings yet.",
     noPostingsDiscover: "No postings found.",
     createFirstPosting: "Create your first posting",
@@ -847,16 +848,23 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
-  // Sequential invite
+  // Invite (sequential + parallel)
   // ---------------------------------------------------------------------------
-  sequentialInvite: {
-    title: "Sequential Invite",
-    description:
+  invite: {
+    title: "Invite Connections",
+    sequentialDescription:
       "Invite your connections one by one in order. Each person can join or pass before the next is asked.",
+    parallelDescription:
+      "Invite all selected connections at once. The first to accept wins.",
     starting: "Starting...",
-    startButton: "Start Sequential Invite",
+    startButton: "Start Invite",
     cancelInvite: "Cancel Invite",
-    progressTitle: "Sequential Invite Progress",
+    progressTitle: "Invite Progress",
+    modeLabel: "Invite mode",
+    modeSequential: "Sequential",
+    modeParallel: "Parallel",
+    modeSequentialHelp: "Ask one at a time, in order",
+    modeParallelHelp: "Ask everyone at once",
     statusLabels: {
       pending: "In Progress",
       accepted: "Accepted",
@@ -866,9 +874,11 @@ export const labels = {
     acceptedSummary: (name: string) => `${name} accepted the invite`,
     completedSummary: (count: number) =>
       `All ${count} connections were asked \u2014 no one accepted`,
-    cancelledSummary: "This sequential invite was cancelled",
+    cancelledSummary: "This invite was cancelled",
     waitingSummary: (current: number, total: number) =>
       `${current} of ${total} \u2014 waiting for response`,
+    parallelWaitingSummary: (responded: number, total: number) =>
+      `${responded} of ${total} responded \u2014 waiting for others`,
   },
 
   // ---------------------------------------------------------------------------

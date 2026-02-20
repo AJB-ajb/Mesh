@@ -19,6 +19,7 @@ type Posting = {
     | "social"
     | null;
   tags: string[];
+  visibility: "public" | "private";
   mode: "open" | "friend_ask";
   location_preference: number | null;
   location_mode: string | null;

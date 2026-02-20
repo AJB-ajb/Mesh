@@ -169,12 +169,18 @@ export function postingExtractionSchema(mode: ExtractionMode): ObjectSchema {
       description:
         "Course code, hackathon name, or group identifier if mentioned (e.g., 'CS101', 'HackMIT 2026')",
     },
-    mode: {
+    visibility: {
       type: SchemaType.STRING,
       format: "enum",
-      enum: ["open", "friend_ask"],
+      enum: ["public", "private"],
       description:
-        "Posting mode: 'open' for public discovery (default), 'friend_ask' for sequential connection-by-connection invites",
+        "Visibility: 'public' for anyone to discover (default), 'private' for invite-only",
+    },
+    invitees: {
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING },
+      description:
+        "Names of people the poster wants to invite. Extract from phrases like 'I want to work with Alex and Sarah' or 'invite John'. Strip these names from the description.",
     },
     availability_mode: {
       type: SchemaType.STRING,

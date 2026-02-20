@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Loader2, ListOrdered, XCircle } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +15,8 @@ type ConnectionItem = {
   user_id: string;
   full_name: string;
 };
+
+type InviteMode = "sequential" | "parallel";
 
 interface SequentialInviteCardProps {
   postingId: string;
@@ -29,6 +32,7 @@ export function SequentialInviteCard({
   const [selectedConnections, setSelectedConnections] = useState<
     ConnectionItem[]
   >([]);
+  const [inviteMode, setInviteMode] = useState<InviteMode>("sequential");
   const [isCreating, setIsCreating] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,13 +85,14 @@ export function SequentialInviteCard({
     setError(null);
 
     try {
-      // 1. Create the sequential invite
+      // 1. Create the invite
       const createRes = await fetch("/api/friend-ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           posting_id: postingId,
           ordered_friend_list: selectedConnections.map((c) => c.user_id),
+          invite_mode: inviteMode,
         }),
       });
 
@@ -114,7 +119,7 @@ export function SequentialInviteCard({
     } finally {
       setIsCreating(false);
     }
-  }, [selectedConnections, postingId, mutate]);
+  }, [selectedConnections, postingId, inviteMode, mutate]);
 
   const handleCancel = useCallback(async () => {
     if (!sequentialInvite) return;
@@ -159,7 +164,7 @@ export function SequentialInviteCard({
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <ListOrdered className="h-5 w-5" />
-            {labels.sequentialInvite.title}
+            {labels.invite.title}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -182,7 +187,7 @@ export function SequentialInviteCard({
               ) : (
                 <XCircle className="h-4 w-4" />
               )}
-              {labels.sequentialInvite.cancelInvite}
+              {labels.invite.cancelInvite}
             </Button>
           )}
         </CardContent>
@@ -190,18 +195,51 @@ export function SequentialInviteCard({
     );
   }
 
-  // No sequential invite yet — show creation UI
+  // No invite yet — show creation UI
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <ListOrdered className="h-5 w-5" />
-          {labels.sequentialInvite.title}
+          {labels.invite.title}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Invite mode toggle */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">
+            {labels.invite.modeLabel}
+          </label>
+          <div className="flex rounded-lg border border-input overflow-hidden">
+            {(["sequential", "parallel"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setInviteMode(mode)}
+                className={cn(
+                  "flex-1 px-3 py-2 text-sm font-medium transition-colors",
+                  inviteMode === mode
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-background text-muted-foreground hover:bg-muted",
+                )}
+              >
+                {mode === "sequential"
+                  ? labels.invite.modeSequential
+                  : labels.invite.modeParallel}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {inviteMode === "sequential"
+              ? labels.invite.modeSequentialHelp
+              : labels.invite.modeParallelHelp}
+          </p>
+        </div>
+
         <p className="text-sm text-muted-foreground">
-          {labels.sequentialInvite.description}
+          {inviteMode === "sequential"
+            ? labels.invite.sequentialDescription
+            : labels.invite.parallelDescription}
         </p>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
@@ -210,6 +248,7 @@ export function SequentialInviteCard({
           currentUserId={currentUserId}
           selectedConnections={selectedConnections}
           onChange={setSelectedConnections}
+          inviteMode={inviteMode}
         />
 
         {selectedConnections.length > 0 && (
@@ -217,10 +256,10 @@ export function SequentialInviteCard({
             {isCreating ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                {labels.sequentialInvite.starting}
+                {labels.invite.starting}
               </>
             ) : (
-              labels.sequentialInvite.startButton
+              labels.invite.startButton
             )}
           </Button>
         )}

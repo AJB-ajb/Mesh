@@ -75,6 +75,15 @@ Categorize the posting as study, hackathon, personal, professional, or social ba
 Infer team size range from context if not explicitly stated.
 Create a clear, concise title if one isn't provided.
 
+For visibility:
+- Default to "public" unless the poster explicitly mentions wanting to invite specific people or keep it private.
+- If invitees are mentioned (e.g., "I want to work with Alex and Sarah"), set visibility to "private".
+
+For invitees:
+- Extract names of people the poster wants to invite (e.g., "with Alex and Sarah", "invite John").
+- Strip the invitee-related phrases from the description so the description reads cleanly.
+- Only include first names or full names as written, do not infer.
+
 For scheduling/availability:
 - If no schedule mentioned → availability_mode: "flexible"
 - If weekly recurring times mentioned → availability_mode: "recurring", populate availability_windows

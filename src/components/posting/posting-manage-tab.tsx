@@ -53,7 +53,7 @@ export function PostingManageTab({
           onMessage={onStartConversation}
         />
 
-        {posting.mode === "friend_ask" && currentUserId && (
+        {currentUserId && (
           <SequentialInviteCard
             postingId={postingId}
             currentUserId={currentUserId}

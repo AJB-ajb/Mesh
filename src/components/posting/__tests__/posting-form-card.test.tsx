@@ -138,9 +138,9 @@ describe("PostingFormCard", () => {
     expect(screen.getByDisplayValue("5")).toBeInTheDocument();
   });
 
-  it("renders mode selector", () => {
+  it("renders visibility toggle", () => {
     renderCard();
-    expect(screen.getByLabelText("Mode")).toBeInTheDocument();
+    expect(screen.getByText("Visibility")).toBeInTheDocument();
   });
 
   it("renders expires on date input", () => {
