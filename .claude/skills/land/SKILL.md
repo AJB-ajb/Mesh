@@ -62,6 +62,14 @@ If push fails, report the error and stop.
    ```
    git branch -d <branch-name>
    ```
+3. Delete the remote branch:
+   ```
+   git push origin --delete <branch-name>
+   ```
+4. Prune stale remote-tracking references:
+   ```
+   git fetch --prune origin
+   ```
 
 ## 6. Confirm
 
@@ -70,4 +78,5 @@ Report what was done:
 - Branch merged
 - Pushed to remote
 - Worktree removed
-- Branch deleted
+- Local branch deleted
+- Remote branch deleted

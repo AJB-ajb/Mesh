@@ -46,12 +46,12 @@ No other Google APIs are required. (Google Sign-In for Supabase auth does not re
 
 Add **all** of these:
 
-| URI                                                         | Purpose                                    |
-| ----------------------------------------------------------- | ------------------------------------------ |
-| `https://<ref>.supabase.co/auth/v1/callback`                | Supabase Google Sign-In                    |
-| `http://localhost:3000/api/calendar/google/callback`        | Calendar sync (local dev)                  |
-| `https://mesh-it.vercel.app/api/calendar/google/callback`   | Calendar sync (production)                 |
-| `https://<preview>.vercel.app/api/calendar/google/callback` | Calendar sync (Vercel previews, if needed) |
+| URI                                                               | Purpose                                    |
+| ----------------------------------------------------------------- | ------------------------------------------ |
+| `https://<ref>.supabase.co/auth/v1/callback`                      | Supabase Google Sign-In                    |
+| `http://localhost:3000/api/calendar/google/callback`              | Calendar sync (local dev)                  |
+| `https://mesh-it.vercel.app/api/calendar/google/callback`         | Calendar sync (production)                 |
+| `https://meshit-dev-test.vercel.app/api/calendar/google/callback` | Calendar sync (Vercel previews, if needed) |
 
 After creating, you get:
 

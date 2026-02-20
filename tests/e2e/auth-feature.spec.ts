@@ -37,10 +37,8 @@ test.describe("Feature: Authentication Flow", () => {
     // Check forgot password link
     await expect(page.locator('a:has-text("Forgot password?")')).toBeVisible();
 
-    // Check OAuth buttons (should have icons, no text)
-    const oauthButtons = page
-      .locator('button[type="button"]')
-      .filter({ has: page.locator("svg") });
+    // Check OAuth buttons (3 in the flex row below "Or continue with")
+    const oauthButtons = page.locator('.flex.gap-3 > button[type="button"]');
     await expect(oauthButtons).toHaveCount(3); // Google, GitHub, LinkedIn
 
     // Check signup link
