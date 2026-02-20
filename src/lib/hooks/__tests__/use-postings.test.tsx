@@ -51,6 +51,7 @@ function mockQuery(result: { data: unknown; error: unknown }) {
     neq: vi.fn().mockReturnThis(),
     gt: vi.fn().mockReturnThis(),
     in: vi.fn().mockReturnThis(),
+    or: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     single: vi.fn().mockResolvedValue(result),
     limit: vi.fn().mockReturnThis(),
@@ -98,6 +99,7 @@ describe("usePostings", () => {
       neq: vi.fn().mockReturnThis(),
       gt: vi.fn().mockReturnThis(),
       in: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnValue(new Promise(() => {})),
     });
 

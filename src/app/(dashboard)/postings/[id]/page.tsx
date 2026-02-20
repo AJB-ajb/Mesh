@@ -50,16 +50,18 @@ function PostingDetailInner() {
     myApplication: fetchedMyApplication,
     hasApplied: fetchedHasApplied,
     waitlistPosition: fetchedWaitlistPosition,
+    acceptedCount: fetchedAcceptedCount,
     isLoading,
     mutate,
   } = usePostingDetail(postingId);
 
-  // Determine default tab from URL or context
+  // Determine active tab from URL or context
   const tabParam = searchParams.get("tab");
   const defaultTab =
     tabParam === "edit" || tabParam === "manage" || tabParam === "project"
       ? tabParam
       : "manage";
+  const [activeTab, setActiveTab] = useState(defaultTab);
 
   // Context-aware back navigation
   const fromParam = searchParams.get("from");
@@ -140,9 +142,11 @@ function PostingDetailInner() {
       : fetchedWaitlistPosition;
 
   // Accepted count for project tab gating
-  const acceptedCount = effectiveApplications.filter(
-    (a) => a.status === "accepted",
-  ).length;
+  // For owners, derive from local applications; for non-owners, use the DB count
+  const acceptedCount =
+    fetchedAcceptedCount !== null
+      ? fetchedAcceptedCount
+      : effectiveApplications.filter((a) => a.status === "accepted").length;
 
   // Check if non-owner is an accepted member (can see Project tab)
   const isAcceptedMember = !isOwner && myApplication?.status === "accepted";
@@ -857,7 +861,13 @@ function PostingDetailInner() {
         backLabel={backLabel}
       />
 
-      <Tabs defaultValue={defaultTab}>
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => {
+          setActiveTab(v);
+          router.replace(`?tab=${v}`, { scroll: false });
+        }}
+      >
         <TabsList variant="line">
           <TabsTrigger value="edit">
             {labels.postingDetail.tabs.edit}

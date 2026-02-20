@@ -34,9 +34,10 @@ async function fetchNotificationData(): Promise<NotificationData> {
         .single(),
       supabase
         .from("notifications")
-        .select("*", { count: "exact", head: true })
+        .select("*", { count: "exact" })
         .eq("user_id", user.id)
-        .eq("read", false),
+        .eq("read", false)
+        .limit(0),
       supabase
         .from("notifications")
         .select("*")
