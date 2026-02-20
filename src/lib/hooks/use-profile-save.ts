@@ -2,10 +2,8 @@
 
 import { useState, useCallback } from "react";
 import type { KeyedMutator } from "swr";
-import { createClient } from "@/lib/supabase/client";
-import { type ProfileFormState, parseList } from "@/lib/types/profile";
+import type { ProfileFormState } from "@/lib/types/profile";
 import type { RecurringWindow } from "@/lib/types/availability";
-import { triggerEmbeddingGeneration } from "@/lib/api/trigger-embedding";
 import type { ProfileFetchResult } from "./use-profile-data";
 
 // ---------------------------------------------------------------------------
@@ -31,96 +29,34 @@ export function useProfileSave(
       setSuccess(false);
       setIsSaving(true);
 
-      const supabase = createClient();
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      try {
+        const res = await fetch("/api/profiles", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...form,
+            availabilityWindows,
+          }),
+        });
 
-      if (userError || !user) {
+        if (!res.ok) {
+          const data = await res.json();
+          setIsSaving(false);
+          setError(
+            data.error?.message ||
+              "We couldn't save your profile. Please try again.",
+          );
+          return;
+        }
+
         setIsSaving(false);
-        setError("Please sign in again to save your profile.");
-        return;
-      }
-
-      const locationLat = Number(form.locationLat);
-      const locationLng = Number(form.locationLng);
-
-      const { error: upsertError } = await supabase.from("profiles").upsert(
-        {
-          user_id: user.id,
-          full_name: form.fullName.trim(),
-          headline: form.headline.trim(),
-          bio: form.bio.trim(),
-          location: form.location.trim(),
-          location_lat: Number.isFinite(locationLat) ? locationLat : null,
-          location_lng: Number.isFinite(locationLng) ? locationLng : null,
-          interests: parseList(form.interests),
-          languages: parseList(form.languages),
-          portfolio_url: form.portfolioUrl.trim(),
-          github_url: form.githubUrl.trim(),
-          location_mode: form.locationMode,
-          availability_slots: form.availabilitySlots,
-          timezone: form.timezone || null,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" },
-      );
-
-      if (upsertError) {
+        setSuccess(true);
+        onSuccess();
+        await mutate();
+      } catch {
         setIsSaving(false);
         setError("We couldn't save your profile. Please try again.");
-        return;
       }
-
-      // Sync profile_skills join table
-      if (form.selectedSkills.length > 0) {
-        // Delete existing rows and re-insert
-        await supabase
-          .from("profile_skills")
-          .delete()
-          .eq("profile_id", user.id);
-
-        const profileSkillRows = form.selectedSkills.map((s) => ({
-          profile_id: user.id,
-          skill_id: s.skillId,
-          level: s.level,
-        }));
-        await supabase.from("profile_skills").insert(profileSkillRows);
-      } else {
-        // Clear all profile skills if none selected
-        await supabase
-          .from("profile_skills")
-          .delete()
-          .eq("profile_id", user.id);
-      }
-
-      // Sync availability_windows
-      if (availabilityWindows) {
-        await supabase
-          .from("availability_windows")
-          .delete()
-          .eq("profile_id", user.id);
-
-        if (availabilityWindows.length > 0) {
-          const windowRows = availabilityWindows.map((w) => ({
-            profile_id: user.id,
-            window_type: "recurring" as const,
-            day_of_week: w.day_of_week,
-            start_minutes: w.start_minutes,
-            end_minutes: w.end_minutes,
-          }));
-          await supabase.from("availability_windows").insert(windowRows);
-        }
-      }
-
-      setIsSaving(false);
-
-      triggerEmbeddingGeneration();
-
-      setSuccess(true);
-      onSuccess();
-      await mutate();
     },
     [mutate, onSuccess],
   );

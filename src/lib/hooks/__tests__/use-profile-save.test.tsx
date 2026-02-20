@@ -1,26 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { defaultFormState, type ProfileFormState } from "@/lib/types/profile";
-
-// ---------------------------------------------------------------------------
-// Mocks
-// ---------------------------------------------------------------------------
-
-const mockGetUser = vi.fn();
-const mockFrom = vi.fn();
-
-vi.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({
-    auth: {
-      getUser: mockGetUser,
-    },
-    from: mockFrom,
-  }),
-}));
-
-vi.mock("@/lib/api/trigger-embedding", () => ({
-  triggerEmbeddingGeneration: vi.fn(),
-}));
 
 import { useProfileSave } from "../use-profile-save";
 
@@ -47,8 +27,14 @@ const fakeForm: ProfileFormState = {
 // ---------------------------------------------------------------------------
 
 describe("useProfileSave", () => {
+  const originalFetch = globalThis.fetch;
+
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
   });
 
   it("starts with isSaving false and no error", () => {
@@ -61,10 +47,13 @@ describe("useProfileSave", () => {
     expect(result.current.error).toBeNull();
   });
 
-  it("sets error if user not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Not authenticated" },
+  it("sets error when API returns non-ok response", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      json: () =>
+        Promise.resolve({
+          error: { message: "Please sign in again to save your profile." },
+        }),
     });
 
     const mutate = vi.fn();
@@ -83,21 +72,10 @@ describe("useProfileSave", () => {
     expect(onSuccess).not.toHaveBeenCalled();
   });
 
-  it("calls upsert with correct data and calls onSuccess callback", async () => {
-    const fakeUser = { id: "user-1", email: "user@test.com" };
-    mockGetUser.mockResolvedValue({ data: { user: fakeUser } });
-
-    const upsertMock = vi.fn().mockResolvedValue({ error: null });
-    const deleteMock = vi.fn().mockReturnValue({
-      eq: vi.fn().mockResolvedValue({ error: null }),
-    });
-    const insertMock = vi.fn().mockResolvedValue({ error: null });
-
-    mockFrom.mockImplementation((table: string) => {
-      if (table === "profiles") return { upsert: upsertMock };
-      if (table === "profile_skills")
-        return { delete: deleteMock, insert: insertMock };
-      return {};
+  it("calls fetch with correct data and calls onSuccess callback", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true }),
     });
 
     const mutate = vi.fn().mockResolvedValue(undefined);
@@ -109,16 +87,17 @@ describe("useProfileSave", () => {
       await result.current.handleSubmit(createFakeEvent(), fakeForm);
     });
 
-    expect(upsertMock).toHaveBeenCalledTimes(1);
-    const upsertArgs = upsertMock.mock.calls[0];
-    expect(upsertArgs[0].user_id).toBe("user-1");
-    expect(upsertArgs[0].full_name).toBe("Test User");
-    expect(upsertArgs[0].skills).toBeUndefined(); // no longer dual-written
-    expect(upsertArgs[0].skill_levels).toBeUndefined(); // no longer dual-written
-    expect(upsertArgs[0].location_mode).toBe("remote");
+    expect(globalThis.fetch).toHaveBeenCalledWith("/api/profiles", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: expect.any(String),
+    });
 
-    // needs_embedding is now handled by join table triggers (no manual update)
-    expect(upsertArgs[1]).toEqual({ onConflict: "user_id" });
+    const sentBody = JSON.parse(
+      (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body,
+    );
+    expect(sentBody.fullName).toBe("Test User");
+    expect(sentBody.locationMode).toBe("remote");
 
     expect(onSuccess).toHaveBeenCalledTimes(1);
     expect(mutate).toHaveBeenCalledTimes(1);
@@ -127,15 +106,10 @@ describe("useProfileSave", () => {
   });
 
   it("sets error on upsert failure", async () => {
-    const fakeUser = { id: "user-1", email: "user@test.com" };
-    mockGetUser.mockResolvedValue({ data: { user: fakeUser } });
-
-    const upsertMock = vi
-      .fn()
-      .mockResolvedValue({ error: { message: "DB error" } });
-    mockFrom.mockImplementation((table: string) => {
-      if (table === "profiles") return { upsert: upsertMock };
-      return {};
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      json: () =>
+        Promise.resolve({ error: { message: "Failed to save profile" } }),
     });
 
     const mutate = vi.fn();
@@ -147,9 +121,7 @@ describe("useProfileSave", () => {
       await result.current.handleSubmit(createFakeEvent(), fakeForm);
     });
 
-    expect(result.current.error).toBe(
-      "We couldn't save your profile. Please try again.",
-    );
+    expect(result.current.error).toBe("Failed to save profile");
     expect(result.current.isSaving).toBe(false);
     expect(onSuccess).not.toHaveBeenCalled();
   });
