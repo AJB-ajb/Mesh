@@ -79,19 +79,15 @@ export function PostingVisitorView({
         posting={posting}
         isOwner={isOwner}
         matchBreakdown={matchBreakdown}
-        isEditing={false}
-        isSaving={false}
         isDeleting={false}
         isExtending={false}
         isReposting={false}
         editTitle=""
         onEditTitleChange={() => {}}
-        onSave={() => {}}
-        onCancelEdit={() => {}}
-        onStartEdit={() => {}}
         onDelete={() => {}}
         onExtendDeadline={() => {}}
         onRepost={() => {}}
+        saveStatus="idle"
         hasApplied={hasApplied}
         myApplication={myApplication}
         waitlistPosition={waitlistPosition}

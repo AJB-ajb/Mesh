@@ -56,23 +56,18 @@ function PostingDetailInner() {
       ? labels.common.backToDiscover
       : labels.common.backToPostings;
 
-  // Owner-side editing/mutation logic
+  // Owner-side editing/mutation logic (always-editable)
   const {
-    isEditing,
-    setIsEditing,
-    isSaving,
     isDeleting,
     isExtending,
     isReposting,
     error,
     setError,
     form,
+    saveStatus,
     isApplyingUpdate,
     applyFreeFormUpdate,
-    undoLastUpdate,
     handleFormChange,
-    handleStartEdit,
-    handleSave,
     handleDelete,
     handleExtendDeadline,
     handleRepost,
@@ -194,7 +189,7 @@ function PostingDetailInner() {
     );
   }
 
-  // Owner view: tabbed layout
+  // Owner view: tabbed layout (always-editable)
   return (
     <PostingOwnerView
       posting={posting}
@@ -203,19 +198,15 @@ function PostingDetailInner() {
       currentUserId={currentUserId}
       currentUserName={currentUserProfile?.full_name ?? null}
       matchBreakdown={matchBreakdown}
-      isEditing={isEditing}
-      isSaving={isSaving}
       isDeleting={isDeleting}
       isExtending={isExtending}
       isReposting={isReposting}
       form={form}
       onFormChange={handleFormChange}
-      onSave={handleSave}
-      onCancelEdit={() => setIsEditing(false)}
-      onStartEdit={handleStartEdit}
       onDelete={handleDelete}
       onExtendDeadline={handleExtendDeadline}
       onRepost={handleRepost}
+      saveStatus={saveStatus}
       hasApplied={hasApplied}
       myApplication={myApplication}
       waitlistPosition={waitlistPosition}
@@ -240,7 +231,6 @@ function PostingDetailInner() {
       onContactCreator={handleContactCreator}
       isApplyingUpdate={isApplyingUpdate}
       onApplyUpdate={applyFreeFormUpdate}
-      onUndoUpdate={undoLastUpdate}
       activeTab={activeTab}
       onTabChange={setActiveTab}
       projectEnabled={projectEnabled}

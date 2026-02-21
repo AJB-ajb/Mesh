@@ -12,6 +12,7 @@ import type {
 } from "@/lib/hooks/use-posting-detail";
 import { formatDateAgo } from "@/lib/format";
 import type { ScoreBreakdown } from "@/lib/supabase/types";
+import type { SaveStatus } from "@/lib/hooks/use-auto-save";
 import { OwnerActions } from "./owner-actions";
 import { ApplySection } from "./apply-section";
 
@@ -36,23 +37,40 @@ const formatExpiry = (expiresAt: string | null) => {
   return `Expires ${date.toLocaleDateString()}`;
 };
 
+function SaveStatusIndicator({ status }: { status: SaveStatus }) {
+  if (status === "idle") return null;
+  return (
+    <span
+      className={`text-xs ${
+        status === "saving"
+          ? "text-muted-foreground"
+          : status === "saved"
+            ? "text-green-600 dark:text-green-400"
+            : "text-destructive"
+      }`}
+    >
+      {status === "saving"
+        ? labels.common.saving
+        : status === "saved"
+          ? (labels.common.saved ?? "Saved")
+          : "Save failed"}
+    </span>
+  );
+}
+
 type PostingDetailHeaderProps = {
   posting: PostingDetail;
   isOwner: boolean;
   matchBreakdown: ScoreBreakdown | null;
-  isEditing: boolean;
-  isSaving: boolean;
   isDeleting: boolean;
   isExtending: boolean;
   isReposting: boolean;
   editTitle: string;
   onEditTitleChange: (value: string) => void;
-  onSave: () => void;
-  onCancelEdit: () => void;
-  onStartEdit: () => void;
   onDelete: () => void;
   onExtendDeadline: (days: number) => void;
   onRepost: () => void;
+  saveStatus: SaveStatus;
   // Apply props (non-owner)
   hasApplied: boolean;
   myApplication: Application | null;
@@ -67,7 +85,6 @@ type PostingDetailHeaderProps = {
   onWithdraw: () => void;
   error: string | null;
   hideApplySection?: boolean;
-  hideEditButton?: boolean;
   backHref?: string;
   backLabel?: string;
 };
@@ -76,19 +93,15 @@ export function PostingDetailHeader({
   posting,
   isOwner,
   matchBreakdown,
-  isEditing,
-  isSaving,
   isDeleting,
   isExtending,
   isReposting,
   editTitle,
   onEditTitleChange,
-  onSave,
-  onCancelEdit,
-  onStartEdit,
   onDelete,
   onExtendDeadline,
   onRepost,
+  saveStatus,
   hasApplied,
   myApplication,
   waitlistPosition,
@@ -102,7 +115,6 @@ export function PostingDetailHeader({
   onWithdraw,
   error,
   hideApplySection,
-  hideEditButton,
   backHref,
   backLabel,
 }: PostingDetailHeaderProps) {
@@ -127,7 +139,7 @@ export function PostingDetailHeader({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-2">
           <div className="flex items-center gap-3 flex-wrap">
-            {isEditing ? (
+            {isOwner ? (
               <input
                 value={editTitle}
                 onChange={(e) => onEditTitleChange(e.target.value)}
@@ -174,6 +186,7 @@ export function PostingDetailHeader({
                 {labels.postingDetail.match}
               </Badge>
             )}
+            {isOwner && <SaveStatusIndicator status={saveStatus} />}
           </div>
           <p className="text-muted-foreground">
             {labels.postingDetail.postedBy}{" "}
@@ -190,18 +203,12 @@ export function PostingDetailHeader({
         {isOwner ? (
           <OwnerActions
             posting={posting}
-            isEditing={isEditing}
-            isSaving={isSaving}
             isDeleting={isDeleting}
             isExtending={isExtending}
             isReposting={isReposting}
-            onSave={onSave}
-            onCancelEdit={onCancelEdit}
-            onStartEdit={onStartEdit}
             onDelete={onDelete}
             onExtendDeadline={onExtendDeadline}
             onRepost={onRepost}
-            hideEditButton={hideEditButton}
           />
         ) : (
           !hideApplySection && (
