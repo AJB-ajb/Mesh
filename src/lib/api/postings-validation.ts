@@ -31,6 +31,7 @@ export interface PostingBody {
     start_minutes: number;
     end_minutes: number;
   }[];
+  sourceText?: string;
 }
 
 /**
@@ -112,6 +113,10 @@ export function buildPostingDbRow(body: PostingBody, mode: "create" | "edit") {
       ? new Date(body.expiresAt + "T23:59:59")
       : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
     row.expires_at = expiresAt.toISOString();
+
+    if (body.sourceText?.trim()) {
+      row.source_text = body.sourceText.trim();
+    }
   }
 
   return row;

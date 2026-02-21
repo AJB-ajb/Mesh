@@ -189,6 +189,25 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
+  // NL input panel (unified NL + form layout)
+  // ---------------------------------------------------------------------------
+  nlInput: {
+    postingTitle: "Describe Your Posting",
+    postingDescription:
+      "Paste from Slack, Discord, a README, or use the mic. Details will be extracted into the form below.",
+    profileTitle: "Describe Yourself",
+    profileDescription:
+      "Paste your GitHub README, LinkedIn bio, resume, or use the mic. Your profile fields will be populated below.",
+    extractButton: "Extract",
+    extractingButton: "Extracting...",
+    extractedButton: "Extracted!",
+    updateButton: "Update Fields",
+    updatingButton: "Updating...",
+    helpText:
+      "Type or paste natural language and click Extract to populate the form fields below.",
+  },
+
+  // ---------------------------------------------------------------------------
   // Posting form card
   // ---------------------------------------------------------------------------
   postingForm: {
@@ -383,6 +402,7 @@ export const labels = {
     cancel: "Cancel",
     save: "Save",
     saving: "Saving...",
+    saved: "Saved",
     saveChanges: "Save changes",
     loading: "Loading...",
     signIn: "Sign in",

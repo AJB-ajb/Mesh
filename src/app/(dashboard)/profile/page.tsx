@@ -14,9 +14,7 @@ import { ProfileView } from "@/components/profile/profile-view";
 import { GitHubIntegrationCard } from "@/components/profile/github-integration-card";
 import { IntegrationsSection } from "@/components/profile/integrations-section";
 import { FreeFormUpdate } from "@/components/shared/free-form-update";
-import { InputModeToggle } from "@/components/posting/input-mode-toggle";
-import { AiExtractionCard } from "@/components/posting/ai-extraction-card";
-import type { InputMode } from "@/components/posting/input-mode-toggle";
+import { NlInputPanel } from "@/components/shared/nl-input-panel";
 import { mapExtractedToFormState } from "@/lib/types/profile";
 import { useCalendarBusyBlocks } from "@/lib/hooks/use-calendar-busy-blocks";
 
@@ -60,7 +58,6 @@ export default function ProfilePage() {
   const location = useLocation(setForm, () => {});
 
   // AI extraction state
-  const [inputMode, setInputMode] = useState<InputMode>("form");
   const [aiText, setAiText] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionSuccess, setExtractionSuccess] = useState(false);
@@ -91,7 +88,6 @@ export default function ProfilePage() {
 
       setExtractionSuccess(true);
       setTimeout(() => {
-        setInputMode("form");
         setExtractionSuccess(false);
       }, 1500);
     } catch {
@@ -161,39 +157,34 @@ export default function ProfilePage() {
 
       {isEditing ? (
         <>
-          <InputModeToggle inputMode={inputMode} onModeChange={setInputMode} />
+          {/* NL input — always visible on top when editing */}
+          <NlInputPanel
+            nlText={aiText}
+            onNlTextChange={setAiText}
+            isExtracting={isExtracting}
+            extractionSuccess={extractionSuccess}
+            onExtract={handleAiExtract}
+            variant="profile"
+          />
 
-          {inputMode === "ai" ? (
-            <AiExtractionCard
-              aiText={aiText}
-              onAiTextChange={setAiText}
-              isExtracting={isExtracting}
-              extractionSuccess={extractionSuccess}
-              onExtract={handleAiExtract}
-              onSwitchToForm={() => setInputMode("form")}
-              variant="profile"
-            />
-          ) : (
-            <>
-              <ProfileForm
-                form={form}
-                setForm={setForm}
-                isSaving={isSaving}
-                onSubmit={handleSubmit}
-                onChange={handleChange}
-                onCancel={() => setIsEditing(false)}
-                location={location}
-                availabilityWindows={availabilityWindows}
-                onAvailabilityWindowsChange={onAvailabilityWindowsChange}
-                busyBlocks={busyWindows}
-              />
-              <IntegrationsSection
-                connectedProviders={connectedProviders}
-                isEditing={true}
-                onLinkProvider={handleLinkProvider}
-              />
-            </>
-          )}
+          {/* Form — always visible below */}
+          <ProfileForm
+            form={form}
+            setForm={setForm}
+            isSaving={isSaving}
+            onSubmit={handleSubmit}
+            onChange={handleChange}
+            onCancel={() => setIsEditing(false)}
+            location={location}
+            availabilityWindows={availabilityWindows}
+            onAvailabilityWindowsChange={onAvailabilityWindowsChange}
+            busyBlocks={busyWindows}
+          />
+          <IntegrationsSection
+            connectedProviders={connectedProviders}
+            isEditing={true}
+            onLinkProvider={handleLinkProvider}
+          />
         </>
       ) : (
         <>
@@ -212,6 +203,7 @@ export default function ProfilePage() {
             isApplying={isApplyingUpdate}
             onUpdate={applyFreeFormUpdate}
             onUndo={undoLastUpdate}
+            currentFormState={form as unknown as Record<string, unknown>}
           />
           <ProfileView
             form={form}

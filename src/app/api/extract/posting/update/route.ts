@@ -10,11 +10,13 @@ import { apiError, apiSuccess, parseBody } from "@/lib/errors";
  * then extracts structured fields from the result.
  */
 export const POST = withAiExtraction(async (req, { user, supabase }) => {
-  const { postingId, sourceText, updateInstruction } = await parseBody<{
-    postingId?: string;
-    sourceText?: string;
-    updateInstruction?: string;
-  }>(req);
+  const { postingId, sourceText, updateInstruction, currentFields } =
+    await parseBody<{
+      postingId?: string;
+      sourceText?: string;
+      updateInstruction?: string;
+      currentFields?: Record<string, unknown>;
+    }>(req);
 
   if (!postingId || typeof postingId !== "string") {
     return apiError("VALIDATION", "postingId is required", 400);
@@ -73,9 +75,22 @@ export const POST = withAiExtraction(async (req, { user, supabase }) => {
     }
   }
 
+  // Build user prompt, optionally including current field values for relative updates
+  let userPrompt = `Current posting description:\n\n${effectiveSourceText}`;
+  if (currentFields && typeof currentFields === "object") {
+    const fieldLines = Object.entries(currentFields)
+      .filter(([, v]) => v != null && v !== "")
+      .map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`)
+      .join("\n");
+    if (fieldLines) {
+      userPrompt += `\n\nCurrent field values:\n${fieldLines}`;
+    }
+  }
+  userPrompt += `\n\nUpdate instruction: ${updateInstruction.trim()}`;
+
   const result = await generateStructuredJSON<Record<string, unknown>>({
     systemPrompt: POSTING_UPDATE_SYSTEM_PROMPT,
-    userPrompt: `Current posting description:\n\n${effectiveSourceText}\n\nUpdate instruction: ${updateInstruction.trim()}`,
+    userPrompt,
     schema: postingExtractionSchema("update"),
     temperature: 0.3,
   });
