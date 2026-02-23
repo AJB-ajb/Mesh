@@ -29,6 +29,7 @@ type FreeFormUpdateProps<T extends Extracted> = {
   isApplying: boolean;
   onUpdate: (updatedText: string, extracted: T) => Promise<void>;
   onUndo: () => Promise<void>;
+  currentFormState?: Record<string, unknown>;
 };
 
 const API_ENDPOINTS: Record<EntityType, string> = {
@@ -44,6 +45,7 @@ export function FreeFormUpdate<T extends Extracted>({
   isApplying,
   onUpdate,
   onUndo,
+  currentFormState,
 }: FreeFormUpdateProps<T>) {
   const [editableSourceText, setEditableSourceText] = useState(
     sourceText ?? "",
@@ -60,12 +62,15 @@ export function FreeFormUpdate<T extends Extracted>({
     setError(null);
 
     try {
-      const body: Record<string, string> = {
+      const body: Record<string, unknown> = {
         sourceText: editableSourceText,
         updateInstruction,
       };
       if (entityType === "posting" && entityId) {
         body.postingId = entityId;
+      }
+      if (currentFormState) {
+        body.currentFields = currentFormState;
       }
 
       const res = await fetch(API_ENDPOINTS[entityType], {
