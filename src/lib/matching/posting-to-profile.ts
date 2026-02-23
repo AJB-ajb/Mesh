@@ -92,65 +92,69 @@ export async function matchPostingToProfiles(
 
   const matchMap = new Map(existingMatches?.map((m) => [m.user_id, m]) || []);
 
-  // Transform results into match objects and compute breakdowns
-  const matches: PostingToProfileMatch[] = await Promise.all(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    data.map(async (row: any) => {
-      const profile: Profile = {
-        user_id: row.user_id,
-        full_name: row.full_name,
-        headline: row.headline,
-        bio: row.bio,
-        location: null,
-        location_lat: row.location_lat ?? null,
-        location_lng: row.location_lng ?? null,
-        interests: null,
-        languages: null,
-        portfolio_url: null,
-        github_url: null,
-        location_preference: row.location_preference ?? null,
-        location_mode: row.location_mode ?? null,
-        availability_slots: row.availability_slots || null,
-        source_text: null,
-        previous_source_text: null,
-        previous_profile_snapshot: null,
-        embedding: null,
-        timezone: null,
-        notification_preferences: null,
-        created_at: "",
-        updated_at: "",
-      };
-
-      const existingMatch = matchMap.get(row.user_id);
-
-      // Compute score breakdown using database function
-      let scoreBreakdown: ScoreBreakdown | null = null;
-      if (existingMatch?.score_breakdown) {
-        // Use existing breakdown if available
-        scoreBreakdown = existingMatch.score_breakdown as ScoreBreakdown;
-      } else {
-        // Compute new breakdown
-        const { data: breakdown, error: breakdownError } = await supabase.rpc(
-          "compute_match_breakdown",
-          {
-            profile_user_id: row.user_id,
-            target_posting_id: postingId,
-          },
-        );
-
-        if (!breakdownError && breakdown) {
-          scoreBreakdown = breakdown as ScoreBreakdown;
-        }
-      }
-
-      return {
-        profile,
-        score: row.similarity,
-        scoreBreakdown,
-        matchId: existingMatch?.id,
-      };
-    }),
+  // Compute all breakdowns in a single batch RPC call for users without cached breakdowns
+  const usersNeedingBreakdown = userIds.filter(
+    (id: string) => !matchMap.get(id)?.score_breakdown,
   );
+  const breakdownMap = new Map<string, ScoreBreakdown>();
+
+  if (usersNeedingBreakdown.length > 0) {
+    // compute_match_breakdowns_batch takes posting_ids, but we need per-user breakdowns.
+    // Since each user needs a breakdown against the same posting, we call individually
+    // but in parallel with Promise.all (the batch RPC is keyed by posting, not user).
+    const breakdownPromises = usersNeedingBreakdown.map(async (uid: string) => {
+      const { data: breakdown, error: breakdownError } = await supabase.rpc(
+        "compute_match_breakdown",
+        { profile_user_id: uid, target_posting_id: postingId },
+      );
+      if (!breakdownError && breakdown) {
+        breakdownMap.set(uid, breakdown as ScoreBreakdown);
+      }
+    });
+    await Promise.all(breakdownPromises);
+  }
+
+  // Transform results into match objects
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const matches: PostingToProfileMatch[] = data.map((row: any) => {
+    const profile: Profile = {
+      user_id: row.user_id,
+      full_name: row.full_name,
+      headline: row.headline,
+      bio: row.bio,
+      location: null,
+      location_lat: row.location_lat ?? null,
+      location_lng: row.location_lng ?? null,
+      interests: null,
+      languages: null,
+      portfolio_url: null,
+      github_url: null,
+      location_preference: row.location_preference ?? null,
+      location_mode: row.location_mode ?? null,
+      availability_slots: null,
+      source_text: null,
+      previous_source_text: null,
+      previous_profile_snapshot: null,
+      embedding: null,
+      timezone: null,
+      notification_preferences: null,
+      created_at: "",
+      updated_at: "",
+    };
+
+    const existingMatch = matchMap.get(row.user_id);
+    const scoreBreakdown: ScoreBreakdown | null =
+      (existingMatch?.score_breakdown as ScoreBreakdown) ??
+      breakdownMap.get(row.user_id) ??
+      null;
+
+    return {
+      profile,
+      score: row.similarity,
+      scoreBreakdown,
+      matchId: existingMatch?.id,
+    };
+  });
 
   return matches;
 }

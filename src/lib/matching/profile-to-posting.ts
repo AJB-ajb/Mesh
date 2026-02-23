@@ -109,64 +109,66 @@ export async function matchProfileToPostings(
     existingMatches?.map((m) => [m.posting_id, m]) || [],
   );
 
-  // Transform results into match objects and compute breakdowns
-  const matches: ProfileToPostingMatch[] = await Promise.all(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    data.map(async (row: any) => {
-      const posting: Posting = {
-        id: row.posting_id,
-        creator_id: row.creator_id,
-        title: row.title,
-        description: row.description,
-        team_size_min: row.team_size_min || 1,
-        team_size_max: row.team_size_max || 1,
-        category: row.category || null,
-        context_identifier: row.context_identifier || null,
-        tags: row.tags || [],
-        visibility:
-          row.visibility ?? (row.mode === "friend_ask" ? "private" : "public"),
-        mode: row.mode || "open",
-        location_preference: row.location_preference ?? null,
-        natural_language_criteria: row.natural_language_criteria || null,
-        estimated_time: row.estimated_time || null,
-        auto_accept: row.auto_accept ?? false,
-        availability_mode: row.availability_mode || "flexible",
-        timezone: row.timezone || null,
-        embedding: null,
-        status: "open",
-        created_at: row.created_at,
-        updated_at: row.created_at,
-        expires_at: row.expires_at,
-      };
-
-      const existingMatch = matchMap.get(row.posting_id);
-
-      // Compute score breakdown using database function
-      let scoreBreakdown: ScoreBreakdown | null = null;
-      if (existingMatch?.score_breakdown) {
-        scoreBreakdown = existingMatch.score_breakdown as ScoreBreakdown;
-      } else {
-        const { data: breakdown, error: breakdownError } = await supabase.rpc(
-          "compute_match_breakdown",
-          {
-            profile_user_id: userId,
-            target_posting_id: row.posting_id,
-          },
-        );
-
-        if (!breakdownError && breakdown) {
-          scoreBreakdown = breakdown as ScoreBreakdown;
-        }
-      }
-
-      return {
-        posting,
-        score: row.similarity,
-        scoreBreakdown,
-        matchId: existingMatch?.id,
-      };
-    }),
+  // Compute all breakdowns in a single batch RPC call for postings without cached breakdowns
+  const postingsNeedingBreakdown = postingIds.filter(
+    (id: string) => !matchMap.get(id)?.score_breakdown,
   );
+  const breakdownMap = new Map<string, ScoreBreakdown>();
+
+  if (postingsNeedingBreakdown.length > 0) {
+    const { data: batchBreakdowns } = await supabase.rpc(
+      "compute_match_breakdowns_batch",
+      {
+        profile_user_id: userId,
+        posting_ids: postingsNeedingBreakdown,
+      },
+    );
+    for (const r of batchBreakdowns ?? []) {
+      breakdownMap.set(r.posting_id, r.breakdown as ScoreBreakdown);
+    }
+  }
+
+  // Transform results into match objects
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const matches: ProfileToPostingMatch[] = data.map((row: any) => {
+    const posting: Posting = {
+      id: row.posting_id,
+      creator_id: row.creator_id,
+      title: row.title,
+      description: row.description,
+      team_size_min: row.team_size_min || 1,
+      team_size_max: row.team_size_max || 1,
+      category: row.category || null,
+      context_identifier: row.context_identifier || null,
+      tags: row.tags || [],
+      visibility: row.visibility ?? "public",
+      mode: "open",
+      location_preference: row.location_preference ?? null,
+      natural_language_criteria: row.natural_language_criteria || null,
+      estimated_time: row.estimated_time || null,
+      auto_accept: row.auto_accept ?? false,
+      availability_mode: row.availability_mode || "flexible",
+      timezone: row.timezone || null,
+      embedding: null,
+      status: "open",
+      created_at: row.created_at,
+      updated_at: row.created_at,
+      expires_at: row.expires_at,
+    };
+
+    const existingMatch = matchMap.get(row.posting_id);
+    const scoreBreakdown: ScoreBreakdown | null =
+      (existingMatch?.score_breakdown as ScoreBreakdown) ??
+      breakdownMap.get(row.posting_id) ??
+      null;
+
+    return {
+      posting,
+      score: row.similarity,
+      scoreBreakdown,
+      matchId: existingMatch?.id,
+    };
+  });
 
   return matches;
 }

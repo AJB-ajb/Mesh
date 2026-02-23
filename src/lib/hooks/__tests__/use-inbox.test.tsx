@@ -9,11 +9,13 @@ import type { ReactNode } from "react";
 
 const mockGetUser = vi.fn();
 const mockFrom = vi.fn();
+const mockRpc = vi.fn();
 
 vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({
     auth: { getUser: mockGetUser },
     from: mockFrom,
+    rpc: mockRpc,
   }),
 }));
 
@@ -85,50 +87,30 @@ describe("useInboxData", () => {
       },
     ];
 
-    const fakeConversations = [
+    // RPC returns enriched conversations in a single query
+    const fakeInboxConversations = [
       {
         id: "conv-1",
         participant_1: "user-1",
         participant_2: "user-2",
         posting_id: "p1",
+        created_at: "2026-01-01T00:00:00Z",
         updated_at: "2026-01-01T00:00:00Z",
+        other_user_id: "user-2",
+        other_user_full_name: "User 2",
+        other_user_headline: "Dev",
+        posting_title: "Project A",
+        last_message_content: "Hello",
+        last_message_created_at: "2026-01-01T00:00:00Z",
+        last_message_sender_id: "user-2",
+        unread_count: 1,
       },
     ];
 
-    let callCount = 0;
-    mockFrom.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) {
-        // notifications
-        return mockQuery({ data: fakeNotifications });
-      }
-      if (callCount === 2) {
-        // conversations
-        return mockQuery({ data: fakeConversations });
-      }
-      if (callCount === 3) {
-        // other user profile
-        return mockQuery({
-          data: { full_name: "User 2", headline: "Dev", user_id: "user-2" },
-        });
-      }
-      if (callCount === 4) {
-        // posting
-        return mockQuery({ data: { title: "Project A" } });
-      }
-      if (callCount === 5) {
-        // last message
-        return mockQuery({
-          data: {
-            content: "Hello",
-            created_at: "2026-01-01T00:00:00Z",
-            sender_id: "user-2",
-          },
-        });
-      }
-      // unread count
-      return mockQuery({ data: null, count: 1 });
-    });
+    // notifications query uses from()
+    mockFrom.mockReturnValue(mockQuery({ data: fakeNotifications }));
+    // conversations query uses rpc()
+    mockRpc.mockResolvedValue({ data: fakeInboxConversations });
 
     const { result } = renderHook(() => useInboxData(), { wrapper });
 
@@ -138,6 +120,12 @@ describe("useInboxData", () => {
 
     expect(result.current.notifications).toHaveLength(1);
     expect(result.current.conversations).toHaveLength(1);
+    expect(result.current.conversations[0].other_user?.full_name).toBe(
+      "User 2",
+    );
+    expect(result.current.conversations[0].posting?.title).toBe("Project A");
+    expect(result.current.conversations[0].last_message?.content).toBe("Hello");
+    expect(result.current.conversations[0].unread_count).toBe(1);
     expect(result.current.currentUserId).toBe("user-1");
   });
 
@@ -155,6 +143,7 @@ describe("useInboxData", () => {
     mockGetUser.mockResolvedValue({ data: { user: fakeUser } });
 
     mockFrom.mockReturnValue(mockQuery({ data: [] }));
+    mockRpc.mockResolvedValue({ data: [] });
 
     const { result } = renderHook(() => useInboxData(), { wrapper });
 
