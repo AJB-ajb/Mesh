@@ -75,12 +75,22 @@ export const labels = {
   // ---------------------------------------------------------------------------
   landing: {
     loginButton: "Log in",
-    heroBadge: "Activity matching platform",
-    heroTitle: "Find people to do things with.",
+    heroBadge: "For teams of 2\u20135",
+    heroTitle: "The right few people make all the difference.",
     heroSubheadline:
-      "Hackathons, study groups, sports, concerts, side projects, startups \u2014 describe what you want to do, and we\u2019ll match you with the right people.",
+      "Describe what you want to do \u2014 a hackathon, a study group, a startup \u2014 and find the people who fit.",
     postSomethingButton: "Post something",
     explorePostingsButton: "Explore postings",
+    whyMeshButton: "Why Mesh?",
+
+    problemSectionTitle: "Finding the right people is surprisingly hard",
+    problemGroupChatsTitle: "Group chats",
+    problemGroupChatsBody: "You already need to know who to ask.",
+    problemMeetupsTitle: "Events & meetups",
+    problemMeetupsBody: "Built for crowds, not small teams.",
+    problemForumsTitle: "Job boards & forums",
+    problemForumsBody: "Too formal, too slow.",
+    problemConclusion: "Mesh sits in the gap.",
 
     useCaseSectionTitle: "People are looking for all kinds of things",
     useCaseSectionSubtitle:
@@ -101,18 +111,18 @@ export const labels = {
     featuresSectionTitle: "Built for real connections",
     featuresSectionSubtitle:
       "Smart tools that make finding the right people effortless.",
-    smartMatchingTitle: "Smart Matching",
+    smartMatchingTitle: "Understands what you need",
     smartMatchingBody:
-      "Understands what you need and who fits \u2014 not just keyword matching.",
-    voiceTextInputTitle: "Voice & Text Input",
+      "Goes beyond keywords \u2014 matches on skills, context, and intent.",
+    voiceTextInputTitle: "Just describe it",
     voiceTextInputBody:
-      "Describe what you\u2019re looking for in your own words \u2014 type it out or just speak.",
-    realtimeMessagingTitle: "Real-Time Messaging",
+      "Paste, type, or speak \u2014 no forms required to get started.",
+    realtimeMessagingTitle: "Connect right away",
     realtimeMessagingBody:
-      "Connect instantly with your matches and start planning together right away.",
-    smartCompatibilityTitle: "Smart Compatibility",
+      "Start planning together the moment you find a match.",
+    smartCompatibilityTitle: "See why they fit",
     smartCompatibilityBody:
-      "See why someone is a good match \u2014 skills, availability, location, and interest alignment.",
+      "Skills, availability, location, and interest alignment \u2014 all at a glance.",
 
     finalCtaTitle: "Ready to find your people?",
     ctaBody: "Post what you want to do and get matched with the right people.",
@@ -121,6 +131,71 @@ export const labels = {
     footerCopyright: "\u00a9 2026 Mesh. All rights reserved.",
     privacyLink: "Privacy",
     termsLink: "Terms",
+    whyMeshLink: "Why Mesh?",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Why Mesh page
+  // ---------------------------------------------------------------------------
+  why: {
+    heroTitle: "Most things worth doing work best with a few people.",
+    heroSubtitle:
+      "Startups, study groups, hackathon teams, jam sessions \u2014 the magic number is usually 2\u20135. But finding those people is strangely hard.",
+
+    smallGroupTitle: "The small-group problem",
+    smallGroupBody1:
+      "Adding one person to a team doubles the communication overhead. A group of 3 has 3 connections. A group of 5 has 10. A group of 10 has 45. Small teams move faster, communicate better, and get more done.",
+    smallGroupBody2:
+      "Most valuable collaboration happens in groups small enough that everyone knows each other\u2019s strengths. The right 3 people will outperform the right 30.",
+
+    problemTitle: "What exists today doesn\u2019t solve this",
+    problemGroupChatsTitle: "Group chats (Slack, Discord, WhatsApp)",
+    problemGroupChatsBody:
+      "You already need to know who to ask. They broadcast to people you already have, not people you need.",
+    problemMeetupsTitle: "Events and meetups",
+    problemMeetupsBody:
+      "Designed for large gatherings, not assembling a team of 3 for a specific project. You show up and hope.",
+    problemForumsTitle: "Job boards and forums",
+    problemForumsBody:
+      "Built for formal, long-term roles. Too much process for a weekend hackathon or a study group.",
+    problemConclusion:
+      "None of these tools start with an idea and find the right people for it.",
+
+    howDifferentTitle: "How Mesh is different",
+    howDifferentIdeaFirst: "Idea-first",
+    howDifferentIdeaFirstBody:
+      "Start with what you want to do, not who you know. Post an idea and let the right people find you.",
+    howDifferentNoSetup: "No setup required",
+    howDifferentNoSetupBody:
+      "You don\u2019t need a profile to post. Describe your idea, and you\u2019re live in seconds.",
+    howDifferentSmartMatching: "AI-powered matching",
+    howDifferentSmartMatchingBody:
+      "Matching on skills, availability, location, and interests \u2014 not just keywords.",
+
+    speedTitle: "The fastest way to go from idea to team",
+    speedBody:
+      "Describe what you need in 30 seconds. Paste text, speak into the mic, or fill a quick form. Mesh extracts the details and starts matching immediately.",
+
+    useCasesTitle: "Use cases",
+    useCaseAcademicTitle: "Academic collaboration",
+    useCaseAcademicBody:
+      "Find study partners, lab mates, or research collaborators at your university.",
+    useCaseHackathonTitle: "Hackathons",
+    useCaseHackathonBody:
+      "Assemble a balanced team with the right skills before the event starts.",
+    useCaseProfessionalTitle: "Professional & mentorship",
+    useCaseProfessionalBody:
+      "Find a co-founder, an advisor, or someone to pair-program with.",
+    useCaseHobbiesTitle: "Hobbies & sports",
+    useCaseHobbiesBody:
+      "Find a tennis partner, a band member, or someone to train with.",
+    useCaseSpontaneousTitle: "Spontaneous activities",
+    useCaseSpontaneousBody:
+      "Concert tonight? Road trip this weekend? Find someone who\u2019s in.",
+
+    ctaTitle: "Ready to find your people?",
+    ctaBody: "Post what you want to do. It takes 30 seconds.",
+    ctaButton: "Get started free",
   },
 
   // ---------------------------------------------------------------------------
