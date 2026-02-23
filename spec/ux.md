@@ -23,16 +23,17 @@ Mesh copy should sound honest and precise. Avoid the hyperbolic language common 
 3. **Don't imply hard limits.** Mesh works well for small groups, but we don't restrict team size. Say "the number is usually 2–5" (observation), not "for teams of 2–5" (restriction).
 4. **Describe competitors fairly.** "Group chats mostly reach people you already know" is accurate. "Group chats can't do X" is probably wrong — someone will find a counterexample, and then we look dishonest.
 5. **Let the product speak.** Concrete details ("describe your idea in 30 seconds") beat vague promises ("revolutionary matching"). Show the mechanism, not just the claim.
+6. **Keep it short.** One qualifier per claim is enough. "Can outperform" is honest and punchy. "Can often tend to outperform" is mush. Prefer "can" over longer hedges when it works.
 
 ### Examples
 
-| Avoid                               | Prefer                                       |
-| ----------------------------------- | -------------------------------------------- |
-| "The fastest way to build a team"   | "A faster way to go from idea to team"       |
-| "Never miss a match"                | "See matches as they come in"                |
-| "Built for crowds, not small teams" | "Usually built for crowds, not small groups" |
-| "None of these tools solve this"    | "These tools rarely start with an idea"      |
-| "Small teams always outperform"     | "Smaller teams tend to work better"          |
+| Avoid                               | Prefer                                 |
+| ----------------------------------- | -------------------------------------- |
+| "The fastest way to build a team"   | "A faster way to go from idea to team" |
+| "Never miss a match"                | "See matches as they come in"          |
+| "Built for crowds, not small teams" | "Designed for larger gatherings"       |
+| "None of these tools solve this"    | "They rarely start with your idea"     |
+| "Small teams always outperform"     | "Smaller teams can move faster"        |
 
 This applies to all user-facing text in `src/lib/labels.ts`, marketing pages, and documentation.
 
