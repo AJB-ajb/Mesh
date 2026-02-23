@@ -75,7 +75,7 @@ export const labels = {
   // ---------------------------------------------------------------------------
   landing: {
     loginButton: "Log in",
-    heroBadge: "For teams of 2\u20135",
+    heroBadge: "Idea-first matching",
     heroTitle: "The right few people make all the difference.",
     heroSubheadline:
       "Describe what you want to do \u2014 a hackathon, a study group, a startup \u2014 and find the people who fit.",
@@ -87,7 +87,7 @@ export const labels = {
     problemGroupChatsTitle: "Group chats",
     problemGroupChatsBody: "You already need to know who to ask.",
     problemMeetupsTitle: "Events & meetups",
-    problemMeetupsBody: "Built for crowds, not small teams.",
+    problemMeetupsBody: "Usually built for crowds, not small groups.",
     problemForumsTitle: "Job boards & forums",
     problemForumsBody: "Too formal, too slow.",
     problemConclusion: "Mesh sits in the gap.",
@@ -142,24 +142,24 @@ export const labels = {
     heroSubtitle:
       "Startups, study groups, hackathon teams, jam sessions \u2014 the magic number is usually 2\u20135. But finding those people is strangely hard.",
 
-    smallGroupTitle: "The small-group problem",
+    smallGroupTitle: "Why smaller teams tend to work better",
     smallGroupBody1:
-      "Adding one person to a team doubles the communication overhead. A group of 3 has 3 connections. A group of 5 has 10. A group of 10 has 45. Small teams move faster, communicate better, and get more done.",
+      "Communication overhead grows faster than team size. A group of 3 has 3 connections to maintain. A group of 5 has 10. A group of 10 has 45. Smaller teams tend to move faster, communicate more clearly, and spend less time on coordination.",
     smallGroupBody2:
-      "Most valuable collaboration happens in groups small enough that everyone knows each other\u2019s strengths. The right 3 people will outperform the right 30.",
+      "Much of the most valuable collaboration happens in groups small enough that everyone knows each other\u2019s strengths. Three well-matched people can often accomplish more than a larger team working at cross-purposes.",
 
     problemTitle: "What exists today doesn\u2019t solve this",
     problemGroupChatsTitle: "Group chats (Slack, Discord, WhatsApp)",
     problemGroupChatsBody:
-      "You already need to know who to ask. They broadcast to people you already have, not people you need.",
+      "You mostly reach people you already know. Great for coordination, less helpful for finding someone new.",
     problemMeetupsTitle: "Events and meetups",
     problemMeetupsBody:
-      "Designed for large gatherings, not assembling a team of 3 for a specific project. You show up and hope.",
+      "Tend to be designed for larger gatherings. Harder to use when you need a specific team of 3 for a weekend project.",
     problemForumsTitle: "Job boards and forums",
     problemForumsBody:
-      "Built for formal, long-term roles. Too much process for a weekend hackathon or a study group.",
+      "Often built for formal, long-term roles. Usually too much process for a weekend hackathon or a study group.",
     problemConclusion:
-      "None of these tools start with an idea and find the right people for it.",
+      "These tools rarely start with an idea and help you find the right people for it.",
 
     howDifferentTitle: "How Mesh is different",
     howDifferentIdeaFirst: "Idea-first",
@@ -172,7 +172,7 @@ export const labels = {
     howDifferentSmartMatchingBody:
       "Matching on skills, availability, location, and interests \u2014 not just keywords.",
 
-    speedTitle: "The fastest way to go from idea to team",
+    speedTitle: "A faster way to go from idea to team",
     speedBody:
       "Describe what you need in 30 seconds. Paste text, speak into the mic, or fill a quick form. Mesh extracts the details and starts matching immediately.",
 

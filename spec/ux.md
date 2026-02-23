@@ -10,6 +10,31 @@
 4. **Natural language interface** — voice and text input, AI extracts structured data
 5. **Good enough matching** — cover common cases well; better than random, not perfect
 6. **High responsiveness** — postings should feel fresh and active; instant notifications for time-critical items
+7. **Honest language** — prefer precise, qualified claims over absolutes. See [Voice & Tone](#voice--tone) below.
+
+## Voice & Tone
+
+Mesh copy should sound honest and precise. Avoid the hyperbolic language common in startup marketing — it erodes trust and makes claims indistinguishable from noise.
+
+### Rules
+
+1. **Prefer qualifiers over absolutes.** Use "most", "often", "tends to", "usually", "can" instead of "all", "never", "always", "every", "guaranteed". A qualified truth is more credible than an unqualified claim.
+2. **Avoid superlatives you can't prove.** "A faster way" instead of "the fastest way". "Better matching" instead of "the best matching". If we genuinely are the only/best at something, cite evidence — don't just assert it.
+3. **Don't imply hard limits.** Mesh works well for small groups, but we don't restrict team size. Say "the number is usually 2–5" (observation), not "for teams of 2–5" (restriction).
+4. **Describe competitors fairly.** "Group chats mostly reach people you already know" is accurate. "Group chats can't do X" is probably wrong — someone will find a counterexample, and then we look dishonest.
+5. **Let the product speak.** Concrete details ("describe your idea in 30 seconds") beat vague promises ("revolutionary matching"). Show the mechanism, not just the claim.
+
+### Examples
+
+| Avoid                               | Prefer                                       |
+| ----------------------------------- | -------------------------------------------- |
+| "The fastest way to build a team"   | "A faster way to go from idea to team"       |
+| "Never miss a match"                | "See matches as they come in"                |
+| "Built for crowds, not small teams" | "Usually built for crowds, not small groups" |
+| "None of these tools solve this"    | "These tools rarely start with an idea"      |
+| "Small teams always outperform"     | "Smaller teams tend to work better"          |
+
+This applies to all user-facing text in `src/lib/labels.ts`, marketing pages, and documentation.
 
 ## Pages & Navigation
 
