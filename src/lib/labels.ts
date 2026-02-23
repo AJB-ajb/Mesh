@@ -142,24 +142,24 @@ export const labels = {
     heroSubtitle:
       "Startups, study groups, hackathon teams, jam sessions \u2014 the magic number is usually 2\u20135. But finding those people is strangely hard.",
 
-    smallGroupTitle: "Why smaller teams tend to work better",
+    smallGroupTitle: "Why smaller teams work better",
     smallGroupBody1:
-      "Communication overhead grows faster than team size. A group of 3 has 3 connections to maintain. A group of 5 has 10. A group of 10 has 45. Smaller teams tend to move faster, communicate more clearly, and spend less time on coordination.",
+      "Communication overhead grows faster than team size. A group of 3 has 3 connections. A group of 5 has 10. A group of 10 has 45. Smaller teams can move faster and spend less time on coordination.",
     smallGroupBody2:
-      "Much of the most valuable collaboration happens in groups small enough that everyone knows each other\u2019s strengths. Three well-matched people can often accomplish more than a larger team working at cross-purposes.",
+      "The most valuable collaboration often happens in groups small enough that everyone knows each other\u2019s strengths. Three well-matched people can accomplish more than a larger team at cross-purposes.",
 
     problemTitle: "What exists today doesn\u2019t solve this",
     problemGroupChatsTitle: "Group chats (Slack, Discord, WhatsApp)",
     problemGroupChatsBody:
-      "You mostly reach people you already know. Great for coordination, less helpful for finding someone new.",
+      "Great for coordination. Less helpful for finding someone new.",
     problemMeetupsTitle: "Events and meetups",
     problemMeetupsBody:
-      "Tend to be designed for larger gatherings. Harder to use when you need a specific team of 3 for a weekend project.",
+      "Designed for larger gatherings. Harder to use when you need a team of 3 for a weekend project.",
     problemForumsTitle: "Job boards and forums",
     problemForumsBody:
-      "Often built for formal, long-term roles. Usually too much process for a weekend hackathon or a study group.",
+      "Built for formal, long-term roles. Too much process for a weekend hackathon.",
     problemConclusion:
-      "These tools rarely start with an idea and help you find the right people for it.",
+      "They rarely start with your idea and find the right people for it.",
 
     howDifferentTitle: "How Mesh is different",
     howDifferentIdeaFirst: "Idea-first",
