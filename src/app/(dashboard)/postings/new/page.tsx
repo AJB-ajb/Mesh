@@ -6,13 +6,11 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 import { labels } from "@/lib/labels";
-import { InputModeToggle } from "@/components/posting/input-mode-toggle";
-import { AiExtractionCard } from "@/components/posting/ai-extraction-card";
+import { NlInputPanel } from "@/components/shared/nl-input-panel";
 import {
   PostingFormCard,
   defaultFormState,
 } from "@/components/posting/posting-form-card";
-import type { InputMode } from "@/components/posting/input-mode-toggle";
 import type { PostingFormState } from "@/components/posting/posting-form-card";
 
 export default function NewPostingPage() {
@@ -20,7 +18,6 @@ export default function NewPostingPage() {
   const [form, setForm] = useState<PostingFormState>(defaultFormState);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [inputMode, setInputMode] = useState<InputMode>("ai");
   const [aiText, setAiText] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionSuccess, setExtractionSuccess] = useState(false);
@@ -113,9 +110,7 @@ export default function NewPostingPage() {
       }));
 
       setExtractionSuccess(true);
-      // Switch to form mode to review extracted data
       setTimeout(() => {
-        setInputMode("form");
         setExtractionSuccess(false);
       }, 1500);
     } catch (err) {
@@ -142,7 +137,7 @@ export default function NewPostingPage() {
       const res = await fetch("/api/postings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, sourceText: aiText || undefined }),
       });
 
       const data = await res.json();
@@ -191,35 +186,29 @@ export default function NewPostingPage() {
         </p>
       )}
 
-      <InputModeToggle inputMode={inputMode} onModeChange={setInputMode} />
+      {/* NL input — always visible on top */}
+      <NlInputPanel
+        nlText={aiText}
+        onNlTextChange={setAiText}
+        isExtracting={isExtracting}
+        extractionSuccess={extractionSuccess}
+        onExtract={handleAiExtract}
+        variant="posting"
+      />
 
-      {inputMode === "ai" && (
-        <AiExtractionCard
-          aiText={aiText}
-          onAiTextChange={setAiText}
-          isExtracting={isExtracting}
-          extractionSuccess={extractionSuccess}
-          onExtract={handleAiExtract}
-          onSwitchToForm={() => setInputMode("form")}
-        />
-      )}
-
-      {inputMode === "form" && (
-        <PostingFormCard
-          form={form}
-          setForm={setForm}
-          onChange={handleChange}
-          onSubmit={handleSubmit}
-          isSaving={isSaving}
-          isExtracting={isExtracting}
-        />
-      )}
+      {/* Form — always visible below */}
+      <PostingFormCard
+        form={form}
+        setForm={setForm}
+        onChange={handleChange}
+        onSubmit={handleSubmit}
+        isSaving={isSaving}
+        isExtracting={isExtracting}
+      />
 
       {/* Info */}
       <p className="text-center text-sm text-muted-foreground">
-        {inputMode === "ai"
-          ? labels.postingCreation.infoAiMode
-          : labels.postingCreation.infoFormMode}
+        {labels.postingCreation.infoFormMode}
       </p>
     </div>
   );

@@ -2,7 +2,6 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FileText, Sparkles } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { labels } from "@/lib/labels";
 
@@ -16,7 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Logo } from "@/components/layout/logo";
-import { AiExtractionCard } from "@/components/posting/ai-extraction-card";
+import { NlInputPanel } from "@/components/shared/nl-input-panel";
 import { createClient } from "@/lib/supabase/client";
 import {
   type ProfileFormState,
@@ -25,8 +24,6 @@ import {
   type ExtractedProfileV2,
 } from "@/lib/types/profile";
 
-type InputMode = "form" | "ai";
-
 function DeveloperOnboardingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,7 +31,6 @@ function DeveloperOnboardingContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [inputMode, setInputMode] = useState<InputMode>("form");
   const [aiText, setAiText] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionSuccess, setExtractionSuccess] = useState(false);
@@ -128,7 +124,6 @@ function DeveloperOnboardingContent() {
 
       setExtractionSuccess(true);
       setTimeout(() => {
-        setInputMode("form");
         setExtractionSuccess(false);
       }, 1500);
     } catch (err) {
@@ -200,200 +195,159 @@ function DeveloperOnboardingContent() {
             </p>
           ) : null}
 
-          {/* Input Mode Toggle */}
-          <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-muted/30 p-1">
-            <button
-              type="button"
-              onClick={() => setInputMode("form")}
-              className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-                inputMode === "form"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <FileText className="h-4 w-4" />
-              {labels.inputModeToggle.formButton}
-            </button>
-            <button
-              type="button"
-              onClick={() => setInputMode("ai")}
-              className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-                inputMode === "ai"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Sparkles className="h-4 w-4" />
-              {labels.inputModeToggle.aiButton}
-            </button>
-          </div>
+          {/* NL input — always visible on top */}
+          <NlInputPanel
+            nlText={aiText}
+            onNlTextChange={setAiText}
+            isExtracting={isExtracting}
+            extractionSuccess={extractionSuccess}
+            onExtract={handleAiExtract}
+            variant="profile"
+          />
 
-          {/* AI Text Input Mode */}
-          {inputMode === "ai" && (
-            <AiExtractionCard
-              aiText={aiText}
-              onAiTextChange={setAiText}
-              isExtracting={isExtracting}
-              extractionSuccess={extractionSuccess}
-              onExtract={handleAiExtract}
-              onSwitchToForm={() => setInputMode("form")}
-              variant="profile"
-            />
-          )}
-
-          {/* Traditional Form Mode */}
-          {inputMode === "form" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>{labels.onboarding.generalInfoTitle}</CardTitle>
-                <CardDescription>
-                  {labels.onboarding.generalInfoDescription}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label htmlFor="fullName" className="text-sm font-medium">
-                      {labels.onboarding.fullNameLabel}
-                    </label>
-                    <Input
-                      id="fullName"
-                      value={form.fullName}
-                      onChange={(event) =>
-                        handleChange("fullName", event.target.value)
-                      }
-                      placeholder={labels.onboarding.fullNamePlaceholder}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="headline" className="text-sm font-medium">
-                      {labels.onboarding.headlineLabel}
-                    </label>
-                    <Input
-                      id="headline"
-                      value={form.headline}
-                      onChange={(event) =>
-                        handleChange("headline", event.target.value)
-                      }
-                      placeholder={labels.onboarding.headlinePlaceholder}
-                    />
-                  </div>
-                </div>
-
+          {/* Form — always visible below */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{labels.onboarding.generalInfoTitle}</CardTitle>
+              <CardDescription>
+                {labels.onboarding.generalInfoDescription}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label htmlFor="bio" className="text-sm font-medium">
-                    {labels.onboarding.bioLabel}
+                  <label htmlFor="fullName" className="text-sm font-medium">
+                    {labels.onboarding.fullNameLabel}
                   </label>
-                  <Textarea
-                    id="bio"
-                    rows={4}
-                    value={form.bio}
+                  <Input
+                    id="fullName"
+                    value={form.fullName}
                     onChange={(event) =>
-                      handleChange("bio", event.target.value)
+                      handleChange("fullName", event.target.value)
                     }
-                    placeholder={labels.onboarding.bioPlaceholder}
-                    enableMic
-                    onTranscriptionChange={(text) =>
-                      handleChange(
-                        "bio",
-                        form.bio ? form.bio + " " + text : text,
-                      )
-                    }
+                    placeholder={labels.onboarding.fullNamePlaceholder}
                   />
                 </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label htmlFor="location" className="text-sm font-medium">
-                      {labels.onboarding.locationLabel}
-                    </label>
-                    <Input
-                      id="location"
-                      value={form.location}
-                      onChange={(event) =>
-                        handleChange("location", event.target.value)
-                      }
-                      placeholder={labels.onboarding.locationPlaceholder}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="languages" className="text-sm font-medium">
-                      {labels.onboarding.languagesLabel}
-                    </label>
-                    <Input
-                      id="languages"
-                      value={form.languages}
-                      onChange={(event) =>
-                        handleChange("languages", event.target.value)
-                      }
-                      placeholder={labels.onboarding.languagesPlaceholder}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <label htmlFor="headline" className="text-sm font-medium">
+                    {labels.onboarding.headlineLabel}
+                  </label>
+                  <Input
+                    id="headline"
+                    value={form.headline}
+                    onChange={(event) =>
+                      handleChange("headline", event.target.value)
+                    }
+                    placeholder={labels.onboarding.headlinePlaceholder}
+                  />
                 </div>
+              </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label htmlFor="skills" className="text-sm font-medium">
-                      {labels.onboarding.skillsLabel}
-                    </label>
-                    <Input
-                      id="skills"
-                      value={form.skills}
-                      onChange={(event) =>
-                        handleChange("skills", event.target.value)
-                      }
-                      placeholder={labels.onboarding.skillsPlaceholder}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="interests" className="text-sm font-medium">
-                      {labels.onboarding.interestsLabel}
-                    </label>
-                    <Input
-                      id="interests"
-                      value={form.interests}
-                      onChange={(event) =>
-                        handleChange("interests", event.target.value)
-                      }
-                      placeholder={labels.onboarding.interestsPlaceholder}
-                    />
-                  </div>
-                </div>
+              <div className="space-y-2">
+                <label htmlFor="bio" className="text-sm font-medium">
+                  {labels.onboarding.bioLabel}
+                </label>
+                <Textarea
+                  id="bio"
+                  rows={4}
+                  value={form.bio}
+                  onChange={(event) => handleChange("bio", event.target.value)}
+                  placeholder={labels.onboarding.bioPlaceholder}
+                  enableMic
+                  onTranscriptionChange={(text) =>
+                    handleChange("bio", form.bio ? form.bio + " " + text : text)
+                  }
+                />
+              </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="portfolioUrl"
-                      className="text-sm font-medium"
-                    >
-                      {labels.onboarding.portfolioLabel}
-                    </label>
-                    <Input
-                      id="portfolioUrl"
-                      value={form.portfolioUrl}
-                      onChange={(event) =>
-                        handleChange("portfolioUrl", event.target.value)
-                      }
-                      placeholder={labels.onboarding.portfolioPlaceholder}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="githubUrl" className="text-sm font-medium">
-                      {labels.onboarding.githubLabel}
-                    </label>
-                    <Input
-                      id="githubUrl"
-                      value={form.githubUrl}
-                      onChange={(event) =>
-                        handleChange("githubUrl", event.target.value)
-                      }
-                      placeholder={labels.onboarding.githubPlaceholder}
-                    />
-                  </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label htmlFor="location" className="text-sm font-medium">
+                    {labels.onboarding.locationLabel}
+                  </label>
+                  <Input
+                    id="location"
+                    value={form.location}
+                    onChange={(event) =>
+                      handleChange("location", event.target.value)
+                    }
+                    placeholder={labels.onboarding.locationPlaceholder}
+                  />
                 </div>
-              </CardContent>
-            </Card>
-          )}
+                <div className="space-y-2">
+                  <label htmlFor="languages" className="text-sm font-medium">
+                    {labels.onboarding.languagesLabel}
+                  </label>
+                  <Input
+                    id="languages"
+                    value={form.languages}
+                    onChange={(event) =>
+                      handleChange("languages", event.target.value)
+                    }
+                    placeholder={labels.onboarding.languagesPlaceholder}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label htmlFor="skills" className="text-sm font-medium">
+                    {labels.onboarding.skillsLabel}
+                  </label>
+                  <Input
+                    id="skills"
+                    value={form.skills}
+                    onChange={(event) =>
+                      handleChange("skills", event.target.value)
+                    }
+                    placeholder={labels.onboarding.skillsPlaceholder}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="interests" className="text-sm font-medium">
+                    {labels.onboarding.interestsLabel}
+                  </label>
+                  <Input
+                    id="interests"
+                    value={form.interests}
+                    onChange={(event) =>
+                      handleChange("interests", event.target.value)
+                    }
+                    placeholder={labels.onboarding.interestsPlaceholder}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label htmlFor="portfolioUrl" className="text-sm font-medium">
+                    {labels.onboarding.portfolioLabel}
+                  </label>
+                  <Input
+                    id="portfolioUrl"
+                    value={form.portfolioUrl}
+                    onChange={(event) =>
+                      handleChange("portfolioUrl", event.target.value)
+                    }
+                    placeholder={labels.onboarding.portfolioPlaceholder}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="githubUrl" className="text-sm font-medium">
+                    {labels.onboarding.githubLabel}
+                  </label>
+                  <Input
+                    id="githubUrl"
+                    value={form.githubUrl}
+                    onChange={(event) =>
+                      handleChange("githubUrl", event.target.value)
+                    }
+                    placeholder={labels.onboarding.githubPlaceholder}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <Button type="submit" disabled={isSaving || isExtracting}>

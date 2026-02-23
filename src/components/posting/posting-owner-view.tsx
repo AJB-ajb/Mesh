@@ -12,6 +12,7 @@ import type {
 import type { PostingFormState } from "@/lib/types/posting";
 import type { ScoreBreakdown } from "@/lib/supabase/types";
 import type { ExtractedPosting } from "@/lib/types/posting";
+import type { SaveStatus } from "@/lib/hooks/use-auto-save";
 import { PostingDetailHeader } from "./posting-detail-header";
 import { PostingEditTab } from "./posting-edit-tab";
 import { PostingManageTab } from "./posting-manage-tab";
@@ -24,20 +25,16 @@ type PostingOwnerViewProps = {
   currentUserId: string | null;
   currentUserName: string | null;
   matchBreakdown: ScoreBreakdown | null;
-  // Edit state
-  isEditing: boolean;
-  isSaving: boolean;
+  // Edit state (always-editable)
   isDeleting: boolean;
   isExtending: boolean;
   isReposting: boolean;
   form: PostingFormState;
   onFormChange: (field: keyof PostingFormState, value: string) => void;
-  onSave: () => void;
-  onCancelEdit: () => void;
-  onStartEdit: () => void;
   onDelete: () => void;
   onExtendDeadline: (days: number) => void;
   onRepost: () => void;
+  saveStatus: SaveStatus;
   // Apply state (for header)
   hasApplied: boolean;
   myApplication: Application | null;
@@ -68,7 +65,6 @@ type PostingOwnerViewProps = {
     updatedText: string,
     extracted: ExtractedPosting,
   ) => Promise<void>;
-  onUndoUpdate: () => Promise<void>;
   // Tab state
   activeTab: string;
   onTabChange: (tab: string) => void;
@@ -84,19 +80,15 @@ export function PostingOwnerView({
   currentUserId,
   currentUserName,
   matchBreakdown,
-  isEditing,
-  isSaving,
   isDeleting,
   isExtending,
   isReposting,
   form,
   onFormChange,
-  onSave,
-  onCancelEdit,
-  onStartEdit,
   onDelete,
   onExtendDeadline,
   onRepost,
+  saveStatus,
   hasApplied,
   myApplication,
   waitlistPosition,
@@ -118,7 +110,6 @@ export function PostingOwnerView({
   onContactCreator,
   isApplyingUpdate,
   onApplyUpdate,
-  onUndoUpdate,
   activeTab,
   onTabChange,
   projectEnabled,
@@ -133,19 +124,15 @@ export function PostingOwnerView({
         posting={posting}
         isOwner={isOwner}
         matchBreakdown={matchBreakdown}
-        isEditing={isEditing}
-        isSaving={isSaving}
         isDeleting={isDeleting}
         isExtending={isExtending}
         isReposting={isReposting}
         editTitle={form.title}
         onEditTitleChange={(value) => onFormChange("title", value)}
-        onSave={onSave}
-        onCancelEdit={onCancelEdit}
-        onStartEdit={onStartEdit}
         onDelete={onDelete}
         onExtendDeadline={onExtendDeadline}
         onRepost={onRepost}
+        saveStatus={saveStatus}
         hasApplied={hasApplied}
         myApplication={myApplication}
         waitlistPosition={waitlistPosition}
@@ -193,13 +180,11 @@ export function PostingOwnerView({
             posting={posting}
             postingId={postingId}
             isOwner={isOwner}
-            isEditing={isEditing}
             form={form}
             onFormChange={onFormChange}
             onContactCreator={onContactCreator}
             isApplyingUpdate={isApplyingUpdate}
             onApplyUpdate={onApplyUpdate}
-            onUndoUpdate={onUndoUpdate}
           />
         </TabsContent>
 
