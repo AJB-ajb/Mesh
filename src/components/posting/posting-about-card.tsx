@@ -400,15 +400,15 @@ export function PostingAboutCard({
                 {posting.team_size_max}
               </p>
             </div>
-            <div className="rounded-lg border border-border p-4">
-              <Calendar className="h-5 w-5 text-muted-foreground" />
-              <p className="mt-2 text-sm text-muted-foreground">
-                Estimated Time
-              </p>
-              <p className="font-medium">
-                {posting.estimated_time || NOT_SPECIFIED}
-              </p>
-            </div>
+            {posting.estimated_time && (
+              <div className="rounded-lg border border-border p-4">
+                <Calendar className="h-5 w-5 text-muted-foreground" />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Estimated Time
+                </p>
+                <p className="font-medium">{posting.estimated_time}</p>
+              </div>
+            )}
             <div className="rounded-lg border border-border p-4">
               <Clock className="h-5 w-5 text-muted-foreground" />
               <p className="mt-2 text-sm text-muted-foreground">Category</p>

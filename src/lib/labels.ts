@@ -1091,6 +1091,11 @@ export const labels = {
     noResults: "No postings found.",
     noSavedPostings:
       "No saved postings yet. Express interest in postings to save them here.",
+    noResultsTitle: "No postings found",
+    noResultsDescription: "Try a different search or adjust your filters.",
+    noSavedTitle: "No saved postings",
+    noSavedDescription:
+      "Bookmark postings you're interested in to find them here later.",
   },
 
   // ---------------------------------------------------------------------------
