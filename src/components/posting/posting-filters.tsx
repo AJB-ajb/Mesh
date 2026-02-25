@@ -16,6 +16,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type SortOption = "recent" | "match";
 
@@ -238,14 +245,22 @@ export function PostingFilters({
           )}
 
           {showSort && (
-            <select
+            <Select
               value={sortBy}
-              onChange={(e) => onSortChange?.(e.target.value as SortOption)}
-              className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+              onValueChange={(value) => onSortChange?.(value as SortOption)}
             >
-              <option value="recent">{labels.discover.sortByRecent}</option>
-              <option value="match">{labels.discover.sortByMatch}</option>
-            </select>
+              <SelectTrigger className="h-8 w-auto gap-1 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent">
+                  {labels.discover.sortByRecent}
+                </SelectItem>
+                <SelectItem value="match">
+                  {labels.discover.sortByMatch}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           )}
         </div>
       )}
@@ -278,19 +293,25 @@ export function PostingFilters({
               <label className="text-xs font-medium text-muted-foreground">
                 {labels.postings.visibilityLabel}
               </label>
-              <select
+              <Select
                 value={filterVisibility}
-                onChange={(e) => onVisibilityChange(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                onValueChange={onVisibilityChange}
               >
-                <option value="all">{labels.postings.visibilityAny}</option>
-                <option value="public">
-                  {labels.postings.visibilityPublic}
-                </option>
-                <option value="private">
-                  {labels.postings.visibilityPrivate}
-                </option>
-              </select>
+                <SelectTrigger className="h-9 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {labels.postings.visibilityAny}
+                  </SelectItem>
+                  <SelectItem value="public">
+                    {labels.postings.visibilityPublic}
+                  </SelectItem>
+                  <SelectItem value="private">
+                    {labels.postings.visibilityPrivate}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
