@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { SWRProvider } from "@/lib/swr/provider";
 import { FeedbackWidget } from "@/components/feedback/feedback-widget";
+import { Toaster } from "sonner";
 import { labels } from "@/lib/labels";
 import "./globals.css";
 
@@ -97,6 +98,7 @@ export default function RootLayout({
           <ThemeProvider>
             {children}
             <FeedbackWidget />
+            <Toaster richColors position="bottom-right" />
           </ThemeProvider>
         </SWRProvider>
       </body>
