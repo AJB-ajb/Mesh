@@ -140,6 +140,9 @@ export function FreeFormUpdate<T extends Extracted>({
               )}
               {copy.sourceLabel}
             </button>
+            <p className="text-xs text-muted-foreground mt-1">
+              {copy.sourceHint}
+            </p>
             {showSourceText && (
               <Textarea
                 className="mt-2"
@@ -162,6 +165,7 @@ export function FreeFormUpdate<T extends Extracted>({
         <div className="space-y-2">
           <label className="text-sm font-medium">{copy.instructionLabel}</label>
           <Textarea
+            className="ring-1 ring-primary/30 focus-within:ring-primary"
             rows={2}
             value={updateInstruction}
             onChange={(e) => setUpdateInstruction(e.target.value)}
