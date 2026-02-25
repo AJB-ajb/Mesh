@@ -1048,22 +1048,24 @@ export const labels = {
       title: "Quick Update",
       description:
         "Describe what changed and your profile fields will update automatically.",
-      sourceLabel: "Profile description",
+      sourceLabel: "Your current description",
+      sourceHint: "Edit this if you want to update your base description too.",
       sourcePlaceholder:
         "Paste or type your profile description here (e.g., a short bio, your skills, what you\u2019re looking for)...",
-      instructionLabel: "What changed?",
+      instructionLabel: "Tell the AI what to change",
       instructionPlaceholder:
-        "e.g., I also know Python now and am available 20 hours/week",
+        "e.g. Make it sound more professional and highlight my Python experience",
     },
     posting: {
       title: "Quick Update",
       description:
         "Describe what changed and your posting fields will update automatically.",
-      sourceLabel: "Posting description",
+      sourceLabel: "Your current description",
+      sourceHint: "Edit this if you want to update your base description too.",
       sourcePlaceholder: "Paste or type your posting description here...",
-      instructionLabel: "What changed?",
+      instructionLabel: "Tell the AI what to change",
       instructionPlaceholder:
-        "e.g., change the title to X and add Python to skills",
+        "e.g. Emphasize that we need a backend developer with Python experience",
     },
     applyButton: "Apply Update",
     applyingButton: "Applying...",
@@ -1096,6 +1098,8 @@ export const labels = {
     noSavedTitle: "No saved postings",
     noSavedDescription:
       "Bookmark postings you're interested in to find them here later.",
+    showBreakdown: "Show breakdown",
+    hideBreakdown: "Hide breakdown",
   },
 
   // ---------------------------------------------------------------------------
@@ -1275,5 +1279,14 @@ export const labels = {
     exportIcs: "Download .ics",
     respondedCount: (n: number, total: number) => `${n} of ${total} responded`,
     dragToSelectHint: "Drag on the calendar to select a meeting time.",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Toast notifications
+  // ---------------------------------------------------------------------------
+  toasts: {
+    bookmarkAdded: "Posting saved",
+    bookmarkRemoved: "Posting unsaved",
+    bookmarkError: "Could not update bookmark",
   },
 } as const;
