@@ -3,11 +3,10 @@
 import { Suspense, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Bookmark, Search } from "lucide-react";
 import { labels } from "@/lib/labels";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { usePostings } from "@/lib/hooks/use-postings";
 import type { Posting } from "@/lib/hooks/use-postings";
 import { useNlFilter } from "@/lib/hooks/use-nl-filter";
@@ -16,6 +15,7 @@ import { useBookmarks } from "@/lib/hooks/use-bookmarks";
 import { applyFilters } from "@/lib/filters/apply-filters";
 import { PostingDiscoverCard } from "@/components/posting/posting-discover-card";
 import { PostingFilters } from "@/components/posting/posting-filters";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type SortOption = "recent" | "match";
 
@@ -180,15 +180,19 @@ function DiscoverContent() {
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : filteredPostings.length === 0 ? (
-        <Card>
-          <CardContent className="flex min-h-[200px] flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground">
-              {showSaved
-                ? labels.discover.noSavedPostings
-                : labels.discover.noResults}
-            </p>
-          </CardContent>
-        </Card>
+        showSaved ? (
+          <EmptyState
+            icon={<Bookmark />}
+            title={labels.discover.noSavedTitle}
+            description={labels.discover.noSavedDescription}
+          />
+        ) : (
+          <EmptyState
+            icon={<Search />}
+            title={labels.discover.noResultsTitle}
+            description={labels.discover.noResultsDescription}
+          />
+        )
       ) : (
         /* Postings grid */
         <div className="grid gap-6">

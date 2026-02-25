@@ -37,7 +37,9 @@ export function ActivePostingCard({ posting }: ActivePostingCardProps) {
         <CardContent className="p-4 sm:p-6">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <h3 className="font-semibold truncate">{posting.title}</h3>
+              <h3 className="font-semibold truncate" title={posting.title}>
+                {posting.title}
+              </h3>
               <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
                 {posting.description}
               </p>

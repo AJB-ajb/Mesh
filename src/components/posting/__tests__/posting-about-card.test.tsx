@@ -157,7 +157,7 @@ describe("PostingAboutCard", () => {
     expect(screen.getByText("2 weeks")).toBeInTheDocument();
   });
 
-  it("renders 'Not specified' when estimated_time is empty", () => {
+  it("hides estimated time card when estimated_time is empty", () => {
     const posting = { ...basePosting, estimated_time: "" };
     render(
       <PostingAboutCard
@@ -167,7 +167,7 @@ describe("PostingAboutCard", () => {
         onFormChange={onFormChange}
       />,
     );
-    expect(screen.getByText("Not specified")).toBeInTheDocument();
+    expect(screen.queryByText("Estimated Time")).not.toBeInTheDocument();
   });
 
   it("renders category in view mode", () => {
