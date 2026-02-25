@@ -207,12 +207,12 @@ export function PostingFilters({
       )}
 
       {/* Category chips */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide sm:flex-wrap sm:overflow-visible">
         {postingFilterCategories.map((cat) => (
           <button
             key={cat.value}
             onClick={() => onCategoryChange(cat.value)}
-            className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+            className={`shrink-0 rounded-full px-3 py-1 text-sm font-medium transition-colors ${
               filterCategory === cat.value
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
