@@ -224,13 +224,25 @@ export function PostingDiscoverCard({
         {/* Tags */}
         {posting.tags && posting.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
-            {posting.tags.slice(0, 4).map((tag: string) => (
-              <Badge key={tag} variant="outline" className="text-xs">
+            {posting.tags.slice(0, 4).map((tag: string, i: number) => (
+              <Badge
+                key={tag}
+                variant="outline"
+                className={cn("text-xs", i >= 2 && "hidden sm:inline-flex")}
+              >
                 #{tag}
               </Badge>
             ))}
+            {posting.tags.length > 2 && (
+              <Badge variant="outline" className="text-xs sm:hidden">
+                +{posting.tags.length - 2}
+              </Badge>
+            )}
             {posting.tags.length > 4 && (
-              <Badge variant="outline" className="text-xs">
+              <Badge
+                variant="outline"
+                className="text-xs hidden sm:inline-flex"
+              >
                 +{posting.tags.length - 4}
               </Badge>
             )}
@@ -238,7 +250,7 @@ export function PostingDiscoverCard({
         )}
 
         {/* Meta */}
-        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+        <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
           <span className="flex items-center gap-1.5">
             <Users className="h-4 w-4" />
             Looking for {posting.team_size_max}{" "}
