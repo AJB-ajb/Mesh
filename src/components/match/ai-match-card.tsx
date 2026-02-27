@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BadgeList } from "@/components/ui/badge-list";
 import { formatTimeAgo } from "@/lib/format";
+import { labels } from "@/lib/labels";
 import { statusColors, statusLabels } from "@/lib/posting/styles";
 import type {
   MatchResponse,
@@ -55,9 +56,18 @@ export function AiMatchCard({ match, isApplying, onApply }: AiMatchCardProps) {
         {match.explanation && (
           <div className="rounded-lg border border-border bg-muted/30 p-4">
             <p className="text-sm font-medium text-muted-foreground mb-2">
-              Why you matched
+              {labels.deepMatch.explanation}
             </p>
             <p className="text-sm">{match.explanation}</p>
+          </div>
+        )}
+
+        {/* Tier-gated explanation prompt */}
+        {!match.explanation && (
+          <div className="rounded-lg border border-border bg-muted/30 p-4">
+            <p className="text-sm text-muted-foreground">
+              {labels.tier.upgradePrompt}
+            </p>
           </div>
         )}
 
