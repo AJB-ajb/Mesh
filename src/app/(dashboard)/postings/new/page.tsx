@@ -13,8 +13,20 @@ import {
 } from "@/components/posting/posting-form-card";
 import { MarkdownToolbar } from "@/components/shared/markdown-toolbar";
 import { TextTools } from "@/components/shared/text-tools";
+import { SuggestionChips } from "@/components/shared/suggestion-chips";
+import {
+  NudgeBanner,
+  nudgeMessage,
+  type NudgeItem,
+} from "@/components/shared/nudge-banner";
+import { usePostingSuggestions } from "@/lib/hooks/use-posting-suggestions";
 import { useMobileKeyboard } from "@/lib/hooks/use-mobile-keyboard";
 import type { PostingFormState } from "@/components/posting/posting-form-card";
+
+/** Minimum text length before fetching nudges from the API. */
+const NUDGE_MIN_LENGTH = 20;
+/** Debounce delay in ms before fetching nudges. */
+const NUDGE_DEBOUNCE_MS = 3000;
 
 export default function NewPostingPage() {
   const router = useRouter();
@@ -36,6 +48,18 @@ export default function NewPostingPage() {
     el.style.height = `${Math.max(el.scrollHeight, 200)}px`;
   }, [text]);
 
+  // Suggestion chips state
+  const { chips } = usePostingSuggestions(text);
+  const [chipsDismissed, setChipsDismissed] = useState(false);
+
+  // Nudge state
+  const [nudges, setNudges] = useState<NudgeItem[]>([]);
+  const [dismissedNudges, setDismissedNudges] = useState<Set<string>>(
+    new Set(),
+  );
+  const nudgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastNudgeTextRef = useRef<string>("");
+
   // Scroll to error when it appears
   useEffect(() => {
     if (error && errorRef.current) {
@@ -47,6 +71,58 @@ export default function NewPostingPage() {
       });
     }
   }, [error]);
+
+  // Debounced nudge fetching
+  useEffect(() => {
+    if (nudgeTimerRef.current) {
+      clearTimeout(nudgeTimerRef.current);
+    }
+
+    const trimmed = text.trim();
+    if (trimmed.length < NUDGE_MIN_LENGTH) {
+      return;
+    }
+
+    // Don't re-fetch if text hasn't meaningfully changed
+    if (trimmed === lastNudgeTextRef.current) {
+      return;
+    }
+
+    nudgeTimerRef.current = setTimeout(() => {
+      lastNudgeTextRef.current = trimmed;
+
+      fetch("/api/extract/posting/nudge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: trimmed }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.nudges && Array.isArray(data.nudges)) {
+            queueMicrotask(() => {
+              setNudges(
+                data.nudges.map(
+                  (n: { dimension: string; suggestion: string }) => ({
+                    dimension: n.dimension,
+                    message: nudgeMessage(n.dimension),
+                    suggestion: n.suggestion,
+                  }),
+                ),
+              );
+            });
+          }
+        })
+        .catch(() => {
+          // Silently ignore nudge errors — non-critical feature
+        });
+    }, NUDGE_DEBOUNCE_MS);
+
+    return () => {
+      if (nudgeTimerRef.current) {
+        clearTimeout(nudgeTimerRef.current);
+      }
+    };
+  }, [text]);
 
   const handleSubmit = useCallback(async () => {
     const trimmed = text.trim();
@@ -97,6 +173,30 @@ export default function NewPostingPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleChipClick = useCallback(
+    (chip: { insertText: string }) => {
+      const separator = text.trim() ? "\n" : "";
+      setText((prev) => prev + separator + chip.insertText);
+    },
+    [text],
+  );
+
+  const handleNudgeDismiss = useCallback((dimension: string) => {
+    setDismissedNudges((prev) => new Set(prev).add(dimension));
+  }, []);
+
+  const handleNudgeInsert = useCallback(
+    (suggestion: string) => {
+      const separator = text.trim() ? "\n" : "";
+      setText((prev) => prev + separator + suggestion);
+    },
+    [text],
+  );
+
+  const visibleNudges = nudges.filter(
+    (n) => !dismissedNudges.has(n.dimension),
+  );
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       {/* Back link */}
@@ -141,8 +241,24 @@ export default function NewPostingPage() {
         autoFocus
       />
 
+      {/* Suggestion chips */}
+      {!chipsDismissed && (
+        <SuggestionChips
+          chips={chips}
+          onChipClick={handleChipClick}
+          onDismiss={() => setChipsDismissed(true)}
+        />
+      )}
+
       {/* Text tools (auto-format, auto-clean) */}
       <TextTools text={text} onTextChange={setText} />
+
+      {/* Nudge banners */}
+      <NudgeBanner
+        nudges={visibleNudges}
+        onDismiss={handleNudgeDismiss}
+        onInsertSuggestion={handleNudgeInsert}
+      />
 
       {/* Post button */}
       <div className="flex justify-end">
