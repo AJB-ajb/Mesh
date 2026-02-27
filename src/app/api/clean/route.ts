@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
 import { SchemaType, type ObjectSchema } from "@google/generative-ai";
 
 import { withAuth } from "@/lib/api/with-auth";
 import { generateStructuredJSON } from "@/lib/ai/gemini";
 import { CLEAN_SYSTEM_PROMPT } from "@/lib/ai/text-tool-prompts";
+import { apiError, apiSuccess } from "@/lib/errors";
 
 const cleanSchema: ObjectSchema = {
   type: SchemaType.OBJECT,
@@ -20,10 +20,7 @@ export const POST = withAuth(async (req) => {
   const { text } = await req.json();
 
   if (!text?.trim()) {
-    return NextResponse.json(
-      { error: { message: "Text is required" } },
-      { status: 400 },
-    );
+    return apiError("VALIDATION", "Text is required", 400);
   }
 
   const result = await generateStructuredJSON<{ cleaned: string }>({
@@ -33,5 +30,5 @@ export const POST = withAuth(async (req) => {
     temperature: 0.3,
   });
 
-  return NextResponse.json(result);
+  return apiSuccess(result);
 });
