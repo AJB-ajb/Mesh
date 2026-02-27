@@ -4,13 +4,10 @@ Idea-based social platform for quickly finding people to do things with — proj
 
 ## Status
 
-- [x] #5 Redesign phase 1
-- [x] #6 Redesign phase 2
-- [x] #7 Redesign phase 3
-- [x] #8 Redesign phase 4
-- [ ] #9 Redesign phase 5 (in progress)
+- **Current**: v0.2 — core platform, skills system, invites, waitlist complete
+- **Next**: v0.3 — text-first posting & navigation redesign
 
-See [roadmap.md](roadmap.md) for full milestone tracking.
+See [roadmap.md](roadmap.md) for milestone tracking. See [text_first_rewrite.md](../.prompts/text_first_rewrite.md) for the text-first spec that drives v0.3+.
 
 ## Problem
 
@@ -81,20 +78,16 @@ See [matching.md](matching.md) for the matching algorithm.
 
 ### Future
 
-- Calendar integration (auto-suggest time slots / auto update availability)
-- Location suggestions
-- Verification (GitHub, LinkedIn for professional postings)
-- Rating system (objective phrasing, no visible aggregate scores, honest feedback for growth)
-- AI-based user interface
-  - Navigate, search and filter via natural language
-  - Automatically translates to UI actions
-- Mentor / mentee matching
-- Channels (shared context for hackathons, courses, communities — with setup defaults like expiry and category)
-- QR code and share link generation for channels and postings
-- Project images
-- Markdown-first interface (markdown input/output, copy as markdown, auto-format, handoff document export)
-- AI agent integration via markdown interface
-- Test / staging database environment for user research
+See [roadmap.md](roadmap.md) for the full milestone plan. Key upcoming features:
+
+- **Text-first posting & profiles** (v0.3) — single text field replaces multi-step forms
+- **Smart input** (v0.4) — slash commands, quick chips, auto-format/clean, post-write nudges
+- **LLM deep matching** (v0.5) — Stage 2 matching with full-text evaluation and match explanations
+- **Auto-translation** (v0.6) — multilingual posting support
+- Calendar sync (v1.0) — Google Calendar / iCal integration
+- Channels (v1.0) — shared posting contexts for hackathons, courses, communities
+- Verification — GitHub, LinkedIn profile linking and badges
+- Rating system — objective phrasing, no visible aggregate scores
 
 ## Design Principles
 
@@ -116,9 +109,11 @@ See [vision.md](vision.md) for deeper philosophy, insights, and target audience 
 
 ## Monetization
 
-- Free tier (full functionality)
-- Business tier (company usage)
-- Premium: analytics, internal rating access
+LLM invocations are a real cost. Tiered access keeps the product viable. See [text_first_rewrite.md](../.prompts/text_first_rewrite.md) §9 for detail.
+
+- **Free tier**: full posting, fast-filter matching, deep match for top N matches, standard LLM model
+- **Premium**: unlimited deep matching, full match explanations, priority placement, LLM-assisted logistics
+- **LLM cost tiering**: cheap models for ghost text/chips, mid-tier for extraction/formatting, high-tier for deep matching
 
 ## Tech Stack
 

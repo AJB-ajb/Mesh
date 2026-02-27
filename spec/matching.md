@@ -190,12 +190,35 @@ Users can adjust weights to reflect their priorities.
 - Embeddings stored for: posting descriptions, tags, natural language criteria
 - Fast filtering via PostgreSQL indexes, semantic matching via pgvector cosine similarity
 
+### Stage 3: Deep Match — LLM Evaluation (v0.5)
+
+> Added by the text-first rewrite. See [text_first_rewrite.md](../.prompts/text_first_rewrite.md) §6.
+
+For the top ~10–20 candidates from Stages 1–2, an LLM evaluates the full text of both sides for nuanced compatibility that structured data can't capture (communication style, project approach, complementary experience).
+
+**Input to the LLM:**
+
+- Poster's full posting text (markdown)
+- Candidate's full profile text (markdown)
+- Fast-filter overlap summary (shared skills, time overlap %, distance)
+- Calendar overlap data (if available)
+
+**Output from the LLM:**
+
+- Match quality score (0–1)
+- Brief explanation of why this is a good/poor match
+- Any concerns or caveats
+
+**Multi-role matching:** A posting can describe multiple roles ("Looking for an actor AND a musician"). The LLM identifies distinct roles and matches candidates against each role separately.
+
+**Tiering:** Deep match explanations are a premium feature. Free tier sees scores only.
+
 ### AI Input Processing
 
-Natural language inputs are transformed to structured values via AI:
+With the text-first rewrite, matching inputs are now primarily **derived from user text** via LLM extraction, rather than manually entered through forms. The extraction pipeline runs in the background after posting and produces the same structured metadata used by Stages 1–2. Users can correct extraction errors, but the text is never modified by the system.
 
-- Prompt a model to extract structured values from natural language inputs, given the data model
-- Generate embeddings for semantic fields and store in pgvector
-- Examples: "weekends, 10-20h/week" → structured time and availability data
+- LLM extracts structured values from posting/profile text (skills, time, location, category, team size)
+- Embeddings generated for semantic fields and stored in pgvector
+- Extraction is read-only — a derivation of the text, not a modification of it
 
 ---
