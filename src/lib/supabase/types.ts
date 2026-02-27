@@ -172,6 +172,7 @@ export interface Posting {
   created_at: string;
   updated_at: string;
   expires_at: string;
+  identified_roles: string[] | null;
 }
 
 export interface PostingInsert {
@@ -203,6 +204,7 @@ export interface PostingInsert {
   created_at?: string;
   updated_at?: string;
   expires_at: string;
+  identified_roles?: string[] | null;
 }
 
 export interface PostingUpdate {
@@ -234,6 +236,7 @@ export interface PostingUpdate {
   created_at?: string;
   updated_at?: string;
   expires_at?: string;
+  identified_roles?: string[] | null;
 }
 
 // ============================================
@@ -258,6 +261,12 @@ export interface Match {
   created_at: string;
   responded_at: string | null;
   updated_at: string;
+  // Deep match (LLM-enhanced) fields
+  deep_match_score: number | null;
+  deep_match_explanation: string | null;
+  deep_match_concerns: string | null;
+  deep_match_role: string | null;
+  deep_matched_at: string | null;
 }
 
 export interface MatchInsert {
@@ -271,6 +280,11 @@ export interface MatchInsert {
   created_at?: string;
   responded_at?: string | null;
   updated_at?: string;
+  deep_match_score?: number | null;
+  deep_match_explanation?: string | null;
+  deep_match_concerns?: string | null;
+  deep_match_role?: string | null;
+  deep_matched_at?: string | null;
 }
 
 export interface MatchUpdate {
@@ -284,6 +298,11 @@ export interface MatchUpdate {
   created_at?: string;
   responded_at?: string | null;
   updated_at?: string;
+  deep_match_score?: number | null;
+  deep_match_explanation?: string | null;
+  deep_match_concerns?: string | null;
+  deep_match_role?: string | null;
+  deep_matched_at?: string | null;
 }
 
 // ============================================
@@ -392,4 +411,9 @@ export interface MatchResponse {
   score_breakdown: ScoreBreakdown | null;
   status: Match["status"];
   created_at: string;
+  // Deep match fields
+  deep_match_score: number | null;
+  deep_match_explanation: string | null;
+  deep_match_concerns: string | null;
+  deep_match_role: string | null;
 }
