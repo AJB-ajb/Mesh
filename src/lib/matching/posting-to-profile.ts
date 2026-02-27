@@ -5,13 +5,20 @@
 
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, ScoreBreakdown } from "@/lib/supabase/types";
-import { MATCHING } from "@/lib/constants";
+import { MATCHING, DEEP_MATCH } from "@/lib/constants";
+import {
+  deepMatchCandidates,
+  isDeepMatchAvailable,
+  blendScores,
+  type DeepMatchResult,
+} from "@/lib/matching/deep-match";
 
 export interface PostingToProfileMatch {
   profile: Profile;
   score: number; // 0-1 similarity score
   scoreBreakdown: ScoreBreakdown | null;
   matchId?: string; // If match record already exists
+  deepMatchResult?: DeepMatchResult;
 }
 
 /**
@@ -25,6 +32,7 @@ export interface PostingToProfileMatch {
 export async function matchPostingToProfiles(
   postingId: string,
   limit: number = MATCHING.DEFAULT_RESULT_LIMIT,
+  deepMatch: boolean = false,
 ): Promise<PostingToProfileMatch[]> {
   const supabase = await createClient();
 
@@ -151,6 +159,76 @@ export async function matchPostingToProfiles(
       };
     }),
   );
+
+  // Deep match: run LLM evaluation on top N candidates if requested
+  if (deepMatch && isDeepMatchAvailable()) {
+    const topN = matches.slice(0, DEEP_MATCH.DEFAULT_TOP_N);
+
+    // Fetch posting source text
+    const { data: postingSource } = await supabase
+      .from("postings")
+      .select("title, source_text, description")
+      .eq("id", postingId)
+      .single();
+
+    const postingTitle = postingSource?.title || "";
+    const postingText =
+      postingSource?.source_text || postingSource?.description || "";
+
+    if (postingText) {
+      // Fetch profile source texts
+      const userIds = topN.map((m) => m.profile.user_id);
+      const { data: profileSources } = await supabase
+        .from("profiles")
+        .select("user_id, source_text, bio, headline")
+        .in("user_id", userIds);
+
+      const profileSourceMap = new Map(
+        profileSources?.map((p) => [p.user_id, p]) ?? [],
+      );
+
+      const candidates = topN
+        .map((m) => {
+          const ps = profileSourceMap.get(m.profile.user_id);
+          const profileText = ps?.source_text || ps?.bio || ps?.headline || "";
+          return {
+            profileText,
+            fastFilterScore: m.score,
+            sharedSkills: [] as string[],
+            availabilityOverlap: m.scoreBreakdown?.availability ?? null,
+            distanceKm: null as number | null,
+            semanticScore: m.scoreBreakdown?.semantic ?? null,
+          };
+        })
+        .filter((c) => c.profileText);
+
+      if (candidates.length > 0) {
+        const deepResults = await deepMatchCandidates(
+          postingTitle,
+          postingText,
+          candidates,
+        );
+
+        // Attach deep match results and blend scores
+        let resultIdx = 0;
+        topN.forEach((m) => {
+          if (resultIdx < deepResults.length) {
+            const ps = profileSourceMap.get(m.profile.user_id);
+            const profileText =
+              ps?.source_text || ps?.bio || ps?.headline || "";
+            if (profileText) {
+              m.deepMatchResult = deepResults[resultIdx];
+              m.score = blendScores(m.score, deepResults[resultIdx].score);
+              resultIdx++;
+            }
+          }
+        });
+
+        // Re-sort by blended score
+        matches.sort((a, b) => b.score - a.score);
+      }
+    }
+  }
 
   return matches;
 }
