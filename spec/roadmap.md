@@ -3,7 +3,7 @@
 ## Version & Status
 
 - **Current version**: 0.2.0
-- **Last updated**: 2026-02-18
+- **Last updated**: 2026-02-27
 - **Versioning**: Milestone-based semver (`MAJOR.MINOR.PATCH`). See [Update Protocol](#update-protocol).
 
 ---
@@ -75,7 +75,7 @@
 - [x] Auto-invite next connection on decline
 - [x] Terminology migration: `friend_ask` → sequential invite (`c0a0c96`)
 
-### Invite Redesign (v0.3)
+### Invite Redesign (v0.2)
 
 - [x] `mode` → `visibility` rename (expand-contract migration; `visibility: public | private`)
 - [x] Fix "coerce to single JSON" bug in respond route (`.single()` → `.maybeSingle()` + RLS fix)
@@ -85,67 +85,86 @@
 - [x] Prominent visibility toggle (segmented control with Globe/Lock icons)
 - [x] Updated labels and UX (invite → sequential/parallel sub-modes)
 
+### Navigation & Connections (v0.2)
+
+- [x] Project group chat — group messaging per posting (Project tab), distinct from 1:1 DMs
+- [x] Connections page — split layout: connection list with DMs, pending requests, add/QR/share
+- [x] Connection improvements — QR code, share profile link, connect button, search by name/email
+- [x] Availability input & matching — minute-level windows, quick/detailed mode, overlap scoring. Phases 1–2 of [availability-calendar spec](availability-calendar.md)
+
 ---
 
 ## Milestones
 
-### v0.3 — Navigation Redesign
+> **Direction**: The text-first rewrite ([text_first_rewrite.md](../.prompts/text_first_rewrite.md)) is the primary driver for v0.3+. Milestones are organized around its phases. Where this roadmap and the text-first spec conflict, the text-first spec takes precedence.
 
-Restructure the top-level UI around four primary pages reflecting the posting lifecycle: discover → recruit → coordinate → connect. See [ux.md](ux.md) for full page layouts.
+### v0.3 — Text-First Posting & Navigation
 
-| Feature                     | Issue | Effort       | Description                                                                                                                                                                    |
-| --------------------------- | ----- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Discover page               | —     | Medium       | New `/discover` — single feed merging old Postings (Discover), Matches, Bookmarks. Sorted by match score, saved filter                                                         |
-| My Postings page            | —     | Small-Medium | Refactor `/postings` to flat list of own postings only. Cards show team fill `current / min (max)`, pending actions                                                            |
-| Posting detail tabs         | —     | Medium       | Refactor `/postings/[id]` into Edit · Manage · Project tabs. Manage: applicants, invites (sequential + parallel). Project: group chat, team. Disabled states for inactive tabs |
-| Active page                 | —     | Medium       | New `/active` — list of projects at min team size (created + joined). Cards show unread messages, role, team fill                                                              |
-| [x] Project group chat      | —     | Medium-Large | Group messaging per posting (Project tab). Distinct from 1:1 DMs in Connections                                                                                                |
-| [x] Connections page        | —     | Medium       | New `/connections` — split layout: connection list with DMs, pending requests (collapsible), add/QR/share actions                                                              |
-| Notifications → header bell | —     | Small-Medium | Move notifications out of Inbox page into header bell dropdown. Remove `/inbox` route                                                                                          |
-| Sidebar & routing update    | —     | Small        | Update sidebar nav items, default landing page → Active, remove old routes (dashboard, matches, bookmarks, inbox)                                                              |
-| [x] Connection improvements | —     | Medium       | QR code for connecting, share profile link, connect button on profiles, search by name/email                                                                                   |
-| Remove Dashboard page       | —     | Small        | Remove `/dashboard` route and components                                                                                                                                       |
+Replace the multi-step posting form with a text field. Finish the navigation redesign. See [text_first_rewrite.md](../.prompts/text_first_rewrite.md) §1–5 and [ux.md](ux.md) for page layouts.
 
-### v0.4 — Matching & Filtering
+| Feature                        | Issue | Effort       | Description                                                                                                        |
+| ------------------------------ | ----- | ------------ | ------------------------------------------------------------------------------------------------------------------ |
+| Text-first posting creation    | —     | Large        | Single text field + "Post" button. Instant publish, background LLM extraction of metadata (skills, time, location) |
+| Extracted metadata review      | —     | Medium       | Post-publish card for reviewing/correcting extracted fields. Corrections update metadata, never modify user's text |
+| Markdown rendering (view mode) | #28   | Medium       | Render posting/profile text as markdown. Restricted dialect: bold, lists, headings, inline code, links             |
+| Discover page                  | —     | Medium       | New `/discover` — single feed, sorted by match score, saved filter                                                 |
+| My Postings page               | —     | Small-Medium | Refactor `/postings` to flat list of own postings. Cards show team fill, pending actions                           |
+| Posting detail tabs            | —     | Medium       | `/postings/[id]` → Edit · Manage · Project tabs. Disabled states for inactive tabs                                 |
+| Active page                    | —     | Medium       | New `/active` — active projects (min team reached). Cards show unread messages, role, team fill                    |
+| Notifications → header bell    | —     | Small-Medium | Move notifications to header bell dropdown. Remove `/inbox` route                                                  |
+| Sidebar & routing update       | —     | Small        | Update nav items, default landing → Active, remove old routes (dashboard, matches, bookmarks, inbox)               |
+| Remove Dashboard page          | —     | Small        | Remove `/dashboard` route and components                                                                           |
 
-| Feature                           | Issue | Effort       | Description                                                                                                                                            |
-| --------------------------------- | ----- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Hard filter enforcement           | —     | Medium       | Two-stage matching: hard filters (context, category, skill, location) then soft scoring                                                                |
-| Tree-aware skill filtering        | —     | Medium       | Selecting a parent skill node includes all descendants via recursive CTE (e.g., "Programming" matches Python)                                          |
-| Per-skill matching scoring        | —     | Medium       | Replace averaged `skill_level_min` with per-skill level comparison from `posting_skills` join table                                                    |
-| Drop old skill columns (contract) | —     | Small        | Drop `skills text[]`, `skill_levels jsonb`, `skill_level_min integer` columns (expand phase done — code reads join tables)                             |
-| Existing data migration (skills)  | —     | Medium       | Batch-process existing free-form skills through LLM normalization (pipeline exists at `/api/skills/normalize`, batch run needed)                       |
-| Max distance matching             | #31   | Medium       | Location-based distance as a matching dimension                                                                                                        |
-| [x] Availability input & matching | —     | Medium-Large | Minute-level windows, quick/detailed mode, posting availability, overlap scoring. Phases 1-2 of [availability-calendar spec](availability-calendar.md) |
-| Auto-location detection           | #16   | Small        | Detect user location from IP for matching defaults                                                                                                     |
-| Configurable matching weights     | —     | Small-Medium | Weight sliders on posting creation; stored per posting; passed to scoring                                                                              |
-| Fix 0% match score display        | #46   | Small        | Investigate and fix 0% matches showing as "new match" on dashboard                                                                                     |
+### v0.4 — Smart Input & Profile
 
-### v0.5 — Engagement & Notifications
+Progressive intelligence on the text field + text-first profile creation. See [text_first_rewrite.md](../.prompts/text_first_rewrite.md) §4.
 
-| Feature                    | Issue | Effort | Description                                                                          |
-| -------------------------- | ----- | ------ | ------------------------------------------------------------------------------------ |
-| Email + push notifications | #14   | Large  | Email and push delivery for notifications (in-app notifications already implemented) |
-| Daily digest notifications | —     | Medium | Cron-based email digest of new relevant postings (Resend)                            |
-| Posting images             | #29   | Medium | Upload and display images on postings                                                |
-| Email auth fix (SMTP)      | #37   | Small  | Configure Supabase SMTP for confirmation emails                                      |
+| Feature                  | Issue | Effort       | Description                                                                                         |
+| ------------------------ | ----- | ------------ | --------------------------------------------------------------------------------------------------- |
+| Slash commands           | —     | Medium-Large | `/time`, `/location`, `/skills`, `/template` — structured input that produces text or metadata      |
+| Quick chips              | —     | Medium       | Context-sensitive suggestion chips below text field (mobile-first). Rule-based initially, LLM later |
+| Post-write nudges        | —     | Medium       | LLM suggests missing dimensions after writing (non-blocking, dismissible)                           |
+| Auto-format / auto-clean | —     | Medium       | Text tools: add markdown structure (✨) and correct grammar/spelling (🧹) with diff preview         |
+| Profile text-first       | —     | Medium       | Paste-and-go profile creation + guided prompts for new users. Same text editor as postings          |
+| Mobile keyboard toolbar  | —     | Small        | Quick-access buttons for `/`, `#`, `**`, `-`, `` ` `` above keyboard in markdown fields             |
+| Skill gap filling        | —     | Small-Medium | Prompt to describe skills when viewing postings requiring skills not in user's profile              |
 
-### v0.6 — Channels & Content
+### v0.5 — Deep Matching
 
-| Feature                      | Issue | Effort       | Description                                           |
-| ---------------------------- | ----- | ------------ | ----------------------------------------------------- |
-| Channels for shared contexts | #27   | Medium-Large | Shared posting contexts for hackathons, courses, orgs |
-| Markdown-first interface     | #28   | Medium       | Markdown editing and export for postings              |
+LLM-based Stage 2 matching + skill system refinements. See [text_first_rewrite.md](../.prompts/text_first_rewrite.md) §6 and [matching.md](matching.md).
+
+| Feature                      | Issue | Effort | Description                                                                                       |
+| ---------------------------- | ----- | ------ | ------------------------------------------------------------------------------------------------- |
+| LLM deep match (Stage 2)     | —     | Large  | LLM evaluates top ~10–20 fast-filter candidates using full posting + profile text                 |
+| Multi-role matching          | —     | Medium | LLM identifies distinct roles in a posting, matches candidates per role separately                |
+| Match explanations (premium) | —     | Medium | Human-readable explanation of match quality. Free tier: score only; premium: full explanation     |
+| Hard filter enforcement      | —     | Medium | Two-stage: hard filters (context, category, skill, location) then soft scoring                    |
+| Tree-aware skill filtering   | —     | Medium | Parent skill selection includes all descendants via recursive CTE                                 |
+| Per-skill matching scoring   | —     | Medium | Per-skill level comparison from `posting_skills` join table (replaces averaged `skill_level_min`) |
+| Drop old skill columns       | —     | Small  | Remove `skills text[]`, `skill_levels jsonb`, `skill_level_min integer` after migration verified  |
+| Max distance matching        | #31   | Medium | Location distance as a matching dimension                                                         |
+
+### v0.6 — Engagement & Polish
+
+| Feature                    | Issue | Effort       | Description                                                                                                   |
+| -------------------------- | ----- | ------------ | ------------------------------------------------------------------------------------------------------------- |
+| Email + push notifications | #14   | Large        | Email and push delivery (in-app already implemented)                                                          |
+| Daily digest               | —     | Medium       | Cron-based email digest of new relevant postings (Resend)                                                     |
+| Markdown edit mode         | —     | Medium-Large | WYSIWYG-lite inline markdown rendering while typing (Tiptap or similar). Shared component for all text fields |
+| Auto-translation           | —     | Medium-Large | Posts auto-translated based on user language settings. Communication language as matching criterion           |
+| Template library           | —     | Medium       | Pre-built templates for common posting types, accessible via `/template`                                      |
+| Posting images             | #29   | Medium       | Upload and display images on postings                                                                         |
+| Email auth fix (SMTP)      | #37   | Small        | Configure Supabase SMTP for confirmation emails                                                               |
 
 ### v1.0 — Launch
 
-| Feature                   | Issue | Effort       | Description                                                                                                                                                      |
-| ------------------------- | ----- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Match pre-computation     | #13   | Large        | Background pre-computation for instant match results at scale                                                                                                    |
-| Calendar sync             | #10   | Medium-Large | Google Calendar OAuth + iCal feed sync, busy block overlay, AI extraction, team scheduling. Phases 3-5 of [availability-calendar spec](availability-calendar.md) |
-| Real-time voice upgrade   | —     | Large        | Upgrade from turn-based to streaming (OpenAI Realtime, Gemini Live, or custom)                                                                                   |
-| Auto-generated thumbnails | —     | Small-Medium | Generate posting thumbnails from transcript via Gemini                                                                                                           |
-| Production hardening      | —     | Large        | Performance audit, error monitoring, rate limiting, security review                                                                                              |
+| Feature               | Issue | Effort       | Description                                                                                             |
+| --------------------- | ----- | ------------ | ------------------------------------------------------------------------------------------------------- |
+| Calendar sync         | #10   | Medium-Large | Google Calendar OAuth + iCal sync. Phases 3–5 of [availability-calendar spec](availability-calendar.md) |
+| Channels              | #27   | Medium-Large | Shared posting contexts for hackathons, courses, orgs                                                   |
+| Match pre-computation | #13   | Large        | Background pre-computation for instant match results at scale                                           |
+| LLM cost tiering      | —     | Medium       | Tier models by feature: cheap for chips/format, mid for extraction, high for deep matching              |
+| Production hardening  | —     | Large        | Performance audit, error monitoring, rate limiting, security review                                     |
 
 ---
 
@@ -153,15 +172,15 @@ Restructure the top-level UI around four primary pages reflecting the posting li
 
 These are ideas without a target milestone. They'll be prioritized as the product evolves:
 
-- Posting templates for common categories
+- Auto-location detection (#16) — detect user location from IP for matching defaults
+- Real-time voice upgrade — streaming voice input (OpenAI Realtime, Gemini Live)
+- Auto-generated thumbnails — generate posting thumbnails from text via Gemini
 - Analytics dashboard for posting owners
 - Public posting embed / share links
-- Multi-language support (i18n) — recommended: `next-intl`; start by migrating `src/lib/labels.ts`
 - Mobile app (React Native or PWA enhancement)
-- Improve mic button visibility in textareas (#43)
 - Standardize date formatting across the app (#44)
-- Keep AI Extract reference text visible while typing (#47)
 - Add skeleton/spinner loading states for slow connections (#48)
+- Configurable matching weights — weight sliders per posting (revisit after deep matching)
 
 ---
 

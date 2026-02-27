@@ -381,31 +381,46 @@ The hierarchical inference mentioned in [matching.md](matching.md) ("extrapolate
 
 ---
 
-## UI Changes
+## UI & Input
 
-### Skill Input (Profiles & Postings)
+> Updated for the text-first rewrite. See [text_first_rewrite.md](../.prompts/text_first_rewrite.md) §2, §4.
 
-Replace the free-form comma-separated text input with a **searchable skill picker**:
+### Text-First Skill Input (Primary)
 
+With the text-first approach, skills are primarily **extracted from user text** by the LLM, mapped to the nearest node in the taxonomy. Users write naturally ("I know Python and some ML basics") and the system derives `[{skill: "Python"}, {skill: "Machine Learning", level: "beginner"}]`.
+
+- Extraction runs in the background after posting/profile save
+- Extracted skills shown for optional user correction (review UI)
+- Users can correct skill names and levels without modifying their text
+
+### Skill Picker (Optional Precision)
+
+The searchable skill picker remains available for users who want explicit control:
+
+- Accessible via `/skills` slash command in the text editor
 - Typeahead that searches tree node names and aliases
-- Shows the skill's ancestry as a breadcrumb (Technology → Programming → Python)
-- "Add custom skill" option that triggers LLM auto-adding if no match found
-- Selected skills shown as removable badge pills (existing pattern)
+- Shows skill ancestry as a breadcrumb (Technology → Programming → Python)
+- "Add custom skill" option triggers LLM auto-adding if no match found
+- Selected skills shown as removable badge pills
 
 ### Skill Level Input (Profiles)
 
-Current slider UI stays, but now each slider is attached to a tree node instead of a free-form domain name. Adding a skill via the picker automatically creates a level slider for it.
+Each selected skill gets a level slider (0–10) attached to a tree node. Adding a skill via picker or extraction creates a level slider for it.
 
 ### Posting Skill Requirements
 
-Replace single `skill_level_min` with per-skill level requirements:
+Per-skill level requirements (replaces single `skill_level_min`):
 
 - Each required skill gets an optional level slider
 - "Any level welcome" is the default (null)
 
+### Skill Gap Filling (v0.4)
+
+When a user views a posting requiring a skill not in their profile, the app prompts: "This posting needs ML experience. Describe yours:" — the answer is appended to the profile text and the skill is extracted.
+
 ### Filtering / Browse
 
-- Hierarchical skill filter on the postings page: expandable tree or search within it
+- Hierarchical skill filter on the discover page: expandable tree or search within it
 - Selecting a parent node includes all descendants
 - Can combine with existing NL filter, category chips, etc.
 

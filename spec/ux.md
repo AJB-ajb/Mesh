@@ -4,8 +4,8 @@
 
 1. **Minimal friction** — no required configuration, one-click OAuth, 30-second onboarding (see below)
 2. **Fast, simple, efficient usage**
-   - **Keyboard-first:** forms are navigable and completable via keyboard (Tab, Enter, shortcuts)
-   - **Free-form first:** the default input is a single free-form text or voice field; reference fields and guiding questions are shown alongside as a helpful scaffold, but not required
+   - **Text-first:** the default input is a single text field — write what you want, post it, done. Structure is derived from text, not inputted through forms. See [text_first_rewrite.md](../.prompts/text_first_rewrite.md).
+   - **Keyboard-first:** text fields are navigable and completable via keyboard (Tab, Enter, shortcuts)
 3. **Idea-first** — start from what you want to do, not from building a profile
 4. **Natural language interface** — voice and text input, AI extracts structured data
 5. **Good enough matching** — cover common cases well; better than random, not perfect
@@ -170,4 +170,16 @@ Not a page — lives in the **header bell icon** as a dropdown.
 - **Waitlist**: When a posting is filled, the CTA changes to "Join waitlist" (auto-accept) or "Request to join waitlist" (manual review). Users see their waitlist position. Poster sees waitlisted people in the Manage tab.
 - **Voice input** for posting creation and natural language filtering
 - `[planned]` **AI-generated daily digest** notifications
-- `[planned]` **Markdown-first interface**: Markdown input/output for postings, conversations, and configuration. Copy posting as markdown. Auto-clean/format options. Handoff document export (full context including platform metadata).
+
+### Text-First Input (v0.3+)
+
+The posting and profile input paradigm is shifting from form-first to text-first. See [text_first_rewrite.md](../.prompts/text_first_rewrite.md) for the full spec. Key changes:
+
+- **Primary input is a text field**, not a multi-step form. Write what you want, post it, done.
+- **Structure is derived, not inputted.** LLM extracts metadata (skills, time, location, category) from text in the background after posting.
+- **Posting is instant.** Extraction and matching happen after the posting is live — no gating on LLM processing.
+- **Markdown format.** Postings and profiles are lightweight markdown (bold, lists, headings, inline code, links). Rendered inline while editing, fully rendered when viewing.
+- **Slash commands** (`/time`, `/location`, `/skills`, `/template`) for optional precision — content commands produce text, action commands set metadata.
+- **Quick chips** below the text field for context-sensitive suggestions on mobile.
+- **Text tools**: Auto-format (✨) adds markdown structure, Auto-clean (🧹) corrects grammar/spelling. Both show diffs for approval.
+- **Post-write nudges**: LLM suggests missing dimensions (e.g., "You haven't mentioned **when**"), non-blocking.
