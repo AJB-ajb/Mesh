@@ -1227,6 +1227,52 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
+  // Slash commands
+  // ---------------------------------------------------------------------------
+  slashCommands: {
+    timeDescription: "Add availability / schedule",
+    locationDescription: "Add location",
+    skillsDescription: "Add required skills",
+    templateDescription: "Use a template",
+    // Time picker overlay
+    timePickerTitle: "When are you available?",
+    dayLabels: {
+      mon: "Mon",
+      tue: "Tue",
+      wed: "Wed",
+      thu: "Thu",
+      fri: "Fri",
+      sat: "Sat",
+      sun: "Sun",
+      weekdays: "Weekdays",
+      weekends: "Weekends",
+    } as const,
+    timeOfDay: {
+      morning: "Morning (6am\u201312pm)",
+      afternoon: "Afternoon (12\u20135pm)",
+      evening: "Evening (5\u201310pm)",
+    } as const,
+    customTimeLabel: "Custom time range",
+    insertButton: "Insert",
+    cancelButton: "Cancel",
+    // Location overlay
+    locationTitle: "Where?",
+    locationPlaceholder: "e.g., Berlin, Germany or Remote",
+    // Skills overlay
+    skillsTitle: "What skills are needed?",
+    skillsPlaceholder: "e.g., React, Python, Machine Learning",
+    // Template overlay
+    templateTitle: "Choose a template",
+    templates: {
+      studyGroup: "Study Group",
+      hackathonTeam: "Hackathon Team",
+      sideProject: "Side Project",
+      mentorship: "Mentorship",
+      social: "Social Activity",
+    } as const,
+  },
+
+  // ---------------------------------------------------------------------------
   // Team scheduling (Phase 5)
   // ---------------------------------------------------------------------------
   scheduling: {
