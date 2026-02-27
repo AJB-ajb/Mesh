@@ -11,6 +11,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { labels } from "@/lib/labels";
+import { SkillPicker } from "@/components/skill/skill-picker";
+import { LocationAutocomplete } from "@/components/location/location-autocomplete";
+import type { SelectedPostingSkill } from "@/lib/types/skill";
+import type { GeocodingResult } from "@/lib/geocoding";
 
 // ---------------------------------------------------------------------------
 // Shared overlay props
@@ -240,6 +244,8 @@ export function TimePickerOverlay({ onInsert, onClose }: OverlayProps) {
 
 export function LocationOverlay({ onInsert, onClose }: OverlayProps) {
   const [location, setLocation] = useState("");
+  const [selectedLocation, setSelectedLocation] =
+    useState<GeocodingResult | null>(null);
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -247,17 +253,17 @@ export function LocationOverlay({ onInsert, onClose }: OverlayProps) {
         <DialogHeader>
           <DialogTitle>{labels.slashCommands.locationTitle}</DialogTitle>
         </DialogHeader>
-        <Input
-          autoFocus
+        <LocationAutocomplete
           value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          placeholder={labels.slashCommands.locationPlaceholder}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && location.trim()) {
-              e.preventDefault();
-              onInsert(location.trim());
-            }
+          onChange={(value) => {
+            setLocation(value);
+            setSelectedLocation(null);
           }}
+          onSelect={(result) => {
+            setSelectedLocation(result);
+            setLocation(result.displayName);
+          }}
+          placeholder={labels.slashCommands.locationPlaceholder}
         />
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>
@@ -266,7 +272,9 @@ export function LocationOverlay({ onInsert, onClose }: OverlayProps) {
           <Button
             type="button"
             disabled={!location.trim()}
-            onClick={() => onInsert(location.trim())}
+            onClick={() =>
+              onInsert(selectedLocation?.displayName ?? location.trim())
+            }
           >
             {labels.slashCommands.insertButton}
           </Button>
@@ -281,25 +289,46 @@ export function LocationOverlay({ onInsert, onClose }: OverlayProps) {
 // ---------------------------------------------------------------------------
 
 export function SkillPickerOverlay({ onInsert, onClose }: OverlayProps) {
-  const [skills, setSkills] = useState("");
+  const [selectedSkills, setSelectedSkills] = useState<SelectedPostingSkill[]>(
+    [],
+  );
+
+  const handleAdd = (skill: SelectedPostingSkill) => {
+    setSelectedSkills((prev) => [...prev, skill]);
+  };
+
+  const handleRemove = (skillId: string) => {
+    setSelectedSkills((prev) => prev.filter((s) => s.skillId !== skillId));
+  };
+
+  const handleUpdateLevel = (skillId: string, levelMin: number | null) => {
+    setSelectedSkills((prev) =>
+      prev.map((s) => (s.skillId === skillId ? { ...s, levelMin } : s)),
+    );
+  };
+
+  const serializeSkills = (): string => {
+    const parts = selectedSkills.map((s) =>
+      s.levelMin != null
+        ? labels.slashCommands.skillsMinLevel(s.name, s.levelMin)
+        : labels.slashCommands.skillsAnyLevel(s.name),
+    );
+    return `${labels.slashCommands.skillsPrefix} ${parts.join(", ")}`;
+  };
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{labels.slashCommands.skillsTitle}</DialogTitle>
         </DialogHeader>
-        <Input
-          autoFocus
-          value={skills}
-          onChange={(e) => setSkills(e.target.value)}
+        <SkillPicker
+          mode="posting"
+          selectedSkills={selectedSkills}
+          onAdd={handleAdd}
+          onRemove={handleRemove}
+          onUpdateLevel={handleUpdateLevel}
           placeholder={labels.slashCommands.skillsPlaceholder}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && skills.trim()) {
-              e.preventDefault();
-              onInsert(skills.trim());
-            }
-          }}
         />
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>
@@ -307,8 +336,8 @@ export function SkillPickerOverlay({ onInsert, onClose }: OverlayProps) {
           </Button>
           <Button
             type="button"
-            disabled={!skills.trim()}
-            onClick={() => onInsert(skills.trim())}
+            disabled={selectedSkills.length === 0}
+            onClick={() => onInsert(serializeSkills())}
           >
             {labels.slashCommands.insertButton}
           </Button>
