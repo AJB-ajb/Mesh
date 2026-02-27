@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { SWRProvider } from "@/lib/swr/provider";
 import { FeedbackWidget } from "@/components/feedback/feedback-widget";
 import { Toaster } from "sonner";
+import { ServiceWorkerUpdater } from "@/components/pwa/sw-updater";
 import { labels } from "@/lib/labels";
 import "./globals.css";
 
@@ -94,6 +95,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
+        <ServiceWorkerUpdater />
         <SWRProvider>
           <ThemeProvider>
             {children}
