@@ -5,6 +5,7 @@ import { Users, MessageSquare } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { labels } from "@/lib/labels";
 import type { ActivePosting } from "@/lib/hooks/use-active-postings";
 
@@ -40,9 +41,11 @@ export function ActivePostingCard({ posting }: ActivePostingCardProps) {
               <h3 className="font-semibold truncate" title={posting.title}>
                 {posting.title}
               </h3>
-              <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
-                {posting.description}
-              </p>
+              <MarkdownRenderer
+                content={posting.description ?? ""}
+                clamp={2}
+                className="mt-1 text-muted-foreground"
+              />
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1.5">
               <Badge variant="outline" className="text-xs">
