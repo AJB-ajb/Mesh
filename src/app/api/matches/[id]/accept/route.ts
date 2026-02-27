@@ -81,6 +81,10 @@ export const PATCH = withAuth(async (_req, { user, supabase, params }) => {
     score_breakdown: updatedMatch.score_breakdown,
     status: updatedMatch.status,
     created_at: updatedMatch.created_at,
+    deep_match_score: updatedMatch.deep_match_score ?? null,
+    deep_match_explanation: updatedMatch.deep_match_explanation ?? null,
+    deep_match_concerns: updatedMatch.deep_match_concerns ?? null,
+    deep_match_role: updatedMatch.deep_match_role ?? null,
   };
 
   return apiSuccess({ match: response });

@@ -6,7 +6,13 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Posting, ScoreBreakdown } from "@/lib/supabase/types";
 import { MATCH_SCORE_THRESHOLD } from "@/lib/matching/scoring";
-import { MATCHING } from "@/lib/constants";
+import { MATCHING, DEEP_MATCH } from "@/lib/constants";
+import {
+  deepMatchCandidates,
+  isDeepMatchAvailable,
+  blendScores,
+  type DeepMatchResult,
+} from "@/lib/matching/deep-match";
 
 export interface MatchFilters {
   category?: string;
@@ -20,6 +26,7 @@ export interface ProfileToPostingMatch {
   score: number; // 0-1 similarity score
   scoreBreakdown: ScoreBreakdown | null;
   matchId?: string; // If match record already exists
+  deepMatchResult?: DeepMatchResult;
 }
 
 /**
@@ -35,6 +42,7 @@ export async function matchProfileToPostings(
   userId: string,
   limit: number = MATCHING.DEFAULT_RESULT_LIMIT,
   filters?: MatchFilters,
+  deepMatch: boolean = false,
 ): Promise<ProfileToPostingMatch[]> {
   const supabase = await createClient();
 
@@ -154,6 +162,7 @@ export async function matchProfileToPostings(
       created_at: row.created_at,
       updated_at: row.created_at,
       expires_at: row.expires_at,
+      identified_roles: row.identified_roles ?? null,
     };
 
     const existingMatch = matchMap.get(row.posting_id);
@@ -169,6 +178,80 @@ export async function matchProfileToPostings(
       matchId: existingMatch?.id,
     };
   });
+
+  // Deep match: run LLM evaluation on top N candidates if requested
+  if (deepMatch && isDeepMatchAvailable()) {
+    const topN = matches.slice(0, DEEP_MATCH.DEFAULT_TOP_N);
+
+    // Fetch source texts for posting and profile
+    const postingIds = topN.map((m) => m.posting.id);
+    const { data: postingSources } = await supabase
+      .from("postings")
+      .select("id, source_text, description")
+      .in("id", postingIds);
+    const { data: profileSource } = await supabase
+      .from("profiles")
+      .select("source_text, bio, headline")
+      .eq("user_id", userId)
+      .single();
+
+    const postingSourceMap = new Map(
+      postingSources?.map((p) => [p.id, p]) ?? [],
+    );
+    const profileText =
+      profileSource?.source_text ||
+      profileSource?.bio ||
+      profileSource?.headline ||
+      "";
+
+    if (profileText) {
+      const candidates = topN
+        .map((m) => {
+          const ps = postingSourceMap.get(m.posting.id);
+          const postingText =
+            ps?.source_text || ps?.description || m.posting.description || "";
+          return {
+            postingTitle: m.posting.title,
+            postingText,
+            profileText,
+            fastFilterScore: m.score,
+            sharedSkills: [] as string[],
+            availabilityOverlap: m.scoreBreakdown?.availability ?? null,
+            distanceKm: null as number | null,
+            semanticScore: m.scoreBreakdown?.semantic ?? null,
+          };
+        })
+        .filter((c) => c.postingText);
+
+      if (candidates.length > 0) {
+        const deepResults = await deepMatchCandidates(
+          // Use the first posting title as a placeholder — each candidate
+          // has its own posting context in the prompt
+          candidates[0].postingTitle,
+          candidates[0].postingText,
+          candidates,
+        );
+
+        // Attach deep match results and blend scores
+        let resultIdx = 0;
+        topN.forEach((m) => {
+          if (resultIdx < deepResults.length) {
+            const ps = postingSourceMap.get(m.posting.id);
+            const postingText =
+              ps?.source_text || ps?.description || m.posting.description || "";
+            if (postingText) {
+              m.deepMatchResult = deepResults[resultIdx];
+              m.score = blendScores(m.score, deepResults[resultIdx].score);
+              resultIdx++;
+            }
+          }
+        });
+
+        // Re-sort by blended score
+        matches.sort((a, b) => b.score - a.score);
+      }
+    }
+  }
 
   return matches;
 }
