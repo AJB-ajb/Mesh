@@ -1227,6 +1227,52 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
+  // Slash commands
+  // ---------------------------------------------------------------------------
+  slashCommands: {
+    timeDescription: "Add availability / schedule",
+    locationDescription: "Add location",
+    skillsDescription: "Add required skills",
+    templateDescription: "Use a template",
+    // Time picker overlay
+    timePickerTitle: "When are you available?",
+    dayLabels: {
+      mon: "Mon",
+      tue: "Tue",
+      wed: "Wed",
+      thu: "Thu",
+      fri: "Fri",
+      sat: "Sat",
+      sun: "Sun",
+      weekdays: "Weekdays",
+      weekends: "Weekends",
+    } as const,
+    timeOfDay: {
+      morning: "Morning (6am\u201312pm)",
+      afternoon: "Afternoon (12\u20135pm)",
+      evening: "Evening (5\u201310pm)",
+    } as const,
+    customTimeLabel: "Custom time range",
+    insertButton: "Insert",
+    cancelButton: "Cancel",
+    // Location overlay
+    locationTitle: "Where?",
+    locationPlaceholder: "e.g., Berlin, Germany or Remote",
+    // Skills overlay
+    skillsTitle: "What skills are needed?",
+    skillsPlaceholder: "e.g., React, Python, Machine Learning",
+    // Template overlay
+    templateTitle: "Choose a template",
+    templates: {
+      studyGroup: "Study Group",
+      hackathonTeam: "Hackathon Team",
+      sideProject: "Side Project",
+      mentorship: "Mentorship",
+      social: "Social Activity",
+    } as const,
+  },
+
+  // ---------------------------------------------------------------------------
   // Team scheduling (Phase 5)
   // ---------------------------------------------------------------------------
   scheduling: {
@@ -1250,6 +1296,150 @@ export const labels = {
     exportIcs: "Download .ics",
     respondedCount: (n: number, total: number) => `${n} of ${total} responded`,
     dragToSelectHint: "Drag on the calendar to select a meeting time.",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Profile text-first
+  // ---------------------------------------------------------------------------
+  profileTextFirst: {
+    textPlaceholder:
+      "I'm a backend developer with 3 years of Python experience, looking to learn React and find project partners...",
+    saveButton: "Save Profile",
+    savingButton: "Saving...",
+    editDetailsToggle: "Edit details manually",
+    editDetailsHint: "Fine-tune individual fields",
+    extractionReviewTitle: "We extracted these details from your text",
+    extractionReviewDescription:
+      "Review and accept the fields below, or dismiss to keep your current profile.",
+    acceptAll: "Accept All",
+    dismiss: "Dismiss",
+    retry: "Retry",
+    errorExtraction: "Failed to extract profile details. Try again?",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Guided prompts (new user onboarding)
+  // ---------------------------------------------------------------------------
+  guidedPrompts: {
+    title: "Let's build your profile",
+    subtitle: "Answer a few questions and we'll create your profile for you.",
+    step1Question: "What are you good at?",
+    step1Placeholder:
+      "e.g., I've been doing Python backend development for 3 years, comfortable with Django and FastAPI...",
+    step2Question: "What do you want to learn or work on?",
+    step2Placeholder:
+      "e.g., I want to learn React and build full-stack apps. Also interested in AI/ML projects...",
+    step3Question: "Describe a recent project or collaboration",
+    step3Placeholder:
+      "e.g., Last month I built a REST API for a student hackathon project with two friends...",
+    nextButton: "Next",
+    backButton: "Back",
+    reviewButton: "Review",
+    reviewTitle: "Here's your profile draft",
+    reviewDescription: "Edit anything you'd like, then save.",
+    saveButton: "Save Profile",
+    skipButton: "Skip for now",
+    stepIndicator: (current: number, total: number) => `${current} of ${total}`,
+    aboutMeHeading: "About Me",
+    interestsHeading: "Interests & Goals",
+    projectsHeading: "Recent Projects",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Markdown toolbar (mobile)
+  // ---------------------------------------------------------------------------
+  markdownToolbar: {
+    slashCommand: "/",
+    heading: "#",
+    bold: "B",
+    list: "-",
+    code: "`",
+    slashTooltip: "Slash command",
+    headingTooltip: "Heading",
+    boldTooltip: "Bold",
+    listTooltip: "List item",
+    codeTooltip: "Code",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Skill gap prompt
+  // ---------------------------------------------------------------------------
+  skillGap: {
+    title: (skills: string[]) => {
+      if (skills.length === 1)
+        return `This posting needs **${skills[0]}** experience`;
+      if (skills.length === 2)
+        return `This posting needs **${skills[0]}** and **${skills[1]}** experience`;
+      return `This posting needs **${skills[0]}**, **${skills[1]}**, and ${skills.length - 2} more skill${skills.length - 2 !== 1 ? "s" : ""}`;
+    },
+    description: "Describe your experience to improve your match.",
+    placeholder:
+      "e.g., I've been learning Machine Learning through online courses and built a simple image classifier...",
+    addToProfile: "Add to Profile",
+    adding: "Adding...",
+    success: "Skills added to your profile!",
+    dismissAriaLabel: "Dismiss skill gap prompt",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Text tools (auto-format, auto-clean)
+  // ---------------------------------------------------------------------------
+  textTools: {
+    formatButton: "Auto-format",
+    formatTooltip: "Add markdown structure (headings, bullets, bold)",
+    cleanButton: "Auto-clean",
+    cleanTooltip: "Fix grammar, spelling, and punctuation",
+    formatTitle: "Auto-format preview",
+    cleanTitle: "Auto-clean preview",
+    originalLabel: "Original",
+    proposedLabel: "Proposed",
+    acceptButton: "Accept",
+    cancelButton: "Cancel",
+    formatting: "Formatting...",
+    cleaning: "Cleaning...",
+    errorFormat: "Failed to format text. Please try again.",
+    errorClean: "Failed to clean text. Please try again.",
+    noChanges: "No changes needed — your text looks good!",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Suggestion chips
+  // ---------------------------------------------------------------------------
+  suggestions: {
+    time: {
+      weekdayEvenings: "weekday evenings",
+      flexibleSchedule: "flexible schedule",
+      weekendsOnly: "weekends only",
+      fewHoursPerWeek: "a few hours per week",
+    } as const,
+    location: {
+      remote: "remote",
+      inPerson: "in-person",
+      flexibleLocation: "flexible location",
+    } as const,
+    teamSize: {
+      onePerson: "looking for 1 person",
+      smallTeam: "small team (2-3)",
+      openSize: "open to any size",
+    } as const,
+    level: {
+      beginnerFriendly: "beginner-friendly",
+      intermediate: "intermediate level",
+      anyExperience: "any experience level",
+    } as const,
+    dismissAriaLabel: "Dismiss suggestions",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Post-write nudges
+  // ---------------------------------------------------------------------------
+  nudges: {
+    timeMessage: "You haven\u2019t mentioned when \u2014 add timing?",
+    locationMessage: "No location mentioned \u2014 add where?",
+    skillsMessage: "Consider mentioning specific skills needed.",
+    teamSizeMessage: "How many people are you looking for?",
+    levelMessage: "What experience level works best?",
+    dismissAriaLabel: "Dismiss nudge",
   },
 
   // ---------------------------------------------------------------------------
