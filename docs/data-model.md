@@ -195,6 +195,7 @@ Project listings created by users seeking collaborators.
 | `max_distance_km`           | integer | YES      | null       | Hard filter for in-person distance                                       |
 | `natural_language_criteria` | text    | YES      | null       | Free-form matching criteria                                              |
 | `identified_roles`          | jsonb   | YES      | null       | LLM-identified distinct roles needed by the posting (string array)       |
+| `hidden_details`            | text    | YES      | null       | Private text revealed only to accepted team members                      |
 
 ---
 

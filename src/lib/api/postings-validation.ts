@@ -32,6 +32,7 @@ export interface PostingBody {
     end_minutes: number;
   }[];
   sourceText?: string;
+  hiddenDetails?: string;
 }
 
 /**
@@ -99,6 +100,10 @@ export function buildPostingDbRow(body: PostingBody, mode: "create" | "edit") {
     availability_mode: body.availabilityMode || "flexible",
     timezone: body.timezone || null,
   };
+
+  if (body.hiddenDetails !== undefined) {
+    row.hidden_details = body.hiddenDetails?.trim() || null;
+  }
 
   if (mode === "edit") {
     row.status = body.status || undefined;

@@ -37,6 +37,7 @@ export type PostingDetail = {
   source_text?: string | null;
   previous_source_text?: string | null;
   previous_posting_snapshot?: Record<string, unknown> | null;
+  hidden_details?: string | null;
   selectedPostingSkills?: SelectedPostingSkill[];
   profiles?: {
     full_name: string | null;
