@@ -33,6 +33,8 @@ export type PostingFormState = {
   specificWindows: SpecificWindow[];
   /** Skills selected from the skill tree (new normalized model) */
   selectedSkills: SelectedPostingSkill[];
+  /** Private details revealed only to accepted team members */
+  hiddenDetails: string;
 };
 
 // Default expiry: 90 days from now
@@ -98,4 +100,5 @@ export const defaultPostingFormState: PostingFormState = {
   availabilityWindows: [],
   specificWindows: [],
   selectedSkills: [],
+  hiddenDetails: "",
 };
