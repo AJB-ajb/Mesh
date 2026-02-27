@@ -159,6 +159,14 @@ export const labels = {
     errorInvalidData: (msg: string) => `Invalid posting data: ${msg}`,
     errorWithReason: (msg: string) => `Failed to create posting: ${msg}`,
     errorGeneric: "Failed to create posting. Please try again.",
+
+    // Text-first posting
+    textPlaceholder:
+      "Describe what you're looking for...\n\nExample: Looking for 2 people to practice Spanish conversation twice a week. I'm intermediate level and want to improve my fluency.",
+    postButton: "Post",
+    editDetailsToggle: "Edit details manually",
+    editDetailsHint:
+      "Fine-tune category, skills, team size, and other settings.",
   },
 
   // ---------------------------------------------------------------------------
