@@ -115,3 +115,15 @@ export const AI = {
   TOP_P: 0.95,
   MAX_OUTPUT_TOKENS: 200,
 } as const;
+
+/** Deep match (LLM-enhanced matching) constants */
+export const DEEP_MATCH = {
+  /** Weight for fast-filter score in blended score */
+  FAST_FILTER_WEIGHT: 0.4,
+  /** Weight for deep-match score in blended score */
+  DEEP_MATCH_WEIGHT: 0.6,
+  /** Default number of top candidates to deep-match */
+  DEFAULT_TOP_N: 10,
+  /** Default concurrency limit for parallel deep-match calls */
+  DEFAULT_CONCURRENCY: 5,
+} as const;
