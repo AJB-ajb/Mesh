@@ -278,6 +278,27 @@ User-submitted feedback (bugs, suggestions, irritations). Write-once — no `upd
 
 ---
 
+### templates
+
+Posting templates for quick-start content creation.
+
+| Field         | Type        | Nullable | Default           | Description                          |
+| ------------- | ----------- | -------- | ----------------- | ------------------------------------ |
+| `id`          | uuid        | NO       | gen_random_uuid() | Primary key                          |
+| `title`       | text        | NO       | -                 | Template name shown in overlay       |
+| `description` | text        | YES      | null              | Short description of the template    |
+| `content`     | text        | NO       | -                 | Full template text inserted on click |
+| `category`    | text        | YES      | 'general'         | Template category for grouping       |
+| `sort_order`  | integer     | YES      | 0                 | Display order in the overlay         |
+| `is_active`   | boolean     | YES      | true              | Soft delete / deactivation flag      |
+| `created_at`  | timestamptz | YES      | now()             | Record creation timestamp            |
+
+**RLS Policies:**
+
+- Authenticated users can read active templates
+
+---
+
 ## JSONB Structures
 
 ### availability_slots (profiles)
