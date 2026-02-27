@@ -43,6 +43,7 @@ export default function NewPostingPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [hiddenDetails, setHiddenDetails] = useState("");
   const [textareaFocused, setTextareaFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
@@ -153,6 +154,7 @@ export default function NewPostingPage() {
           ...form,
           description: trimmed,
           sourceText: trimmed,
+          hiddenDetails: hiddenDetails.trim() || undefined,
         }),
       });
 
@@ -170,7 +172,7 @@ export default function NewPostingPage() {
       setIsSaving(false);
       setError(labels.postingCreation.errorGeneric);
     }
-  }, [text, form, router]);
+  }, [text, form, hiddenDetails, router]);
 
   // Compose keydown: slash commands first, then Cmd+Enter shortcut
   const handleKeyDown = useCallback(
@@ -210,9 +212,7 @@ export default function NewPostingPage() {
     [text],
   );
 
-  const visibleNudges = nudges.filter(
-    (n) => !dismissedNudges.has(n.dimension),
-  );
+  const visibleNudges = nudges.filter((n) => !dismissedNudges.has(n.dimension));
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -350,7 +350,7 @@ export default function NewPostingPage() {
         </button>
 
         {showDetails && (
-          <div className="mt-4">
+          <div className="mt-4 space-y-6">
             <PostingFormCard
               form={form}
               setForm={setForm}
@@ -364,6 +364,27 @@ export default function NewPostingPage() {
               hideSubmitButton
               hideDescription
             />
+
+            {/* Hidden details textarea */}
+            <div className="space-y-2">
+              <label
+                htmlFor="hidden-details"
+                className="text-sm font-medium leading-none"
+              >
+                {labels.hiddenDetails.fieldLabel}
+              </label>
+              <textarea
+                id="hidden-details"
+                value={hiddenDetails}
+                onChange={(e) => setHiddenDetails(e.target.value)}
+                placeholder={labels.hiddenDetails.fieldPlaceholder}
+                rows={3}
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+              />
+              <p className="text-xs text-muted-foreground">
+                {labels.hiddenDetails.fieldHelp}
+              </p>
+            </div>
           </div>
         )}
       </div>

@@ -63,6 +63,7 @@ const baseForm: PostingFormState = {
   availabilityWindows: [],
   specificWindows: [],
   selectedSkills: [],
+  hiddenDetails: "",
 };
 
 describe("PostingAboutCard", () => {
