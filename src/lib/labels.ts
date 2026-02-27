@@ -1176,4 +1176,25 @@ export const labels = {
     respondedCount: (n: number, total: number) => `${n} of ${total} responded`,
     dragToSelectHint: "Drag on the calendar to select a meeting time.",
   },
+
+  // ---------------------------------------------------------------------------
+  // Text tools (auto-format, auto-clean)
+  // ---------------------------------------------------------------------------
+  textTools: {
+    formatButton: "Auto-format",
+    formatTooltip: "Add markdown structure (headings, bullets, bold)",
+    cleanButton: "Auto-clean",
+    cleanTooltip: "Fix grammar, spelling, and punctuation",
+    formatTitle: "Auto-format preview",
+    cleanTitle: "Auto-clean preview",
+    originalLabel: "Original",
+    proposedLabel: "Proposed",
+    acceptButton: "Accept",
+    cancelButton: "Cancel",
+    formatting: "Formatting...",
+    cleaning: "Cleaning...",
+    errorFormat: "Failed to format text. Please try again.",
+    errorClean: "Failed to clean text. Please try again.",
+    noChanges: "No changes needed — your text looks good!",
+  },
 } as const;
