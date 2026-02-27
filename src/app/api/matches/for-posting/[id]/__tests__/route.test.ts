@@ -117,6 +117,10 @@ describe("GET /api/matches/for-posting/[id]", () => {
     expect(body.matches).toHaveLength(1);
     expect(body.matches[0].id).toBe("m1");
     expect(body.matches[0].score).toBe(0.9);
-    expect(mockMatchPostingToProfiles).toHaveBeenCalledWith("posting-1", 10);
+    expect(mockMatchPostingToProfiles).toHaveBeenCalledWith(
+      "posting-1",
+      10,
+      false,
+    );
   });
 });
