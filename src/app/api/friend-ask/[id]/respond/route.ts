@@ -1,10 +1,6 @@
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, apiSuccess, parseBody } from "@/lib/errors";
-import {
-  type NotificationPreferences,
-  shouldNotify,
-} from "@/lib/notifications/preferences";
-import { sendNotification } from "@/lib/notifications/create";
+import { notifyIfPreferred } from "@/lib/api/notify-if-preferred";
+import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 
 /**
  * POST /api/friend-ask/[id]/respond
@@ -20,7 +16,11 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
   const { action } = await parseBody<{ action?: string }>(req);
 
   if (!action || !["accept", "decline"].includes(action)) {
-    return apiError("VALIDATION", "action must be 'accept' or 'decline'", 400);
+    throw new AppError(
+      "VALIDATION",
+      "action must be 'accept' or 'decline'",
+      400,
+    );
   }
 
   const { data: friendAsk, error: fetchError } = await supabase
@@ -30,11 +30,11 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     .single();
 
   if (fetchError || !friendAsk) {
-    return apiError("NOT_FOUND", "Invite not found", 404);
+    throw new AppError("NOT_FOUND", "Invite not found", 404);
   }
 
   if (friendAsk.status !== "pending") {
-    return apiError(
+    throw new AppError(
       "VALIDATION",
       `Cannot respond: invite status is ${friendAsk.status}`,
       400,
@@ -49,7 +49,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     const currentFriendId =
       friendAsk.ordered_friend_list[friendAsk.current_request_index];
     if (user.id !== currentFriendId) {
-      return apiError(
+      throw new AppError(
         "FORBIDDEN",
         "You are not the currently-invited connection",
         403,
@@ -60,7 +60,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     const isInList = friendAsk.ordered_friend_list.includes(user.id);
     const hasDeclined = (friendAsk.declined_list ?? []).includes(user.id);
     if (!isInList || hasDeclined) {
-      return apiError(
+      throw new AppError(
         "FORBIDDEN",
         "You are not eligible to respond to this invite",
         403,
@@ -86,61 +86,33 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
   const postingTitle = posting?.title || "a posting";
 
   // Helper: notify the creator
-  const notifyCreator = async (title: string, body: string) => {
-    const { data: creatorProfile } = await supabase
-      .from("profiles")
-      .select("notification_preferences")
-      .eq("user_id", friendAsk.creator_id)
-      .single();
-
-    const creatorPrefs =
-      creatorProfile?.notification_preferences as NotificationPreferences | null;
-
-    if (shouldNotify(creatorPrefs, "sequential_invite", "in_app")) {
-      sendNotification(
-        {
-          userId: friendAsk.creator_id,
-          type: "sequential_invite",
-          title,
-          body,
-          relatedPostingId: friendAsk.posting_id,
-          relatedUserId: user.id,
-        },
-        supabase,
-      );
-    }
+  const notifyCreator = (title: string, body: string) => {
+    notifyIfPreferred(supabase, friendAsk.creator_id, "sequential_invite", {
+      userId: friendAsk.creator_id,
+      type: "sequential_invite",
+      title,
+      body,
+      relatedPostingId: friendAsk.posting_id,
+      relatedUserId: user.id,
+    });
   };
 
   // Helper: send invite notification to a connection
   const notifyFriend = async (friendId: string) => {
-    const { data: recipientProfile } = await supabase
+    const { data: creatorName } = await supabase
       .from("profiles")
-      .select("notification_preferences")
-      .eq("user_id", friendId)
+      .select("full_name")
+      .eq("user_id", friendAsk.creator_id)
       .single();
 
-    const recipientPrefs =
-      recipientProfile?.notification_preferences as NotificationPreferences | null;
-
-    if (shouldNotify(recipientPrefs, "sequential_invite", "in_app")) {
-      const { data: creatorName } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("user_id", friendAsk.creator_id)
-        .single();
-
-      sendNotification(
-        {
-          userId: friendId,
-          type: "sequential_invite",
-          title: "Invite Received",
-          body: `${creatorName?.full_name || "Someone"} wants you to join "${postingTitle}"`,
-          relatedPostingId: friendAsk.posting_id,
-          relatedUserId: friendAsk.creator_id,
-        },
-        supabase,
-      );
-    }
+    notifyIfPreferred(supabase, friendId, "sequential_invite", {
+      userId: friendId,
+      type: "sequential_invite",
+      title: "Invite Received",
+      body: `${creatorName?.full_name || "Someone"} wants you to join "${postingTitle}"`,
+      relatedPostingId: friendAsk.posting_id,
+      relatedUserId: friendAsk.creator_id,
+    });
   };
 
   // =========================================================================
@@ -157,11 +129,15 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
         .select()
         .maybeSingle();
 
-      if (error) return apiError("INTERNAL", error.message, 500);
+      if (error) throw new AppError("INTERNAL", error.message, 500);
       if (!data)
-        return apiError("NOT_FOUND", "Failed to read back updated invite", 404);
+        throw new AppError(
+          "NOT_FOUND",
+          "Failed to read back updated invite",
+          404,
+        );
 
-      await notifyCreator(
+      notifyCreator(
         "Invite Accepted!",
         `${responderName} has joined "${postingTitle}"`,
       );
@@ -180,11 +156,15 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       .select()
       .maybeSingle();
 
-    if (error) return apiError("INTERNAL", error.message, 500);
+    if (error) throw new AppError("INTERNAL", error.message, 500);
     if (!data)
-      return apiError("NOT_FOUND", "Failed to read back updated invite", 404);
+      throw new AppError(
+        "NOT_FOUND",
+        "Failed to read back updated invite",
+        404,
+      );
 
-    await notifyCreator(
+    notifyCreator(
       "Invite Accepted!",
       `${responderName} has joined "${postingTitle}"`,
     );
@@ -200,7 +180,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
   // =========================================================================
 
   // Notify the creator about the decline
-  await notifyCreator(
+  notifyCreator(
     "Invite Declined",
     `${responderName} declined the invite for "${postingTitle}"`,
   );
@@ -218,13 +198,18 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
         .select()
         .maybeSingle();
 
-      if (error) return apiError("INTERNAL", error.message, 500);
+      if (error) throw new AppError("INTERNAL", error.message, 500);
       if (!data)
-        return apiError("NOT_FOUND", "Failed to read back updated invite", 404);
+        throw new AppError(
+          "NOT_FOUND",
+          "Failed to read back updated invite",
+          404,
+        );
 
       return apiSuccess({
         friend_ask: data,
-        message: "Declined. All connections have responded — invite completed.",
+        message:
+          "Declined. All connections have responded — invite completed.",
       });
     }
 
@@ -235,9 +220,13 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       .select()
       .maybeSingle();
 
-    if (error) return apiError("INTERNAL", error.message, 500);
+    if (error) throw new AppError("INTERNAL", error.message, 500);
     if (!data)
-      return apiError("NOT_FOUND", "Failed to read back updated invite", 404);
+      throw new AppError(
+        "NOT_FOUND",
+        "Failed to read back updated invite",
+        404,
+      );
 
     return apiSuccess({
       friend_ask: data,
@@ -257,9 +246,13 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       .select()
       .maybeSingle();
 
-    if (error) return apiError("INTERNAL", error.message, 500);
+    if (error) throw new AppError("INTERNAL", error.message, 500);
     if (!data)
-      return apiError("NOT_FOUND", "Failed to read back updated invite", 404);
+      throw new AppError(
+        "NOT_FOUND",
+        "Failed to read back updated invite",
+        404,
+      );
 
     return apiSuccess({
       friend_ask: data,
@@ -276,9 +269,13 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     .select()
     .maybeSingle();
 
-  if (error) return apiError("INTERNAL", error.message, 500);
+  if (error) throw new AppError("INTERNAL", error.message, 500);
   if (!data)
-    return apiError("NOT_FOUND", "Failed to read back updated invite", 404);
+    throw new AppError(
+      "NOT_FOUND",
+      "Failed to read back updated invite",
+      404,
+    );
 
   // Auto-send invite to the next connection
   const nextFriendId = friendAsk.ordered_friend_list[nextIndex];

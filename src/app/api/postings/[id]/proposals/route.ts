@@ -1,5 +1,6 @@
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, apiSuccess, parseBody } from "@/lib/errors";
+import { verifyPostingOwnership } from "@/lib/api/ownership";
+import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import { SCHEDULING } from "@/lib/constants";
 
 /** GET: List proposals with responses for a posting */
@@ -13,7 +14,7 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
   });
 
   if (!isMember) {
-    return apiError("FORBIDDEN", "Not a team member", 403);
+    throw new AppError("FORBIDDEN", "Not a team member", 403);
   }
 
   const { data: proposals, error } = await supabase
@@ -29,7 +30,7 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
     .order("created_at", { ascending: false });
 
   if (error) {
-    return apiError("INTERNAL", error.message, 500);
+    throw new AppError("INTERNAL", error.message, 500);
   }
 
   return apiSuccess({ proposals: proposals ?? [] });
@@ -39,20 +40,8 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
 export const POST = withAuth(async (req, { user, supabase, params }) => {
   const postingId = params.id;
 
-  // Check if user is posting owner
-  const { data: posting } = await supabase
-    .from("postings")
-    .select("creator_id")
-    .eq("id", postingId)
-    .single();
-
-  if (!posting || posting.creator_id !== user.id) {
-    return apiError(
-      "FORBIDDEN",
-      "Only the posting owner can propose meetings",
-      403,
-    );
-  }
+  // Verify user is posting owner
+  await verifyPostingOwnership(supabase, postingId, user.id);
 
   const { title, startTime, endTime } = await parseBody<{
     title?: string;
@@ -61,18 +50,18 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
   }>(req);
 
   if (!startTime || !endTime) {
-    return apiError("VALIDATION", "startTime and endTime are required", 400);
+    throw new AppError("VALIDATION", "startTime and endTime are required", 400);
   }
 
   const start = new Date(startTime);
   const end = new Date(endTime);
 
   if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-    return apiError("VALIDATION", "Invalid date format", 400);
+    throw new AppError("VALIDATION", "Invalid date format", 400);
   }
 
   if (end <= start) {
-    return apiError("VALIDATION", "endTime must be after startTime", 400);
+    throw new AppError("VALIDATION", "endTime must be after startTime", 400);
   }
 
   // Check proposal count limit
@@ -83,7 +72,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     .in("status", ["proposed", "confirmed"]);
 
   if ((count ?? 0) >= SCHEDULING.MAX_PROPOSALS_PER_POSTING) {
-    return apiError(
+    throw new AppError(
       "VALIDATION",
       `Maximum of ${SCHEDULING.MAX_PROPOSALS_PER_POSTING} active proposals per posting`,
       400,
@@ -103,7 +92,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     .single();
 
   if (error) {
-    return apiError("INTERNAL", error.message, 500);
+    throw new AppError("INTERNAL", error.message, 500);
   }
 
   return apiSuccess({ proposal }, 201);
