@@ -21,6 +21,14 @@ import {
 } from "@/components/shared/nudge-banner";
 import { usePostingSuggestions } from "@/lib/hooks/use-posting-suggestions";
 import { useMobileKeyboard } from "@/lib/hooks/use-mobile-keyboard";
+import { useSlashCommands } from "@/lib/hooks/use-slash-commands";
+import { SlashCommandMenu } from "@/components/shared/slash-command-menu";
+import {
+  TimePickerOverlay,
+  LocationOverlay,
+  SkillPickerOverlay,
+  TemplateOverlay,
+} from "@/components/shared/slash-command-overlays";
 import type { PostingFormState } from "@/components/posting/posting-form-card";
 
 /** Minimum text length before fetching nudges from the API. */
@@ -39,6 +47,12 @@ export default function NewPostingPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
   const { keyboardVisible } = useMobileKeyboard();
+
+  const slash = useSlashCommands({
+    textareaRef,
+    value: text,
+    onChange: setText,
+  });
 
   // Auto-resize textarea
   useEffect(() => {
@@ -158,15 +172,18 @@ export default function NewPostingPage() {
     }
   }, [text, form, router]);
 
-  // Cmd/Ctrl+Enter shortcut
+  // Compose keydown: slash commands first, then Cmd+Enter shortcut
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      slash.onKeyDown(e);
+      if (e.defaultPrevented) return;
+
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();
         handleSubmit();
       }
     },
-    [handleSubmit],
+    [slash, handleSubmit],
   );
 
   const handleFormChange = (field: keyof PostingFormState, value: string) => {
@@ -233,6 +250,7 @@ export default function NewPostingPage() {
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
+        onInput={slash.checkForSlashCommand}
         onFocus={() => setTextareaFocused(true)}
         onBlur={() => setTextareaFocused(false)}
         placeholder={labels.postingCreation.textPlaceholder}
@@ -240,6 +258,46 @@ export default function NewPostingPage() {
         className="flex w-full rounded-lg border border-input bg-background px-4 py-3 text-lg leading-relaxed ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
         autoFocus
       />
+
+      {/* Slash command menu */}
+      {slash.menuOpen && slash.menuPosition && (
+        <SlashCommandMenu
+          commands={slash.filteredCommands}
+          selectedIndex={slash.selectedIndex}
+          position={slash.menuPosition}
+          onSelect={slash.onSelect}
+          onClose={() => slash.closeOverlay()}
+        />
+      )}
+
+      {/* Slash command overlays */}
+      {slash.activeOverlay === "time" && (
+        <TimePickerOverlay
+          onInsert={slash.handleOverlayResult}
+          onClose={slash.closeOverlay}
+        />
+      )}
+      {slash.activeOverlay === "location" && (
+        <LocationOverlay
+          onInsert={slash.handleOverlayResult}
+          onClose={slash.closeOverlay}
+        />
+      )}
+      {slash.activeOverlay === "skills" && (
+        <SkillPickerOverlay
+          onInsert={slash.handleOverlayResult}
+          onClose={slash.closeOverlay}
+        />
+      )}
+      {slash.activeOverlay === "template" && (
+        <TemplateOverlay
+          onInsert={(templateText) => {
+            setText(templateText);
+            slash.closeOverlay();
+          }}
+          onClose={slash.closeOverlay}
+        />
+      )}
 
       {/* Suggestion chips */}
       {!chipsDismissed && (
