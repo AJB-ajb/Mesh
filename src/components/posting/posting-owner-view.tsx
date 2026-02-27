@@ -1,128 +1,27 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { labels } from "@/lib/labels";
-import type {
-  PostingDetail,
-  Application,
-  MatchedProfile,
-} from "@/lib/hooks/use-posting-detail";
-import type { PostingFormState } from "@/lib/types/posting";
-import type { ScoreBreakdown } from "@/lib/supabase/types";
-import type { ExtractedPosting } from "@/lib/types/posting";
-import type { SaveStatus } from "@/lib/hooks/use-auto-save";
 import { useExtractionReview } from "@/lib/hooks/use-extraction-review";
+import { usePostingDetailContext } from "./posting-detail-context";
 import { PostingDetailHeader } from "./posting-detail-header";
 import { ExtractionReviewCard } from "./extraction-review-card";
 import { PostingEditTab } from "./posting-edit-tab";
 import { PostingManageTab } from "./posting-manage-tab";
 import { PostingActivityTab } from "./posting-activity-tab";
 
-type PostingOwnerViewProps = {
-  posting: PostingDetail;
-  postingId: string;
-  isOwner: boolean;
-  currentUserId: string | null;
-  currentUserName: string | null;
-  matchBreakdown: ScoreBreakdown | null;
-  // Edit state (always-editable)
-  isDeleting: boolean;
-  isExtending: boolean;
-  isReposting: boolean;
-  form: PostingFormState;
-  onFormChange: (field: keyof PostingFormState, value: string) => void;
-  onDelete: () => void;
-  onExtendDeadline: (days: number) => void;
-  onRepost: () => void;
-  saveStatus: SaveStatus;
-  // Apply state (for header)
-  hasApplied: boolean;
-  myApplication: Application | null;
-  waitlistPosition: number | null;
-  showApplyForm: boolean;
-  coverMessage: string;
-  isApplying: boolean;
-  onShowApplyForm: () => void;
-  onHideApplyForm: () => void;
-  onCoverMessageChange: (value: string) => void;
-  onApply: () => void;
-  onWithdraw: () => void;
-  error: string | null;
-  // Tab content
-  effectiveApplications: Application[];
-  matchedProfiles: MatchedProfile[];
-  isLoading: boolean;
-  isUpdatingApplication: string | null;
-  onUpdateStatus: (
-    applicationId: string,
-    newStatus: "accepted" | "rejected",
-  ) => Promise<void>;
-  onStartConversation: (otherUserId: string) => Promise<void>;
-  onContactCreator: () => void;
-  // AI update
-  isApplyingUpdate: boolean;
-  onApplyUpdate: (
-    updatedText: string,
-    extracted: ExtractedPosting,
-  ) => Promise<void>;
-  // Tab state
-  activeTab: string;
-  onTabChange: (tab: string) => void;
-  projectEnabled: boolean;
-  extractionPending?: boolean;
-  sourceText?: string;
-  backHref: string;
-  backLabel: string;
-};
+export function PostingOwnerView() {
+  const { posting, postingId, activeTab, onTabChange, projectEnabled } =
+    usePostingDetailContext();
 
-export function PostingOwnerView({
-  posting,
-  postingId,
-  isOwner,
-  currentUserId,
-  currentUserName,
-  matchBreakdown,
-  isDeleting,
-  isExtending,
-  isReposting,
-  form,
-  onFormChange,
-  onDelete,
-  onExtendDeadline,
-  onRepost,
-  saveStatus,
-  hasApplied,
-  myApplication,
-  waitlistPosition,
-  showApplyForm,
-  coverMessage,
-  isApplying,
-  onShowApplyForm,
-  onHideApplyForm,
-  onCoverMessageChange,
-  onApply,
-  onWithdraw,
-  error,
-  effectiveApplications,
-  matchedProfiles,
-  isLoading,
-  isUpdatingApplication,
-  onUpdateStatus,
-  onStartConversation,
-  onContactCreator,
-  isApplyingUpdate,
-  onApplyUpdate,
-  activeTab,
-  onTabChange,
-  projectEnabled,
-  extractionPending,
-  sourceText,
-  backHref,
-  backLabel,
-}: PostingOwnerViewProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Extraction review (triggered by ?extraction=pending from text-first creation)
+  const extractionPending = searchParams.get("extraction") === "pending";
+  const sourceText = posting.source_text ?? posting.description;
 
   const extraction = useExtractionReview({
     postingId,
@@ -132,35 +31,7 @@ export function PostingOwnerView({
 
   return (
     <div className="space-y-6">
-      <PostingDetailHeader
-        posting={posting}
-        isOwner={isOwner}
-        matchBreakdown={matchBreakdown}
-        isDeleting={isDeleting}
-        isExtending={isExtending}
-        isReposting={isReposting}
-        editTitle={form.title}
-        onEditTitleChange={(value) => onFormChange("title", value)}
-        onDelete={onDelete}
-        onExtendDeadline={onExtendDeadline}
-        onRepost={onRepost}
-        saveStatus={saveStatus}
-        hasApplied={hasApplied}
-        myApplication={myApplication}
-        waitlistPosition={waitlistPosition}
-        showApplyForm={showApplyForm}
-        coverMessage={coverMessage}
-        isApplying={isApplying}
-        onShowApplyForm={onShowApplyForm}
-        onHideApplyForm={onHideApplyForm}
-        onCoverMessageChange={onCoverMessageChange}
-        onApply={onApply}
-        onWithdraw={onWithdraw}
-        error={error}
-        hideApplySection={false}
-        backHref={backHref}
-        backLabel={backLabel}
-      />
+      <PostingDetailHeader />
 
       {/* Extraction review card (after text-first creation) */}
       <ExtractionReviewCard
@@ -198,46 +69,15 @@ export function PostingOwnerView({
         </TabsList>
 
         <TabsContent value="edit">
-          <PostingEditTab
-            posting={posting}
-            postingId={postingId}
-            isOwner={isOwner}
-            form={form}
-            onFormChange={onFormChange}
-            onContactCreator={onContactCreator}
-            isApplyingUpdate={isApplyingUpdate}
-            onApplyUpdate={onApplyUpdate}
-          />
+          <PostingEditTab />
         </TabsContent>
 
         <TabsContent value="manage">
-          <PostingManageTab
-            posting={posting}
-            postingId={postingId}
-            isOwner={isOwner}
-            currentUserId={currentUserId}
-            applications={effectiveApplications}
-            matchedProfiles={matchedProfiles}
-            isLoading={isLoading}
-            isUpdatingApplication={isUpdatingApplication}
-            onUpdateStatus={onUpdateStatus}
-            onStartConversation={onStartConversation}
-            onContactCreator={onContactCreator}
-          />
+          <PostingManageTab />
         </TabsContent>
 
         <TabsContent value="project">
-          <PostingActivityTab
-            posting={posting}
-            postingId={postingId}
-            isOwner={isOwner}
-            currentUserId={currentUserId}
-            currentUserName={currentUserName}
-            applications={effectiveApplications}
-            form={form}
-            onFormChange={onFormChange}
-            onContactCreator={onContactCreator}
-          />
+          <PostingActivityTab />
         </TabsContent>
       </Tabs>
     </div>
