@@ -1,28 +1,15 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Textarea } from "@/components/ui/textarea";
-import { labels } from "@/lib/labels";
+import { ChevronDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { labels } from "@/lib/labels";
 import { Logo } from "@/components/layout/logo";
-import { NlInputPanel } from "@/components/shared/nl-input-panel";
+import { GuidedPrompts } from "@/components/profile/guided-prompts";
 import { createClient } from "@/lib/supabase/client";
-import {
-  type ProfileFormState,
-  defaultFormState,
-  mapExtractedToFormState,
-  type ExtractedProfileV2,
-} from "@/lib/types/profile";
+import { type ProfileFormState, defaultFormState } from "@/lib/types/profile";
 
 function DeveloperOnboardingContent() {
   const router = useRouter();
@@ -31,9 +18,11 @@ function DeveloperOnboardingContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [aiText, setAiText] = useState("");
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [extractionSuccess, setExtractionSuccess] = useState(false);
+  const [text, setText] = useState("");
+  const [hasExistingData, setHasExistingData] = useState(false);
+  const [showGuidedPrompts, setShowGuidedPrompts] = useState(true);
+  const [showDetails, setShowDetails] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const next = useMemo(() => {
     const value = searchParams.get("next") ?? "";
@@ -54,7 +43,7 @@ function DeveloperOnboardingContent() {
         const { data, error } = await supabase
           .from("profiles")
           .select(
-            "full_name, headline, bio, location, skills, interests, languages, portfolio_url, github_url",
+            "full_name, headline, bio, location, skills, interests, languages, portfolio_url, github_url, source_text",
           )
           .eq("user_id", user.id)
           .maybeSingle();
@@ -64,6 +53,27 @@ function DeveloperOnboardingContent() {
         }
 
         if (data) {
+          const hasData =
+            !!data.full_name ||
+            !!data.headline ||
+            !!data.bio ||
+            !!data.source_text ||
+            (Array.isArray(data.skills) && data.skills.length > 0);
+
+          queueMicrotask(() => {
+            setHasExistingData(hasData);
+          });
+
+          if (hasData) {
+            queueMicrotask(() => {
+              setShowGuidedPrompts(false);
+            });
+          }
+
+          if (data.source_text) {
+            setText(data.source_text);
+          }
+
           setForm((prev) => ({
             ...prev,
             fullName: data.full_name ?? "",
@@ -90,53 +100,28 @@ function DeveloperOnboardingContent() {
       });
   }, [router]);
 
-  const handleChange = (field: keyof ProfileFormState, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+  // Auto-resize textarea
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.max(el.scrollHeight, 200)}px`;
+  }, [text]);
+
+  const handleGuidedComplete = (assembledText: string) => {
+    setText(assembledText);
+    setShowGuidedPrompts(false);
   };
 
-  const handleAiExtract = async () => {
-    if (!aiText.trim()) {
-      setError(labels.onboarding.errorEmptyText);
-      return;
-    }
-
-    setError(null);
-    setIsExtracting(true);
-    setExtractionSuccess(false);
-
-    try {
-      const response = await fetch("/api/extract/profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: aiText }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error?.message ?? data.error ?? "Failed to extract profile",
-        );
-      }
-
-      const extracted: ExtractedProfileV2 = data.profile;
-      setForm((prev) => mapExtractedToFormState(extracted, prev));
-
-      setExtractionSuccess(true);
-      setTimeout(() => {
-        setExtractionSuccess(false);
-      }, 1500);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to extract profile",
-      );
-    } finally {
-      setIsExtracting(false);
-    }
+  const handleSkip = () => {
+    const destination = next || "/active";
+    router.replace(destination);
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = async () => {
+    const trimmedText = text.trim();
+    if (!trimmedText) return;
+
     setError(null);
     setIsSaving(true);
 
@@ -144,7 +129,11 @@ function DeveloperOnboardingContent() {
       const res = await fetch("/api/profiles/onboard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          bio: form.bio || trimmedText,
+          sourceText: trimmedText,
+        }),
       });
 
       if (!res.ok) {
@@ -154,11 +143,19 @@ function DeveloperOnboardingContent() {
         return;
       }
 
-      const destination = next || "/active";
-      router.replace(destination);
+      setIsSaving(false);
+      router.replace(`/profile?extraction=pending`);
     } catch {
       setError(labels.onboarding.errorSaveFailed);
       setIsSaving(false);
+    }
+  };
+
+  // Cmd/Ctrl+Enter shortcut
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      e.preventDefault();
+      handleSubmit();
     }
   };
 
@@ -172,6 +169,8 @@ function DeveloperOnboardingContent() {
     );
   }
 
+  const showBlankSlate = !hasExistingData && !text && showGuidedPrompts;
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="flex h-16 items-center justify-between border-b border-border/50 px-6 lg:px-8">
@@ -179,192 +178,192 @@ function DeveloperOnboardingContent() {
       </header>
 
       <main className="flex flex-1 items-center justify-center px-6 py-12 lg:px-8">
-        <form onSubmit={handleSubmit} className="w-full max-w-3xl space-y-6">
-          <div className="text-center">
-            <h1 className="text-3xl font-semibold">
-              {labels.onboarding.pageTitle}
-            </h1>
-            <p className="mt-2 text-muted-foreground">
-              {labels.onboarding.pageSubtitle}
-            </p>
-          </div>
-
-          {error ? (
+        <div className="w-full max-w-3xl space-y-6">
+          {error && (
             <p className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {error}
             </p>
-          ) : null}
+          )}
 
-          {/* NL input — always visible on top */}
-          <NlInputPanel
-            nlText={aiText}
-            onNlTextChange={setAiText}
-            isExtracting={isExtracting}
-            extractionSuccess={extractionSuccess}
-            onExtract={handleAiExtract}
-            variant="profile"
-          />
-
-          {/* Form — always visible below */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{labels.onboarding.generalInfoTitle}</CardTitle>
-              <CardDescription>
-                {labels.onboarding.generalInfoDescription}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label htmlFor="fullName" className="text-sm font-medium">
-                    {labels.onboarding.fullNameLabel}
-                  </label>
-                  <Input
-                    id="fullName"
-                    value={form.fullName}
-                    onChange={(event) =>
-                      handleChange("fullName", event.target.value)
-                    }
-                    placeholder={labels.onboarding.fullNamePlaceholder}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="headline" className="text-sm font-medium">
-                    {labels.onboarding.headlineLabel}
-                  </label>
-                  <Input
-                    id="headline"
-                    value={form.headline}
-                    onChange={(event) =>
-                      handleChange("headline", event.target.value)
-                    }
-                    placeholder={labels.onboarding.headlinePlaceholder}
-                  />
-                </div>
+          {showBlankSlate ? (
+            <GuidedPrompts
+              onComplete={handleGuidedComplete}
+              onSkip={handleSkip}
+            />
+          ) : (
+            <>
+              <div className="text-center">
+                <h1 className="text-3xl font-semibold">
+                  {labels.onboarding.pageTitle}
+                </h1>
+                <p className="mt-2 text-muted-foreground">
+                  {labels.onboarding.pageSubtitle}
+                </p>
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="bio" className="text-sm font-medium">
-                  {labels.onboarding.bioLabel}
-                </label>
-                <Textarea
-                  id="bio"
-                  rows={4}
-                  value={form.bio}
-                  onChange={(event) => handleChange("bio", event.target.value)}
-                  placeholder={labels.onboarding.bioPlaceholder}
-                  enableMic
-                  onTranscriptionChange={(text) =>
-                    handleChange("bio", form.bio ? form.bio + " " + text : text)
-                  }
-                />
+              {/* Hero textarea */}
+              <textarea
+                ref={textareaRef}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={labels.profileTextFirst.textPlaceholder}
+                rows={8}
+                className="flex w-full rounded-lg border border-input bg-background px-4 py-3 text-lg leading-relaxed ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+                autoFocus
+              />
+
+              {/* Save button */}
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!text.trim() || isSaving}
+                  size="lg"
+                >
+                  {isSaving
+                    ? labels.profileTextFirst.savingButton
+                    : labels.profileTextFirst.saveButton}
+                </Button>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label htmlFor="location" className="text-sm font-medium">
-                    {labels.onboarding.locationLabel}
-                  </label>
-                  <Input
-                    id="location"
-                    value={form.location}
-                    onChange={(event) =>
-                      handleChange("location", event.target.value)
-                    }
-                    placeholder={labels.onboarding.locationPlaceholder}
+              {/* Collapsible edit details */}
+              <div className="border-t pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowDetails(!showDetails)}
+                  className="flex w-full items-center justify-between text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <div>
+                    <span className="font-medium">
+                      {labels.profileTextFirst.editDetailsToggle}
+                    </span>
+                    <span className="ml-2 text-xs">
+                      {labels.profileTextFirst.editDetailsHint}
+                    </span>
+                  </div>
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform ${showDetails ? "rotate-180" : ""}`}
                   />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="languages" className="text-sm font-medium">
-                    {labels.onboarding.languagesLabel}
-                  </label>
-                  <Input
-                    id="languages"
-                    value={form.languages}
-                    onChange={(event) =>
-                      handleChange("languages", event.target.value)
-                    }
-                    placeholder={labels.onboarding.languagesPlaceholder}
-                  />
-                </div>
+                </button>
+
+                {showDetails && (
+                  <div className="mt-4 space-y-4">
+                    <OnboardingFormFields form={form} setForm={setForm} />
+                  </div>
+                )}
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label htmlFor="skills" className="text-sm font-medium">
-                    {labels.onboarding.skillsLabel}
-                  </label>
-                  <Input
-                    id="skills"
-                    value={form.skills}
-                    onChange={(event) =>
-                      handleChange("skills", event.target.value)
-                    }
-                    placeholder={labels.onboarding.skillsPlaceholder}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="interests" className="text-sm font-medium">
-                    {labels.onboarding.interestsLabel}
-                  </label>
-                  <Input
-                    id="interests"
-                    value={form.interests}
-                    onChange={(event) =>
-                      handleChange("interests", event.target.value)
-                    }
-                    placeholder={labels.onboarding.interestsPlaceholder}
-                  />
-                </div>
+              {/* Skip button */}
+              <div className="flex justify-center">
+                <Button type="button" variant="ghost" onClick={handleSkip}>
+                  {labels.onboarding.skipButton}
+                </Button>
               </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label htmlFor="portfolioUrl" className="text-sm font-medium">
-                    {labels.onboarding.portfolioLabel}
-                  </label>
-                  <Input
-                    id="portfolioUrl"
-                    value={form.portfolioUrl}
-                    onChange={(event) =>
-                      handleChange("portfolioUrl", event.target.value)
-                    }
-                    placeholder={labels.onboarding.portfolioPlaceholder}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="githubUrl" className="text-sm font-medium">
-                    {labels.onboarding.githubLabel}
-                  </label>
-                  <Input
-                    id="githubUrl"
-                    value={form.githubUrl}
-                    onChange={(event) =>
-                      handleChange("githubUrl", event.target.value)
-                    }
-                    placeholder={labels.onboarding.githubPlaceholder}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <Button type="submit" disabled={isSaving || isExtracting}>
-              {isSaving
-                ? labels.onboarding.savingButton
-                : labels.onboarding.saveButton}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.replace(next || "/active")}
-            >
-              {labels.onboarding.skipButton}
-            </Button>
-          </div>
-        </form>
+            </>
+          )}
+        </div>
       </main>
+    </div>
+  );
+}
+
+/**
+ * Lightweight inline form fields for the collapsible "Edit details" section.
+ * Avoids importing ProfileForm (which requires location/availability hooks).
+ */
+function OnboardingFormFields({
+  form,
+  setForm,
+}: {
+  form: ProfileFormState;
+  setForm: React.Dispatch<React.SetStateAction<ProfileFormState>>;
+}) {
+  const handleChange = (field: keyof ProfileFormState, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <label htmlFor="fullName" className="text-sm font-medium">
+            {labels.onboarding.fullNameLabel}
+          </label>
+          <input
+            id="fullName"
+            value={form.fullName}
+            onChange={(e) => handleChange("fullName", e.target.value)}
+            placeholder={labels.onboarding.fullNamePlaceholder}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          />
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="headline" className="text-sm font-medium">
+            {labels.onboarding.headlineLabel}
+          </label>
+          <input
+            id="headline"
+            value={form.headline}
+            onChange={(e) => handleChange("headline", e.target.value)}
+            placeholder={labels.onboarding.headlinePlaceholder}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <label htmlFor="location" className="text-sm font-medium">
+            {labels.onboarding.locationLabel}
+          </label>
+          <input
+            id="location"
+            value={form.location}
+            onChange={(e) => handleChange("location", e.target.value)}
+            placeholder={labels.onboarding.locationPlaceholder}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          />
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="languages" className="text-sm font-medium">
+            {labels.onboarding.languagesLabel}
+          </label>
+          <input
+            id="languages"
+            value={form.languages}
+            onChange={(e) => handleChange("languages", e.target.value)}
+            placeholder={labels.onboarding.languagesPlaceholder}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <label htmlFor="skills" className="text-sm font-medium">
+            {labels.onboarding.skillsLabel}
+          </label>
+          <input
+            id="skills"
+            value={form.skills}
+            onChange={(e) => handleChange("skills", e.target.value)}
+            placeholder={labels.onboarding.skillsPlaceholder}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          />
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="interests" className="text-sm font-medium">
+            {labels.onboarding.interestsLabel}
+          </label>
+          <input
+            id="interests"
+            value={form.interests}
+            onChange={(e) => handleChange("interests", e.target.value)}
+            placeholder={labels.onboarding.interestsPlaceholder}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          />
+        </div>
+      </div>
     </div>
   );
 }

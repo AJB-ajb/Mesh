@@ -1253,6 +1253,53 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
+  // Profile text-first
+  // ---------------------------------------------------------------------------
+  profileTextFirst: {
+    textPlaceholder:
+      "I'm a backend developer with 3 years of Python experience, looking to learn React and find project partners...",
+    saveButton: "Save Profile",
+    savingButton: "Saving...",
+    editDetailsToggle: "Edit details manually",
+    editDetailsHint: "Fine-tune individual fields",
+    extractionReviewTitle: "We extracted these details from your text",
+    extractionReviewDescription:
+      "Review and accept the fields below, or dismiss to keep your current profile.",
+    acceptAll: "Accept All",
+    dismiss: "Dismiss",
+    retry: "Retry",
+    errorExtraction: "Failed to extract profile details. Try again?",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Guided prompts (new user onboarding)
+  // ---------------------------------------------------------------------------
+  guidedPrompts: {
+    title: "Let's build your profile",
+    subtitle: "Answer a few questions and we'll create your profile for you.",
+    step1Question: "What are you good at?",
+    step1Placeholder:
+      "e.g., I've been doing Python backend development for 3 years, comfortable with Django and FastAPI...",
+    step2Question: "What do you want to learn or work on?",
+    step2Placeholder:
+      "e.g., I want to learn React and build full-stack apps. Also interested in AI/ML projects...",
+    step3Question: "Describe a recent project or collaboration",
+    step3Placeholder:
+      "e.g., Last month I built a REST API for a student hackathon project with two friends...",
+    nextButton: "Next",
+    backButton: "Back",
+    reviewButton: "Review",
+    reviewTitle: "Here's your profile draft",
+    reviewDescription: "Edit anything you'd like, then save.",
+    saveButton: "Save Profile",
+    skipButton: "Skip for now",
+    stepIndicator: (current: number, total: number) => `${current} of ${total}`,
+    aboutMeHeading: "About Me",
+    interestsHeading: "Interests & Goals",
+    projectsHeading: "Recent Projects",
+  },
+
+  // ---------------------------------------------------------------------------
   // Toast notifications
   // ---------------------------------------------------------------------------
   toasts: {
