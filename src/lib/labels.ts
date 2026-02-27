@@ -1261,6 +1261,10 @@ export const labels = {
     // Skills overlay
     skillsTitle: "What skills are needed?",
     skillsPlaceholder: "e.g., React, Python, Machine Learning",
+    skillsPrefix: "Skills:",
+    skillsMinLevel: (name: string, level: number) =>
+      `${name} (min: ${level}/10)`,
+    skillsAnyLevel: (name: string) => `${name} (any level)`,
     // Template overlay
     templateTitle: "Choose a template",
     templates: {
