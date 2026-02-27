@@ -1300,6 +1300,42 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
+  // Markdown toolbar (mobile)
+  // ---------------------------------------------------------------------------
+  markdownToolbar: {
+    slashCommand: "/",
+    heading: "#",
+    bold: "B",
+    list: "-",
+    code: "`",
+    slashTooltip: "Slash command",
+    headingTooltip: "Heading",
+    boldTooltip: "Bold",
+    listTooltip: "List item",
+    codeTooltip: "Code",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Skill gap prompt
+  // ---------------------------------------------------------------------------
+  skillGap: {
+    title: (skills: string[]) => {
+      if (skills.length === 1)
+        return `This posting needs **${skills[0]}** experience`;
+      if (skills.length === 2)
+        return `This posting needs **${skills[0]}** and **${skills[1]}** experience`;
+      return `This posting needs **${skills[0]}**, **${skills[1]}**, and ${skills.length - 2} more skill${skills.length - 2 !== 1 ? "s" : ""}`;
+    },
+    description: "Describe your experience to improve your match.",
+    placeholder:
+      "e.g., I've been learning Machine Learning through online courses and built a simple image classifier...",
+    addToProfile: "Add to Profile",
+    adding: "Adding...",
+    success: "Skills added to your profile!",
+    dismissAriaLabel: "Dismiss skill gap prompt",
+  },
+
+  // ---------------------------------------------------------------------------
   // Toast notifications
   // ---------------------------------------------------------------------------
   toasts: {

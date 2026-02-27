@@ -11,6 +11,8 @@ import {
   PostingFormCard,
   defaultFormState,
 } from "@/components/posting/posting-form-card";
+import { MarkdownToolbar } from "@/components/shared/markdown-toolbar";
+import { useMobileKeyboard } from "@/lib/hooks/use-mobile-keyboard";
 import type { PostingFormState } from "@/components/posting/posting-form-card";
 
 export default function NewPostingPage() {
@@ -20,8 +22,10 @@ export default function NewPostingPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [textareaFocused, setTextareaFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
+  const { keyboardVisible } = useMobileKeyboard();
 
   // Auto-resize textarea
   useEffect(() => {
@@ -128,6 +132,8 @@ export default function NewPostingPage() {
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
+        onFocus={() => setTextareaFocused(true)}
+        onBlur={() => setTextareaFocused(false)}
         placeholder={labels.postingCreation.textPlaceholder}
         rows={8}
         className="flex w-full rounded-lg border border-input bg-background px-4 py-3 text-lg leading-relaxed ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
@@ -183,6 +189,13 @@ export default function NewPostingPage() {
           </div>
         )}
       </div>
+
+      {/* Mobile markdown toolbar */}
+      <MarkdownToolbar
+        textareaRef={textareaRef}
+        onChange={setText}
+        visible={keyboardVisible && textareaFocused}
+      />
     </div>
   );
 }
