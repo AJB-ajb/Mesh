@@ -136,7 +136,7 @@ describe("TextTools", () => {
     });
   });
 
-  it("opens diff modal on format success", async () => {
+  it("calls onTextChange directly on format success", async () => {
     mockFetch().mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ formatted: "## Hello\n\nWorld" }),
@@ -148,12 +148,10 @@ describe("TextTools", () => {
       fireEvent.click(screen.getByLabelText("Auto-format"));
     });
 
-    await waitFor(() => {
-      expect(screen.getByText("Auto-format preview")).toBeInTheDocument();
-    });
+    expect(onTextChange).toHaveBeenCalledWith("## Hello\n\nWorld");
   });
 
-  it("opens diff modal on clean success", async () => {
+  it("calls onTextChange directly on clean success", async () => {
     mockFetch().mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ cleaned: "Hello world." }),
@@ -165,29 +163,70 @@ describe("TextTools", () => {
       fireEvent.click(screen.getByLabelText("Auto-clean"));
     });
 
-    await waitFor(() => {
-      expect(screen.getByText("Auto-clean preview")).toBeInTheDocument();
-    });
+    expect(onTextChange).toHaveBeenCalledWith("Hello world.");
   });
 
-  it("calls onTextChange with proposed text on accept", async () => {
+  it("shows Undo button after format success", async () => {
     mockFetch().mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({ formatted: "## Formatted text" }),
+      json: () => Promise.resolve({ formatted: "## Formatted" }),
     });
 
-    render(<TextTools text="Formatted text" onTextChange={onTextChange} />);
+    render(<TextTools text="Original" onTextChange={onTextChange} />);
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText("Auto-format"));
     });
 
-    await waitFor(() => {
-      expect(screen.getByText("Auto-format preview")).toBeInTheDocument();
+    expect(screen.getByLabelText("Undo")).toBeInTheDocument();
+    expect(screen.getByText("Formatted!")).toBeInTheDocument();
+  });
+
+  it("calls onTextChange with original text when Undo is clicked", async () => {
+    mockFetch().mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ formatted: "## Formatted" }),
     });
 
-    fireEvent.click(screen.getByText("Accept"));
-    expect(onTextChange).toHaveBeenCalledWith("## Formatted text");
+    render(<TextTools text="Original text" onTextChange={onTextChange} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText("Auto-format"));
+    });
+
+    // Reset mock to track only the undo call
+    onTextChange.mockClear();
+
+    fireEvent.click(screen.getByLabelText("Undo"));
+
+    expect(onTextChange).toHaveBeenCalledWith("Original text");
+    expect(screen.queryByLabelText("Undo")).not.toBeInTheDocument();
+  });
+
+  it("hides Undo button after timeout", async () => {
+    vi.useFakeTimers();
+
+    mockFetch().mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ formatted: "## Formatted" }),
+    });
+
+    render(<TextTools text="Original" onTextChange={onTextChange} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText("Auto-format"));
+    });
+
+    expect(screen.getByLabelText("Undo")).toBeInTheDocument();
+
+    // Advance past the 8s undo timeout
+    act(() => {
+      vi.advanceTimersByTime(8_000);
+    });
+
+    expect(screen.queryByLabelText("Undo")).not.toBeInTheDocument();
+
+    vi.useRealTimers();
   });
 
   it("shows no-changes message when text is identical", async () => {
