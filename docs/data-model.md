@@ -193,6 +193,7 @@ Project listings created by users seeking collaborators.
 | `location_lng`              | double  | YES      | null       | Longitude                                                                |
 | `max_distance_km`           | integer | YES      | null       | Hard filter for in-person distance                                       |
 | `natural_language_criteria` | text    | YES      | null       | Free-form matching criteria                                              |
+| `identified_roles`          | jsonb   | YES      | null       | LLM-identified distinct roles needed by the posting (string array)       |
 
 ---
 
@@ -224,18 +225,23 @@ Sequential or parallel invite sequences. A friend_ask tracks inviting connection
 
 Matches between users and projects, including scores and status.
 
-| Field              | Type        | Nullable | Default           | Description                                  |
-| ------------------ | ----------- | -------- | ----------------- | -------------------------------------------- |
-| `id`               | uuid        | NO       | gen_random_uuid() | Primary key                                  |
-| `project_id`       | uuid        | NO       | -                 | References `projects.id`                     |
-| `user_id`          | uuid        | NO       | -                 | References `profiles.user_id`                |
-| `similarity_score` | float       | NO       | -                 | Overall match score (0-1)                    |
-| `explanation`      | text        | YES      | null              | Human-readable match explanation             |
-| `score_breakdown`  | jsonb       | YES      | null              | See JSONB structure below                    |
-| `status`           | text        | NO       | 'pending'         | One of: pending, applied, accepted, declined |
-| `created_at`       | timestamptz | NO       | now()             | Record creation timestamp                    |
-| `responded_at`     | timestamptz | YES      | null              | When user/owner responded                    |
-| `updated_at`       | timestamptz | NO       | now()             | Last update timestamp (auto-updated)         |
+| Field                    | Type        | Nullable | Default           | Description                                  |
+| ------------------------ | ----------- | -------- | ----------------- | -------------------------------------------- |
+| `id`                     | uuid        | NO       | gen_random_uuid() | Primary key                                  |
+| `project_id`             | uuid        | NO       | -                 | References `projects.id`                     |
+| `user_id`                | uuid        | NO       | -                 | References `profiles.user_id`                |
+| `similarity_score`       | float       | NO       | -                 | Overall match score (0-1)                    |
+| `explanation`            | text        | YES      | null              | Human-readable match explanation             |
+| `score_breakdown`        | jsonb       | YES      | null              | See JSONB structure below                    |
+| `status`                 | text        | NO       | 'pending'         | One of: pending, applied, accepted, declined |
+| `created_at`             | timestamptz | NO       | now()             | Record creation timestamp                    |
+| `responded_at`           | timestamptz | YES      | null              | When user/owner responded                    |
+| `updated_at`             | timestamptz | NO       | now()             | Last update timestamp (auto-updated)         |
+| `deep_match_score`       | float       | YES      | null              | LLM deep match score (0-1)                   |
+| `deep_match_explanation` | text        | YES      | null              | LLM explanation of match quality             |
+| `deep_match_concerns`    | text        | YES      | null              | LLM-identified concerns or gaps              |
+| `deep_match_role`        | text        | YES      | null              | Best-matched role for the candidate          |
+| `deep_matched_at`        | timestamptz | YES      | null              | When the deep match was performed            |
 
 **Constraints:**
 
