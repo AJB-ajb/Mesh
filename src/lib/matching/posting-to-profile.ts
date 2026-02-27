@@ -100,31 +100,44 @@ export async function matchPostingToProfiles(
 
   const matchMap = new Map(existingMatches?.map((m) => [m.user_id, m]) || []);
 
-  // Compute all breakdowns in a single batch RPC call for users without cached breakdowns
-  const usersNeedingBreakdown = userIds.filter(
-    (id: string) => !matchMap.get(id)?.score_breakdown,
-  );
-  const breakdownMap = new Map<string, ScoreBreakdown>();
+  // Determine which users need a fresh breakdown computed
+  const usersNeedingBreakdown: string[] = [];
+  const cachedBreakdowns = new Map<string, ScoreBreakdown>();
 
-  if (usersNeedingBreakdown.length > 0) {
-    // compute_match_breakdowns_batch takes posting_ids, but we need per-user breakdowns.
-    // Since each user needs a breakdown against the same posting, we call individually
-    // but in parallel with Promise.all (the batch RPC is keyed by posting, not user).
-    const breakdownPromises = usersNeedingBreakdown.map(async (uid: string) => {
-      const { data: breakdown, error: breakdownError } = await supabase.rpc(
-        "compute_match_breakdown",
-        { profile_user_id: uid, target_posting_id: postingId },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const row of data as any[]) {
+    const existingMatch = matchMap.get(row.user_id);
+    if (existingMatch?.score_breakdown) {
+      cachedBreakdowns.set(
+        row.user_id,
+        existingMatch.score_breakdown as ScoreBreakdown,
       );
-      if (!breakdownError && breakdown) {
-        breakdownMap.set(uid, breakdown as ScoreBreakdown);
-      }
-    });
-    await Promise.all(breakdownPromises);
+    } else {
+      usersNeedingBreakdown.push(row.user_id);
+    }
   }
 
-  // Transform results into match objects
+  // Batch-compute breakdowns for all users that need one (single RPC call)
+  const batchBreakdowns = new Map<string, ScoreBreakdown>();
+  if (usersNeedingBreakdown.length > 0) {
+    const { data: batchData, error: batchError } = await supabase.rpc(
+      "compute_match_breakdowns_for_posting",
+      {
+        target_posting_id: postingId,
+        user_ids: usersNeedingBreakdown,
+      },
+    );
+
+    if (!batchError && batchData) {
+      for (const row of batchData as { user_id: string; breakdown: ScoreBreakdown }[]) {
+        batchBreakdowns.set(row.user_id, row.breakdown);
+      }
+    }
+  }
+
+  // Transform results into match objects using pre-computed breakdowns
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const matches: PostingToProfileMatch[] = data.map((row: any) => {
+  const matches: PostingToProfileMatch[] = (data as any[]).map((row: any) => {
     const profile: Profile = {
       user_id: row.user_id,
       full_name: row.full_name,
@@ -139,22 +152,21 @@ export async function matchPostingToProfiles(
       github_url: null,
       location_preference: row.location_preference ?? null,
       location_mode: row.location_mode ?? null,
-      availability_slots: null,
+      availability_slots: row.availability_slots || null,
       source_text: null,
       previous_source_text: null,
       previous_profile_snapshot: null,
       embedding: null,
       timezone: null,
       notification_preferences: null,
-      tier: "free",
       created_at: "",
       updated_at: "",
     };
 
     const existingMatch = matchMap.get(row.user_id);
-    const scoreBreakdown: ScoreBreakdown | null =
-      (existingMatch?.score_breakdown as ScoreBreakdown) ??
-      breakdownMap.get(row.user_id) ??
+    const scoreBreakdown =
+      cachedBreakdowns.get(row.user_id) ??
+      batchBreakdowns.get(row.user_id) ??
       null;
 
     return {
@@ -182,11 +194,11 @@ export async function matchPostingToProfiles(
 
     if (postingText) {
       // Fetch profile source texts
-      const userIds = topN.map((m) => m.profile.user_id);
+      const deepUserIds = topN.map((m) => m.profile.user_id);
       const { data: profileSources } = await supabase
         .from("profiles")
         .select("user_id, source_text, bio, headline")
-        .in("user_id", userIds);
+        .in("user_id", deepUserIds);
 
       const profileSourceMap = new Map(
         profileSources?.map((p) => [p.user_id, p]) ?? [],
