@@ -538,6 +538,7 @@ describe("createMatchRecordsForPosting", () => {
           embedding: null,
           timezone: null,
           notification_preferences: null,
+          tier: "free",
 
           created_at: "",
           updated_at: "",
