@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Sparkles, Eraser, Loader2 } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Sparkles, Eraser, Loader2, Undo2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { TextDiffModal } from "@/components/shared/text-diff-modal";
 import { labels } from "@/lib/labels";
 
 // ---------------------------------------------------------------------------
@@ -17,12 +16,11 @@ export interface TextToolsProps {
   disabled?: boolean;
 }
 
-interface DiffModalState {
-  open: boolean;
-  original: string;
-  proposed: string;
-  title: string;
-}
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const UNDO_TIMEOUT_MS = 8_000;
 
 // ---------------------------------------------------------------------------
 // Component
@@ -32,13 +30,35 @@ export function TextTools({ text, onTextChange, disabled }: TextToolsProps) {
   const [isFormatting, setIsFormatting] = useState(false);
   const [isCleaning, setIsCleaning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [diffModal, setDiffModal] = useState<DiffModalState | null>(null);
+  const [previousText, setPreviousText] = useState<string | null>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isBusy = isFormatting || isCleaning;
   const isEmpty = !text.trim();
 
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (undoTimeoutRef.current) {
+        clearTimeout(undoTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const startUndoTimer = () => {
+    if (undoTimeoutRef.current) {
+      clearTimeout(undoTimeoutRef.current);
+    }
+    undoTimeoutRef.current = setTimeout(() => {
+      setPreviousText(null);
+      setFeedbackMessage(null);
+    }, UNDO_TIMEOUT_MS);
+  };
+
   const handleFormat = async () => {
     setError(null);
+    setFeedbackMessage(null);
     setIsFormatting(true);
 
     try {
@@ -61,12 +81,11 @@ export function TextTools({ text, onTextChange, disabled }: TextToolsProps) {
         return;
       }
 
-      setDiffModal({
-        open: true,
-        original: text,
-        proposed: data.formatted,
-        title: labels.textTools.formatTitle,
-      });
+      const oldText = text;
+      onTextChange(data.formatted);
+      setPreviousText(oldText);
+      setFeedbackMessage(labels.textTools.appliedFormat);
+      startUndoTimer();
     } catch {
       setError(labels.textTools.errorFormat);
     } finally {
@@ -76,6 +95,7 @@ export function TextTools({ text, onTextChange, disabled }: TextToolsProps) {
 
   const handleClean = async () => {
     setError(null);
+    setFeedbackMessage(null);
     setIsCleaning(true);
 
     try {
@@ -98,12 +118,11 @@ export function TextTools({ text, onTextChange, disabled }: TextToolsProps) {
         return;
       }
 
-      setDiffModal({
-        open: true,
-        original: text,
-        proposed: data.cleaned,
-        title: labels.textTools.cleanTitle,
-      });
+      const oldText = text;
+      onTextChange(data.cleaned);
+      setPreviousText(oldText);
+      setFeedbackMessage(labels.textTools.appliedClean);
+      startUndoTimer();
     } catch {
       setError(labels.textTools.errorClean);
     } finally {
@@ -111,15 +130,16 @@ export function TextTools({ text, onTextChange, disabled }: TextToolsProps) {
     }
   };
 
-  const handleAccept = () => {
-    if (diffModal) {
-      onTextChange(diffModal.proposed);
-      setDiffModal(null);
+  const handleUndo = () => {
+    if (previousText !== null) {
+      onTextChange(previousText);
+      setPreviousText(null);
+      setFeedbackMessage(null);
+      if (undoTimeoutRef.current) {
+        clearTimeout(undoTimeoutRef.current);
+        undoTimeoutRef.current = null;
+      }
     }
-  };
-
-  const handleCloseModal = () => {
-    setDiffModal(null);
   };
 
   return (
@@ -166,21 +186,29 @@ export function TextTools({ text, onTextChange, disabled }: TextToolsProps) {
               : labels.textTools.cleanButton}
           </span>
         </Button>
+
+        {previousText !== null && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleUndo}
+            aria-label={labels.textTools.undoButton}
+          >
+            <Undo2 className="mr-1 h-4 w-4" />
+            <span className="text-xs">{labels.textTools.undoButton}</span>
+          </Button>
+        )}
       </div>
+
+      {feedbackMessage && (
+        <p className="text-xs text-muted-foreground text-right mt-1">
+          {feedbackMessage}
+        </p>
+      )}
 
       {error && (
         <p className="text-xs text-muted-foreground text-right mt-1">{error}</p>
-      )}
-
-      {diffModal && (
-        <TextDiffModal
-          open={diffModal.open}
-          onClose={handleCloseModal}
-          onAccept={handleAccept}
-          original={diffModal.original}
-          proposed={diffModal.proposed}
-          title={diffModal.title}
-        />
       )}
     </>
   );
