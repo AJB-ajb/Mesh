@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { labels } from "@/lib/labels";
 
@@ -17,8 +18,13 @@ import { FreeFormUpdate } from "@/components/shared/free-form-update";
 import { NlInputPanel } from "@/components/shared/nl-input-panel";
 import { mapExtractedToFormState } from "@/lib/types/profile";
 import { useCalendarBusyBlocks } from "@/lib/hooks/use-calendar-busy-blocks";
+import { useProfileExtractionReview } from "@/lib/hooks/use-profile-extraction-review";
+import { ProfileExtractionReviewCard } from "@/components/profile/profile-extraction-review-card";
 
-export default function ProfilePage() {
+function ProfilePageContent() {
+  const searchParams = useSearchParams();
+  const shouldExtract = searchParams.get("extraction") === "pending";
+
   const {
     profileId,
     form,
@@ -61,6 +67,13 @@ export default function ProfilePage() {
   const [aiText, setAiText] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionSuccess, setExtractionSuccess] = useState(false);
+
+  // Profile extraction review (triggered after text-first onboarding)
+  const extractionReview = useProfileExtractionReview({
+    profileId: profileId ?? null,
+    sourceText: form.bio || sourceText || "",
+    shouldExtract,
+  });
 
   const handleAiExtract = async () => {
     if (!aiText.trim()) {
@@ -188,6 +201,18 @@ export default function ProfilePage() {
         </>
       ) : (
         <>
+          {/* Extraction review card (shown after text-first onboarding) */}
+          {extractionReview.status !== "idle" && (
+            <ProfileExtractionReviewCard
+              status={extractionReview.status}
+              extracted={extractionReview.extracted}
+              acceptAll={extractionReview.acceptAll}
+              acceptField={extractionReview.acceptField}
+              dismiss={extractionReview.dismiss}
+              retry={extractionReview.retry}
+            />
+          )}
+
           <GitHubIntegrationCard
             isGithubProvider={isGithubProvider}
             githubSync={githubSync}
@@ -218,5 +243,19 @@ export default function ProfilePage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <ProfilePageContent />
+    </Suspense>
   );
 }

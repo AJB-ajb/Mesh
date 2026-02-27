@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { TextTools } from "@/components/shared/text-tools";
 import { labels } from "@/lib/labels";
 import type { ExtractedProfileV2 } from "@/lib/types/profile";
 import type { ExtractedPosting } from "@/lib/types/posting";
@@ -144,19 +145,25 @@ export function FreeFormUpdate<T extends Extracted>({
               {copy.sourceHint}
             </p>
             {showSourceText && (
-              <Textarea
-                className="mt-2"
-                rows={6}
-                value={editableSourceText}
-                onChange={(e) => setEditableSourceText(e.target.value)}
-                placeholder={copy.sourcePlaceholder}
-                enableMic
-                onTranscriptionChange={(text) =>
-                  setEditableSourceText((prev) =>
-                    prev ? prev + " " + text : text,
-                  )
-                }
-              />
+              <>
+                <Textarea
+                  className="mt-2"
+                  rows={6}
+                  value={editableSourceText}
+                  onChange={(e) => setEditableSourceText(e.target.value)}
+                  placeholder={copy.sourcePlaceholder}
+                  enableMic
+                  onTranscriptionChange={(text) =>
+                    setEditableSourceText((prev) =>
+                      prev ? prev + " " + text : text,
+                    )
+                  }
+                />
+                <TextTools
+                  text={editableSourceText}
+                  onTextChange={setEditableSourceText}
+                />
+              </>
             )}
           </div>
         )}
