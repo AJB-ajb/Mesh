@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { LocationAutocomplete } from "@/components/location/location-autocomplete";
 import { NOT_SPECIFIED } from "@/lib/format";
 import { reverseGeocode, type GeocodingResult } from "@/lib/geocoding";
@@ -204,9 +205,10 @@ export function PostingAboutCard({
             className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
         ) : (
-          <p className="text-muted-foreground whitespace-pre-wrap">
-            {posting.description}
-          </p>
+          <MarkdownRenderer
+            content={posting.description ?? ""}
+            className="text-muted-foreground"
+          />
         )}
 
         {/* Skills */}
