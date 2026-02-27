@@ -1176,4 +1176,43 @@ export const labels = {
     respondedCount: (n: number, total: number) => `${n} of ${total} responded`,
     dragToSelectHint: "Drag on the calendar to select a meeting time.",
   },
+  // ---------------------------------------------------------------------------
+  // Suggestion chips
+  // ---------------------------------------------------------------------------
+  suggestions: {
+    time: {
+      weekdayEvenings: "weekday evenings",
+      flexibleSchedule: "flexible schedule",
+      weekendsOnly: "weekends only",
+      fewHoursPerWeek: "a few hours per week",
+    } as const,
+    location: {
+      remote: "remote",
+      inPerson: "in-person",
+      flexibleLocation: "flexible location",
+    } as const,
+    teamSize: {
+      onePerson: "looking for 1 person",
+      smallTeam: "small team (2-3)",
+      openSize: "open to any size",
+    } as const,
+    level: {
+      beginnerFriendly: "beginner-friendly",
+      intermediate: "intermediate level",
+      anyExperience: "any experience level",
+    } as const,
+    dismissAriaLabel: "Dismiss suggestions",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Post-write nudges
+  // ---------------------------------------------------------------------------
+  nudges: {
+    timeMessage: "You haven't mentioned when \u2014 add timing?",
+    locationMessage: "No location mentioned \u2014 add where?",
+    skillsMessage: "Consider mentioning specific skills needed.",
+    teamSizeMessage: "How many people are you looking for?",
+    levelMessage: "What experience level works best?",
+    dismissAriaLabel: "Dismiss nudge",
+  },
 } as const;
