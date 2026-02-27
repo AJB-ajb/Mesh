@@ -497,62 +497,6 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
-  // Dashboard page
-  // ---------------------------------------------------------------------------
-  dashboard: {
-    title: "Dashboard",
-    subtitle:
-      "Welcome back! Here\u2019s what\u2019s happening with your postings.",
-    recentActivity: "Recent Activity",
-    recentActivityDescription:
-      "Your latest matches, join requests, and messages",
-    signInToSeeActivity: "Sign in to see your recent activity",
-  },
-
-  // ---------------------------------------------------------------------------
-  // Quick actions
-  // ---------------------------------------------------------------------------
-  quickActions: {
-    title: "Quick Actions",
-    subtitle: "Common tasks to get started",
-    createPosting: "Create Posting",
-    createPostingDescription: "Find collaborators for your idea",
-    reviewMatches: "Review Matches",
-    reviewMatchesDescription: "See postings that match your profile",
-    browsePostings: "Browse Postings",
-    browsePostingsDescription: "Discover postings looking for people like you",
-  },
-
-  // ---------------------------------------------------------------------------
-  // Matches page
-  // ---------------------------------------------------------------------------
-  matches: {
-    title: "Matches",
-    subtitle: "Postings that match your skills and interests",
-    profileIncomplete: "Profile Incomplete",
-    unableToFindMatches: "Unable to Find Matches",
-    profileIncompleteHint:
-      "Add a description and skills to your profile so we can find relevant matches for you.",
-    emptyTitle: "No matches yet",
-    emptyDescription:
-      "Complete your profile to start seeing matches that align with your skills and interests.",
-    completeProfile: "Complete Profile",
-    failedToLoadMatches: "Failed to load matches",
-  },
-
-  // ---------------------------------------------------------------------------
-  // Bookmarks page
-  // ---------------------------------------------------------------------------
-  bookmarks: {
-    title: "Bookmarks",
-    subtitle: "Postings you\u2019ve saved for later",
-    emptyTitle: "No bookmarks yet",
-    emptyDescription:
-      "Browse postings and bookmark ones you\u2019re interested in.",
-    browsePostings: "Browse Postings",
-  },
-
-  // ---------------------------------------------------------------------------
   // Inbox page
   // ---------------------------------------------------------------------------
   inbox: {
@@ -802,10 +746,7 @@ export const labels = {
   // Navigation (header + sidebar)
   // ---------------------------------------------------------------------------
   nav: {
-    dashboard: "Dashboard",
     postings: "Postings",
-    matches: "Matches",
-    bookmarks: "Bookmarks",
     inbox: "Inbox",
     discover: "Discover",
     myPostings: "My Postings",
