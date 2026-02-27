@@ -42,6 +42,22 @@ function buildCountChain(count: number) {
   return chain;
 }
 
+/**
+ * Build mock for markPostingFilledIfFull:
+ * 1. Fetch posting team_size_max
+ * 2. Count accepted rows
+ * 3. Optionally update posting to filled
+ */
+function buildFulfillmentMocks(teamSizeMax: number, acceptedCount: number) {
+  const postingFetchChain = buildChain({
+    data: { team_size_max: teamSizeMax },
+    error: null,
+  });
+  const countChain = buildCountChain(acceptedCount);
+  const updateChain = buildChain({ data: null, error: null });
+  return { postingFetchChain, countChain, updateChain };
+}
+
 // Dynamic import to work around [id] path issues
 const { PATCH } = await import("@/app/api/matches/[id]/accept/route");
 
@@ -138,10 +154,10 @@ describe("PATCH /api/matches/[id]/accept", () => {
       created_at: "2025-01-01",
     };
 
-    // Track all calls to from()
-    let callCount = 0;
-    const postingUpdateChain = buildChain({ data: null, error: null });
+    // markPostingFilledIfFull: fetch posting, count accepted, no update
+    const fulfillment = buildFulfillmentMocks(3, 1);
 
+    let callCount = 0;
     mockFrom.mockImplementation((table: string) => {
       callCount++;
 
@@ -153,11 +169,15 @@ describe("PATCH /api/matches/[id]/accept", () => {
         // Second: update match
         return buildChain({ data: updatedMatch, error: null });
       }
-      if (callCount === 3 && table === "matches") {
-        // Third: count accepted matches — below capacity (1 < 3)
-        return buildCountChain(1);
+      if (callCount === 3 && table === "postings") {
+        // Third: markPostingFilledIfFull fetches posting's team_size_max
+        return fulfillment.postingFetchChain;
       }
-      return postingUpdateChain;
+      if (callCount === 4 && table === "matches") {
+        // Fourth: markPostingFilledIfFull counts accepted matches
+        return fulfillment.countChain;
+      }
+      return buildChain({ data: null, error: null });
     });
 
     const res = await PATCH(req, routeContext);
@@ -166,8 +186,6 @@ describe("PATCH /api/matches/[id]/accept", () => {
     expect(res.status).toBe(200);
     expect(body.match).toBeDefined();
     expect(body.match.status).toBe("accepted");
-    // Posting should NOT have been updated to filled (only 1 accepted, max is 3)
-    // postingUpdateChain.update should not have been called
   });
 
   it("auto-fills posting when accepted count reaches team_size_max", async () => {
@@ -189,9 +207,10 @@ describe("PATCH /api/matches/[id]/accept", () => {
       created_at: "2025-01-01",
     };
 
-    let callCount = 0;
-    const postingUpdateChain = buildChain({ data: null, error: null });
+    // markPostingFilledIfFull: fetch posting (max=2), count accepted (2), update to filled
+    const fulfillment = buildFulfillmentMocks(2, 2);
 
+    let callCount = 0;
     mockFrom.mockImplementation((table: string) => {
       callCount++;
 
@@ -201,13 +220,17 @@ describe("PATCH /api/matches/[id]/accept", () => {
       if (callCount === 2) {
         return buildChain({ data: updatedMatch, error: null });
       }
-      if (callCount === 3 && table === "matches") {
-        // Count: 2 accepted (matches team_size_max of 2)
-        return buildCountChain(2);
+      if (callCount === 3 && table === "postings") {
+        // markPostingFilledIfFull fetches posting's team_size_max
+        return fulfillment.postingFetchChain;
       }
-      if (callCount === 4 && table === "postings") {
-        // Posting update to 'filled'
-        return postingUpdateChain;
+      if (callCount === 4 && table === "matches") {
+        // markPostingFilledIfFull counts accepted matches (2 >= 2)
+        return fulfillment.countChain;
+      }
+      if (callCount === 5 && table === "postings") {
+        // markPostingFilledIfFull updates posting to filled
+        return fulfillment.updateChain;
       }
       return buildChain({ data: null, error: null });
     });
@@ -218,7 +241,7 @@ describe("PATCH /api/matches/[id]/accept", () => {
     expect(res.status).toBe(200);
     expect(body.match.status).toBe("accepted");
     // The postings update chain should have been called
-    expect(postingUpdateChain.update).toHaveBeenCalled();
+    expect(fulfillment.updateChain.update).toHaveBeenCalled();
   });
 
   it("returns 500 when match update fails", async () => {
