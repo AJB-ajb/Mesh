@@ -8,8 +8,9 @@ import { labels } from "@/lib/labels";
 
 import { Button } from "@/components/ui/button";
 import { usePostings } from "@/lib/hooks/use-postings";
-import type { Posting } from "@/lib/hooks/use-postings";
+import type { Posting, QueryFilters } from "@/lib/hooks/use-postings";
 import { useNlFilter } from "@/lib/hooks/use-nl-filter";
+import { useSkillDescendants } from "@/lib/hooks/use-skill-descendants";
 import { usePostingInterest } from "@/lib/hooks/use-posting-interest";
 import { useBookmarks } from "@/lib/hooks/use-bookmarks";
 import { applyFilters } from "@/lib/filters/apply-filters";
@@ -30,8 +31,21 @@ function DiscoverContent() {
   const [showSaved, setShowSaved] = useState(initialSavedFilter);
   const [sortBy, setSortBy] = useState<SortOption>("recent");
 
+  // Skill filter state — populated when a skill filter UI is added
+  const [selectedSkillIds] = useState<string[]>([]);
+
+  // Resolve selected skill node IDs to their tree-expanded descendants
+  const { descendantIds: resolvedSkillIds } =
+    useSkillDescendants(selectedSkillIds);
+
+  // Build query-level filters to pass to usePostings
+  const queryFilters = useMemo<QueryFilters | undefined>(() => {
+    if (resolvedSkillIds.length === 0) return undefined;
+    return { skillNodeIds: resolvedSkillIds };
+  }, [resolvedSkillIds]);
+
   const { postings, userId, interestedPostingIds, isLoading, mutate } =
-    usePostings("discover", filterCategory);
+    usePostings("discover", filterCategory, queryFilters);
 
   const onCategoryChange = useCallback(
     (cat: string | undefined) => setFilterCategory(cat ?? "all"),
