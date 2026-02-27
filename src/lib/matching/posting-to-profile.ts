@@ -138,6 +138,7 @@ export async function matchPostingToProfiles(
       embedding: null,
       timezone: null,
       notification_preferences: null,
+      tier: "free",
       created_at: "",
       updated_at: "",
     };

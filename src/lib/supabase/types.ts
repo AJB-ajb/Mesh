@@ -83,6 +83,8 @@ export interface Profile {
   embedding: number[] | null;
   // Notification preferences
   notification_preferences: Json | null;
+  // Tier
+  tier: "free" | "premium";
   // Timestamps
   created_at: string;
   updated_at: string;
@@ -109,6 +111,7 @@ export interface ProfileInsert {
   previous_profile_snapshot?: Json | null;
   embedding?: number[] | null;
   notification_preferences?: Json | null;
+  tier?: "free" | "premium";
   created_at?: string;
   updated_at?: string;
 }
@@ -134,6 +137,7 @@ export interface ProfileUpdate {
   previous_profile_snapshot?: Json | null;
   embedding?: number[] | null;
   notification_preferences?: Json | null;
+  tier?: "free" | "premium";
   created_at?: string;
   updated_at?: string;
 }
