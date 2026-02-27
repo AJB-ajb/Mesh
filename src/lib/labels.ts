@@ -1336,6 +1336,27 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
+  // Text tools (auto-format, auto-clean)
+  // ---------------------------------------------------------------------------
+  textTools: {
+    formatButton: "Auto-format",
+    formatTooltip: "Add markdown structure (headings, bullets, bold)",
+    cleanButton: "Auto-clean",
+    cleanTooltip: "Fix grammar, spelling, and punctuation",
+    formatTitle: "Auto-format preview",
+    cleanTitle: "Auto-clean preview",
+    originalLabel: "Original",
+    proposedLabel: "Proposed",
+    acceptButton: "Accept",
+    cancelButton: "Cancel",
+    formatting: "Formatting...",
+    cleaning: "Cleaning...",
+    errorFormat: "Failed to format text. Please try again.",
+    errorClean: "Failed to clean text. Please try again.",
+    noChanges: "No changes needed — your text looks good!",
+  },
+
+  // ---------------------------------------------------------------------------
   // Toast notifications
   // ---------------------------------------------------------------------------
   toasts: {

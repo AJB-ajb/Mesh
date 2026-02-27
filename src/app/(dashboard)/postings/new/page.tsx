@@ -12,6 +12,7 @@ import {
   defaultFormState,
 } from "@/components/posting/posting-form-card";
 import { MarkdownToolbar } from "@/components/shared/markdown-toolbar";
+import { TextTools } from "@/components/shared/text-tools";
 import { useMobileKeyboard } from "@/lib/hooks/use-mobile-keyboard";
 import type { PostingFormState } from "@/components/posting/posting-form-card";
 
@@ -139,6 +140,9 @@ export default function NewPostingPage() {
         className="flex w-full rounded-lg border border-input bg-background px-4 py-3 text-lg leading-relaxed ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
         autoFocus
       />
+
+      {/* Text tools (auto-format, auto-clean) */}
+      <TextTools text={text} onTextChange={setText} />
 
       {/* Post button */}
       <div className="flex justify-end">
