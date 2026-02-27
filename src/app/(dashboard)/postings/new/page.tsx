@@ -12,6 +12,7 @@ import {
   PostingFormCard,
   defaultFormState,
 } from "@/components/posting/posting-form-card";
+import { TextTools } from "@/components/shared/text-tools";
 import type { InputMode } from "@/components/posting/input-mode-toggle";
 import type { PostingFormState } from "@/components/posting/posting-form-card";
 
@@ -194,14 +195,17 @@ export default function NewPostingPage() {
       <InputModeToggle inputMode={inputMode} onModeChange={setInputMode} />
 
       {inputMode === "ai" && (
-        <AiExtractionCard
-          aiText={aiText}
-          onAiTextChange={setAiText}
-          isExtracting={isExtracting}
-          extractionSuccess={extractionSuccess}
-          onExtract={handleAiExtract}
-          onSwitchToForm={() => setInputMode("form")}
-        />
+        <>
+          <AiExtractionCard
+            aiText={aiText}
+            onAiTextChange={setAiText}
+            isExtracting={isExtracting}
+            extractionSuccess={extractionSuccess}
+            onExtract={handleAiExtract}
+            onSwitchToForm={() => setInputMode("form")}
+          />
+          <TextTools text={aiText} onTextChange={setAiText} />
+        </>
       )}
 
       {inputMode === "form" && (
