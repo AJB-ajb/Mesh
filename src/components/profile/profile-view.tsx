@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import type { ProfileFormState } from "@/lib/types/profile";
 import {
   parseList,
@@ -61,7 +62,11 @@ export function ProfileView({
 
           <div>
             <p className="text-sm text-muted-foreground">About</p>
-            <p className="font-medium">{form.bio || "Not provided"}</p>
+            {form.bio ? (
+              <MarkdownRenderer content={form.bio} className="font-medium" />
+            ) : (
+              <p className="font-medium">Not provided</p>
+            )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">

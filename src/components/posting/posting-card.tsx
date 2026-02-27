@@ -9,13 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BadgeList } from "@/components/ui/badge-list";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 
 export interface PostingCardProps {
   id: string;
@@ -113,9 +108,11 @@ export function PostingCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <CardDescription className="text-sm line-clamp-2">
-          {description}
-        </CardDescription>
+        <MarkdownRenderer
+          content={description ?? ""}
+          clamp={2}
+          className="text-muted-foreground"
+        />
 
         {/* Skills */}
         <BadgeList items={skills} />
