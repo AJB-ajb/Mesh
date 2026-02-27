@@ -40,6 +40,9 @@ function PostingDetailInner() {
     mutate,
   } = usePostingDetail(postingId);
 
+  // Extraction review (triggered by ?extraction=pending from text-first creation)
+  const extractionPending = searchParams.get("extraction") === "pending";
+
   // Determine active tab from URL or context
   const tabParam = searchParams.get("tab");
   const defaultTab =
@@ -234,6 +237,8 @@ function PostingDetailInner() {
       activeTab={activeTab}
       onTabChange={setActiveTab}
       projectEnabled={projectEnabled}
+      extractionPending={extractionPending}
+      sourceText={posting.source_text ?? posting.description}
       backHref={backHref}
       backLabel={backLabel}
     />

@@ -264,6 +264,28 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
+  // Extraction review (post-creation review card)
+  // ---------------------------------------------------------------------------
+  extractionReview: {
+    title: "Extracted Details",
+    subtitle:
+      "We extracted these details from your text. Accept or dismiss each.",
+    acceptAll: "Accept All",
+    dismiss: "Dismiss",
+    accept: "Accept",
+    retry: "Retry",
+    extracting: "Extracting details from your text...",
+    error: "Failed to extract details.",
+    fieldLabels: {
+      category: "Category",
+      skills: "Skills",
+      teamSize: "Team Size",
+      estimatedTime: "Time Commitment",
+      tags: "Tags",
+    } as const,
+  },
+
+  // ---------------------------------------------------------------------------
   // NL input panel (unified NL + form layout)
   // ---------------------------------------------------------------------------
   nlInput: {

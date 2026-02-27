@@ -13,7 +13,9 @@ import type { PostingFormState } from "@/lib/types/posting";
 import type { ScoreBreakdown } from "@/lib/supabase/types";
 import type { ExtractedPosting } from "@/lib/types/posting";
 import type { SaveStatus } from "@/lib/hooks/use-auto-save";
+import { useExtractionReview } from "@/lib/hooks/use-extraction-review";
 import { PostingDetailHeader } from "./posting-detail-header";
+import { ExtractionReviewCard } from "./extraction-review-card";
 import { PostingEditTab } from "./posting-edit-tab";
 import { PostingManageTab } from "./posting-manage-tab";
 import { PostingActivityTab } from "./posting-activity-tab";
@@ -69,6 +71,8 @@ type PostingOwnerViewProps = {
   activeTab: string;
   onTabChange: (tab: string) => void;
   projectEnabled: boolean;
+  extractionPending?: boolean;
+  sourceText?: string;
   backHref: string;
   backLabel: string;
 };
@@ -113,10 +117,18 @@ export function PostingOwnerView({
   activeTab,
   onTabChange,
   projectEnabled,
+  extractionPending,
+  sourceText,
   backHref,
   backLabel,
 }: PostingOwnerViewProps) {
   const router = useRouter();
+
+  const extraction = useExtractionReview({
+    postingId,
+    sourceText: sourceText ?? null,
+    shouldExtract: extractionPending ?? false,
+  });
 
   return (
     <div className="space-y-6">
@@ -148,6 +160,16 @@ export function PostingOwnerView({
         hideApplySection={false}
         backHref={backHref}
         backLabel={backLabel}
+      />
+
+      {/* Extraction review card (after text-first creation) */}
+      <ExtractionReviewCard
+        status={extraction.status}
+        extracted={extraction.extracted}
+        acceptAll={extraction.acceptAll}
+        acceptField={extraction.acceptField}
+        dismiss={extraction.dismiss}
+        retry={extraction.retry}
       />
 
       <Tabs
