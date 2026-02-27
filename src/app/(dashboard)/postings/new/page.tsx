@@ -12,6 +12,8 @@ import {
   PostingFormCard,
   defaultFormState,
 } from "@/components/posting/posting-form-card";
+import { MarkdownToolbar } from "@/components/shared/markdown-toolbar";
+import { useMobileKeyboard } from "@/lib/hooks/use-mobile-keyboard";
 import type { InputMode } from "@/components/posting/input-mode-toggle";
 import type { PostingFormState } from "@/components/posting/posting-form-card";
 
@@ -24,7 +26,10 @@ export default function NewPostingPage() {
   const [aiText, setAiText] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionSuccess, setExtractionSuccess] = useState(false);
+  const [textareaFocused, setTextareaFocused] = useState(false);
   const errorRef = useRef<HTMLParagraphElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { keyboardVisible } = useMobileKeyboard();
 
   // Scroll to error when it appears
   useEffect(() => {
@@ -201,6 +206,9 @@ export default function NewPostingPage() {
           extractionSuccess={extractionSuccess}
           onExtract={handleAiExtract}
           onSwitchToForm={() => setInputMode("form")}
+          textareaRef={textareaRef}
+          onTextareaFocus={() => setTextareaFocused(true)}
+          onTextareaBlur={() => setTextareaFocused(false)}
         />
       )}
 
@@ -221,6 +229,12 @@ export default function NewPostingPage() {
           ? labels.postingCreation.infoAiMode
           : labels.postingCreation.infoFormMode}
       </p>
+
+      <MarkdownToolbar
+        textareaRef={textareaRef}
+        onChange={setAiText}
+        visible={keyboardVisible && textareaFocused}
+      />
     </div>
   );
 }
