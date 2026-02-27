@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -12,8 +12,20 @@ import {
   PostingFormCard,
   defaultFormState,
 } from "@/components/posting/posting-form-card";
+import { SuggestionChips } from "@/components/shared/suggestion-chips";
+import {
+  NudgeBanner,
+  nudgeMessage,
+  type NudgeItem,
+} from "@/components/shared/nudge-banner";
+import { usePostingSuggestions } from "@/lib/hooks/use-posting-suggestions";
 import type { InputMode } from "@/components/posting/input-mode-toggle";
 import type { PostingFormState } from "@/components/posting/posting-form-card";
+
+/** Minimum text length before fetching nudges from the API. */
+const NUDGE_MIN_LENGTH = 20;
+/** Debounce delay in ms before fetching nudges. */
+const NUDGE_DEBOUNCE_MS = 3000;
 
 export default function NewPostingPage() {
   const router = useRouter();
@@ -25,6 +37,18 @@ export default function NewPostingPage() {
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionSuccess, setExtractionSuccess] = useState(false);
   const errorRef = useRef<HTMLParagraphElement>(null);
+
+  // Suggestion chips state
+  const { chips } = usePostingSuggestions(aiText);
+  const [chipsDismissed, setChipsDismissed] = useState(false);
+
+  // Nudge state
+  const [nudges, setNudges] = useState<NudgeItem[]>([]);
+  const [dismissedNudges, setDismissedNudges] = useState<Set<string>>(
+    new Set(),
+  );
+  const nudgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastNudgeTextRef = useRef<string>("");
 
   // Scroll to error when it appears
   useEffect(() => {
@@ -38,9 +62,83 @@ export default function NewPostingPage() {
     }
   }, [error]);
 
+  // Debounced nudge fetching
+  useEffect(() => {
+    if (nudgeTimerRef.current) {
+      clearTimeout(nudgeTimerRef.current);
+    }
+
+    const trimmed = aiText.trim();
+    if (trimmed.length < NUDGE_MIN_LENGTH) {
+      return;
+    }
+
+    // Don't re-fetch if text hasn't meaningfully changed
+    if (trimmed === lastNudgeTextRef.current) {
+      return;
+    }
+
+    nudgeTimerRef.current = setTimeout(() => {
+      lastNudgeTextRef.current = trimmed;
+
+      fetch("/api/extract/posting/nudge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: trimmed }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.nudges && Array.isArray(data.nudges)) {
+            queueMicrotask(() => {
+              setNudges(
+                data.nudges.map(
+                  (n: { dimension: string; suggestion: string }) => ({
+                    dimension: n.dimension,
+                    message: nudgeMessage(n.dimension),
+                    suggestion: n.suggestion,
+                  }),
+                ),
+              );
+            });
+          }
+        })
+        .catch(() => {
+          // Silently ignore nudge errors — non-critical feature
+        });
+    }, NUDGE_DEBOUNCE_MS);
+
+    return () => {
+      if (nudgeTimerRef.current) {
+        clearTimeout(nudgeTimerRef.current);
+      }
+    };
+  }, [aiText]);
+
   const handleChange = (field: keyof PostingFormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
+
+  const handleChipClick = useCallback(
+    (chip: { insertText: string }) => {
+      const separator = aiText.trim() ? "\n" : "";
+      setAiText((prev) => prev + separator + chip.insertText);
+    },
+    [aiText],
+  );
+
+  const handleNudgeDismiss = useCallback((dimension: string) => {
+    setDismissedNudges((prev) => new Set(prev).add(dimension));
+  }, []);
+
+  const handleNudgeInsert = useCallback(
+    (suggestion: string) => {
+      const separator = aiText.trim() ? "\n" : "";
+      setAiText((prev) => prev + separator + suggestion);
+    },
+    [aiText],
+  );
+
+  const visibleNudges = nudges.filter((n) => !dismissedNudges.has(n.dimension));
 
   const handleAiExtract = async () => {
     if (!aiText.trim()) {
@@ -194,14 +292,32 @@ export default function NewPostingPage() {
       <InputModeToggle inputMode={inputMode} onModeChange={setInputMode} />
 
       {inputMode === "ai" && (
-        <AiExtractionCard
-          aiText={aiText}
-          onAiTextChange={setAiText}
-          isExtracting={isExtracting}
-          extractionSuccess={extractionSuccess}
-          onExtract={handleAiExtract}
-          onSwitchToForm={() => setInputMode("form")}
-        />
+        <>
+          <AiExtractionCard
+            aiText={aiText}
+            onAiTextChange={setAiText}
+            isExtracting={isExtracting}
+            extractionSuccess={extractionSuccess}
+            onExtract={handleAiExtract}
+            onSwitchToForm={() => setInputMode("form")}
+          />
+
+          {/* Suggestion chips — directly below the AI card */}
+          {!chipsDismissed && (
+            <SuggestionChips
+              chips={chips}
+              onChipClick={handleChipClick}
+              onDismiss={() => setChipsDismissed(true)}
+            />
+          )}
+
+          {/* Nudge banners — above the info text */}
+          <NudgeBanner
+            nudges={visibleNudges}
+            onDismiss={handleNudgeDismiss}
+            onInsertSuggestion={handleNudgeInsert}
+          />
+        </>
       )}
 
       {inputMode === "form" && (
