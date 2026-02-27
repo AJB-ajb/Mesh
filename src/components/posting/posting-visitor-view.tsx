@@ -14,6 +14,7 @@ import { PostingSidebar } from "./posting-sidebar";
 import { PostingTeamCard } from "./posting-team-card";
 import { SequentialInviteResponseCard } from "./sequential-invite-response-card";
 import { GroupChatPanel } from "./group-chat-panel";
+import { SkillGapPrompt } from "./skill-gap-prompt";
 
 type PostingVisitorViewProps = {
   posting: PostingDetail;
@@ -129,6 +130,17 @@ export function PostingVisitorView({
             form={form}
             onFormChange={onFormChange}
           />
+
+          {currentUserId && !isOwner && (
+            <SkillGapPrompt
+              postingId={postingId}
+              postingSkills={posting.skills ?? []}
+              currentUserId={currentUserId}
+              onProfileUpdated={() => {
+                // Profile updated — could trigger a refetch if needed
+              }}
+            />
+          )}
 
           {currentUserProfile && (
             <PostingCompatibilityCard

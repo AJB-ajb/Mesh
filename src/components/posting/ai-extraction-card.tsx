@@ -20,6 +20,9 @@ type AiExtractionCardProps = {
   onExtract: () => void;
   onSwitchToForm: () => void;
   variant?: "posting" | "profile";
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
+  onTextareaFocus?: () => void;
+  onTextareaBlur?: () => void;
 };
 
 export function AiExtractionCard({
@@ -30,6 +33,9 @@ export function AiExtractionCard({
   onExtract,
   onSwitchToForm,
   variant = "posting",
+  textareaRef,
+  onTextareaFocus,
+  onTextareaBlur,
 }: AiExtractionCardProps) {
   const isProfile = variant === "profile";
   const cardTitle = isProfile
@@ -59,9 +65,12 @@ export function AiExtractionCard({
       </CardHeader>
       <CardContent className="space-y-4">
         <Textarea
+          ref={textareaRef}
           rows={12}
           value={aiText}
           onChange={(e) => onAiTextChange(e.target.value)}
+          onFocus={onTextareaFocus}
+          onBlur={onTextareaBlur}
           placeholder={placeholder}
           enableMic
           onTranscriptionChange={(text) =>
