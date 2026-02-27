@@ -20,14 +20,16 @@ export const GET = withAuth(async (_req, { user, supabase }) => {
 /**
  * POST /api/friend-ask
  * Create an invite for a posting (sequential or parallel).
- * Body: { posting_id: string, ordered_friend_list: string[], invite_mode?: "sequential" | "parallel" }
+ * Body: { posting_id: string, ordered_friend_list: string[], invite_mode?: "sequential" | "parallel", concurrent_invites?: number }
  */
 export const POST = withAuth(async (req, { user, supabase }) => {
-  const { posting_id, ordered_friend_list, invite_mode } = await parseBody<{
-    posting_id?: string;
-    ordered_friend_list?: string[];
-    invite_mode?: string;
-  }>(req);
+  const { posting_id, ordered_friend_list, invite_mode, concurrent_invites } =
+    await parseBody<{
+      posting_id?: string;
+      ordered_friend_list?: string[];
+      invite_mode?: string;
+      concurrent_invites?: number;
+    }>(req);
 
   if (!posting_id) {
     return apiError("VALIDATION", "posting_id is required", 400);
@@ -51,6 +53,20 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     return apiError(
       "VALIDATION",
       "invite_mode must be 'sequential' or 'parallel'",
+      400,
+    );
+  }
+
+  // Validate concurrent_invites if provided
+  const resolvedConcurrentInvites = concurrent_invites ?? 1;
+  if (
+    !Number.isInteger(resolvedConcurrentInvites) ||
+    resolvedConcurrentInvites < 1 ||
+    resolvedConcurrentInvites > ordered_friend_list.length
+  ) {
+    return apiError(
+      "VALIDATION",
+      `concurrent_invites must be a positive integer, max ${ordered_friend_list.length}`,
       400,
     );
   }
@@ -98,6 +114,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
       creator_id: user.id,
       ordered_friend_list,
       invite_mode: resolvedInviteMode,
+      concurrent_invites: resolvedConcurrentInvites,
     })
     .select()
     .single();

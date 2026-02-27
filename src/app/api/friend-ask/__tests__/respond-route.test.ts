@@ -113,14 +113,17 @@ describe("POST /api/friend-ask/[id]/respond", () => {
     expect(res.status).toBe(404);
   });
 
-  it("returns 403 when user is not the currently-asked friend", async () => {
+  it("returns 403 when user is not in pending_invitees", async () => {
     authedUser();
     const fa = {
       id: "fa1",
       creator_id: "creator",
       posting_id: "p1",
       ordered_friend_list: ["other-user", "user-1"],
-      current_request_index: 0, // "other-user" is current
+      current_request_index: 1,
+      pending_invitees: ["other-user"], // user-1 is NOT in pending_invitees
+      declined_list: [],
+      concurrent_invites: 1,
       status: "pending",
     };
     mockFrom.mockReturnValue(chain({ data: fa, error: null }));
@@ -145,10 +148,13 @@ describe("POST /api/friend-ask/[id]/respond", () => {
       creator_id: "creator",
       posting_id: "p1",
       ordered_friend_list: ["user-1", "u2"],
-      current_request_index: 0,
+      current_request_index: 1,
+      pending_invitees: ["user-1"],
+      declined_list: [],
+      concurrent_invites: 1,
       status: "pending",
     };
-    const updated = { ...fa, status: "accepted" };
+    const updated = { ...fa, status: "accepted", pending_invitees: [] };
 
     const notificationInserts: unknown[] = [];
     let callCount = 0;
@@ -182,17 +188,25 @@ describe("POST /api/friend-ask/[id]/respond", () => {
     expect(creatorNotif).toBeTruthy();
   });
 
-  it("declines, notifies creator, and auto-sends to next friend", async () => {
+  it("declines, notifies creator, and auto-sends to next friend (backfill)", async () => {
     authedUser();
     const fa = {
       id: "fa1",
       creator_id: "creator",
       posting_id: "p1",
       ordered_friend_list: ["user-1", "u2", "u3"],
-      current_request_index: 0,
+      current_request_index: 1,
+      pending_invitees: ["user-1"],
+      declined_list: [],
+      concurrent_invites: 1,
       status: "pending",
     };
-    const updated = { ...fa, current_request_index: 1 };
+    const updated = {
+      ...fa,
+      pending_invitees: ["u2"],
+      declined_list: ["user-1"],
+      current_request_index: 2,
+    };
 
     const notificationInserts: unknown[] = [];
     let callCount = 0;
@@ -242,10 +256,18 @@ describe("POST /api/friend-ask/[id]/respond", () => {
       creator_id: "creator",
       posting_id: "p1",
       ordered_friend_list: ["user-1"],
-      current_request_index: 0,
+      current_request_index: 1,
+      pending_invitees: ["user-1"],
+      declined_list: [],
+      concurrent_invites: 1,
       status: "pending",
     };
-    const updated = { ...fa, status: "completed", current_request_index: 1 };
+    const updated = {
+      ...fa,
+      status: "completed",
+      pending_invitees: [],
+      declined_list: ["user-1"],
+    };
 
     let callCount = 0;
     mockFrom.mockImplementation((table: string) => {
@@ -278,7 +300,10 @@ describe("POST /api/friend-ask/[id]/respond", () => {
       creator_id: "creator",
       posting_id: "p1",
       ordered_friend_list: ["user-1"],
-      current_request_index: 0,
+      current_request_index: 1,
+      pending_invitees: ["user-1"],
+      declined_list: [],
+      concurrent_invites: 1,
       status: "accepted",
     };
     mockFrom.mockReturnValue(chain({ data: fa, error: null }));
@@ -292,5 +317,98 @@ describe("POST /api/friend-ask/[id]/respond", () => {
       routeCtx("fa1"),
     );
     expect(res.status).toBe(400);
+  });
+
+  it("decline triggers backfill from remaining list", async () => {
+    authedUser();
+    // concurrent_invites=2, two people pending, user-1 declines, u4 should be backfilled
+    const fa = {
+      id: "fa1",
+      creator_id: "creator",
+      posting_id: "p1",
+      ordered_friend_list: ["user-1", "u2", "u3", "u4", "u5"],
+      current_request_index: 3,
+      pending_invitees: ["user-1", "u2"],
+      declined_list: ["u3"], // u3 already declined earlier
+      concurrent_invites: 2,
+      status: "pending",
+    };
+    const updated = {
+      ...fa,
+      pending_invitees: ["u2", "u4"],
+      declined_list: ["u3", "user-1"],
+      current_request_index: 4,
+    };
+
+    const notificationInserts: unknown[] = [];
+    let callCount = 0;
+    mockFrom.mockImplementation((table: string) => {
+      callCount++;
+      if (table === "notifications") {
+        return trackingChain(notificationInserts);
+      }
+      if (callCount === 1) return chain({ data: fa, error: null });
+      return chain({ data: updated, error: null });
+    });
+
+    const res = await POST(
+      makeReq("/api/friend-ask/fa1/respond", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "decline" }),
+      }),
+      routeCtx("fa1"),
+    );
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.next_friend_id).toBe("u4");
+
+    // Backfill candidate (u4) should receive invite notification
+    const backfillNotif = notificationInserts.find(
+      (n: unknown) =>
+        (n as Record<string, unknown>).user_id === "u4" &&
+        (n as Record<string, string>).type === "sequential_invite",
+    );
+    expect(backfillNotif).toBeTruthy();
+  });
+
+  it("accept with multiple pending clears all pending_invitees", async () => {
+    authedUser();
+    const fa = {
+      id: "fa1",
+      creator_id: "creator",
+      posting_id: "p1",
+      ordered_friend_list: ["user-1", "u2", "u3"],
+      current_request_index: 3,
+      pending_invitees: ["user-1", "u2"],
+      declined_list: [],
+      concurrent_invites: 2,
+      status: "pending",
+    };
+    const updated = { ...fa, status: "accepted", pending_invitees: [] };
+
+    const notificationInserts: unknown[] = [];
+    let callCount = 0;
+    mockFrom.mockImplementation((table: string) => {
+      callCount++;
+      if (table === "notifications") {
+        return trackingChain(notificationInserts);
+      }
+      if (callCount === 1) return chain({ data: fa, error: null });
+      return chain({ data: updated, error: null });
+    });
+
+    const res = await POST(
+      makeReq("/api/friend-ask/fa1/respond", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "accept" }),
+      }),
+      routeCtx("fa1"),
+    );
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.friend_ask.status).toBe("accepted");
+    expect(body.friend_ask.pending_invitees).toEqual([]);
   });
 });

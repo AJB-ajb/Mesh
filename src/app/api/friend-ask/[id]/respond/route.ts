@@ -45,10 +45,9 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
   // --- Auth check ---
   if (inviteMode === "sequential") {
-    // Sequential: only the currently-invited connection can respond
-    const currentFriendId =
-      friendAsk.ordered_friend_list[friendAsk.current_request_index];
-    if (user.id !== currentFriendId) {
+    // Sequential: user must be in pending_invitees
+    const pendingInvitees: string[] = friendAsk.pending_invitees ?? [];
+    if (!pendingInvitees.includes(user.id)) {
       return apiError(
         "FORBIDDEN",
         "You are not the currently-invited connection",
@@ -172,10 +171,10 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       });
     }
 
-    // Sequential accept
+    // Sequential accept: set status and clear pending_invitees
     const { data, error } = await supabase
       .from("friend_asks")
-      .update({ status: "accepted" })
+      .update({ status: "accepted", pending_invitees: [] })
       .eq("id", id)
       .select()
       .maybeSingle();
@@ -245,14 +244,71 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     });
   }
 
-  // Sequential decline: auto-advance to next connection
-  const nextIndex = friendAsk.current_request_index + 1;
+  // Sequential decline with backfill logic
+  const pendingInvitees: string[] = friendAsk.pending_invitees ?? [];
+  const newDeclinedList = [...(friendAsk.declined_list ?? []), user.id];
+  const newPendingInvitees = pendingInvitees.filter((id) => id !== user.id);
 
-  if (nextIndex >= friendAsk.ordered_friend_list.length) {
-    // No more connections to ask
+  // Find a backfill candidate: scan ordered_friend_list starting from current_request_index
+  // Skip anyone already in pending_invitees, declined_list (including the decliner)
+  const declinedSet = new Set(newDeclinedList);
+  const pendingSet = new Set(newPendingInvitees);
+  let backfillCandidate: string | null = null;
+  let newIndex = friendAsk.current_request_index;
+
+  for (
+    let i = friendAsk.current_request_index;
+    i < friendAsk.ordered_friend_list.length;
+    i++
+  ) {
+    const candidateId = friendAsk.ordered_friend_list[i];
+    if (pendingSet.has(candidateId)) continue;
+    if (declinedSet.has(candidateId)) continue;
+    backfillCandidate = candidateId;
+    // Advance current_request_index to candidate's index + 1 (or keep it if already past)
+    newIndex = Math.max(friendAsk.current_request_index, i + 1);
+    break;
+  }
+
+  if (backfillCandidate) {
+    // Add backfill candidate to pending_invitees
+    const updatedPendingInvitees = [...newPendingInvitees, backfillCandidate];
+
     const { data, error } = await supabase
       .from("friend_asks")
-      .update({ status: "completed", current_request_index: nextIndex })
+      .update({
+        declined_list: newDeclinedList,
+        pending_invitees: updatedPendingInvitees,
+        current_request_index: newIndex,
+      })
+      .eq("id", id)
+      .select()
+      .maybeSingle();
+
+    if (error) return apiError("INTERNAL", error.message, 500);
+    if (!data)
+      return apiError("NOT_FOUND", "Failed to read back updated invite", 404);
+
+    // Notify the backfill candidate
+    await notifyFriend(backfillCandidate);
+
+    return apiSuccess({
+      friend_ask: data,
+      message: "Declined. Next connection will be asked.",
+      next_friend_id: backfillCandidate,
+    });
+  }
+
+  // No backfill candidate found
+  if (newPendingInvitees.length === 0) {
+    // No more pending invitees and no backfill — mark as completed
+    const { data, error } = await supabase
+      .from("friend_asks")
+      .update({
+        status: "completed",
+        declined_list: newDeclinedList,
+        pending_invitees: [],
+      })
       .eq("id", id)
       .select()
       .maybeSingle();
@@ -268,10 +324,13 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     });
   }
 
-  // Advance to next connection
+  // No backfill candidate but still have pending invitees — just update
   const { data, error } = await supabase
     .from("friend_asks")
-    .update({ current_request_index: nextIndex })
+    .update({
+      declined_list: newDeclinedList,
+      pending_invitees: newPendingInvitees,
+    })
     .eq("id", id)
     .select()
     .maybeSingle();
@@ -280,13 +339,8 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
   if (!data)
     return apiError("NOT_FOUND", "Failed to read back updated invite", 404);
 
-  // Auto-send invite to the next connection
-  const nextFriendId = friendAsk.ordered_friend_list[nextIndex];
-  await notifyFriend(nextFriendId);
-
   return apiSuccess({
     friend_ask: data,
-    message: "Declined. Next connection will be asked.",
-    next_friend_id: nextFriendId,
+    message: "Declined. Waiting on other pending invitees.",
   });
 });

@@ -321,6 +321,8 @@ export interface FriendAsk {
   current_request_index: number;
   invite_mode: "sequential" | "parallel";
   declined_list: string[];
+  concurrent_invites: number;
+  pending_invitees: string[];
   status: "pending" | "accepted" | "completed" | "cancelled";
   created_at: string;
   updated_at: string;
@@ -334,6 +336,8 @@ export interface FriendAskInsert {
   current_request_index?: number;
   invite_mode?: "sequential" | "parallel";
   declined_list?: string[];
+  concurrent_invites?: number;
+  pending_invitees?: string[];
   status?: "pending" | "accepted" | "completed" | "cancelled";
   created_at?: string;
   updated_at?: string;
