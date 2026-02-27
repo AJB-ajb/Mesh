@@ -377,6 +377,19 @@
 }
 
 /* ===========================================
+   Markdown Content Typography
+   =========================================== */
+.markdown-content {
+  @apply text-sm leading-relaxed;
+}
+.markdown-content > *:first-child {
+  @apply mt-0;
+}
+.markdown-content > *:last-child {
+  @apply mb-0;
+}
+
+/* ===========================================
    Reduced Motion
    =========================================== */
 @media (prefers-reduced-motion: reduce) {
