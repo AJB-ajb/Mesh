@@ -955,6 +955,10 @@ export const labels = {
       `${current} of ${total} \u2014 waiting for response`,
     parallelWaitingSummary: (responded: number, total: number) =>
       `${responded} of ${total} responded \u2014 waiting for others`,
+    concurrentLabel: "Ask at once",
+    concurrentHelp: "Number of people to invite simultaneously",
+    concurrentWaitingSummary: (pending: number, total: number) =>
+      `Waiting on ${pending} of ${total} connections`,
   },
 
   // ---------------------------------------------------------------------------

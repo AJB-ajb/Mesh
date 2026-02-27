@@ -33,6 +33,7 @@ export function SequentialInviteCard({
     ConnectionItem[]
   >([]);
   const [inviteMode, setInviteMode] = useState<InviteMode>("sequential");
+  const [concurrentInvites, setConcurrentInvites] = useState(1);
   const [isCreating, setIsCreating] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,6 +94,8 @@ export function SequentialInviteCard({
           posting_id: postingId,
           ordered_friend_list: selectedConnections.map((c) => c.user_id),
           invite_mode: inviteMode,
+          concurrent_invites:
+            inviteMode === "sequential" ? concurrentInvites : undefined,
         }),
       });
 
@@ -119,7 +122,7 @@ export function SequentialInviteCard({
     } finally {
       setIsCreating(false);
     }
-  }, [selectedConnections, postingId, inviteMode, mutate]);
+  }, [selectedConnections, postingId, inviteMode, concurrentInvites, mutate]);
 
   const handleCancel = useCallback(async () => {
     if (!sequentialInvite) return;
@@ -248,6 +251,36 @@ export function SequentialInviteCard({
               : labels.invite.modeParallelHelp}
           </p>
         </div>
+
+        {/* Concurrent invites (sequential mode only) */}
+        {inviteMode === "sequential" && (
+          <div className="space-y-2">
+            <label htmlFor="concurrent-invites" className="text-sm font-medium">
+              {labels.invite.concurrentLabel}
+            </label>
+            <input
+              id="concurrent-invites"
+              type="number"
+              min={1}
+              max={Math.max(1, selectedConnections.length)}
+              value={concurrentInvites}
+              onChange={(e) => {
+                const val = Math.max(
+                  1,
+                  Math.min(
+                    Math.max(1, selectedConnections.length),
+                    Number(e.target.value) || 1,
+                  ),
+                );
+                setConcurrentInvites(val);
+              }}
+              className="flex h-9 w-20 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+            <p className="text-xs text-muted-foreground">
+              {labels.invite.concurrentHelp}
+            </p>
+          </div>
+        )}
 
         <p className="text-sm text-muted-foreground">
           {inviteMode === "sequential"

@@ -211,6 +211,8 @@ Sequential or parallel invite sequences. A friend_ask tracks inviting connection
 | `current_request_index` | integer     | NO       | 0                 | Index of the currently-invited connection (sequential) |
 | `invite_mode`           | text        | NO       | 'sequential'      | One of: `sequential`, `parallel`                       |
 | `declined_list`         | uuid[]      | NO       | '{}'              | User IDs who declined (used in parallel mode)          |
+| `concurrent_invites`    | integer     | NO       | 1                 | How many invites outstanding at once (sequential mode) |
+| `pending_invitees`      | uuid[]      | NO       | '{}'              | User IDs with currently outstanding invites            |
 | `status`                | text        | NO       | 'pending'         | One of: pending, accepted, completed, cancelled        |
 | `created_at`            | timestamptz | NO       | now()             | Record creation timestamp                              |
 | `updated_at`            | timestamptz | NO       | now()             | Last update timestamp                                  |
