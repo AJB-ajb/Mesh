@@ -15,6 +15,7 @@ import { PostingTeamCard } from "./posting-team-card";
 import { SequentialInviteResponseCard } from "./sequential-invite-response-card";
 import { GroupChatPanel } from "./group-chat-panel";
 import { SkillGapPrompt } from "./skill-gap-prompt";
+import { PostingHiddenDetails } from "./posting-hidden-details";
 
 type PostingVisitorViewProps = {
   posting: PostingDetail;
@@ -126,6 +127,14 @@ export function PostingVisitorView({
             form={form}
             onFormChange={onFormChange}
           />
+
+          {currentUserId && !isOwner && (
+            <PostingHiddenDetails
+              postingId={postingId}
+              isAcceptedMember={isAcceptedMember}
+              isOwner={isOwner}
+            />
+          )}
 
           {currentUserId && !isOwner && (
             <SkillGapPrompt

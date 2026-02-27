@@ -52,6 +52,7 @@ function postingToForm(
     availabilityWindows: windows,
     specificWindows: [],
     selectedSkills: posting.selectedPostingSkills ?? [],
+    hiddenDetails: posting.hidden_details ?? "",
   };
 }
 
@@ -93,6 +94,7 @@ export function usePostingActions(
     availabilityWindows: [],
     specificWindows: [],
     selectedSkills: [],
+    hiddenDetails: "",
   });
 
   // Track whether we've initialised form from posting data
