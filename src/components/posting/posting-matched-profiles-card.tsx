@@ -11,24 +11,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatScore } from "@/lib/matching/scoring";
 import { getInitials } from "@/lib/format";
-import type { MatchedProfile } from "@/lib/hooks/use-posting-detail";
+import { usePostingDetailContext } from "./posting-detail-context";
 
-type PostingMatchedProfilesCardProps = {
-  matchedProfiles: MatchedProfile[];
-  isLoadingMatches: boolean;
-  onViewProfile: (userId: string) => void;
-  onMessage: (userId: string) => void;
-};
-
-export function PostingMatchedProfilesCard({
-  matchedProfiles,
-  isLoadingMatches,
-  onViewProfile,
-  onMessage,
-}: PostingMatchedProfilesCardProps) {
+export function PostingMatchedProfilesCard() {
+  const {
+    matchedProfiles,
+    isLoading: isLoadingMatches,
+    onStartConversation: onMessage,
+  } = usePostingDetailContext();
+  const router = useRouter();
+  const onViewProfile = (userId: string) => router.push(`/profile/${userId}`);
   return (
     <Card>
       <CardHeader>

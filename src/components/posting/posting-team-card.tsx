@@ -5,21 +5,14 @@ import { Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getInitials } from "@/lib/format";
-import type { Application } from "@/lib/hooks/use-posting-detail";
+import { usePostingDetailContext } from "./posting-detail-context";
 
-type PostingTeamCardProps = {
-  applications: Application[];
-  creatorName: string | null;
-  teamSizeMin: number;
-  teamSizeMax: number;
-};
-
-export function PostingTeamCard({
-  applications,
-  creatorName,
-  teamSizeMin,
-  teamSizeMax,
-}: PostingTeamCardProps) {
+export function PostingTeamCard() {
+  const { posting, effectiveApplications: applications } =
+    usePostingDetailContext();
+  const creatorName = posting.profiles?.full_name ?? null;
+  const teamSizeMin = posting.team_size_min;
+  const teamSizeMax = posting.team_size_max;
   const accepted = applications.filter((a) => a.status === "accepted");
 
   return (

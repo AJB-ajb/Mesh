@@ -6,13 +6,9 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { computeWeightedScore, formatScore } from "@/lib/matching/scoring";
 import { labels } from "@/lib/labels";
-import type {
-  PostingDetail,
-  Application,
-} from "@/lib/hooks/use-posting-detail";
 import { formatDateAgo } from "@/lib/format";
-import type { ScoreBreakdown } from "@/lib/supabase/types";
 import type { SaveStatus } from "@/lib/hooks/use-auto-save";
+import { usePostingDetailContext } from "./posting-detail-context";
 import { OwnerActions } from "./owner-actions";
 import { ApplySection } from "./apply-section";
 
@@ -58,67 +54,32 @@ function SaveStatusIndicator({ status }: { status: SaveStatus }) {
   );
 }
 
-type PostingDetailHeaderProps = {
-  posting: PostingDetail;
-  isOwner: boolean;
-  matchBreakdown: ScoreBreakdown | null;
-  isDeleting: boolean;
-  isExtending: boolean;
-  isReposting: boolean;
-  editTitle: string;
-  onEditTitleChange: (value: string) => void;
-  onDelete: () => void;
-  onExtendDeadline: (days: number) => void;
-  onRepost: () => void;
-  saveStatus: SaveStatus;
-  // Apply props (non-owner)
-  hasApplied: boolean;
-  myApplication: Application | null;
-  waitlistPosition: number | null;
-  showApplyForm: boolean;
-  coverMessage: string;
-  isApplying: boolean;
-  onShowApplyForm: () => void;
-  onHideApplyForm: () => void;
-  onCoverMessageChange: (value: string) => void;
-  onApply: () => void;
-  onWithdraw: () => void;
-  error: string | null;
-  hideApplySection?: boolean;
-  backHref?: string;
-  backLabel?: string;
-};
+export function PostingDetailHeader() {
+  const {
+    posting,
+    isOwner,
+    matchBreakdown,
+    isDeleting,
+    isExtending,
+    isReposting,
+    form,
+    onFormChange,
+    saveStatus,
+    onDelete,
+    onExtendDeadline,
+    onRepost,
+    error,
+    backHref,
+    backLabel,
+  } = usePostingDetailContext();
 
-export function PostingDetailHeader({
-  posting,
-  isOwner,
-  matchBreakdown,
-  isDeleting,
-  isExtending,
-  isReposting,
-  editTitle,
-  onEditTitleChange,
-  onDelete,
-  onExtendDeadline,
-  onRepost,
-  saveStatus,
-  hasApplied,
-  myApplication,
-  waitlistPosition,
-  showApplyForm,
-  coverMessage,
-  isApplying,
-  onShowApplyForm,
-  onHideApplyForm,
-  onCoverMessageChange,
-  onApply,
-  onWithdraw,
-  error,
-  hideApplySection,
-  backHref,
-  backLabel,
-}: PostingDetailHeaderProps) {
   const creatorName = posting.profiles?.full_name || "Unknown";
+
+  // Determine whether to hide the apply section (private postings for visitors)
+  const hideApplySection =
+    !isOwner &&
+    (posting.visibility ??
+      (posting.mode === "friend_ask" ? "private" : "public")) === "private";
 
   return (
     <>
@@ -141,8 +102,8 @@ export function PostingDetailHeader({
           <div className="flex items-center gap-3 flex-wrap">
             {isOwner ? (
               <input
-                value={editTitle}
-                onChange={(e) => onEditTitleChange(e.target.value)}
+                value={form.title}
+                onChange={(e) => onFormChange("title", e.target.value)}
                 className="text-2xl font-bold flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
             ) : (
@@ -213,20 +174,7 @@ export function PostingDetailHeader({
         ) : (
           !hideApplySection && (
             <div className="flex flex-wrap gap-2">
-              <ApplySection
-                posting={posting}
-                hasApplied={hasApplied}
-                myApplication={myApplication}
-                waitlistPosition={waitlistPosition}
-                showApplyForm={showApplyForm}
-                coverMessage={coverMessage}
-                isApplying={isApplying}
-                onShowApplyForm={onShowApplyForm}
-                onHideApplyForm={onHideApplyForm}
-                onCoverMessageChange={onCoverMessageChange}
-                onApply={onApply}
-                onWithdraw={onWithdraw}
-              />
+              <ApplySection />
             </div>
           )
         )}

@@ -20,24 +20,15 @@ import {
 } from "@/components/ui/card";
 import { getInitials, formatDateAgo } from "@/lib/format";
 import { labels } from "@/lib/labels";
-import type { Application } from "@/lib/hooks/use-posting-detail";
+import { usePostingDetailContext } from "./posting-detail-context";
 
-type PostingApplicationsCardProps = {
-  applications: Application[];
-  isUpdatingApplication: string | null;
-  onUpdateStatus: (
-    applicationId: string,
-    newStatus: "accepted" | "rejected",
-  ) => void;
-  onMessage: (applicantId: string) => void;
-};
-
-export function PostingApplicationsCard({
-  applications,
-  isUpdatingApplication,
-  onUpdateStatus,
-  onMessage,
-}: PostingApplicationsCardProps) {
+export function PostingApplicationsCard() {
+  const {
+    effectiveApplications: applications,
+    isUpdatingApplication,
+    onUpdateStatus,
+    onStartConversation: onMessage,
+  } = usePostingDetailContext();
   const pendingCount = applications.filter(
     (a) => a.status === "pending",
   ).length;

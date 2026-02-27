@@ -14,17 +14,8 @@ import { reverseGeocode, type GeocodingResult } from "@/lib/geocoding";
 import { labels } from "@/lib/labels";
 import { LOCATION } from "@/lib/constants";
 import { getLocationModeDisplay } from "@/lib/posting/location";
-import type {
-  PostingDetail,
-  PostingFormState,
-} from "@/lib/hooks/use-posting-detail";
-
-type PostingAboutCardProps = {
-  posting: PostingDetail;
-  isEditing: boolean;
-  form: PostingFormState;
-  onFormChange: (field: keyof PostingFormState, value: string) => void;
-};
+import type { PostingFormState } from "@/lib/hooks/use-posting-detail";
+import { usePostingDetailContext } from "./posting-detail-context";
 
 function LocationEditFields({
   form,
@@ -183,12 +174,8 @@ function LocationEditFields({
   );
 }
 
-export function PostingAboutCard({
-  posting,
-  isEditing,
-  form,
-  onFormChange,
-}: PostingAboutCardProps) {
+export function PostingAboutCard() {
+  const { posting, isEditing, form, onFormChange } = usePostingDetailContext();
   const locationDisplay = getLocationModeDisplay(posting.location_mode);
 
   return (
