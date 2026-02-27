@@ -1,10 +1,7 @@
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, apiSuccess, parseBody } from "@/lib/errors";
-import {
-  type NotificationPreferences,
-  shouldNotify,
-} from "@/lib/notifications/preferences";
-import { sendNotification } from "@/lib/notifications/create";
+import { notifyIfPreferred } from "@/lib/api/notify-if-preferred";
+import { markPostingFilledIfFull } from "@/lib/api/posting-fulfillment";
+import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 
 /**
  * POST /api/applications
@@ -21,7 +18,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   }>(req);
 
   if (!posting_id || typeof posting_id !== "string") {
-    return apiError("VALIDATION", "posting_id is required", 400);
+    throw new AppError("VALIDATION", "posting_id is required", 400);
   }
 
   // Fetch the posting
@@ -32,17 +29,17 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     .single();
 
   if (postingError || !posting) {
-    return apiError("NOT_FOUND", "Posting not found", 404);
+    throw new AppError("NOT_FOUND", "Posting not found", 404);
   }
 
   // Cannot apply to own posting
   if (posting.creator_id === user.id) {
-    return apiError("VALIDATION", "Cannot apply to your own posting", 400);
+    throw new AppError("VALIDATION", "Cannot apply to your own posting", 400);
   }
 
   // Check posting is open or filled (filled = waitlist)
   if (posting.status !== "open" && posting.status !== "filled") {
-    return apiError(
+    throw new AppError(
       "VALIDATION",
       "This posting is no longer accepting requests",
       400,
@@ -58,7 +55,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     .maybeSingle();
 
   if (existing) {
-    return apiError(
+    throw new AppError(
       "CONFLICT",
       "You have already applied to this posting",
       409,
@@ -97,16 +94,10 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     .single();
 
   if (insertError) {
-    return apiError("INTERNAL", "Failed to create application", 500);
+    throw new AppError("INTERNAL", "Failed to create application", 500);
   }
 
   // --- Notifications ---
-
-  const { data: ownerProfile } = await supabase
-    .from("profiles")
-    .select("notification_preferences")
-    .eq("user_id", posting.creator_id)
-    .single();
 
   const { data: applicantProfile } = await supabase
     .from("profiles")
@@ -115,49 +106,36 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     .single();
 
   const applicantName = applicantProfile?.full_name || "Someone";
-  const ownerPrefs =
-    ownerProfile?.notification_preferences as NotificationPreferences | null;
 
-  if (shouldNotify(ownerPrefs, "interest_received", "in_app")) {
-    const notifTitle = isFilled
-      ? "New Waitlist Entry"
-      : isAutoAccept
-        ? "New Member Joined"
-        : "New Join Request";
-    const notifBody = isFilled
-      ? `${applicantName} has joined the waitlist for "${posting.title}"`
-      : isAutoAccept
-        ? `${applicantName} has joined your posting "${posting.title}"`
-        : `${applicantName} has requested to join "${posting.title}"`;
+  const notifTitle = isFilled
+    ? "New Waitlist Entry"
+    : isAutoAccept
+      ? "New Member Joined"
+      : "New Join Request";
+  const notifBody = isFilled
+    ? `${applicantName} has joined the waitlist for "${posting.title}"`
+    : isAutoAccept
+      ? `${applicantName} has joined your posting "${posting.title}"`
+      : `${applicantName} has requested to join "${posting.title}"`;
 
-    sendNotification(
-      {
-        userId: posting.creator_id,
-        type: "application_received",
-        title: notifTitle,
-        body: notifBody,
-        relatedPostingId: posting_id,
-        relatedApplicationId: application.id,
-        relatedUserId: user.id,
-      },
-      supabase,
-    );
-  }
+  notifyIfPreferred(supabase, posting.creator_id, "interest_received", {
+    userId: posting.creator_id,
+    type: "application_received",
+    title: notifTitle,
+    body: notifBody,
+    relatedPostingId: posting_id,
+    relatedApplicationId: application.id,
+    relatedUserId: user.id,
+  });
 
   // Auto-accept: check if posting should be marked as filled
   if (isAutoAccept && !isFilled) {
-    const { count } = await supabase
-      .from("applications")
-      .select("*", { count: "exact", head: true })
-      .eq("posting_id", posting_id)
-      .eq("status", "accepted");
-
-    if (count && count >= posting.team_size_max) {
-      await supabase
-        .from("postings")
-        .update({ status: "filled" })
-        .eq("id", posting_id);
-    }
+    await markPostingFilledIfFull(
+      supabase,
+      posting_id,
+      "applications",
+      "posting_id",
+    );
   }
 
   // Compute waitlist position if waitlisted

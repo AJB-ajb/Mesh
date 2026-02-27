@@ -1,5 +1,6 @@
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, apiSuccess, parseBody } from "@/lib/errors";
+import { verifyPostingOwnership } from "@/lib/api/ownership";
+import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 
 /**
  * GET /api/friend-ask
@@ -12,7 +13,7 @@ export const GET = withAuth(async (_req, { user, supabase }) => {
     .eq("creator_id", user.id)
     .order("created_at", { ascending: false });
 
-  if (error) return apiError("INTERNAL", error.message, 500);
+  if (error) throw new AppError("INTERNAL", error.message, 500);
 
   return apiSuccess({ friend_asks: data });
 });
@@ -30,7 +31,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   }>(req);
 
   if (!posting_id) {
-    return apiError("VALIDATION", "posting_id is required", 400);
+    throw new AppError("VALIDATION", "posting_id is required", 400);
   }
 
   if (
@@ -38,7 +39,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     !Array.isArray(ordered_friend_list) ||
     ordered_friend_list.length === 0
   ) {
-    return apiError(
+    throw new AppError(
       "VALIDATION",
       "ordered_friend_list must be a non-empty array of user IDs",
       400,
@@ -48,7 +49,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   // Validate invite_mode if provided
   const resolvedInviteMode = invite_mode || "sequential";
   if (!["sequential", "parallel"].includes(resolvedInviteMode)) {
-    return apiError(
+    throw new AppError(
       "VALIDATION",
       "invite_mode must be 'sequential' or 'parallel'",
       400,
@@ -56,23 +57,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   }
 
   // Verify the posting exists and belongs to the user
-  const { data: posting, error: postingError } = await supabase
-    .from("postings")
-    .select("id, creator_id")
-    .eq("id", posting_id)
-    .single();
-
-  if (postingError || !posting) {
-    return apiError("NOT_FOUND", "Posting not found", 404);
-  }
-
-  if (posting.creator_id !== user.id) {
-    return apiError(
-      "FORBIDDEN",
-      "You can only create invites for your own postings",
-      403,
-    );
-  }
+  await verifyPostingOwnership(supabase, posting_id, user.id);
 
   // Check for an existing active invite on this posting
   const { data: existing } = await supabase
@@ -84,7 +69,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     .maybeSingle();
 
   if (existing) {
-    return apiError(
+    throw new AppError(
       "CONFLICT",
       "An active invite already exists for this posting",
       409,
@@ -102,7 +87,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     .select()
     .single();
 
-  if (error) return apiError("INTERNAL", error.message, 500);
+  if (error) throw new AppError("INTERNAL", error.message, 500);
 
   return apiSuccess({ friend_ask: data }, 201);
 });
