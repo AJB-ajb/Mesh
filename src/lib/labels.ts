@@ -1450,4 +1450,32 @@ export const labels = {
     bookmarkRemoved: "Posting unsaved",
     bookmarkError: "Could not update bookmark",
   },
+
+  // ---------------------------------------------------------------------------
+  // Tier / Premium
+  // ---------------------------------------------------------------------------
+  tier: {
+    upgradePrompt: "Upgrade to see why you matched",
+    premiumBadge: "Premium",
+    freeBadge: "Free",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Deep Match / Explanations
+  // ---------------------------------------------------------------------------
+  deepMatch: {
+    explanation: "Why you matched",
+    concerns: "Things to consider",
+    role: "Best matching role",
+    generating: "Analyzing match...",
+    unavailable: "Deep analysis unavailable",
+    requestExplanation: "Get AI explanation",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Distance
+  // ---------------------------------------------------------------------------
+  distance: {
+    away: (km: number) => `~${km} km away`,
+  },
 } as const;
