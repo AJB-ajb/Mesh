@@ -10,11 +10,13 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Loader2 } from "lucide-react";
 import { labels } from "@/lib/labels";
 import { SkillPicker } from "@/components/skill/skill-picker";
 import { LocationAutocomplete } from "@/components/location/location-autocomplete";
 import type { SelectedPostingSkill } from "@/lib/types/skill";
 import type { GeocodingResult } from "@/lib/geocoding";
+import { useTemplates } from "@/lib/hooks/use-templates";
 
 // ---------------------------------------------------------------------------
 // Shared overlay props
@@ -357,7 +359,7 @@ interface TemplateOption {
   content: string;
 }
 
-const TEMPLATES: TemplateOption[] = [
+const FALLBACK_TEMPLATES: TemplateOption[] = [
   {
     key: "studyGroup",
     title: labels.slashCommands.templates.studyGroup,
@@ -421,27 +423,45 @@ const TEMPLATES: TemplateOption[] = [
 ];
 
 export function TemplateOverlay({ onInsert, onClose }: OverlayProps) {
+  const { templates, isLoading, error } = useTemplates();
+
+  // Use DB templates when available, fall back to hardcoded on error
+  const displayTemplates =
+    error || templates.length === 0
+      ? FALLBACK_TEMPLATES
+      : templates.map((t) => ({
+          key: t.id,
+          title: t.title,
+          content: t.content,
+        }));
+
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{labels.slashCommands.templateTitle}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-2">
-          {TEMPLATES.map((template) => (
-            <button
-              key={template.key}
-              type="button"
-              onClick={() => onInsert(template.content)}
-              className="w-full rounded-lg border p-3 text-left transition-colors hover:bg-accent"
-            >
-              <div className="font-medium text-sm">{template.title}</div>
-              <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                {template.content.split("\n")[0]}
-              </div>
-            </button>
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {displayTemplates.map((template) => (
+              <button
+                key={template.key}
+                type="button"
+                onClick={() => onInsert(template.content)}
+                className="w-full rounded-lg border p-3 text-left transition-colors hover:bg-accent"
+              >
+                <div className="font-medium text-sm">{template.title}</div>
+                <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                  {template.content.split("\n")[0]}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>
             {labels.slashCommands.cancelButton}
