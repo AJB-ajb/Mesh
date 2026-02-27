@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { usePostingDetailContext } from "./posting-detail-context";
 import { PostingDetailHeader } from "./posting-detail-header";
 import { PostingAboutCard } from "./posting-about-card";
@@ -21,6 +22,24 @@ export function PostingVisitorView() {
     isAcceptedMember,
     projectEnabled,
   } = usePostingDetailContext();
+
+  const teamMembers = useMemo(
+    () => [
+      {
+        user_id: posting.creator_id,
+        full_name: posting.profiles?.full_name ?? null,
+        role: "creator" as const,
+      },
+      ...effectiveApplications
+        .filter((a) => a.status === "accepted")
+        .map((a) => ({
+          user_id: a.applicant_id,
+          full_name: a.profiles?.full_name ?? null,
+          role: "member" as const,
+        })),
+    ],
+    [posting.creator_id, posting.profiles?.full_name, effectiveApplications],
+  );
 
   return (
     <div className="space-y-6">
@@ -60,20 +79,7 @@ export function PostingVisitorView() {
                 postingTitle={posting.title}
                 currentUserId={currentUserId}
                 currentUserName={currentUserProfile?.full_name ?? null}
-                teamMembers={[
-                  {
-                    user_id: posting.creator_id,
-                    full_name: posting.profiles?.full_name ?? null,
-                    role: "creator",
-                  },
-                  ...effectiveApplications
-                    .filter((a) => a.status === "accepted")
-                    .map((a) => ({
-                      user_id: a.applicant_id,
-                      full_name: a.profiles?.full_name ?? null,
-                      role: "member",
-                    })),
-                ]}
+                teamMembers={teamMembers}
               />
             </>
           )}
