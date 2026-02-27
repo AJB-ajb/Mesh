@@ -1,30 +1,35 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { labels } from "@/lib/labels";
-import { InputModeToggle } from "@/components/posting/input-mode-toggle";
-import { AiExtractionCard } from "@/components/posting/ai-extraction-card";
 import {
   PostingFormCard,
   defaultFormState,
 } from "@/components/posting/posting-form-card";
-import type { InputMode } from "@/components/posting/input-mode-toggle";
 import type { PostingFormState } from "@/components/posting/posting-form-card";
 
 export default function NewPostingPage() {
   const router = useRouter();
+  const [text, setText] = useState("");
   const [form, setForm] = useState<PostingFormState>(defaultFormState);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [inputMode, setInputMode] = useState<InputMode>("ai");
-  const [aiText, setAiText] = useState("");
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [extractionSuccess, setExtractionSuccess] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.max(el.scrollHeight, 200)}px`;
+  }, [text]);
 
   // Scroll to error when it appears
   useEffect(() => {
@@ -38,111 +43,22 @@ export default function NewPostingPage() {
     }
   }, [error]);
 
-  const handleChange = (field: keyof PostingFormState, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleAiExtract = async () => {
-    if (!aiText.trim()) {
-      setError(labels.postingCreation.errorEmptyText);
-      return;
-    }
+  const handleSubmit = useCallback(async () => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
 
     setError(null);
-    setIsExtracting(true);
-    setExtractionSuccess(false);
-
-    try {
-      const response = await fetch("/api/extract/posting", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: aiText }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to extract posting");
-      }
-
-      const extracted = data.posting;
-
-      // Map extracted data to form state
-      const extractedMax =
-        extracted.team_size_max?.toString() || form.lookingFor;
-      setForm((prev) => ({
-        ...prev,
-        title: extracted.title || prev.title,
-        description: extracted.description || prev.description,
-        skills: Array.isArray(extracted.skills)
-          ? extracted.skills.join(", ")
-          : prev.skills,
-        estimatedTime: extracted.estimated_time || prev.estimatedTime,
-        teamSizeMin: extracted.team_size_min?.toString() || prev.teamSizeMin,
-        teamSizeMax: extractedMax,
-        lookingFor: extractedMax,
-        category: extracted.category || prev.category,
-        visibility:
-          extracted.visibility ||
-          (Array.isArray(extracted.invitees) && extracted.invitees.length > 0
-            ? "private"
-            : extracted.mode === "friend_ask"
-              ? "private"
-              : prev.visibility),
-        tags: Array.isArray(extracted.tags)
-          ? extracted.tags.join(", ")
-          : prev.tags,
-        contextIdentifier:
-          extracted.context_identifier || prev.contextIdentifier,
-        skillLevelMin: prev.skillLevelMin,
-        availabilityMode: extracted.availability_mode || prev.availabilityMode,
-        timezone: extracted.timezone || prev.timezone,
-        availabilityWindows: Array.isArray(extracted.availability_windows)
-          ? extracted.availability_windows.map(
-              (w: {
-                day_of_week: number;
-                start_minutes: number;
-                end_minutes: number;
-              }) => ({
-                day_of_week: w.day_of_week,
-                start_minutes: w.start_minutes,
-                end_minutes: w.end_minutes,
-              }),
-            )
-          : prev.availabilityWindows,
-      }));
-
-      setExtractionSuccess(true);
-      // Switch to form mode to review extracted data
-      setTimeout(() => {
-        setInputMode("form");
-        setExtractionSuccess(false);
-      }, 1500);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to extract posting",
-      );
-    } finally {
-      setIsExtracting(false);
-    }
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError(null);
-
-    if (!form.description.trim()) {
-      setError(labels.postingCreation.errorEmptyDescription);
-      return;
-    }
-
     setIsSaving(true);
 
     try {
       const res = await fetch("/api/postings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          description: trimmed,
+          sourceText: trimmed,
+        }),
       });
 
       const data = await res.json();
@@ -154,11 +70,26 @@ export default function NewPostingPage() {
       }
 
       setIsSaving(false);
-      router.push(`/postings/${data.posting.id}`);
+      router.push(`/postings/${data.posting.id}?extraction=pending`);
     } catch {
       setIsSaving(false);
       setError(labels.postingCreation.errorGeneric);
     }
+  }, [text, form, router]);
+
+  // Cmd/Ctrl+Enter shortcut
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        handleSubmit();
+      }
+    },
+    [handleSubmit],
+  );
+
+  const handleFormChange = (field: keyof PostingFormState, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -191,36 +122,67 @@ export default function NewPostingPage() {
         </p>
       )}
 
-      <InputModeToggle inputMode={inputMode} onModeChange={setInputMode} />
+      {/* Hero textarea */}
+      <textarea
+        ref={textareaRef}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={labels.postingCreation.textPlaceholder}
+        rows={8}
+        className="flex w-full rounded-lg border border-input bg-background px-4 py-3 text-lg leading-relaxed ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+        autoFocus
+      />
 
-      {inputMode === "ai" && (
-        <AiExtractionCard
-          aiText={aiText}
-          onAiTextChange={setAiText}
-          isExtracting={isExtracting}
-          extractionSuccess={extractionSuccess}
-          onExtract={handleAiExtract}
-          onSwitchToForm={() => setInputMode("form")}
-        />
-      )}
+      {/* Post button */}
+      <div className="flex justify-end">
+        <Button
+          onClick={handleSubmit}
+          disabled={!text.trim() || isSaving}
+          size="lg"
+        >
+          {isSaving ? "Posting..." : labels.postingCreation.postButton}
+        </Button>
+      </div>
 
-      {inputMode === "form" && (
-        <PostingFormCard
-          form={form}
-          setForm={setForm}
-          onChange={handleChange}
-          onSubmit={handleSubmit}
-          isSaving={isSaving}
-          isExtracting={isExtracting}
-        />
-      )}
+      {/* Collapsible edit details */}
+      <div className="border-t pt-4">
+        <button
+          type="button"
+          onClick={() => setShowDetails(!showDetails)}
+          className="flex w-full items-center justify-between text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <div>
+            <span className="font-medium">
+              {labels.postingCreation.editDetailsToggle}
+            </span>
+            <span className="ml-2 text-xs">
+              {labels.postingCreation.editDetailsHint}
+            </span>
+          </div>
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${showDetails ? "rotate-180" : ""}`}
+          />
+        </button>
 
-      {/* Info */}
-      <p className="text-center text-sm text-muted-foreground">
-        {inputMode === "ai"
-          ? labels.postingCreation.infoAiMode
-          : labels.postingCreation.infoFormMode}
-      </p>
+        {showDetails && (
+          <div className="mt-4">
+            <PostingFormCard
+              form={form}
+              setForm={setForm}
+              onChange={handleFormChange}
+              onSubmit={async (e) => {
+                e.preventDefault();
+                await handleSubmit();
+              }}
+              isSaving={isSaving}
+              isExtracting={false}
+              hideSubmitButton
+              hideDescription
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
