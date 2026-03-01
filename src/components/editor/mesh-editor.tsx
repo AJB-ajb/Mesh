@@ -50,12 +50,21 @@ export function MeshEditor({
   const onBlurRef = useRef(onBlur);
 
   // Keep callback refs in sync via effects (React 19 disallows ref writes during render)
-  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
-  useEffect(() => { onSubmitRef.current = onSubmit; }, [onSubmit]);
-  useEffect(() => { onFocusRef.current = onFocus; }, [onFocus]);
-  useEffect(() => { onBlurRef.current = onBlur; }, [onBlur]);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+  useEffect(() => {
+    onSubmitRef.current = onSubmit;
+  }, [onSubmit]);
+  useEffect(() => {
+    onFocusRef.current = onFocus;
+  }, [onFocus]);
+  useEffect(() => {
+    onBlurRef.current = onBlur;
+  }, [onBlur]);
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         // Disable features we don't need
