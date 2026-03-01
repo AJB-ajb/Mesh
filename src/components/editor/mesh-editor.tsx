@@ -68,7 +68,7 @@ export function MeshEditor({
     extensions: [
       StarterKit.configure({
         // Disable features we don't need
-        italic: false,
+        italic: {},
         strike: false,
         blockquote: false,
         codeBlock: false,
