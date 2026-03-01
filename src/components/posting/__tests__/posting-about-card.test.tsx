@@ -103,7 +103,7 @@ function buildContextValue(
     saveStatus: "idle" as const,
     isApplyingUpdate: false,
     activeTab: "manage",
-    backHref: "/my-postings",
+    backHref: "/posts",
     backLabel: "Back",
     onFormChange: vi.fn(),
     onSave: vi.fn(),
