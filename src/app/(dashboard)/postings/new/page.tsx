@@ -215,7 +215,7 @@ export default function NewPostingPage() {
   const visibleNudges = nudges.filter((n) => !dismissedNudges.has(n.dimension));
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-6 pb-20">
       {/* Back link */}
       <Link
         href="/my-postings"

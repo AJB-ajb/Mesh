@@ -80,7 +80,7 @@ export function ICalConnectionsSection({
       ))}
 
       {/* Add iCal feed */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
         <Input
           type="url"
           placeholder={labels.calendar.icalPlaceholder}
@@ -91,6 +91,7 @@ export function ICalConnectionsSection({
         <Button
           variant="outline"
           size="sm"
+          className="w-full sm:w-auto"
           onClick={handleAddIcal}
           disabled={isAddingIcal || !icalUrl.trim()}
         >

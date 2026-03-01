@@ -92,7 +92,7 @@ function SettingsContent() {
   )?.connected;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6 pb-20">
       <Link
         href="/active"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
