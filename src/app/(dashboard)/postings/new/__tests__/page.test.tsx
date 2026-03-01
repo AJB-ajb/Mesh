@@ -11,6 +11,30 @@ vi.mock("next/navigation", () => ({
   useRouter: () => mockRouter,
 }));
 
+// Mock MeshEditor — Tiptap relies on browser APIs unavailable in jsdom.
+// This lightweight mock exposes the same props surface as the real component
+// so the page's wiring (onChange, onSubmit, etc.) is still exercised.
+vi.mock("@/components/editor/mesh-editor", () => ({
+  MeshEditor: (props: {
+    content?: string;
+    placeholder?: string;
+    onChange?: (md: string) => void;
+    onSubmit?: () => void;
+    onEditorReady?: (editor: unknown) => void;
+    onFocus?: () => void;
+    onBlur?: () => void;
+  }) => {
+    return (
+      <textarea
+        data-testid="mock-editor"
+        value={props.content}
+        placeholder={props.placeholder}
+        onChange={(e) => props.onChange?.(e.target.value)}
+      />
+    );
+  },
+}));
+
 // Mock fetch
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
@@ -22,10 +46,10 @@ describe("NewPostingPage", () => {
     vi.clearAllMocks();
   });
 
-  it("renders the page title and textarea", () => {
+  it("renders the page title and editor", () => {
     render(<NewPostingPage />);
     expect(screen.getByText("Create Posting")).toBeInTheDocument();
-    expect(screen.getByRole("textbox")).toBeInTheDocument();
+    expect(screen.getByTestId("mock-editor")).toBeInTheDocument();
   });
 
   it("disables Post button when textarea is empty", () => {
@@ -36,8 +60,8 @@ describe("NewPostingPage", () => {
 
   it("enables Post button when text is entered", () => {
     render(<NewPostingPage />);
-    const textarea = screen.getByRole("textbox");
-    fireEvent.change(textarea, { target: { value: "Looking for 2 devs" } });
+    const editor = screen.getByTestId("mock-editor");
+    fireEvent.change(editor, { target: { value: "Looking for 2 devs" } });
     const button = screen.getByRole("button", { name: /post/i });
     expect(button).not.toBeDisabled();
   });
@@ -49,8 +73,8 @@ describe("NewPostingPage", () => {
     });
 
     render(<NewPostingPage />);
-    const textarea = screen.getByRole("textbox");
-    fireEvent.change(textarea, {
+    const editor = screen.getByTestId("mock-editor");
+    fireEvent.change(editor, {
       target: { value: "Need 2 people for hackathon" },
     });
 
@@ -87,8 +111,8 @@ describe("NewPostingPage", () => {
     });
 
     render(<NewPostingPage />);
-    const textarea = screen.getByRole("textbox");
-    fireEvent.change(textarea, { target: { value: "Test posting" } });
+    const editor = screen.getByTestId("mock-editor");
+    fireEvent.change(editor, { target: { value: "Test posting" } });
 
     const button = screen.getByRole("button", { name: /post/i });
     fireEvent.click(button);

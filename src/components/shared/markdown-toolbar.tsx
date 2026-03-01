@@ -92,9 +92,39 @@ function executeAction(
 // ---------------------------------------------------------------------------
 
 interface MarkdownToolbarProps {
-  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
-  onChange: (newValue: string) => void;
+  /** Legacy textarea mode */
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
+  /** Tiptap editor mode — takes precedence over textareaRef */
+  editor?: import("@tiptap/core").Editor | null;
+  onChange?: (newValue: string) => void;
   visible: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Editor-mode action executor
+// ---------------------------------------------------------------------------
+
+function executeEditorAction(
+  editor: import("@tiptap/core").Editor,
+  action: ToolbarAction,
+): void {
+  switch (action) {
+    case "slash":
+      editor.chain().focus().insertContent("/").run();
+      break;
+    case "heading":
+      editor.chain().focus().toggleHeading({ level: 2 }).run();
+      break;
+    case "bold":
+      editor.chain().focus().toggleBold().run();
+      break;
+    case "list":
+      editor.chain().focus().toggleBulletList().run();
+      break;
+    case "code":
+      editor.chain().focus().toggleCode().run();
+      break;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -103,13 +133,15 @@ interface MarkdownToolbarProps {
 
 function ToolbarButton({
   textareaRef,
+  editor,
   onChange,
   action,
   label,
   title,
 }: {
-  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
-  onChange: (newValue: string) => void;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
+  editor?: import("@tiptap/core").Editor | null;
+  onChange?: (newValue: string) => void;
   action: ToolbarAction;
   label: string;
   title: string;
@@ -117,8 +149,16 @@ function ToolbarButton({
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
-      const textarea = textareaRef.current;
-      if (!textarea) return;
+
+      // Editor mode
+      if (editor) {
+        executeEditorAction(editor, action);
+        return;
+      }
+
+      // Legacy textarea mode
+      const textarea = textareaRef?.current;
+      if (!textarea || !onChange) return;
 
       const result = executeAction(textarea, action);
       onChange(result.newValue);
@@ -128,7 +168,7 @@ function ToolbarButton({
         textarea.setSelectionRange(result.cursorPos, result.cursorPos);
       });
     },
-    [textareaRef, onChange, action],
+    [textareaRef, editor, onChange, action],
   );
 
   return (
@@ -150,6 +190,7 @@ function ToolbarButton({
 
 export function MarkdownToolbar({
   textareaRef,
+  editor,
   onChange,
   visible,
 }: MarkdownToolbarProps) {
@@ -165,6 +206,7 @@ export function MarkdownToolbar({
     >
       <ToolbarButton
         textareaRef={textareaRef}
+        editor={editor}
         onChange={onChange}
         action="slash"
         label={l.slashCommand}
@@ -172,6 +214,7 @@ export function MarkdownToolbar({
       />
       <ToolbarButton
         textareaRef={textareaRef}
+        editor={editor}
         onChange={onChange}
         action="heading"
         label={l.heading}
@@ -179,6 +222,7 @@ export function MarkdownToolbar({
       />
       <ToolbarButton
         textareaRef={textareaRef}
+        editor={editor}
         onChange={onChange}
         action="bold"
         label={l.bold}
@@ -186,6 +230,7 @@ export function MarkdownToolbar({
       />
       <ToolbarButton
         textareaRef={textareaRef}
+        editor={editor}
         onChange={onChange}
         action="list"
         label={l.list}
@@ -193,6 +238,7 @@ export function MarkdownToolbar({
       />
       <ToolbarButton
         textareaRef={textareaRef}
+        editor={editor}
         onChange={onChange}
         action="code"
         label={l.code}

@@ -139,8 +139,11 @@ describe("useSlashCommands", () => {
     });
 
     expect(result.current.menuOpen).toBe(true);
-    expect(result.current.filteredCommands.length).toBe(1);
-    expect(result.current.filteredCommands[0]?.name).toBe("time");
+    // "ti" matches both "time" and "location" (substring match)
+    expect(result.current.filteredCommands.length).toBe(2);
+    expect(result.current.filteredCommands.map((c) => c.name)).toContain(
+      "time",
+    );
   });
 
   it("ArrowDown changes selectedIndex", () => {

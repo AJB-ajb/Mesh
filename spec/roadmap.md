@@ -146,15 +146,16 @@ LLM-based Stage 2 matching + skill system refinements. See [text_first_rewrite.m
 
 ### v0.6 — Engagement & Polish
 
-| Feature                    | Issue | Effort       | Description                                                                                                   |
-| -------------------------- | ----- | ------------ | ------------------------------------------------------------------------------------------------------------- |
-| Email + push notifications | #14   | Large        | Email and push delivery (in-app already implemented)                                                          |
-| Daily digest               | —     | Medium       | Cron-based email digest of new relevant postings (Resend)                                                     |
-| Markdown edit mode         | —     | Medium-Large | WYSIWYG-lite inline markdown rendering while typing (Tiptap or similar). Shared component for all text fields |
-| Auto-translation           | —     | Medium-Large | Posts auto-translated based on user language settings. Communication language as matching criterion           |
-| Template library           | —     | Medium       | Pre-built templates for common posting types, accessible via `/template`                                      |
-| Posting images             | #29   | Medium       | Upload and display images on postings                                                                         |
-| Email auth fix (SMTP)      | #37   | Small        | Configure Supabase SMTP for confirmation emails                                                               |
+| Feature                    | Issue | Effort           | Description                                                                                                    |
+| -------------------------- | ----- | ---------------- | -------------------------------------------------------------------------------------------------------------- |
+| Email + push notifications | #14   | Large            | Email and push delivery (in-app already implemented)                                                           |
+| Daily digest               | —     | Medium           | Cron-based email digest of new relevant postings (Resend)                                                      |
+| ~~Markdown edit mode~~     | —     | ~~Medium-Large~~ | ✅ Tiptap-based inline markdown editor (`MeshEditor`). Shared component for postings and profile bio           |
+| ~~Metadata-linked chips~~  | —     | ~~Medium~~       | ✅ Inline chips for location, time, skills via slash commands. Structured data stored as `chip_metadata` jsonb |
+| Auto-translation           | —     | Medium-Large     | Posts auto-translated based on user language settings. Communication language as matching criterion            |
+| Template library           | —     | Medium           | Pre-built templates for common posting types, accessible via `/template`                                       |
+| Posting images             | #29   | Medium           | Upload and display images on postings                                                                          |
+| Email auth fix (SMTP)      | #37   | Small            | Configure Supabase SMTP for confirmation emails                                                                |
 
 ### v1.0 — Launch
 
