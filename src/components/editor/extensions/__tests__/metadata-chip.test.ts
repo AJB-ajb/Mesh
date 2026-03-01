@@ -4,45 +4,41 @@ import { MetadataChip } from "../metadata-chip";
 
 describe("MetadataChip", () => {
   it("has correct name", () => {
-    const extension = MetadataChip.create();
-    expect(extension.name).toBe("metadataChip");
+    expect(MetadataChip.name).toBe("metadataChip");
   });
 
   it("is inline and atom", () => {
-    const extension = MetadataChip.create();
-    expect(extension.config.inline).toBe(true);
-    expect(extension.config.atom).toBe(true);
+    expect(MetadataChip.config.inline).toBe(true);
+    expect(MetadataChip.config.atom).toBe(true);
   });
 
   it("defines required attributes", () => {
-    const extension = MetadataChip.create();
-    const attrs = extension.config.addAttributes?.call(extension);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const attrs = (MetadataChip.config.addAttributes as any)?.call({});
     expect(attrs).toHaveProperty("metadataKey");
     expect(attrs).toHaveProperty("chipType");
     expect(attrs).toHaveProperty("display");
   });
 
   it("is selectable but not draggable", () => {
-    const extension = MetadataChip.create();
-    expect(extension.config.selectable).toBe(true);
-    expect(extension.config.draggable).toBe(false);
+    expect(MetadataChip.config.selectable).toBe(true);
+    expect(MetadataChip.config.draggable).toBe(false);
   });
 
   it("belongs to inline group", () => {
-    const extension = MetadataChip.create();
-    expect(extension.config.group).toBe("inline");
+    expect(MetadataChip.config.group).toBe("inline");
   });
 
   it("provides markdown serialization in storage", () => {
-    const extension = MetadataChip.create();
-    const storage = extension.config.addStorage?.call(extension);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const storage = (MetadataChip.config.addStorage as any)?.call({});
     expect(storage).toHaveProperty("markdown");
     expect(storage?.markdown).toHaveProperty("serialize");
   });
 
   it("serializes display text for markdown", () => {
-    const extension = MetadataChip.create();
-    const storage = extension.config.addStorage?.call(extension);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const storage = (MetadataChip.config.addStorage as any)?.call({});
     let written = "";
     const state = { write: (text: string) => (written = text) };
     const node = { attrs: { display: "near Karlsplatz" } };
@@ -51,8 +47,8 @@ describe("MetadataChip", () => {
   });
 
   it("serializes empty string when display is missing", () => {
-    const extension = MetadataChip.create();
-    const storage = extension.config.addStorage?.call(extension);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const storage = (MetadataChip.config.addStorage as any)?.call({});
     let written = "";
     const state = { write: (text: string) => (written = text) };
     const node = { attrs: {} };
