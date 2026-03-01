@@ -395,6 +395,14 @@
   content: "**";
   @apply text-muted-foreground/40 font-normal;
 }
+.ProseMirror em::before {
+  content: "*";
+  @apply text-muted-foreground/40 not-italic;
+}
+.ProseMirror em::after {
+  content: "*";
+  @apply text-muted-foreground/40 not-italic;
+}
 .ProseMirror code::before {
   content: "`";
   @apply text-muted-foreground/40;
