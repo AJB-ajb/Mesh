@@ -21,9 +21,18 @@
     "test:e2e:ci": "playwright test --reporter=list --reporter=junit",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
-    "prepare": "husky"
+    "prepare": "husky",
+    "cap:sync": "cap sync android",
+    "cap:run": "cap run android",
+    "cap:open": "cap open android",
+    "cap:build": "cd android && ./gradlew bundleRelease"
   },
   "dependencies": {
+    "@capacitor/android": "^8.1.0",
+    "@capacitor/app": "^8.0.1",
+    "@capacitor/core": "^8.1.0",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.1",
     "@google/generative-ai": "^0.24.1",
     "@rive-app/react-webgl2": "^4.26.2",
     "@sentry/nextjs": "^10.38.0",
@@ -48,6 +57,8 @@
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.1.0",
     "@faker-js/faker": "^10.2.0",
     "@playwright/test": "^1.58.1",
     "@tailwindcss/postcss": "^4",
@@ -74,5 +85,10 @@
     "typescript": "^5",
     "vercel": "^50.9.6",
     "vitest": "^4.0.18"
+  },
+  "pnpm": {
+    "overrides": {
+      "sharp": "^0.33.5"
+    }
   }
 }
