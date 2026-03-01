@@ -103,7 +103,7 @@ describe("POST /api/friend-ask/[id]/send", () => {
     expect(res.status).toBe(400);
   });
 
-  it("sends invite to current friend (first in list) without advancing index", async () => {
+  it("sends invite to current friend (first in list) with concurrent_invites=1", async () => {
     authedUser();
     const fa = {
       id: "fa1",
@@ -111,15 +111,23 @@ describe("POST /api/friend-ask/[id]/send", () => {
       posting_id: "p1",
       ordered_friend_list: ["u2", "u3", "u4"],
       current_request_index: 0,
+      concurrent_invites: 1,
+      pending_invitees: [],
+      declined_list: [],
       status: "pending",
     };
+    const updated = {
+      ...fa,
+      pending_invitees: ["u2"],
+      current_request_index: 1,
+    };
 
-    mockFrom.mockImplementation(() =>
-      chain({
-        data: fa,
-        error: null,
-      }),
-    );
+    let callCount = 0;
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return chain({ data: fa, error: null });
+      return chain({ data: updated, error: null });
+    });
 
     const res = await POST(
       makeReq("/api/friend-ask/fa1/send", { method: "POST" }),
@@ -127,8 +135,9 @@ describe("POST /api/friend-ask/[id]/send", () => {
     );
     const body = await res.json();
     expect(res.status).toBe(200);
-    // Should send to the FIRST friend (index 0), not skip to index 1
-    expect(body.current_friend_id).toBe("u2");
+    // Should send to the FIRST friend (index 0)
+    expect(body.notified).toEqual(["u2"]);
+    expect(body.notified_count).toBe(1);
   });
 
   it("uses sequential_invite notification type", async () => {
@@ -139,6 +148,9 @@ describe("POST /api/friend-ask/[id]/send", () => {
       posting_id: "p1",
       ordered_friend_list: ["u2"],
       current_request_index: 0,
+      concurrent_invites: 1,
+      pending_invitees: [],
+      declined_list: [],
       status: "pending",
     };
 
@@ -169,6 +181,8 @@ describe("POST /api/friend-ask/[id]/send", () => {
       posting_id: "p1",
       ordered_friend_list: ["u2"],
       current_request_index: 1, // past the end
+      concurrent_invites: 1,
+      pending_invitees: [],
       status: "pending",
     };
     const updated = { ...fa, status: "completed" };
@@ -188,5 +202,78 @@ describe("POST /api/friend-ask/[id]/send", () => {
     expect(res.status).toBe(200);
     expect(body.friend_ask.status).toBe("completed");
     expect(body.message).toContain("completed");
+  });
+
+  it("sends invites to N people at once (concurrent_invites: 3)", async () => {
+    authedUser();
+    const fa = {
+      id: "fa1",
+      creator_id: "user-1",
+      posting_id: "p1",
+      ordered_friend_list: ["u2", "u3", "u4", "u5", "u6"],
+      current_request_index: 0,
+      concurrent_invites: 3,
+      pending_invitees: [],
+      declined_list: [],
+      status: "pending",
+    };
+    const updated = {
+      ...fa,
+      pending_invitees: ["u2", "u3", "u4"],
+      current_request_index: 3,
+    };
+
+    let callCount = 0;
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return chain({ data: fa, error: null });
+      return chain({ data: updated, error: null });
+    });
+
+    const res = await POST(
+      makeReq("/api/friend-ask/fa1/send", { method: "POST" }),
+      routeCtx("fa1"),
+    );
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.notified).toEqual(["u2", "u3", "u4"]);
+    expect(body.notified_count).toBe(3);
+  });
+
+  it("skips declined users when filling concurrent slots", async () => {
+    authedUser();
+    const fa = {
+      id: "fa1",
+      creator_id: "user-1",
+      posting_id: "p1",
+      ordered_friend_list: ["u2", "u3", "u4", "u5"],
+      current_request_index: 0,
+      concurrent_invites: 2,
+      pending_invitees: [],
+      declined_list: ["u2"], // u2 already declined
+      status: "pending",
+    };
+    const updated = {
+      ...fa,
+      pending_invitees: ["u3", "u4"],
+      current_request_index: 3,
+    };
+
+    let callCount = 0;
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return chain({ data: fa, error: null });
+      return chain({ data: updated, error: null });
+    });
+
+    const res = await POST(
+      makeReq("/api/friend-ask/fa1/send", { method: "POST" }),
+      routeCtx("fa1"),
+    );
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    // u2 is skipped (declined), so u3 and u4 are notified
+    expect(body.notified).toEqual(["u3", "u4"]);
+    expect(body.notified_count).toBe(2);
   });
 });

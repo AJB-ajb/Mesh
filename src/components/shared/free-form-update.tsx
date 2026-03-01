@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { TextTools } from "@/components/shared/text-tools";
 import { labels } from "@/lib/labels";
 import type { ExtractedProfileV2 } from "@/lib/types/profile";
 import type { ExtractedPosting } from "@/lib/types/posting";
@@ -29,6 +30,7 @@ type FreeFormUpdateProps<T extends Extracted> = {
   isApplying: boolean;
   onUpdate: (updatedText: string, extracted: T) => Promise<void>;
   onUndo: () => Promise<void>;
+  currentFormState?: Record<string, unknown>;
 };
 
 const API_ENDPOINTS: Record<EntityType, string> = {
@@ -44,6 +46,7 @@ export function FreeFormUpdate<T extends Extracted>({
   isApplying,
   onUpdate,
   onUndo,
+  currentFormState,
 }: FreeFormUpdateProps<T>) {
   const [editableSourceText, setEditableSourceText] = useState(
     sourceText ?? "",
@@ -60,12 +63,15 @@ export function FreeFormUpdate<T extends Extracted>({
     setError(null);
 
     try {
-      const body: Record<string, string> = {
+      const body: Record<string, unknown> = {
         sourceText: editableSourceText,
         updateInstruction,
       };
       if (entityType === "posting" && entityId) {
         body.postingId = entityId;
+      }
+      if (currentFormState) {
+        body.currentFields = currentFormState;
       }
 
       const res = await fetch(API_ENDPOINTS[entityType], {
@@ -135,20 +141,29 @@ export function FreeFormUpdate<T extends Extracted>({
               )}
               {copy.sourceLabel}
             </button>
+            <p className="text-xs text-muted-foreground mt-1">
+              {copy.sourceHint}
+            </p>
             {showSourceText && (
-              <Textarea
-                className="mt-2"
-                rows={6}
-                value={editableSourceText}
-                onChange={(e) => setEditableSourceText(e.target.value)}
-                placeholder={copy.sourcePlaceholder}
-                enableMic
-                onTranscriptionChange={(text) =>
-                  setEditableSourceText((prev) =>
-                    prev ? prev + " " + text : text,
-                  )
-                }
-              />
+              <>
+                <Textarea
+                  className="mt-2"
+                  rows={6}
+                  value={editableSourceText}
+                  onChange={(e) => setEditableSourceText(e.target.value)}
+                  placeholder={copy.sourcePlaceholder}
+                  enableMic
+                  onTranscriptionChange={(text) =>
+                    setEditableSourceText((prev) =>
+                      prev ? prev + " " + text : text,
+                    )
+                  }
+                />
+                <TextTools
+                  text={editableSourceText}
+                  onTextChange={setEditableSourceText}
+                />
+              </>
             )}
           </div>
         )}
@@ -157,6 +172,7 @@ export function FreeFormUpdate<T extends Extracted>({
         <div className="space-y-2">
           <label className="text-sm font-medium">{copy.instructionLabel}</label>
           <Textarea
+            className="ring-1 ring-primary/30 focus-within:ring-primary"
             rows={2}
             value={updateInstruction}
             onChange={(e) => setUpdateInstruction(e.target.value)}

@@ -1,6 +1,13 @@
 "use client";
 
-import { Search, Filter, Loader2, X, Bookmark } from "lucide-react";
+import {
+  Search,
+  Filter,
+  Loader2,
+  X,
+  Bookmark,
+  BookmarkCheck,
+} from "lucide-react";
 import { SpeechInput } from "@/components/ai-elements/speech-input";
 import { transcribeAudio } from "@/lib/transcribe";
 import { labels } from "@/lib/labels";
@@ -9,6 +16,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type SortOption = "recent" | "match";
 
@@ -193,20 +207,24 @@ export function PostingFilters({
       )}
 
       {/* Category chips */}
-      <div className="flex flex-wrap gap-2">
-        {postingFilterCategories.map((cat) => (
-          <button
-            key={cat.value}
-            onClick={() => onCategoryChange(cat.value)}
-            className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
-              filterCategory === cat.value
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
+      <div className="relative">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide sm:flex-wrap sm:overflow-visible">
+          {postingFilterCategories.map((cat) => (
+            <button
+              key={cat.value}
+              onClick={() => onCategoryChange(cat.value)}
+              className={`shrink-0 rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+                filterCategory === cat.value
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+        {/* Gradient fade to hint at horizontal scroll */}
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent sm:hidden" />
       </div>
 
       {/* Saved toggle + Sort control (discover only) */}
@@ -217,24 +235,36 @@ export function PostingFilters({
               onClick={onToggleSaved}
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors ${
                 showSaved
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-primary text-primary-foreground ring-2 ring-primary/30 shadow-sm"
                   : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
               }`}
             >
-              <Bookmark className="h-3.5 w-3.5" />
+              {showSaved ? (
+                <BookmarkCheck className="h-3.5 w-3.5" />
+              ) : (
+                <Bookmark className="h-3.5 w-3.5" />
+              )}
               {labels.discover.savedFilter}
             </button>
           )}
 
           {showSort && (
-            <select
+            <Select
               value={sortBy}
-              onChange={(e) => onSortChange?.(e.target.value as SortOption)}
-              className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+              onValueChange={(value) => onSortChange?.(value as SortOption)}
             >
-              <option value="recent">{labels.discover.sortByRecent}</option>
-              <option value="match">{labels.discover.sortByMatch}</option>
-            </select>
+              <SelectTrigger className="h-8 w-auto gap-1 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent">
+                  {labels.discover.sortByRecent}
+                </SelectItem>
+                <SelectItem value="match">
+                  {labels.discover.sortByMatch}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           )}
         </div>
       )}
@@ -267,19 +297,25 @@ export function PostingFilters({
               <label className="text-xs font-medium text-muted-foreground">
                 {labels.postings.visibilityLabel}
               </label>
-              <select
+              <Select
                 value={filterVisibility}
-                onChange={(e) => onVisibilityChange(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                onValueChange={onVisibilityChange}
               >
-                <option value="all">{labels.postings.visibilityAny}</option>
-                <option value="public">
-                  {labels.postings.visibilityPublic}
-                </option>
-                <option value="private">
-                  {labels.postings.visibilityPrivate}
-                </option>
-              </select>
+                <SelectTrigger className="h-9 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {labels.postings.visibilityAny}
+                  </SelectItem>
+                  <SelectItem value="public">
+                    {labels.postings.visibilityPublic}
+                  </SelectItem>
+                  <SelectItem value="private">
+                    {labels.postings.visibilityPrivate}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>

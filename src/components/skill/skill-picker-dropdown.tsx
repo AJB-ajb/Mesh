@@ -2,14 +2,7 @@
 
 import { Loader2, ChevronRight, Plus, FolderTree } from "lucide-react";
 import { labels } from "@/lib/labels";
-import type { SkillNode } from "@/lib/types/skill";
-
-type BrowseNode = {
-  id: string;
-  name: string;
-  isLeaf: boolean;
-  childCount?: number;
-};
+import type { SkillNode, BrowseNode } from "@/lib/types/skill";
 
 type SkillPickerDropdownProps = {
   showSearchResults: boolean;

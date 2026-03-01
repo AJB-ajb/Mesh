@@ -103,18 +103,22 @@ async function fetchProfile(): Promise<ProfileFetchResult> {
     appProviders.includes("github") ||
     hasGithubIdentity;
 
-  const { data } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("user_id", user.id)
-    .single();
+  // Fetch profile, profile_skills, and availability_windows in parallel
+  const [{ data }, { data: profileSkillRows }, { data: windowRows }] =
+    await Promise.all([
+      supabase.from("profiles").select("*").eq("user_id", user.id).single(),
+      supabase
+        .from("profile_skills")
+        .select("skill_id, level, skill_nodes(id, name, parent_id, depth)")
+        .eq("profile_id", user.id),
+      supabase
+        .from("availability_windows")
+        .select("*")
+        .eq("profile_id", user.id),
+    ]);
 
   // Load profile_skills with skill node info
   let selectedSkills: SelectedProfileSkill[] = [];
-  const { data: profileSkillRows } = await supabase
-    .from("profile_skills")
-    .select("skill_id, level, skill_nodes(id, name, parent_id, depth)")
-    .eq("profile_id", user.id);
 
   if (profileSkillRows && profileSkillRows.length > 0) {
     // Load all nodes to build ancestry paths
@@ -150,12 +154,6 @@ async function fetchProfile(): Promise<ProfileFetchResult> {
         };
       });
   }
-
-  // Load availability windows
-  const { data: windowRows } = await supabase
-    .from("availability_windows")
-    .select("*")
-    .eq("profile_id", user.id);
 
   const recurringWindows: RecurringWindow[] = [];
   for (const row of (windowRows ?? []) as AvailabilityWindowRow[]) {

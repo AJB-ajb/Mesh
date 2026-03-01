@@ -37,6 +37,7 @@ export type PostingDetail = {
   source_text?: string | null;
   previous_source_text?: string | null;
   previous_posting_snapshot?: Record<string, unknown> | null;
+  hidden_details?: string | null;
   selectedPostingSkills?: SelectedPostingSkill[];
   profiles?: {
     full_name: string | null;
@@ -238,7 +239,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
     const [applicationsResult, allProfilesResult] = await Promise.all([
       supabase
         .from("applications")
-        .select("*")
+        .select("id, status, cover_message, created_at, applicant_id")
         .eq("posting_id", postingId)
         .order("created_at", { ascending: false }),
       supabase
@@ -273,42 +274,44 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
       });
     }
 
-    // Compute matched profiles (parallelized)
+    // Compute matched profiles via batch RPC (single round-trip)
     if (allProfilesResult.data) {
       const profiles = allProfilesResult.data.filter(
         (p) => p.user_id !== currentUserId,
       );
 
-      const results = await Promise.all(
-        profiles.map(async (profile) => {
-          try {
-            const { data: breakdown, error: breakdownError } =
-              await supabase.rpc("compute_match_breakdown", {
-                profile_user_id: profile.user_id,
-                target_posting_id: postingId,
-              });
+      if (profiles.length > 0) {
+        const userIds = profiles.map((p) => p.user_id);
+        const { data: batchResults } = await supabase.rpc(
+          "compute_match_breakdowns_for_posting",
+          { target_posting_id: postingId, user_ids: userIds },
+        );
 
-            if (!breakdownError && breakdown) {
-              const bd = breakdown as ScoreBreakdown;
-              return {
-                profile_id: profile.user_id,
-                user_id: profile.user_id,
-                full_name: profile.full_name,
-                headline: profile.headline,
-                overall_score: computeWeightedScore(bd),
-                breakdown: bd,
-              } satisfies MatchedProfile;
-            }
-          } catch {
-            // Skip profiles that fail to compute
+        const breakdownMap = new Map<string, ScoreBreakdown>(
+          (batchResults ?? []).map(
+            (r: { user_id: string; breakdown: ScoreBreakdown }) =>
+              [r.user_id, r.breakdown] as const,
+          ),
+        );
+
+        const scored: MatchedProfile[] = [];
+        for (const profile of profiles) {
+          const bd = breakdownMap.get(profile.user_id);
+          if (bd) {
+            scored.push({
+              profile_id: profile.user_id,
+              user_id: profile.user_id,
+              full_name: profile.full_name,
+              headline: profile.headline,
+              overall_score: computeWeightedScore(bd),
+              breakdown: bd,
+            });
           }
-          return null;
-        }),
-      );
+        }
 
-      const scored = results.filter((r): r is MatchedProfile => r !== null);
-      scored.sort((a, b) => b.overall_score - a.overall_score);
-      matchedProfiles = scored.slice(0, 10);
+        scored.sort((a, b) => b.overall_score - a.overall_score);
+        matchedProfiles = scored.slice(0, 10);
+      }
     }
   }
 

@@ -117,6 +117,7 @@ function SignUpForm() {
             id="email"
             type="email"
             placeholder="you@example.com"
+            className="h-11 sm:h-9"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -131,6 +132,7 @@ function SignUpForm() {
             id="password"
             type="password"
             placeholder="••••••••"
+            className="h-11 sm:h-9"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -145,6 +147,7 @@ function SignUpForm() {
             id="confirmPassword"
             type="password"
             placeholder="••••••••"
+            className="h-11 sm:h-9"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
@@ -153,7 +156,7 @@ function SignUpForm() {
         </div>
         <Button
           type="submit"
-          className="w-full"
+          className="w-full h-11 sm:h-9"
           disabled={isLoading || isOAuthLoading}
         >
           {isLoading
@@ -177,7 +180,7 @@ function SignUpForm() {
         <Button
           type="button"
           variant="outline"
-          className="flex-1"
+          className="flex-1 h-11 sm:h-9"
           onClick={() => signIn("google")}
           disabled={isLoading || isOAuthLoading}
         >
@@ -190,7 +193,7 @@ function SignUpForm() {
         <Button
           type="button"
           variant="outline"
-          className="flex-1"
+          className="flex-1 h-11 sm:h-9"
           onClick={() => signIn("github")}
           disabled={isLoading || isOAuthLoading}
         >
@@ -203,7 +206,7 @@ function SignUpForm() {
         <Button
           type="button"
           variant="outline"
-          className="flex-1"
+          className="flex-1 h-11 sm:h-9"
           onClick={() => signIn("linkedin")}
           disabled={isLoading || isOAuthLoading}
         >

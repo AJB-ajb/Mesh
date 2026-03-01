@@ -53,8 +53,16 @@ export const GET = withAuth(async (req, { user, supabase }) => {
     });
   }
 
+  // Parse deep match flag
+  const deepMatchEnabled = searchParams.get("deep") === "true";
+
   // Find matching postings (with optional hard filters)
-  const matches = await matchProfileToPostings(user.id, 10, filters);
+  const matches = await matchProfileToPostings(
+    user.id,
+    10,
+    filters,
+    deepMatchEnabled,
+  );
 
   // Create match records in database if they don't exist
   if (matches.length > 0) {
@@ -88,6 +96,10 @@ export const GET = withAuth(async (req, { user, supabase }) => {
     score_breakdown: match.scoreBreakdown,
     status: "pending",
     created_at: match.posting.created_at,
+    deep_match_score: match.deepMatchResult?.score ?? null,
+    deep_match_explanation: match.deepMatchResult?.explanation ?? null,
+    deep_match_concerns: match.deepMatchResult?.concerns ?? null,
+    deep_match_role: match.deepMatchResult?.matchedRole ?? null,
   }));
 
   return apiSuccess({ matches: response });

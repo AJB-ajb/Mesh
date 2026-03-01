@@ -405,6 +405,7 @@ describe("createMatchRecords", () => {
           natural_language_criteria: null,
           embedding: null,
           status: "open",
+          identified_roles: null,
 
           created_at: "",
           updated_at: "",
@@ -465,6 +466,7 @@ describe("createMatchRecords", () => {
           natural_language_criteria: null,
           embedding: null,
           status: "open",
+          identified_roles: null,
 
           created_at: "",
           updated_at: "",
@@ -538,6 +540,7 @@ describe("createMatchRecordsForPosting", () => {
           embedding: null,
           timezone: null,
           notification_preferences: null,
+          tier: "free",
 
           created_at: "",
           updated_at: "",

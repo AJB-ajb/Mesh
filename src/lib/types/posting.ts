@@ -5,6 +5,47 @@ import type {
   SpecificWindow,
 } from "@/lib/types/availability";
 
+// ---------------------------------------------------------------------------
+// Chip metadata — structured data for inline metadata chips
+// ---------------------------------------------------------------------------
+
+export interface ChipMetadataLocation {
+  type: "location";
+  display: string;
+  data: {
+    displayName: string;
+    lat?: number;
+    lng?: number;
+  };
+}
+
+export interface ChipMetadataTime {
+  type: "time";
+  display: string;
+  data: {
+    days: string[];
+    times: string[];
+    customFrom?: string;
+    customTo?: string;
+  };
+}
+
+export interface ChipMetadataSkills {
+  type: "skills";
+  display: string;
+  data: {
+    skills: { skillId: string; name: string; levelMin: number | null }[];
+  };
+}
+
+export type ChipMetadataEntry =
+  | ChipMetadataLocation
+  | ChipMetadataTime
+  | ChipMetadataSkills;
+
+/** Map of metadataKey → chip entry, stored in postings.chip_metadata */
+export type ChipMetadataMap = Record<string, ChipMetadataEntry>;
+
 export type PostingFormState = {
   title: string;
   description: string;
@@ -33,6 +74,8 @@ export type PostingFormState = {
   specificWindows: SpecificWindow[];
   /** Skills selected from the skill tree (new normalized model) */
   selectedSkills: SelectedPostingSkill[];
+  /** Private details revealed only to accepted team members */
+  hiddenDetails: string;
 };
 
 // Default expiry: 90 days from now
@@ -98,4 +141,5 @@ export const defaultPostingFormState: PostingFormState = {
   availabilityWindows: [],
   specificWindows: [],
   selectedSkills: [],
+  hiddenDetails: "",
 };

@@ -1,10 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ScoreBreakdown } from "@/lib/supabase/types";
 import { formatScore, getScoreColorVariant } from "@/lib/matching/scoring";
+
+const DIMENSIONS = [
+  {
+    key: "semantic" as const,
+    label: "Relevance",
+    description: "Alignment in interests and posting description",
+  },
+  {
+    key: "availability" as const,
+    label: "Availability",
+    description: "Schedule compatibility between you and the posting",
+  },
+  {
+    key: "skill_level" as const,
+    label: "Skill Level",
+    description: "How well your skill levels match the posting requirements",
+  },
+  {
+    key: "location" as const,
+    label: "Location",
+    description: "Geographic proximity weighted by location preferences",
+  },
+] as const;
 
 export interface MatchBreakdownProps {
   breakdown: ScoreBreakdown;
@@ -18,32 +41,14 @@ export interface MatchBreakdownProps {
 export function MatchBreakdown({ breakdown, className }: MatchBreakdownProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const dimensions = [
-    {
-      key: "semantic" as const,
-      label: "Relevance",
-      description: "Alignment in interests and posting description",
-      score: breakdown.semantic,
-    },
-    {
-      key: "availability" as const,
-      label: "Availability",
-      description: "Schedule compatibility between you and the posting",
-      score: breakdown.availability,
-    },
-    {
-      key: "skill_level" as const,
-      label: "Skill Level",
-      description: "How well your skill levels match the posting requirements",
-      score: breakdown.skill_level,
-    },
-    {
-      key: "location" as const,
-      label: "Location",
-      description: "Geographic proximity weighted by location preferences",
-      score: breakdown.location,
-    },
-  ];
+  const dimensions = useMemo(
+    () =>
+      DIMENSIONS.map((d) => ({
+        ...d,
+        score: breakdown[d.key],
+      })),
+    [breakdown],
+  );
 
   return (
     <div

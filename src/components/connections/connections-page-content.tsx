@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
@@ -11,14 +11,19 @@ import { ConnectionsLeftPanel } from "./connections-left-panel";
 import { ConnectionChatArea } from "./connection-chat-area";
 import { AddConnectionDialog } from "./add-connection-dialog";
 import { QrCodeDialog } from "./qr-code-dialog";
-import { createClient } from "@/lib/supabase/client";
 
 function ConnectionsPageInner() {
   const searchParams = useSearchParams();
   const userParam = searchParams.get("user");
 
-  const { mergedConnections, pendingIncoming, currentUserId, isLoading, mutate } =
-    useConnectionsPage();
+  const {
+    mergedConnections,
+    pendingIncoming,
+    currentUserId,
+    currentUserName,
+    isLoading,
+    mutate,
+  } = useConnectionsPage();
 
   const [selectedUserId, setSelectedUserId] = useState<string | null>(
     userParam,
@@ -26,22 +31,6 @@ function ConnectionsPageInner() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showQrDialog, setShowQrDialog] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-
-  // Current user's name for QR code
-  const [currentUserName, setCurrentUserName] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!currentUserId) return;
-    const supabase = createClient();
-    supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("user_id", currentUserId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data?.full_name) setCurrentUserName(data.full_name);
-      });
-  }, [currentUserId]);
 
   // On mobile: show list when nothing is selected, show chat when selected
   const showListOnMobile = !selectedUserId;

@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import {
   Users,
@@ -9,21 +12,18 @@ import {
   Check,
   Bookmark,
   BookmarkCheck,
+  ChevronDown,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BadgeList } from "@/components/ui/badge-list";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { formatScore } from "@/lib/matching/scoring";
 import { getInitials, formatDateAgo } from "@/lib/format";
 import { labels } from "@/lib/labels";
+import { cn } from "@/lib/utils";
 import { categoryStyles } from "@/lib/posting/styles";
 import { getLocationLabel } from "@/lib/posting/location";
 import type { PostingWithScore } from "@/lib/hooks/use-postings";
@@ -52,6 +52,7 @@ export function PostingDiscoverCard({
   onToggleBookmark,
 }: PostingDiscoverCardProps) {
   const creatorName = posting.profiles?.full_name || "Unknown";
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const locationLabel = getLocationLabel(
     posting.location_mode,
     posting.location_name,
@@ -164,50 +165,81 @@ export function PostingDiscoverCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <CardDescription className="text-sm line-clamp-2">
-          {posting.description}
-        </CardDescription>
+        <MarkdownRenderer
+          content={posting.description ?? ""}
+          clamp={2}
+          className="text-muted-foreground"
+        />
 
         {/* Compatibility Breakdown */}
         {!isOwner && posting.score_breakdown && (
           <div className="rounded-lg border border-green-500/20 bg-green-50/50 dark:bg-green-950/20 p-3">
-            <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-2 flex items-center gap-1">
-              <Sparkles className="h-3 w-3" />
-              Your Compatibility Breakdown
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              {(
-                [
-                  ["Relevance", posting.score_breakdown.semantic],
-                  ["Availability", posting.score_breakdown.availability],
-                  ["Skill Level", posting.score_breakdown.skill_level],
-                  ["Location", posting.score_breakdown.location],
-                ] as const
-              ).map(([label, score]) => (
-                <div key={label} className="flex flex-col">
-                  <span className="text-muted-foreground">{label}</span>
-                  <span className="font-medium text-foreground">
-                    {score != null ? formatScore(score) : "N/A"}
-                  </span>
-                </div>
-              ))}
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-green-700 dark:text-green-400 flex items-center gap-1">
+                <Sparkles className="h-3 w-3" />
+                {formatScore(posting.compatibility_score!)} match
+              </p>
+              <button
+                onClick={() => setShowBreakdown(!showBreakdown)}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ChevronDown
+                  className={cn(
+                    "h-3 w-3 transition-transform",
+                    showBreakdown && "rotate-180",
+                  )}
+                />
+                {showBreakdown
+                  ? labels.discover.hideBreakdown
+                  : labels.discover.showBreakdown}
+              </button>
             </div>
+            {showBreakdown && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mt-2">
+                {(
+                  [
+                    ["Relevance", posting.score_breakdown.semantic],
+                    ["Availability", posting.score_breakdown.availability],
+                    ["Skill Level", posting.score_breakdown.skill_level],
+                    ["Location", posting.score_breakdown.location],
+                  ] as const
+                ).map(([label, score]) => (
+                  <div key={label} className="flex flex-col">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className="font-medium text-foreground">
+                      {score != null ? formatScore(score) : "N/A"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
-
         {/* Skills */}
         {posting.skills.length > 0 && <BadgeList items={posting.skills} />}
 
         {/* Tags */}
         {posting.tags && posting.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
-            {posting.tags.slice(0, 4).map((tag: string) => (
-              <Badge key={tag} variant="outline" className="text-xs">
+            {posting.tags.slice(0, 4).map((tag: string, i: number) => (
+              <Badge
+                key={tag}
+                variant="outline"
+                className={cn("text-xs", i >= 2 && "hidden sm:inline-flex")}
+              >
                 #{tag}
               </Badge>
             ))}
+            {posting.tags.length > 2 && (
+              <Badge variant="outline" className="text-xs sm:hidden">
+                +{posting.tags.length - 2}
+              </Badge>
+            )}
             {posting.tags.length > 4 && (
-              <Badge variant="outline" className="text-xs">
+              <Badge
+                variant="outline"
+                className="text-xs hidden sm:inline-flex"
+              >
                 +{posting.tags.length - 4}
               </Badge>
             )}
@@ -215,7 +247,7 @@ export function PostingDiscoverCard({
         )}
 
         {/* Meta */}
-        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+        <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
           <span className="flex items-center gap-1.5">
             <Users className="h-4 w-4" />
             Looking for {posting.team_size_max}{" "}

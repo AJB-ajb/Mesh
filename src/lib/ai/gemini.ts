@@ -12,6 +12,7 @@ import {
   type Schema,
 } from "@google/generative-ai";
 import { GEMINI_MODELS } from "@/lib/constants";
+import { withTimeout } from "./timeout";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -57,15 +58,19 @@ export async function generateStructuredJSON<T>(opts: {
   for (const modelName of GEMINI_MODELS) {
     try {
       const model = getGeminiModel(modelName);
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: opts.userPrompt }] }],
-        systemInstruction: opts.systemPrompt,
-        generationConfig: {
-          temperature: opts.temperature ?? 0.3,
-          responseMimeType: "application/json",
-          responseSchema: opts.schema,
-        },
-      });
+      const result = await withTimeout(
+        model.generateContent({
+          contents: [{ role: "user", parts: [{ text: opts.userPrompt }] }],
+          systemInstruction: opts.systemPrompt,
+          generationConfig: {
+            temperature: opts.temperature ?? 0.3,
+            responseMimeType: "application/json",
+            responseSchema: opts.schema,
+          },
+        }),
+        60_000,
+        "Gemini generateContent",
+      );
 
       const text = result.response.text();
       return JSON.parse(text) as T;
@@ -94,10 +99,14 @@ export async function generateContentWithFallback(opts: {
   for (const modelName of GEMINI_MODELS) {
     try {
       const model = getGeminiModel(modelName);
-      return await model.generateContent({
-        contents: opts.contents,
-        generationConfig: opts.generationConfig,
-      });
+      return await withTimeout(
+        model.generateContent({
+          contents: opts.contents,
+          generationConfig: opts.generationConfig,
+        }),
+        60_000,
+        "Gemini generateContent",
+      );
     } catch (error) {
       lastError = error;
       if (!isRateLimitError(error)) throw error;

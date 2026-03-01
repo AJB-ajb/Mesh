@@ -36,26 +36,35 @@ type ConnectionsPageData = {
   mergedConnections: MergedConnection[];
   pendingIncoming: PendingConnection[];
   currentUserId: string;
+  currentUserName: string | null;
 };
 
 async function fetchConnectionsPageData(): Promise<ConnectionsPageData> {
   const { supabase, user } = await getUserOrThrow();
 
-  // Fetch friendships and conversations in parallel
-  const [{ data: friendshipsData }, { data: conversationsData }] =
-    await Promise.all([
-      supabase
-        .from("friendships")
-        .select(
-          "*, friend:profiles!friendships_friend_id_fkey(user_id, full_name, headline), user:profiles!friendships_user_id_fkey(user_id, full_name, headline)",
-        )
-        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`),
-      supabase
-        .from("conversations")
-        .select("*")
-        .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
-        .order("updated_at", { ascending: false }),
-    ]);
+  // Fetch friendships, conversations, and current user profile in parallel
+  const [
+    { data: friendshipsData },
+    { data: conversationsData },
+    { data: currentProfile },
+  ] = await Promise.all([
+    supabase
+      .from("friendships")
+      .select(
+        "*, friend:profiles!friendships_friend_id_fkey(user_id, full_name, headline), user:profiles!friendships_user_id_fkey(user_id, full_name, headline)",
+      )
+      .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`),
+    supabase
+      .from("conversations")
+      .select("*")
+      .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
+      .order("updated_at", { ascending: false }),
+    supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", user.id)
+      .single(),
+  ]);
 
   const friendships = friendshipsData || [];
   const conversations = conversationsData || [];
@@ -232,6 +241,7 @@ async function fetchConnectionsPageData(): Promise<ConnectionsPageData> {
     mergedConnections,
     pendingIncoming,
     currentUserId: user.id,
+    currentUserName: currentProfile?.full_name ?? null,
   };
 }
 
@@ -245,6 +255,7 @@ export function useConnectionsPage() {
     mergedConnections: data?.mergedConnections ?? [],
     pendingIncoming: data?.pendingIncoming ?? [],
     currentUserId: data?.currentUserId ?? null,
+    currentUserName: data?.currentUserName ?? null,
     error,
     isLoading,
     mutate,

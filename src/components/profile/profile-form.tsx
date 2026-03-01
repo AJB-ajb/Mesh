@@ -31,6 +31,7 @@ export function ProfileForm({
   availabilityWindows,
   onAvailabilityWindowsChange,
   busyBlocks,
+  hideSubmitButton,
 }: {
   form: ProfileFormState;
   setForm: React.Dispatch<React.SetStateAction<ProfileFormState>>;
@@ -50,6 +51,7 @@ export function ProfileForm({
   availabilityWindows: RecurringWindow[];
   onAvailabilityWindowsChange: (windows: RecurringWindow[]) => void;
   busyBlocks?: RecurringWindow[];
+  hideSubmitButton?: boolean;
 }) {
   const handleAddSkill = (skill: SelectedProfileSkill) => {
     setForm((prev) => ({
@@ -148,14 +150,16 @@ export function ProfileForm({
         </CardContent>
       </Card>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-        <Button type="submit" disabled={isSaving}>
-          {isSaving ? labels.common.saving : labels.common.saveChanges}
-        </Button>
-        <Button type="button" variant="outline" onClick={onCancel}>
-          {labels.common.cancel}
-        </Button>
-      </div>
+      {!hideSubmitButton && (
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <Button type="submit" disabled={isSaving}>
+            {isSaving ? labels.common.saving : labels.common.saveChanges}
+          </Button>
+          <Button type="button" variant="outline" onClick={onCancel}>
+            {labels.common.cancel}
+          </Button>
+        </div>
+      )}
     </form>
   );
 }

@@ -3,6 +3,7 @@
  */
 
 import { AppError } from "@/lib/errors";
+import type { ChipMetadataMap } from "@/lib/types/posting";
 
 export interface PostingBody {
   title?: string;
@@ -31,6 +32,9 @@ export interface PostingBody {
     start_minutes: number;
     end_minutes: number;
   }[];
+  sourceText?: string;
+  hiddenDetails?: string;
+  chipMetadata?: ChipMetadataMap;
 }
 
 /**
@@ -99,6 +103,14 @@ export function buildPostingDbRow(body: PostingBody, mode: "create" | "edit") {
     timezone: body.timezone || null,
   };
 
+  if (body.hiddenDetails !== undefined) {
+    row.hidden_details = body.hiddenDetails?.trim() || null;
+  }
+
+  if (body.chipMetadata && Object.keys(body.chipMetadata).length > 0) {
+    row.chip_metadata = body.chipMetadata;
+  }
+
   if (mode === "edit") {
     row.status = body.status || undefined;
     if (body.expiresAt) {
@@ -112,6 +124,10 @@ export function buildPostingDbRow(body: PostingBody, mode: "create" | "edit") {
       ? new Date(body.expiresAt + "T23:59:59")
       : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
     row.expires_at = expiresAt.toISOString();
+
+    if (body.sourceText?.trim()) {
+      row.source_text = body.sourceText.trim();
+    }
   }
 
   return row;

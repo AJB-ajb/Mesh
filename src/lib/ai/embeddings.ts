@@ -33,6 +33,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
         input: text.trim(),
         dimensions: EMBEDDING_DIMENSION,
       }),
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!response.ok) {
@@ -132,6 +133,7 @@ export async function generateEmbeddingsBatch(
       input: trimmedTexts,
       dimensions: EMBEDDING_DIMENSION,
     }),
+    signal: AbortSignal.timeout(30_000),
   });
 
   if (!response.ok) {

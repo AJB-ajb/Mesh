@@ -147,25 +147,23 @@ async function fetchPostings(key: string): Promise<PostingsResult> {
     };
   }) as PostingWithScore[];
 
-  // Fetch user's existing application posting IDs (from applications table)
+  // Fetch user's existing application posting IDs and profile in parallel
   let interestedPostingIds: string[] = [];
   if (user && tab === "discover") {
-    const { data: applications } = await supabase
-      .from("applications")
-      .select("posting_id")
-      .eq("applicant_id", user.id)
-      .in("status", ["pending", "accepted", "waitlisted"]);
+    const [{ data: applications }, { data: profile }] = await Promise.all([
+      supabase
+        .from("applications")
+        .select("posting_id")
+        .eq("applicant_id", user.id)
+        .in("status", ["pending", "accepted", "waitlisted"]),
+      supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .single(),
+    ]);
 
     interestedPostingIds = (applications || []).map((a) => a.posting_id);
-  }
-
-  // Compute compatibility scores for discover tab
-  if (tab === "discover" && user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", user.id)
-      .single();
 
     if (profile && postings.length > 0) {
       const postingIds = postings.map((p) => p.id);

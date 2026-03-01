@@ -69,7 +69,7 @@ function isActionableInvite(notification: Notification) {
 // Component
 // ---------------------------------------------------------------------------
 
-export function NotificationsDropdown() {
+export function NotificationsDropdown({ className }: { className?: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
@@ -163,7 +163,7 @@ export function NotificationsDropdown() {
       <Button
         variant="ghost"
         size="icon"
-        className="relative"
+        className={cn("relative", className)}
         onClick={() => setOpen(!open)}
         aria-expanded={open}
         aria-haspopup="true"

@@ -38,6 +38,8 @@ type PostingFormCardProps = {
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   isSaving: boolean;
   isExtracting: boolean;
+  hideSubmitButton?: boolean;
+  hideDescription?: boolean;
 };
 
 export function PostingFormCard({
@@ -47,6 +49,8 @@ export function PostingFormCard({
   onSubmit,
   isSaving,
   isExtracting,
+  hideSubmitButton,
+  hideDescription,
 }: PostingFormCardProps) {
   const handleAddSkill = (skill: SelectedPostingSkill) => {
     setForm((prev) => ({
@@ -89,7 +93,11 @@ export function PostingFormCard({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <PostingFormBasic form={form} onChange={onChange} />
+          <PostingFormBasic
+            form={form}
+            onChange={onChange}
+            hideDescription={hideDescription}
+          />
 
           <PostingFormSkills
             selectedSkills={form.selectedSkills}
@@ -114,25 +122,27 @@ export function PostingFormCard({
           />
 
           {/* Submit */}
-          <div className="flex gap-4 pt-4">
-            <Button
-              type="submit"
-              className="flex-1"
-              disabled={isSaving || isExtracting}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  {labels.postingForm.creatingButton}
-                </>
-              ) : (
-                labels.postingForm.createButton
-              )}
-            </Button>
-            <Button type="button" variant="outline" asChild>
-              <Link href="/my-postings">{labels.postingForm.cancelButton}</Link>
-            </Button>
-          </div>
+          {!hideSubmitButton && (
+            <div className="flex gap-4 pt-4">
+              <Button
+                type="submit"
+                className="flex-1"
+                disabled={isSaving || isExtracting}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {labels.postingForm.creatingButton}
+                  </>
+                ) : (
+                  labels.postingForm.createButton
+                )}
+              </Button>
+              <Button type="button" variant="outline" asChild>
+                <Link href="/posts">{labels.postingForm.cancelButton}</Link>
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </form>
