@@ -6,6 +6,7 @@ const PROTECTED_ROUTES = [
   "/discover",
   "/my-postings",
   "/active",
+  "/posts",
   "/connections",
   "/profile",
   "/postings",
@@ -30,7 +31,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isAuthRoute && user) {
-    return NextResponse.redirect(new URL("/active", request.url));
+    return NextResponse.redirect(new URL("/posts", request.url));
   }
 
   return response;
