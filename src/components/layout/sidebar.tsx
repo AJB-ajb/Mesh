@@ -92,7 +92,7 @@ export function Sidebar({ className }: SidebarProps) {
           isCollapsed ? "md:w-16" : "md:w-64",
           // Mobile: slide in/out
           isMobileOpen
-            ? "translate-x-0 w-64"
+            ? "translate-x-0 w-56"
             : "-translate-x-full md:translate-x-0",
           className,
         )}
