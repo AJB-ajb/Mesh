@@ -122,7 +122,7 @@ export default async function LandingPage() {
 
   // If logged in, redirect to active page
   if (user) {
-    redirect("/active");
+    redirect("/posts");
   }
 
   return (

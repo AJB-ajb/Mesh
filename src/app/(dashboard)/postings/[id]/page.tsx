@@ -54,7 +54,7 @@ function PostingDetailInner() {
 
   // Context-aware back navigation
   const fromParam = searchParams.get("from");
-  const backHref = fromParam === "discover" ? "/discover" : "/my-postings";
+  const backHref = fromParam === "discover" ? "/discover" : "/posts";
   const backLabel =
     fromParam === "discover"
       ? labels.common.backToDiscover
@@ -161,7 +161,7 @@ function PostingDetailInner() {
           <CardContent className="flex min-h-[200px] flex-col items-center justify-center py-12">
             <p className="text-muted-foreground">Posting not found.</p>
             <Button asChild className="mt-4">
-              <Link href="/my-postings">Browse Postings</Link>
+              <Link href="/posts">Browse Postings</Link>
             </Button>
           </CardContent>
         </Card>

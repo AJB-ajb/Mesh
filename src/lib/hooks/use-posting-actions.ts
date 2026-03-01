@@ -173,7 +173,7 @@ export function usePostingActions(
         return;
       }
 
-      router.push("/my-postings");
+      router.push("/posts");
     } catch {
       setError("Failed to delete posting. Please try again.");
       setIsDeleting(false);

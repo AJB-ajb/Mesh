@@ -50,7 +50,7 @@ function LoginForm() {
       setFormError(signInError.message);
       setIsLoading(false);
     } else {
-      router.push(next || "/active");
+      router.push(next || "/posts");
     }
   };
 
