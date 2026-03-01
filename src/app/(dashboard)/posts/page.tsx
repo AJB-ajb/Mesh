@@ -9,8 +9,7 @@ import { labels } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PostingDiscoverCard } from "@/components/posting/posting-discover-card";
-import { ActivePostingCard } from "@/components/posting/active-posting-card";
+import { PostsCard } from "@/components/posting/posts-card";
 import { usePostsPage, type PostsPageFilter } from "@/lib/hooks/use-posts-page";
 
 const FILTERS: PostsPageFilter[] = [
@@ -27,8 +26,7 @@ function PostsContent() {
   const initialFilter =
     (searchParams.get("filter") as PostsPageFilter | null) ?? "all";
 
-  const { posts, isLoading, activeFilter, setActiveFilter, userId } =
-    usePostsPage();
+  const { posts, isLoading, activeFilter, setActiveFilter } = usePostsPage();
 
   // Sync URL param on first render
   if (initialFilter !== "all" && activeFilter === "all") {
@@ -105,23 +103,9 @@ function PostsContent() {
         />
       ) : (
         <div className="grid gap-4">
-          {posts.map((item) => {
-            if (item.kind === "owned") {
-              return (
-                <PostingDiscoverCard
-                  key={item.data.id}
-                  posting={item.data}
-                  isOwner={userId === item.data.creator_id}
-                  isAlreadyInterested={false}
-                  isInteresting={false}
-                  showInterestButton={false}
-                  onExpressInterest={() => {}}
-                  activeTab="my-postings"
-                />
-              );
-            }
-            return <ActivePostingCard key={item.data.id} posting={item.data} />;
-          })}
+          {posts.map((item) => (
+            <PostsCard key={item.id} item={item} />
+          ))}
         </div>
       )}
     </div>
