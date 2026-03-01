@@ -73,7 +73,7 @@ export function PostingDiscoverCard({
                   }
                   className="hover:underline cursor-pointer"
                 >
-                  {posting.title}
+                  {posting.title?.replace(/^#{1,6}\s+/, "")}
                 </Link>
               </CardTitle>
               {posting.category && (
