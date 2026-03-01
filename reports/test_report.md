@@ -1,4 +1,4 @@
-# MeshIt E2E Browser Test Report
+# Mesh E2E Browser Test Report
 
 ## 1. Overview
 

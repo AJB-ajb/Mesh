@@ -1,4 +1,4 @@
-# MeshIt Web App - UX & Bug Report
+# Mesh Web App - UX & Bug Report
 
 🔴 Critical Bugs
 

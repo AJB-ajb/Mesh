@@ -12,7 +12,7 @@ Merge a completed worktree branch into `dev`, push to remote, and clean up.
 
 If `$ARGUMENTS` is provided, use it as the branch name. Otherwise:
 
-1. Check if cwd is inside a worktree (not the main repo at `/home/ajb/repos/MeshIt`):
+1. Check if cwd is inside a worktree (not the main repo at `/home/ajb/repos/Mesh`):
    ```
    git rev-parse --show-toplevel
    ```
@@ -33,7 +33,7 @@ Before merging, confirm:
 
 ## 3. Merge to dev
 
-1. `cd` to the main repo: `/home/ajb/repos/MeshIt`
+1. `cd` to the main repo: `/home/ajb/repos/Mesh`
 2. Ensure the main repo is on `dev`:
    ```
    git checkout dev
