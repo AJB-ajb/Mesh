@@ -65,7 +65,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     resolvedConcurrentInvites < 1 ||
     resolvedConcurrentInvites > ordered_friend_list.length
   ) {
-    return apiError(
+    throw new AppError(
       "VALIDATION",
       `concurrent_invites must be a positive integer, max ${ordered_friend_list.length}`,
       400,
