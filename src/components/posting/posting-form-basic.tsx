@@ -1,9 +1,13 @@
 "use client";
 
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { MeshEditor } from "@/components/editor/mesh-editor";
+import { SpeechInput } from "@/components/ai-elements/speech-input";
+import { transcribeAudio } from "@/lib/transcribe";
 import { labels } from "@/lib/labels";
 import type { PostingFormState } from "@/lib/types/posting";
+import { useCallback, useRef } from "react";
+import type { Editor } from "@tiptap/core";
 
 type PostingFormBasicProps = {
   form: PostingFormState;
@@ -11,6 +15,12 @@ type PostingFormBasicProps = {
 };
 
 export function PostingFormBasic({ form, onChange }: PostingFormBasicProps) {
+  const editorRef = useRef<Editor | null>(null);
+
+  const handleEditorReady = useCallback((editor: Editor) => {
+    editorRef.current = editor;
+  }, []);
+
   return (
     <>
       {/* Title */}
@@ -33,20 +43,28 @@ export function PostingFormBasic({ form, onChange }: PostingFormBasicProps) {
           {labels.postingForm.descriptionLabel}{" "}
           <span className="text-destructive">*</span>
         </label>
-        <Textarea
-          id="description"
-          rows={6}
-          value={form.description}
-          onChange={(e) => onChange("description", e.target.value)}
-          placeholder={labels.postingForm.descriptionPlaceholder}
-          enableMic
-          onTranscriptionChange={(text) =>
-            onChange(
-              "description",
-              form.description ? form.description + " " + text : text,
-            )
-          }
-        />
+        <div className="relative">
+          <MeshEditor
+            content={form.description}
+            placeholder={labels.postingForm.descriptionPlaceholder}
+            onChange={(md) => onChange("description", md)}
+            className="min-h-[150px] pr-9"
+            onEditorReady={handleEditorReady}
+          />
+          <SpeechInput
+            className="absolute right-1.5 top-1.5 h-7 w-7 shrink-0 p-0"
+            size="icon"
+            variant="ghost"
+            type="button"
+            onAudioRecorded={transcribeAudio}
+            onTranscriptionChange={(text) => {
+              const editor = editorRef.current;
+              if (editor) {
+                editor.chain().focus().insertContent(text).run();
+              }
+            }}
+          />
+        </div>
         <p className="text-xs text-muted-foreground">
           {labels.extraction.formHint}
         </p>
