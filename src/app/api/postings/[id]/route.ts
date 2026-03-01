@@ -1,10 +1,12 @@
 import { withAuth } from "@/lib/api/with-auth";
+import { verifyPostingOwnership } from "@/lib/api/ownership";
+import { syncJoinTableRows } from "@/lib/api/sync-join-table";
 import {
   validatePostingBody,
   buildPostingDbRow,
   type PostingBody,
 } from "@/lib/api/postings-validation";
-import { apiSuccess, apiError, parseBody, AppError } from "@/lib/errors";
+import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 
 export const PATCH = withAuth(async (req, { user, supabase, params }) => {
   const postingId = params.id;
@@ -12,20 +14,7 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
 
   validatePostingBody(body, "edit");
 
-  // Fetch posting to verify ownership
-  const { data: posting, error: fetchError } = await supabase
-    .from("postings")
-    .select("id, creator_id")
-    .eq("id", postingId)
-    .single();
-
-  if (fetchError || !posting) {
-    throw new AppError("NOT_FOUND", "Posting not found", 404);
-  }
-
-  if (posting.creator_id !== user.id) {
-    throw new AppError("FORBIDDEN", "Not authorized to edit this posting", 403);
-  }
+  await verifyPostingOwnership(supabase, postingId, user.id);
 
   const dbRow = buildPostingDbRow(body, "edit");
 
@@ -37,7 +26,7 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
     .single();
 
   if (updateError) {
-    return apiError(
+    throw new AppError(
       "INTERNAL",
       `Failed to update posting: ${updateError.message}`,
       500,
@@ -45,37 +34,37 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
   }
 
   // Sync posting_skills
-  await supabase.from("posting_skills").delete().eq("posting_id", postingId);
-
-  if (body.selectedSkills && body.selectedSkills.length > 0) {
-    const postingSkillRows = body.selectedSkills.map((s) => ({
-      posting_id: postingId,
-      skill_id: s.skillId,
-      level_min: s.levelMin,
-    }));
-    await supabase.from("posting_skills").insert(postingSkillRows);
-  }
+  const postingSkillRows = (body.selectedSkills ?? []).map((s) => ({
+    posting_id: postingId,
+    skill_id: s.skillId,
+    level_min: s.levelMin,
+  }));
+  await syncJoinTableRows(
+    supabase,
+    "posting_skills",
+    "posting_id",
+    postingId,
+    postingSkillRows,
+  );
 
   // Sync availability_windows
-  await supabase
-    .from("availability_windows")
-    .delete()
-    .eq("posting_id", postingId);
-
-  if (
-    body.availabilityMode !== "flexible" &&
-    body.availabilityWindows &&
-    body.availabilityWindows.length > 0
-  ) {
-    const windowRows = body.availabilityWindows.map((w) => ({
-      posting_id: postingId,
-      window_type: "recurring" as const,
-      day_of_week: w.day_of_week,
-      start_minutes: w.start_minutes,
-      end_minutes: w.end_minutes,
-    }));
-    await supabase.from("availability_windows").insert(windowRows);
-  }
+  const windowRows =
+    body.availabilityMode !== "flexible"
+      ? (body.availabilityWindows ?? []).map((w) => ({
+          posting_id: postingId,
+          window_type: "recurring" as const,
+          day_of_week: w.day_of_week,
+          start_minutes: w.start_minutes,
+          end_minutes: w.end_minutes,
+        }))
+      : [];
+  await syncJoinTableRows(
+    supabase,
+    "availability_windows",
+    "posting_id",
+    postingId,
+    windowRows,
+  );
 
   return apiSuccess({ posting: updated });
 });
@@ -83,24 +72,7 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
 export const DELETE = withAuth(async (_req, { user, supabase, params }) => {
   const postingId = params.id;
 
-  // Fetch posting to verify ownership
-  const { data: posting, error: fetchError } = await supabase
-    .from("postings")
-    .select("id, creator_id")
-    .eq("id", postingId)
-    .single();
-
-  if (fetchError || !posting) {
-    throw new AppError("NOT_FOUND", "Posting not found", 404);
-  }
-
-  if (posting.creator_id !== user.id) {
-    throw new AppError(
-      "FORBIDDEN",
-      "Not authorized to delete this posting",
-      403,
-    );
-  }
+  await verifyPostingOwnership(supabase, postingId, user.id);
 
   const { error: deleteError } = await supabase
     .from("postings")
@@ -108,7 +80,7 @@ export const DELETE = withAuth(async (_req, { user, supabase, params }) => {
     .eq("id", postingId);
 
   if (deleteError) {
-    return apiError(
+    throw new AppError(
       "INTERNAL",
       `Failed to delete posting: ${deleteError.message}`,
       500,

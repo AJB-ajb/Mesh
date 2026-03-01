@@ -1,6 +1,7 @@
 import type { MatchResponse } from "@/lib/supabase/types";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, apiSuccess } from "@/lib/errors";
+import { markPostingFilledIfFull } from "@/lib/api/posting-fulfillment";
+import { apiSuccess, AppError } from "@/lib/errors";
 
 /**
  * PATCH /api/matches/[id]/accept
@@ -20,13 +21,13 @@ export const PATCH = withAuth(async (_req, { user, supabase, params }) => {
     .single();
 
   if (matchError || !match) {
-    return apiError("NOT_FOUND", "Match not found", 404);
+    throw new AppError("NOT_FOUND", "Match not found", 404);
   }
 
   const posting = match.posting as Record<string, unknown>;
 
   if (posting?.creator_id !== user.id) {
-    return apiError(
+    throw new AppError(
       "FORBIDDEN",
       "Only posting creators can accept applicants",
       403,
@@ -34,7 +35,7 @@ export const PATCH = withAuth(async (_req, { user, supabase, params }) => {
   }
 
   if (match.status !== "applied") {
-    return apiError(
+    throw new AppError(
       "VALIDATION",
       `Match is not in 'applied' status (current: ${match.status})`,
       400,
@@ -52,25 +53,12 @@ export const PATCH = withAuth(async (_req, { user, supabase, params }) => {
     .single();
 
   if (updateError || !updatedMatch) {
-    return apiError("INTERNAL", "Failed to update match", 500);
+    throw new AppError("INTERNAL", "Failed to update match", 500);
   }
 
-  // --- Auto-fill: if accepted count reaches capacity, mark posting as filled ---
+  // Auto-fill: if accepted count reaches capacity, mark posting as filled
   const postingId = match.project_id as string;
-  const teamSizeMax = (posting.team_size_max as number) || 1;
-
-  const { count: acceptedCount } = await supabase
-    .from("matches")
-    .select("*", { count: "exact", head: true })
-    .eq("project_id", postingId)
-    .eq("status", "accepted");
-
-  if (acceptedCount !== null && acceptedCount >= teamSizeMax) {
-    await supabase
-      .from("postings")
-      .update({ status: "filled", updated_at: new Date().toISOString() })
-      .eq("id", postingId);
-  }
+  await markPostingFilledIfFull(supabase, postingId, "matches", "project_id");
 
   const response: MatchResponse = {
     id: updatedMatch.id,
