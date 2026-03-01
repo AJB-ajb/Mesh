@@ -8,6 +8,7 @@ import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { GlobalSearch } from "./global-search";
+import { Logo } from "./logo";
 import { NotificationsDropdown } from "./notifications-dropdown";
 import { useNotifications } from "@/lib/hooks/use-notifications";
 import { useSignOut } from "@/lib/hooks/use-sign-out";
@@ -27,17 +28,27 @@ export function Header({ className }: HeaderProps) {
         className,
       )}
     >
-      {/* Spacer for mobile menu button */}
-      <div className="w-10 md:hidden" />
+      {/* Logo for mobile */}
+      <div className="md:hidden">
+        <Logo href="/posts" />
+      </div>
 
-      {/* Global Search */}
-      <GlobalSearch />
+      {/* Global Search - desktop only */}
+      <div className="hidden md:flex flex-1">
+        <GlobalSearch />
+      </div>
+
+      {/* Spacer to push right side actions on mobile */}
+      <div className="flex-1 md:hidden" />
 
       {/* Right side actions */}
       <div className="flex items-center gap-1 sm:gap-2">
         <ThemeToggle className="size-11 sm:size-9" />
 
-        <NotificationsDropdown className="size-11 sm:size-9" />
+        {/* Notifications - desktop only */}
+        <div className="hidden md:block">
+          <NotificationsDropdown className="size-11 sm:size-9" />
+        </div>
 
         {/* User dropdown */}
         <div className="relative group">
