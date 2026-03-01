@@ -1,4 +1,4 @@
-Here is my detailed bug and irritation report from testing MeshIt:
+Here is my detailed bug and irritation report from testing Mesh:
 
 Bugs (Functional Issues)
 

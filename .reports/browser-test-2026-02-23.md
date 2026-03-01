@@ -2,7 +2,7 @@
 
 ## Summary
 
-- **Branch**: `feat/nl-nav-redesign` (worktree at `/home/ajb/repos/MeshIt-feat/nl-nav-redesign`)
+- **Branch**: `feat/nl-nav-redesign` (worktree at `/home/ajb/repos/Mesh-feat/nl-nav-redesign`)
 - **Mode**: both (flows + visual)
 - **Bugs Found**: 3 (0 critical, 0 high, 2 medium, 1 low)
 - **Flows Passed**: 11/11
@@ -85,4 +85,4 @@ The `feat/nl-nav-redesign` branch introduces these intentional UX changes:
 
 - **Mobile testing skipped**: The Claude-in-Chrome extension's `resize_window` tool does not effectively change the CSS viewport (inner width remained 1790px regardless of window resize). Mobile responsive testing requires manual browser DevTools.
 - **Test user**: Tested with both ajb60722@gmail.com (initial session) and ajb60721@gmail.com (re-login after sign-out).
-- **Dev server**: Running from worktree at `/home/ajb/repos/MeshIt-feat/nl-nav-redesign` on `feat/nl-nav-redesign` branch.
+- **Dev server**: Running from worktree at `/home/ajb/repos/Mesh-feat/nl-nav-redesign` on `feat/nl-nav-redesign` branch.
