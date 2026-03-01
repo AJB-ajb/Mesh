@@ -33,7 +33,7 @@ export function AiMatchCard({ match, isApplying, onApply }: AiMatchCardProps) {
             <div className="flex items-center gap-3 flex-wrap">
               <CardTitle className="text-xl">
                 <Link href={`/matches/${match.id}`} className="hover:underline">
-                  {posting.title}
+                  {posting.title?.replace(/^#{1,6}\s+/, "")}
                 </Link>
               </CardTitle>
               <span className="rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success">

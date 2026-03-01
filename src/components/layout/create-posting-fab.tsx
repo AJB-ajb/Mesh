@@ -1,15 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Plus } from "lucide-react";
 
 import { labels } from "@/lib/labels";
 import { useMobileKeyboard } from "@/lib/hooks/use-mobile-keyboard";
 
 export function CreatePostingFab() {
+  const pathname = usePathname();
   const { keyboardVisible } = useMobileKeyboard();
 
-  if (keyboardVisible) return null;
+  // Hide when already on the create page or when keyboard is up
+  if (pathname === "/postings/new" || keyboardVisible) return null;
 
   return (
     <Link
