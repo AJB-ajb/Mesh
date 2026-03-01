@@ -291,8 +291,9 @@ export default function NewPostingPage() {
       )}
       {slash.activeOverlay === "template" && (
         <TemplateOverlay
-          onInsert={(templateText) => {
-            setText(templateText);
+          onInsert={(result) => {
+            const text = typeof result === "string" ? result : result.display;
+            setText(text);
             slash.closeOverlay();
           }}
           onClose={slash.closeOverlay}

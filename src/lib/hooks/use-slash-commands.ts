@@ -6,6 +6,7 @@ import {
   SLASH_COMMANDS,
   type SlashCommand,
 } from "@/lib/slash-commands/registry";
+import type { OverlayResult } from "@/components/shared/slash-command-overlays";
 
 interface UseSlashCommandsOptions {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -22,7 +23,7 @@ export interface UseSlashCommandsReturn {
   onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   onSelect: (command: SlashCommand) => void;
   closeOverlay: () => void;
-  handleOverlayResult: (text: string) => void;
+  handleOverlayResult: (result: string | OverlayResult) => void;
   checkForSlashCommand: () => void;
 }
 
@@ -243,11 +244,13 @@ export function useSlashCommands({
   }, []);
 
   /**
-   * Called when an overlay produces a result string. Inserts the text at the
-   * position where the command was and closes the overlay.
+   * Called when an overlay produces a result. Accepts either a plain string or
+   * an OverlayResult with display text and optional structured data. Inserts
+   * the display text at the position where the command was and closes the overlay.
    */
   const handleOverlayResult = useCallback(
-    (text: string) => {
+    (result: string | OverlayResult) => {
+      const text = typeof result === "string" ? result : result.display;
       const insertPos = slashStartRef.current ?? value.length;
       const before = value.slice(0, insertPos);
       const after = value.slice(insertPos);
