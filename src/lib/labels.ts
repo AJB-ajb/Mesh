@@ -885,6 +885,8 @@ export const labels = {
     mainNavigation: "Main navigation",
     secondaryNavigation: "Secondary navigation",
     copyright: "\u00a9 2026 Mesh",
+    posts: "Posts",
+    bottomBar: "Tab navigation",
   },
 
   // ---------------------------------------------------------------------------
@@ -1101,6 +1103,30 @@ export const labels = {
       "Postings appear here once the minimum team size is reached.",
     discoverCta: "Discover postings",
     unreadMessages: (n: number) => `${n} unread message${n !== 1 ? "s" : ""}`,
+  },
+
+  // ---------------------------------------------------------------------------
+  // Posts page (unified postings hub)
+  // ---------------------------------------------------------------------------
+  posts: {
+    title: "Posts",
+    subtitle: "Your postings and active projects",
+    filters: {
+      all: "All",
+      created: "Created",
+      joined: "Joined",
+      applied: "Applied",
+      completed: "Completed",
+    } as const,
+    empty: {
+      all: "No posts yet",
+      created: "You haven\u2019t created any postings yet.",
+      joined: "You haven\u2019t joined any postings yet.",
+      applied: "No pending applications.",
+      completed: "No completed postings yet.",
+    } as const,
+    newPosting: "New Posting",
+    discoverCta: "Discover postings",
   },
 
   // ---------------------------------------------------------------------------

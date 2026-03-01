@@ -114,7 +114,7 @@ function DeveloperOnboardingContent() {
   };
 
   const handleSkip = () => {
-    const destination = next || "/active";
+    const destination = next || "/posts";
     router.replace(destination);
   };
 
