@@ -125,16 +125,24 @@ export function GuidedPrompts({ onComplete, onSkip }: GuidedPromptsProps) {
           <div className="flex items-center justify-between">
             <div>
               {step > 0 ? (
-                <Button variant="outline" onClick={handleBack}>
+                <Button
+                  variant="outline"
+                  onClick={handleBack}
+                  className="h-10 sm:h-9"
+                >
                   {labels.guidedPrompts.backButton}
                 </Button>
               ) : (
-                <Button variant="ghost" onClick={onSkip}>
+                <Button
+                  variant="ghost"
+                  onClick={onSkip}
+                  className="h-10 sm:h-9"
+                >
                   {labels.guidedPrompts.skipButton}
                 </Button>
               )}
             </div>
-            <Button onClick={handleNext}>
+            <Button onClick={handleNext} className="h-10 sm:h-9">
               {step === 2
                 ? labels.guidedPrompts.reviewButton
                 : labels.guidedPrompts.nextButton}
@@ -165,10 +173,14 @@ export function GuidedPrompts({ onComplete, onSkip }: GuidedPromptsProps) {
       />
 
       <div className="flex items-center justify-between">
-        <Button variant="outline" onClick={handleBack}>
+        <Button variant="outline" onClick={handleBack} className="h-10 sm:h-9">
           {labels.guidedPrompts.backButton}
         </Button>
-        <Button onClick={handleSave} disabled={!reviewText.trim()}>
+        <Button
+          onClick={handleSave}
+          disabled={!reviewText.trim()}
+          className="h-10 sm:h-9"
+        >
           {labels.guidedPrompts.saveButton}
         </Button>
       </div>

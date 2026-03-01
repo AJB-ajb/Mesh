@@ -219,6 +219,7 @@ function DeveloperOnboardingContent() {
                   onClick={handleSubmit}
                   disabled={!text.trim() || isSaving}
                   size="lg"
+                  className="h-11 sm:h-10"
                 >
                   {isSaving
                     ? labels.profileTextFirst.savingButton
@@ -255,7 +256,12 @@ function DeveloperOnboardingContent() {
 
               {/* Skip button */}
               <div className="flex justify-center">
-                <Button type="button" variant="ghost" onClick={handleSkip}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={handleSkip}
+                  className="h-10 sm:h-9"
+                >
                   {labels.onboarding.skipButton}
                 </Button>
               </div>
