@@ -22,8 +22,13 @@ import { useTemplates } from "@/lib/hooks/use-templates";
 // Shared overlay props
 // ---------------------------------------------------------------------------
 
+export interface OverlayResult {
+  display: string;
+  data?: Record<string, unknown>;
+}
+
 interface OverlayProps {
-  onInsert: (text: string) => void;
+  onInsert: (result: string | OverlayResult) => void;
   onClose: () => void;
 }
 
@@ -230,7 +235,17 @@ export function TimePickerOverlay({ onInsert, onClose }: OverlayProps) {
           <Button
             type="button"
             disabled={!canInsert}
-            onClick={() => onInsert(buildText())}
+            onClick={() =>
+              onInsert({
+                display: buildText(),
+                data: {
+                  days: Array.from(selectedDays),
+                  times: Array.from(selectedTimes),
+                  customFrom: customFrom || undefined,
+                  customTo: customTo || undefined,
+                },
+              })
+            }
           >
             {labels.slashCommands.insertButton}
           </Button>
@@ -275,7 +290,14 @@ export function LocationOverlay({ onInsert, onClose }: OverlayProps) {
             type="button"
             disabled={!location.trim()}
             onClick={() =>
-              onInsert(selectedLocation?.displayName ?? location.trim())
+              onInsert({
+                display: selectedLocation?.displayName ?? location.trim(),
+                data: {
+                  displayName: selectedLocation?.displayName ?? location.trim(),
+                  lat: selectedLocation?.lat,
+                  lng: selectedLocation?.lng,
+                },
+              })
             }
           >
             {labels.slashCommands.insertButton}
@@ -339,7 +361,18 @@ export function SkillPickerOverlay({ onInsert, onClose }: OverlayProps) {
           <Button
             type="button"
             disabled={selectedSkills.length === 0}
-            onClick={() => onInsert(serializeSkills())}
+            onClick={() =>
+              onInsert({
+                display: serializeSkills(),
+                data: {
+                  skills: selectedSkills.map((s) => ({
+                    skillId: s.skillId,
+                    name: s.name,
+                    levelMin: s.levelMin,
+                  })),
+                },
+              })
+            }
           >
             {labels.slashCommands.insertButton}
           </Button>
