@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react";
 import useSWR from "swr";
-import { usePostings, type PostingWithScore } from "./use-postings";
-import { useActivePostings, type ActivePosting } from "./use-active-postings";
+import { usePostings } from "./use-postings";
+import { useActivePostings } from "./use-active-postings";
 import { getUserOrThrow } from "@/lib/supabase/auth";
 
 // ---------------------------------------------------------------------------
@@ -17,12 +17,24 @@ export type PostsPageFilter =
   | "applied"
   | "completed";
 
-export type PostsPageItem =
-  | { kind: "owned"; data: PostingWithScore }
-  | { kind: "active"; data: ActivePosting };
+export type PostsCardData = {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  category: string | null;
+  teamSizeMin: number;
+  teamSizeMax: number;
+  createdAt: string;
+  creatorId: string;
+  role: "owner" | "joined";
+  acceptedCount?: number;
+  unreadCount?: number;
+  href: string;
+};
 
 // ---------------------------------------------------------------------------
-// Applied-postings fetcher (pending/waitlisted applications)
+// Applied-postings fetcher (pending/waitlisted join requests)
 // ---------------------------------------------------------------------------
 
 async function fetchAppliedPostingIds(): Promise<string[]> {
@@ -45,11 +57,8 @@ async function fetchAppliedPostingIds(): Promise<string[]> {
 export function usePostsPage() {
   const [activeFilter, setActiveFilter] = useState<PostsPageFilter>("all");
 
-  const {
-    postings: ownedPostings,
-    userId,
-    isLoading: isLoadingOwned,
-  } = usePostings("my-postings");
+  const { postings: ownedPostings, isLoading: isLoadingOwned } =
+    usePostings("my-postings");
 
   const { postings: activePostings, isLoading: isLoadingActive } =
     useActivePostings();
@@ -69,41 +78,62 @@ export function usePostsPage() {
       isLoadingApplied);
 
   const posts = useMemo(() => {
-    const items: PostsPageItem[] = [];
+    const items: PostsCardData[] = [];
     const seenIds = new Set<string>();
 
     // Owned postings (user created these)
     for (const p of ownedPostings) {
       seenIds.add(p.id);
-      items.push({ kind: "owned", data: p });
+      items.push({
+        id: p.id,
+        title: p.title,
+        description: p.description,
+        status: p.status,
+        category: p.category,
+        teamSizeMin: p.team_size_min,
+        teamSizeMax: p.team_size_max,
+        createdAt: p.created_at,
+        creatorId: p.creator_id,
+        role: "owner",
+        href: `/postings/${p.id}`,
+      });
     }
 
     // Joined active postings (accepted member, not creator)
     for (const p of activePostings) {
       if (!seenIds.has(p.id) && p.role === "joined") {
         seenIds.add(p.id);
-        items.push({ kind: "active", data: p });
+        items.push({
+          id: p.id,
+          title: p.title,
+          description: p.description,
+          status: p.status,
+          category: p.category,
+          teamSizeMin: p.team_size_min,
+          teamSizeMax: p.team_size_max,
+          createdAt: p.created_at,
+          creatorId: p.creator_id,
+          role: "joined",
+          acceptedCount: p.acceptedCount,
+          unreadCount: p.unreadCount,
+          href: `/postings/${p.id}?tab=project`,
+        });
       }
     }
 
     switch (activeFilter) {
       case "created":
-        return items.filter((item) => item.kind === "owned");
+        return items.filter((item) => item.role === "owner");
       case "joined":
-        return items.filter((item) => item.kind === "active");
+        return items.filter((item) => item.role === "joined");
       case "applied": {
         const idSet = new Set(appliedIds ?? []);
-        return items.filter((item) => {
-          const id = item.kind === "owned" ? item.data.id : item.data.id;
-          return idSet.has(id);
-        });
+        return items.filter((item) => idSet.has(item.id));
       }
       case "completed":
-        return items.filter((item) => {
-          const status =
-            item.kind === "owned" ? item.data.status : item.data.status;
-          return status === "filled" || status === "closed";
-        });
+        return items.filter(
+          (item) => item.status === "filled" || item.status === "closed",
+        );
       default:
         return items;
     }
@@ -114,6 +144,5 @@ export function usePostsPage() {
     isLoading,
     activeFilter,
     setActiveFilter,
-    userId,
   };
 }

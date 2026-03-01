@@ -1084,7 +1084,7 @@ export const labels = {
   // ---------------------------------------------------------------------------
   myPostings: {
     title: "My Postings",
-    subtitle: "Manage your postings and track applicants",
+    subtitle: "Manage your postings and track join requests",
     pendingRequests: (n: number) => `${n} pending request${n !== 1 ? "s" : ""}`,
     noPostings: "You haven\u2019t created any postings yet.",
     createFirst: "Create your first posting",
@@ -1115,14 +1115,14 @@ export const labels = {
       all: "All",
       created: "Created",
       joined: "Joined",
-      applied: "Applied",
+      applied: "Requested",
       completed: "Completed",
     } as const,
     empty: {
       all: "No posts yet",
       created: "You haven\u2019t created any postings yet.",
       joined: "You haven\u2019t joined any postings yet.",
-      applied: "No pending applications.",
+      applied: "No pending join requests.",
       completed: "No completed postings yet.",
     } as const,
     newPosting: "New Posting",
@@ -1516,7 +1516,7 @@ export const labels = {
   hiddenDetails: {
     lockedTitle: "Private Details",
     lockedDescription:
-      "This posting has private details that will be revealed after your application is accepted.",
+      "This posting has private details that will be revealed after your request is accepted.",
     revealedTitle: "Private Details",
     loadError: "Failed to load private details",
     fieldLabel: "Private details (revealed after acceptance)",
