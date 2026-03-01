@@ -3,6 +3,7 @@
  */
 
 import { AppError } from "@/lib/errors";
+import type { ChipMetadataMap } from "@/lib/types/posting";
 
 export interface PostingBody {
   title?: string;
@@ -33,6 +34,7 @@ export interface PostingBody {
   }[];
   sourceText?: string;
   hiddenDetails?: string;
+  chipMetadata?: ChipMetadataMap;
 }
 
 /**
@@ -103,6 +105,10 @@ export function buildPostingDbRow(body: PostingBody, mode: "create" | "edit") {
 
   if (body.hiddenDetails !== undefined) {
     row.hidden_details = body.hiddenDetails?.trim() || null;
+  }
+
+  if (body.chipMetadata && Object.keys(body.chipMetadata).length > 0) {
+    row.chip_metadata = body.chipMetadata;
   }
 
   if (mode === "edit") {
