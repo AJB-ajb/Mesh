@@ -20,7 +20,7 @@ export function SuggestionChips({
   }
 
   return (
-    <div className="flex items-center gap-2 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-1 animate-in fade-in duration-300">
+    <div className="flex items-center gap-2 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-1 animate-in fade-in duration-300 scrollbar-hide">
       {chips.map((chip) => (
         <button
           key={chip.id}
