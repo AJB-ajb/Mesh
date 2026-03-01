@@ -48,8 +48,16 @@ export function createSlashCommandSuggestion(
       range,
       props,
     }: {
-      editor: { chain: () => { focus: () => { deleteRange: (r: unknown) => { run: () => void } } } };
-      range: unknown;
+      editor: {
+        chain: () => {
+          focus: () => {
+            deleteRange: (r: { from: number; to: number }) => {
+              run: () => void;
+            };
+          };
+        };
+      };
+      range: { from: number; to: number };
       props: SlashCommand;
     }) => {
       editor.chain().focus().deleteRange(range).run();

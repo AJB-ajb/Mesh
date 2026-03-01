@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ChevronDown } from "lucide-react";
+import type { Editor } from "@tiptap/core";
 
 import { Button } from "@/components/ui/button";
 import { labels } from "@/lib/labels";
@@ -19,17 +20,24 @@ import {
   nudgeMessage,
   type NudgeItem,
 } from "@/components/shared/nudge-banner";
+import { MeshEditor } from "@/components/editor/mesh-editor";
+import { SpeechInput } from "@/components/ai-elements/speech-input";
+import { transcribeAudio } from "@/lib/transcribe";
+import { MetadataChip } from "@/components/editor/extensions/metadata-chip";
+import { SlashCommandExtension } from "@/components/editor/extensions/slash-command-extension";
+import { useEditorSlashCommands } from "@/lib/hooks/use-editor-slash-commands";
 import { usePostingSuggestions } from "@/lib/hooks/use-posting-suggestions";
 import { useMobileKeyboard } from "@/lib/hooks/use-mobile-keyboard";
-import { useSlashCommands } from "@/lib/hooks/use-slash-commands";
 import { SlashCommandMenu } from "@/components/shared/slash-command-menu";
 import {
   TimePickerOverlay,
   LocationOverlay,
   SkillPickerOverlay,
   TemplateOverlay,
+  type OverlayResult,
 } from "@/components/shared/slash-command-overlays";
 import type { PostingFormState } from "@/components/posting/posting-form-card";
+import type { ChipMetadataMap, ChipMetadataEntry } from "@/lib/types/posting";
 
 /** Minimum text length before fetching nudges from the API. */
 const NUDGE_MIN_LENGTH = 20;
@@ -44,24 +52,35 @@ export default function NewPostingPage() {
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [hiddenDetails, setHiddenDetails] = useState("");
-  const [textareaFocused, setTextareaFocused] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [editorFocused, setEditorFocused] = useState(false);
+  const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
+  const editorRef = useRef<Editor | null>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
   const { keyboardVisible } = useMobileKeyboard();
 
-  const slash = useSlashCommands({
-    textareaRef,
-    value: text,
-    onChange: setText,
+  // Chip metadata state
+  const [chipMetadata, setChipMetadata] = useState<ChipMetadataMap>({});
+  const chipCounterRef = useRef<Record<string, number>>({
+    location: 0,
+    time: 0,
+    skills: 0,
   });
 
-  // Auto-resize textarea
-  useEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${Math.max(el.scrollHeight, 200)}px`;
-  }, [text]);
+  // Slash commands via Tiptap suggestion
+  const slash = useEditorSlashCommands(editorRef);
+
+  // Tiptap extensions (stable reference)
+  const [extensions] = useState(() => [
+    MetadataChip,
+    SlashCommandExtension.configure({
+      suggestion: slash.suggestionConfig.suggestion,
+    }),
+  ]);
+
+  const handleEditorReady = useCallback((editor: Editor) => {
+    editorRef.current = editor;
+    setEditorInstance(editor);
+  }, []);
 
   // Suggestion chips state
   const { chips } = usePostingSuggestions(text);
@@ -155,6 +174,8 @@ export default function NewPostingPage() {
           description: trimmed,
           sourceText: trimmed,
           hiddenDetails: hiddenDetails.trim() || undefined,
+          chipMetadata:
+            Object.keys(chipMetadata).length > 0 ? chipMetadata : undefined,
         }),
       });
 
@@ -172,44 +193,87 @@ export default function NewPostingPage() {
       setIsSaving(false);
       setError(labels.postingCreation.errorGeneric);
     }
-  }, [text, form, hiddenDetails, router]);
-
-  // Compose keydown: slash commands first, then Cmd+Enter shortcut
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      slash.onKeyDown(e);
-      if (e.defaultPrevented) return;
-
-      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-        e.preventDefault();
-        handleSubmit();
-      }
-    },
-    [slash, handleSubmit],
-  );
+  }, [text, form, hiddenDetails, chipMetadata, router]);
 
   const handleFormChange = (field: keyof PostingFormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleChipClick = useCallback(
-    (chip: { insertText: string }) => {
-      const separator = text.trim() ? "\n" : "";
-      setText((prev) => prev + separator + chip.insertText);
-    },
-    [text],
-  );
+  const handleChipClick = useCallback((chip: { insertText: string }) => {
+    const editor = editorRef.current;
+    if (editor) {
+      editor.chain().focus().insertContent(chip.insertText).run();
+    }
+  }, []);
 
   const handleNudgeDismiss = useCallback((dimension: string) => {
     setDismissedNudges((prev) => new Set(prev).add(dimension));
   }, []);
 
-  const handleNudgeInsert = useCallback(
-    (suggestion: string) => {
-      const separator = text.trim() ? "\n" : "";
-      setText((prev) => prev + separator + suggestion);
+  const handleNudgeInsert = useCallback((suggestion: string) => {
+    const editor = editorRef.current;
+    if (editor) {
+      editor
+        .chain()
+        .focus()
+        .insertContent("\n" + suggestion)
+        .run();
+    }
+  }, []);
+
+  /**
+   * Insert a metadata chip into the editor and store its structured data.
+   */
+  const insertChip = useCallback(
+    (chipType: string, display: string, data: Record<string, unknown>) => {
+      const editor = editorRef.current;
+      if (!editor) return;
+
+      const count = chipCounterRef.current[chipType] ?? 0;
+      const metadataKey = `${chipType}_${count}`;
+      chipCounterRef.current[chipType] = count + 1;
+
+      const entry: ChipMetadataEntry = {
+        type: chipType as ChipMetadataEntry["type"],
+        display,
+        data,
+      } as ChipMetadataEntry;
+
+      setChipMetadata((prev) => ({ ...prev, [metadataKey]: entry }));
+
+      editor
+        .chain()
+        .focus()
+        .insertContent({
+          type: "metadataChip",
+          attrs: { metadataKey, chipType, display },
+        })
+        .insertContent(" ")
+        .run();
     },
-    [text],
+    [],
+  );
+
+  /**
+   * Handle overlay result — either a plain string or structured OverlayResult.
+   * Structured results insert a chip; plain strings insert text.
+   */
+  const handleOverlayResult = useCallback(
+    (result: string | OverlayResult) => {
+      if (typeof result === "string") {
+        // Plain text insertion (fallback)
+        const editor = editorRef.current;
+        if (editor) {
+          editor.chain().focus().insertContent(result).run();
+        }
+      } else {
+        // Structured result — insert as chip
+        const chipType = slash.activeOverlay ?? "unknown";
+        insertChip(chipType, result.display, result.data ?? {});
+      }
+      slash.closeOverlay();
+    },
+    [slash, insertChip],
   );
 
   const visibleNudges = nudges.filter((n) => !dismissedNudges.has(n.dimension));
@@ -244,56 +308,78 @@ export default function NewPostingPage() {
         </p>
       )}
 
-      {/* Hero textarea */}
-      <textarea
-        ref={textareaRef}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onInput={slash.checkForSlashCommand}
-        onFocus={() => setTextareaFocused(true)}
-        onBlur={() => setTextareaFocused(false)}
-        placeholder={labels.postingCreation.textPlaceholder}
-        rows={8}
-        className="flex w-full rounded-lg border border-input bg-background px-4 py-3 text-lg leading-relaxed ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
-        autoFocus
-      />
+      {/* Hero editor */}
+      <div className="relative">
+        <MeshEditor
+          content={text}
+          placeholder={labels.postingCreation.textPlaceholder}
+          onChange={setText}
+          onSubmit={handleSubmit}
+          autoFocus
+          extensions={extensions}
+          onEditorReady={handleEditorReady}
+          onFocus={() => setEditorFocused(true)}
+          onBlur={() => setEditorFocused(false)}
+          className="min-h-[200px]"
+        />
+        <SpeechInput
+          className="absolute right-1.5 top-1.5 h-7 w-7 shrink-0 p-0"
+          size="icon"
+          variant="ghost"
+          type="button"
+          onAudioRecorded={transcribeAudio}
+          onTranscriptionChange={(transcript) => {
+            const editor = editorRef.current;
+            if (editor) {
+              editor.chain().focus().insertContent(transcript).run();
+            }
+          }}
+        />
+      </div>
 
       {/* Slash command menu */}
-      {slash.menuOpen && slash.menuPosition && (
+      {slash.menuState.isOpen && slash.menuState.clientRect && (
         <SlashCommandMenu
-          commands={slash.filteredCommands}
-          selectedIndex={slash.selectedIndex}
-          position={slash.menuPosition}
-          onSelect={slash.onSelect}
-          onClose={() => slash.closeOverlay()}
+          commands={slash.menuState.commands}
+          selectedIndex={slash.menuState.selectedIndex}
+          position={(() => {
+            const rect = slash.menuState.clientRect?.();
+            if (!rect) return { top: 0, left: 0 };
+            return { top: rect.bottom + 4, left: rect.left };
+          })()}
+          onSelect={slash.suggestionConfig.selectCommand}
+          onClose={slash.closeOverlay}
         />
       )}
 
       {/* Slash command overlays */}
       {slash.activeOverlay === "time" && (
         <TimePickerOverlay
-          onInsert={slash.handleOverlayResult}
+          onInsert={handleOverlayResult}
           onClose={slash.closeOverlay}
         />
       )}
       {slash.activeOverlay === "location" && (
         <LocationOverlay
-          onInsert={slash.handleOverlayResult}
+          onInsert={handleOverlayResult}
           onClose={slash.closeOverlay}
         />
       )}
       {slash.activeOverlay === "skills" && (
         <SkillPickerOverlay
-          onInsert={slash.handleOverlayResult}
+          onInsert={handleOverlayResult}
           onClose={slash.closeOverlay}
         />
       )}
       {slash.activeOverlay === "template" && (
         <TemplateOverlay
           onInsert={(result) => {
-            const text = typeof result === "string" ? result : result.display;
-            setText(text);
+            const templateText =
+              typeof result === "string" ? result : result.display;
+            const editor = editorRef.current;
+            if (editor) {
+              editor.commands.setContent(templateText);
+            }
             slash.closeOverlay();
           }}
           onClose={slash.closeOverlay}
@@ -310,7 +396,7 @@ export default function NewPostingPage() {
       )}
 
       {/* Text tools (auto-format, auto-clean) */}
-      <TextTools text={text} onTextChange={setText} />
+      <TextTools text={text} onTextChange={setText} editor={editorInstance} />
 
       {/* Nudge banners */}
       <NudgeBanner
@@ -392,9 +478,8 @@ export default function NewPostingPage() {
 
       {/* Mobile markdown toolbar */}
       <MarkdownToolbar
-        textareaRef={textareaRef}
-        onChange={setText}
-        visible={keyboardVisible && textareaFocused}
+        editor={editorInstance}
+        visible={keyboardVisible && editorFocused}
       />
     </div>
   );
