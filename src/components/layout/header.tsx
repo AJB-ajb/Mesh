@@ -34,14 +34,18 @@ export function Header({ className }: HeaderProps) {
       <GlobalSearch />
 
       {/* Right side actions */}
-      <div className="flex items-center gap-2">
-        <ThemeToggle />
+      <div className="flex items-center gap-1 sm:gap-2">
+        <ThemeToggle className="size-11 sm:size-9" />
 
-        <NotificationsDropdown />
+        <NotificationsDropdown className="size-11 sm:size-9" />
 
         {/* User dropdown */}
         <div className="relative group">
-          <Button variant="ghost" size="icon" className="rounded-full">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-11 sm:size-9 rounded-full"
+          >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">
               {userInitials}
             </div>

@@ -13,7 +13,7 @@ interface AppShellProps {
 export function AppShell({ children, className }: AppShellProps) {
   return (
     <PresenceProvider>
-      <div className="flex min-h-screen">
+      <div className="flex h-dvh">
         <SkipLink />
         <Sidebar />
         <div className="flex flex-1 flex-col min-w-0 overflow-x-hidden overflow-y-auto">
