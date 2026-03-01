@@ -377,6 +377,34 @@
 }
 
 /* ===========================================
+   Tiptap Editor — show markdown syntax hints
+   =========================================== */
+.ProseMirror h2::before {
+  content: "## ";
+  @apply text-muted-foreground/40 font-normal;
+}
+.ProseMirror h3::before {
+  content: "### ";
+  @apply text-muted-foreground/40 font-normal;
+}
+.ProseMirror strong::before {
+  content: "**";
+  @apply text-muted-foreground/40 font-normal;
+}
+.ProseMirror strong::after {
+  content: "**";
+  @apply text-muted-foreground/40 font-normal;
+}
+.ProseMirror code::before {
+  content: "`";
+  @apply text-muted-foreground/40;
+}
+.ProseMirror code::after {
+  content: "`";
+  @apply text-muted-foreground/40;
+}
+
+/* ===========================================
    Markdown Content Typography
    =========================================== */
 .markdown-content {
