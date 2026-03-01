@@ -202,10 +202,10 @@ describe("PostingFormCard", () => {
     expect(submitBtn).toBeDisabled();
   });
 
-  it("renders Cancel link to /my-postings", () => {
+  it("renders Cancel link to /posts", () => {
     renderCard();
     const cancelLink = screen.getByText("Cancel");
-    expect(cancelLink.closest("a")).toHaveAttribute("href", "/my-postings");
+    expect(cancelLink.closest("a")).toHaveAttribute("href", "/posts");
   });
 
   it("calls onSubmit when form is submitted", () => {
