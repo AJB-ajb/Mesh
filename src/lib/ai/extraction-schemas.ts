@@ -219,6 +219,11 @@ export function postingExtractionSchema(mode: ExtractionMode): ObjectSchema {
       description:
         "IANA timezone if mentioned (e.g., 'America/New_York', 'Europe/Berlin')",
     },
+    max_distance_km: {
+      type: SchemaType.NUMBER,
+      description:
+        "Maximum distance in kilometers for in-person collaboration, if mentioned. E.g., 'within 50km' → 50",
+    },
   };
 
   const required =

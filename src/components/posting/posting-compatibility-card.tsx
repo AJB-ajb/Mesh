@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 import {
   Card,
@@ -11,17 +11,11 @@ import {
 } from "@/components/ui/card";
 import { MatchBreakdown } from "@/components/match/match-breakdown";
 import { computeWeightedScore, formatScore } from "@/lib/matching/scoring";
-import type { ScoreBreakdown } from "@/lib/supabase/types";
+import { usePostingDetailContext } from "./posting-detail-context";
 
-type PostingCompatibilityCardProps = {
-  matchBreakdown: ScoreBreakdown | null;
-  isComputingMatch: boolean;
-};
+export function PostingCompatibilityCard() {
+  const { matchBreakdown } = usePostingDetailContext();
 
-export function PostingCompatibilityCard({
-  matchBreakdown,
-  isComputingMatch,
-}: PostingCompatibilityCardProps) {
   return (
     <Card>
       <CardHeader>
@@ -32,12 +26,7 @@ export function PostingCompatibilityCard({
         <CardDescription>How well you match this posting</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {isComputingMatch ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Computing compatibility...
-          </div>
-        ) : matchBreakdown ? (
+        {matchBreakdown ? (
           <>
             <div className="rounded-lg border border-border bg-muted/30 p-4">
               <p className="text-sm text-muted-foreground mb-1">

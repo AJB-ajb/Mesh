@@ -6,7 +6,13 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Posting, ScoreBreakdown } from "@/lib/supabase/types";
 import { MATCH_SCORE_THRESHOLD } from "@/lib/matching/scoring";
-import { MATCHING } from "@/lib/constants";
+import { MATCHING, DEEP_MATCH } from "@/lib/constants";
+import {
+  deepMatchCandidates,
+  isDeepMatchAvailable,
+  blendScores,
+  type DeepMatchResult,
+} from "@/lib/matching/deep-match";
 
 export interface MatchFilters {
   category?: string;
@@ -20,6 +26,7 @@ export interface ProfileToPostingMatch {
   score: number; // 0-1 similarity score
   scoreBreakdown: ScoreBreakdown | null;
   matchId?: string; // If match record already exists
+  deepMatchResult?: DeepMatchResult;
 }
 
 /**
@@ -35,6 +42,7 @@ export async function matchProfileToPostings(
   userId: string,
   limit: number = MATCHING.DEFAULT_RESULT_LIMIT,
   filters?: MatchFilters,
+  deepMatch: boolean = false,
 ): Promise<ProfileToPostingMatch[]> {
   const supabase = await createClient();
 
@@ -109,64 +117,141 @@ export async function matchProfileToPostings(
     existingMatches?.map((m) => [m.posting_id, m]) || [],
   );
 
-  // Transform results into match objects and compute breakdowns
-  const matches: ProfileToPostingMatch[] = await Promise.all(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    data.map(async (row: any) => {
-      const posting: Posting = {
-        id: row.posting_id,
-        creator_id: row.creator_id,
-        title: row.title,
-        description: row.description,
-        team_size_min: row.team_size_min || 1,
-        team_size_max: row.team_size_max || 1,
-        category: row.category || null,
-        context_identifier: row.context_identifier || null,
-        tags: row.tags || [],
-        visibility:
-          row.visibility ?? (row.mode === "friend_ask" ? "private" : "public"),
-        mode: row.mode || "open",
-        location_preference: row.location_preference ?? null,
-        natural_language_criteria: row.natural_language_criteria || null,
-        estimated_time: row.estimated_time || null,
-        auto_accept: row.auto_accept ?? false,
-        availability_mode: row.availability_mode || "flexible",
-        timezone: row.timezone || null,
-        embedding: null,
-        status: "open",
-        created_at: row.created_at,
-        updated_at: row.created_at,
-        expires_at: row.expires_at,
-      };
+  // Compute all breakdowns in a single batch RPC call for postings without cached breakdowns
+  const postingsNeedingBreakdown = postingIds.filter(
+    (id: string) => !matchMap.get(id)?.score_breakdown,
+  );
+  const breakdownMap = new Map<string, ScoreBreakdown>();
 
-      const existingMatch = matchMap.get(row.posting_id);
+  if (postingsNeedingBreakdown.length > 0) {
+    const { data: batchBreakdowns } = await supabase.rpc(
+      "compute_match_breakdowns_batch",
+      {
+        profile_user_id: userId,
+        posting_ids: postingsNeedingBreakdown,
+      },
+    );
+    for (const r of batchBreakdowns ?? []) {
+      breakdownMap.set(r.posting_id, r.breakdown as ScoreBreakdown);
+    }
+  }
 
-      // Compute score breakdown using database function
-      let scoreBreakdown: ScoreBreakdown | null = null;
-      if (existingMatch?.score_breakdown) {
-        scoreBreakdown = existingMatch.score_breakdown as ScoreBreakdown;
-      } else {
-        const { data: breakdown, error: breakdownError } = await supabase.rpc(
-          "compute_match_breakdown",
-          {
-            profile_user_id: userId,
-            target_posting_id: row.posting_id,
-          },
+  // Transform results into match objects
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const matches: ProfileToPostingMatch[] = data.map((row: any) => {
+    const posting: Posting = {
+      id: row.posting_id,
+      creator_id: row.creator_id,
+      title: row.title,
+      description: row.description,
+      team_size_min: row.team_size_min || 1,
+      team_size_max: row.team_size_max || 1,
+      category: row.category || null,
+      context_identifier: row.context_identifier || null,
+      tags: row.tags || [],
+      visibility: row.visibility ?? "public",
+      mode: "open",
+      location_preference: row.location_preference ?? null,
+      natural_language_criteria: row.natural_language_criteria || null,
+      estimated_time: row.estimated_time || null,
+      auto_accept: row.auto_accept ?? false,
+      availability_mode: row.availability_mode || "flexible",
+      timezone: row.timezone || null,
+      embedding: null,
+      status: "open",
+      created_at: row.created_at,
+      updated_at: row.created_at,
+      expires_at: row.expires_at,
+      identified_roles: row.identified_roles ?? null,
+    };
+
+    const existingMatch = matchMap.get(row.posting_id);
+    const scoreBreakdown: ScoreBreakdown | null =
+      (existingMatch?.score_breakdown as ScoreBreakdown) ??
+      breakdownMap.get(row.posting_id) ??
+      null;
+
+    return {
+      posting,
+      score: row.similarity,
+      scoreBreakdown,
+      matchId: existingMatch?.id,
+    };
+  });
+
+  // Deep match: run LLM evaluation on top N candidates if requested
+  if (deepMatch && isDeepMatchAvailable()) {
+    const topN = matches.slice(0, DEEP_MATCH.DEFAULT_TOP_N);
+
+    // Fetch source texts for posting and profile
+    const postingIds = topN.map((m) => m.posting.id);
+    const { data: postingSources } = await supabase
+      .from("postings")
+      .select("id, source_text, description")
+      .in("id", postingIds);
+    const { data: profileSource } = await supabase
+      .from("profiles")
+      .select("source_text, bio, headline")
+      .eq("user_id", userId)
+      .single();
+
+    const postingSourceMap = new Map(
+      postingSources?.map((p) => [p.id, p]) ?? [],
+    );
+    const profileText =
+      profileSource?.source_text ||
+      profileSource?.bio ||
+      profileSource?.headline ||
+      "";
+
+    if (profileText) {
+      const candidates = topN
+        .map((m) => {
+          const ps = postingSourceMap.get(m.posting.id);
+          const postingText =
+            ps?.source_text || ps?.description || m.posting.description || "";
+          return {
+            postingTitle: m.posting.title,
+            postingText,
+            profileText,
+            fastFilterScore: m.score,
+            sharedSkills: [] as string[],
+            availabilityOverlap: m.scoreBreakdown?.availability ?? null,
+            distanceKm: null as number | null,
+            semanticScore: m.scoreBreakdown?.semantic ?? null,
+          };
+        })
+        .filter((c) => c.postingText);
+
+      if (candidates.length > 0) {
+        const deepResults = await deepMatchCandidates(
+          // Use the first posting title as a placeholder — each candidate
+          // has its own posting context in the prompt
+          candidates[0].postingTitle,
+          candidates[0].postingText,
+          candidates,
         );
 
-        if (!breakdownError && breakdown) {
-          scoreBreakdown = breakdown as ScoreBreakdown;
-        }
-      }
+        // Attach deep match results and blend scores
+        let resultIdx = 0;
+        topN.forEach((m) => {
+          if (resultIdx < deepResults.length) {
+            const ps = postingSourceMap.get(m.posting.id);
+            const postingText =
+              ps?.source_text || ps?.description || m.posting.description || "";
+            if (postingText) {
+              m.deepMatchResult = deepResults[resultIdx];
+              m.score = blendScores(m.score, deepResults[resultIdx].score);
+              resultIdx++;
+            }
+          }
+        });
 
-      return {
-        posting,
-        score: row.similarity,
-        scoreBreakdown,
-        matchId: existingMatch?.id,
-      };
-    }),
-  );
+        // Re-sort by blended score
+        matches.sort((a, b) => b.score - a.score);
+      }
+    }
+  }
 
   return matches;
 }

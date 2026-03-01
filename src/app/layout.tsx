@@ -4,6 +4,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { SWRProvider } from "@/lib/swr/provider";
 import { FeedbackWidget } from "@/components/feedback/feedback-widget";
+import { Toaster } from "sonner";
+import { ServiceWorkerUpdater } from "@/components/pwa/sw-updater";
+import { BackButtonHandler } from "@/components/capacitor/back-button-handler";
+import { StatusBarInit } from "@/components/capacitor/status-bar-init";
 import { labels } from "@/lib/labels";
 import "./globals.css";
 
@@ -81,6 +85,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -93,10 +98,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
+        <ServiceWorkerUpdater />
+        <BackButtonHandler />
+        <StatusBarInit />
         <SWRProvider>
           <ThemeProvider>
             {children}
             <FeedbackWidget />
+            <Toaster richColors position="bottom-right" />
           </ThemeProvider>
         </SWRProvider>
       </body>

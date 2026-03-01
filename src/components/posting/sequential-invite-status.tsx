@@ -115,7 +115,9 @@ export function SequentialInviteStatus({
     );
   }
 
-  // Sequential mode: original timeline display
+  // Sequential mode: timeline display with support for multiple pending invitees
+  const pendingInviteesSet = new Set(friendAsk.pending_invitees ?? []);
+
   return (
     <div className="space-y-3">
       {/* Header */}
@@ -129,18 +131,20 @@ export function SequentialInviteStatus({
         {ordered_friend_list.map((connectionId, index) => {
           const name =
             connectionNames[connectionId] ?? connectionId.slice(0, 8);
-          const isCurrent =
-            index === current_request_index && status === "pending";
-          const isPast = index < current_request_index;
+          const isPending =
+            pendingInviteesSet.has(connectionId) && status === "pending";
+          const isDeclined = declinedSet.has(connectionId);
           const isAccepted =
-            status === "accepted" && index === current_request_index;
+            status === "accepted" && pendingInviteesSet.has(connectionId);
+          const isPast = isDeclined;
+          const isFuture = !isPending && !isDeclined && !isAccepted;
 
           return (
             <div
               key={connectionId}
               className={cn(
                 "flex items-center gap-3 rounded-md p-2 text-sm transition-colors",
-                isCurrent && "bg-primary/10 border border-primary/20",
+                isPending && "bg-primary/10 border border-primary/20",
                 isAccepted &&
                   "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800",
               )}
@@ -150,7 +154,7 @@ export function SequentialInviteStatus({
                 <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
               ) : isPast ? (
                 <XCircle className="h-4 w-4 text-muted-foreground shrink-0" />
-              ) : isCurrent ? (
+              ) : isPending ? (
                 <Clock className="h-4 w-4 text-primary shrink-0" />
               ) : (
                 <Circle className="h-4 w-4 text-muted-foreground/40 shrink-0" />
@@ -166,16 +170,17 @@ export function SequentialInviteStatus({
                 className={cn(
                   "truncate",
                   isPast && "text-muted-foreground line-through",
-                  isCurrent && "font-medium",
+                  isPending && "font-medium",
                   isAccepted &&
                     "font-medium text-green-700 dark:text-green-400",
+                  isFuture && !isPast && "text-muted-foreground",
                 )}
               >
                 {name}
               </span>
 
               {/* Current indicator */}
-              {isCurrent && (
+              {isPending && (
                 <ArrowRight className="h-3 w-3 text-primary shrink-0 ml-auto" />
               )}
             </div>
@@ -194,10 +199,15 @@ export function SequentialInviteStatus({
             ? labels.invite.completedSummary(ordered_friend_list.length)
             : status === "cancelled"
               ? labels.invite.cancelledSummary
-              : labels.invite.waitingSummary(
-                  current_request_index + 1,
-                  ordered_friend_list.length,
-                )}
+              : pendingInviteesSet.size > 1
+                ? labels.invite.concurrentWaitingSummary(
+                    pendingInviteesSet.size,
+                    ordered_friend_list.length,
+                  )
+                : labels.invite.waitingSummary(
+                    current_request_index + 1,
+                    ordered_friend_list.length,
+                  )}
       </p>
     </div>
   );

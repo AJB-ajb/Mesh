@@ -7,23 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { LocationAutocomplete } from "@/components/location/location-autocomplete";
 import { NOT_SPECIFIED } from "@/lib/format";
 import { reverseGeocode, type GeocodingResult } from "@/lib/geocoding";
 import { labels } from "@/lib/labels";
 import { LOCATION } from "@/lib/constants";
 import { getLocationModeDisplay } from "@/lib/posting/location";
-import type {
-  PostingDetail,
-  PostingFormState,
-} from "@/lib/hooks/use-posting-detail";
-
-type PostingAboutCardProps = {
-  posting: PostingDetail;
-  isEditing: boolean;
-  form: PostingFormState;
-  onFormChange: (field: keyof PostingFormState, value: string) => void;
-};
+import type { PostingFormState } from "@/lib/hooks/use-posting-detail";
+import { usePostingDetailContext } from "./posting-detail-context";
 
 function LocationEditFields({
   form,
@@ -182,12 +174,8 @@ function LocationEditFields({
   );
 }
 
-export function PostingAboutCard({
-  posting,
-  isEditing,
-  form,
-  onFormChange,
-}: PostingAboutCardProps) {
+export function PostingAboutCard() {
+  const { posting, isEditing, form, onFormChange } = usePostingDetailContext();
   const locationDisplay = getLocationModeDisplay(posting.location_mode);
 
   return (
@@ -204,9 +192,10 @@ export function PostingAboutCard({
             className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
         ) : (
-          <p className="text-muted-foreground whitespace-pre-wrap">
-            {posting.description}
-          </p>
+          <MarkdownRenderer
+            content={posting.description ?? ""}
+            className="text-muted-foreground"
+          />
         )}
 
         {/* Skills */}
@@ -400,15 +389,15 @@ export function PostingAboutCard({
                 {posting.team_size_max}
               </p>
             </div>
-            <div className="rounded-lg border border-border p-4">
-              <Calendar className="h-5 w-5 text-muted-foreground" />
-              <p className="mt-2 text-sm text-muted-foreground">
-                Estimated Time
-              </p>
-              <p className="font-medium">
-                {posting.estimated_time || NOT_SPECIFIED}
-              </p>
-            </div>
+            {posting.estimated_time && (
+              <div className="rounded-lg border border-border p-4">
+                <Calendar className="h-5 w-5 text-muted-foreground" />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Estimated Time
+                </p>
+                <p className="font-medium">{posting.estimated_time}</p>
+              </div>
+            )}
             <div className="rounded-lg border border-border p-4">
               <Clock className="h-5 w-5 text-muted-foreground" />
               <p className="mt-2 text-sm text-muted-foreground">Category</p>

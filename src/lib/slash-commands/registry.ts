@@ -5,6 +5,8 @@ export type SlashCommandType = "action" | "content";
 export interface SlashCommand {
   /** Unique identifier used for matching and overlay routing */
   name: string;
+  /** Icon name for the SlashCommandMenu */
+  icon: string;
   /** Display label shown in the menu */
   label: string;
   /** Short description shown below the label */
@@ -16,24 +18,28 @@ export interface SlashCommand {
 export const SLASH_COMMANDS: SlashCommand[] = [
   {
     name: "time",
+    icon: "Clock",
     label: labels.slashCommands.time.label,
     description: labels.slashCommands.time.description,
     type: "action",
   },
   {
     name: "location",
+    icon: "MapPin",
     label: labels.slashCommands.location.label,
     description: labels.slashCommands.location.description,
     type: "action",
   },
   {
     name: "skills",
+    icon: "Wrench",
     label: labels.slashCommands.skills.label,
     description: labels.slashCommands.skills.description,
     type: "action",
   },
   {
     name: "template",
+    icon: "FileText",
     label: labels.slashCommands.template.label,
     description: labels.slashCommands.template.description,
     type: "action",

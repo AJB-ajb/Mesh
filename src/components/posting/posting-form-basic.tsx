@@ -12,9 +12,14 @@ import type { Editor } from "@tiptap/core";
 type PostingFormBasicProps = {
   form: PostingFormState;
   onChange: (field: keyof PostingFormState, value: string) => void;
+  hideDescription?: boolean;
 };
 
-export function PostingFormBasic({ form, onChange }: PostingFormBasicProps) {
+export function PostingFormBasic({
+  form,
+  onChange,
+  hideDescription,
+}: PostingFormBasicProps) {
   const editorRef = useRef<Editor | null>(null);
 
   const handleEditorReady = useCallback((editor: Editor) => {
@@ -38,37 +43,39 @@ export function PostingFormBasic({ form, onChange }: PostingFormBasicProps) {
       </div>
 
       {/* Description */}
-      <div className="space-y-2">
-        <label htmlFor="description" className="text-sm font-medium">
-          {labels.postingForm.descriptionLabel}{" "}
-          <span className="text-destructive">*</span>
-        </label>
-        <div className="relative">
-          <MeshEditor
-            content={form.description}
-            placeholder={labels.postingForm.descriptionPlaceholder}
-            onChange={(md) => onChange("description", md)}
-            className="min-h-[150px] pr-9"
-            onEditorReady={handleEditorReady}
-          />
-          <SpeechInput
-            className="absolute right-1.5 top-1.5 h-7 w-7 shrink-0 p-0"
-            size="icon"
-            variant="ghost"
-            type="button"
-            onAudioRecorded={transcribeAudio}
-            onTranscriptionChange={(text) => {
-              const editor = editorRef.current;
-              if (editor) {
-                editor.chain().focus().insertContent(text).run();
-              }
-            }}
-          />
+      {!hideDescription && (
+        <div className="space-y-2">
+          <label htmlFor="description" className="text-sm font-medium">
+            {labels.postingForm.descriptionLabel}{" "}
+            <span className="text-destructive">*</span>
+          </label>
+          <div className="relative">
+            <MeshEditor
+              content={form.description}
+              placeholder={labels.postingForm.descriptionPlaceholder}
+              onChange={(md) => onChange("description", md)}
+              className="min-h-[150px] pr-9"
+              onEditorReady={handleEditorReady}
+            />
+            <SpeechInput
+              className="absolute right-1.5 top-1.5 h-7 w-7 shrink-0 p-0"
+              size="icon"
+              variant="ghost"
+              type="button"
+              onAudioRecorded={transcribeAudio}
+              onTranscriptionChange={(text) => {
+                const editor = editorRef.current;
+                if (editor) {
+                  editor.chain().focus().insertContent(text).run();
+                }
+              }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {labels.extraction.formHint}
+          </p>
         </div>
-        <p className="text-xs text-muted-foreground">
-          {labels.extraction.formHint}
-        </p>
-      </div>
+      )}
     </>
   );
 }

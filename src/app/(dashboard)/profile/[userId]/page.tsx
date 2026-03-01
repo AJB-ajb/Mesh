@@ -216,7 +216,7 @@ export default function PublicProfilePage() {
     return (
       <div className="space-y-6">
         <Link
-          href="/my-postings"
+          href="/posts"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -238,7 +238,7 @@ export default function PublicProfilePage() {
   return (
     <div className="space-y-6">
       <Link
-        href="/my-postings"
+        href="/posts"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />

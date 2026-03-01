@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { labels } from "@/lib/labels";
 import { useCallback, useMemo } from "react";
 import useSWR from "swr";
 
@@ -22,25 +24,34 @@ export function useBookmarks() {
         ? data!.postingIds.filter((id) => id !== postingId)
         : [...(data?.postingIds ?? []), postingId];
 
-      await mutate(
-        async () => {
-          const res = await fetch("/api/bookmarks", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ posting_id: postingId }),
-          });
-          if (!res.ok) throw new Error("Failed to toggle bookmark");
-          // Return updated list after server confirms
-          const listRes = await fetch("/api/bookmarks");
-          if (!listRes.ok) throw new Error("Failed to fetch bookmarks");
-          return listRes.json();
-        },
-        {
-          optimisticData: { postingIds: optimisticIds },
-          rollbackOnError: true,
-          revalidate: false,
-        },
-      );
+      try {
+        await mutate(
+          async () => {
+            const res = await fetch("/api/bookmarks", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ posting_id: postingId }),
+            });
+            if (!res.ok) throw new Error("Failed to toggle bookmark");
+            // Return updated list after server confirms
+            const listRes = await fetch("/api/bookmarks");
+            if (!listRes.ok) throw new Error("Failed to fetch bookmarks");
+            return listRes.json();
+          },
+          {
+            optimisticData: { postingIds: optimisticIds },
+            rollbackOnError: true,
+            revalidate: false,
+          },
+        );
+        toast.success(
+          wasBookmarked
+            ? labels.toasts.bookmarkRemoved
+            : labels.toasts.bookmarkAdded,
+        );
+      } catch {
+        toast.error(labels.toasts.bookmarkError);
+      }
     },
     [data, bookmarkedIds, mutate],
   );

@@ -8,19 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getInitials } from "@/lib/format";
 import { labels } from "@/lib/labels";
-import type { PostingDetail } from "@/lib/hooks/use-posting-detail";
+import { usePostingDetailContext } from "./posting-detail-context";
 
-type PostingSidebarProps = {
-  posting: PostingDetail;
-  isOwner: boolean;
-  onContactCreator: () => void;
-};
-
-export function PostingSidebar({
-  posting,
-  isOwner,
-  onContactCreator,
-}: PostingSidebarProps) {
+export function PostingSidebar() {
+  const { posting, isOwner, onContactCreator } = usePostingDetailContext();
   const creatorName = posting.profiles?.full_name || "Unknown";
   const creatorHeadline = posting.profiles?.headline || "";
   const [shared, setShared] = useState(false);

@@ -18,9 +18,22 @@ function useIsMac() {
   return isMac;
 }
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 639px)");
+    queueMicrotask(() => setIsMobile(mql.matches));
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
+  return isMobile;
+}
+
 export function GlobalSearch() {
   const router = useRouter();
   const isMac = useIsMac();
+  const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -130,7 +143,11 @@ export function GlobalSearch() {
         <Input
           ref={inputRef}
           type="search"
-          placeholder={`Search postings, profiles... (${isMac ? "⌘" : "Ctrl+"}K)`}
+          placeholder={
+            isMobile
+              ? "Search postings, profiles..."
+              : `Search postings, profiles... (${isMac ? "⌘" : "Ctrl+"}K)`
+          }
           className="pl-9 pr-9 bg-muted/50"
           value={query}
           onChange={(e) => {

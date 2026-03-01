@@ -15,31 +15,32 @@ This document describes the database schema for the Mesh application. It covers 
 
 User profile information including skills, preferences, and matching-related data.
 
-| Field                       | Type             | Nullable | Default      | Description                                                                 |
-| --------------------------- | ---------------- | -------- | ------------ | --------------------------------------------------------------------------- |
-| `user_id`                   | uuid             | NO       | -            | Primary key, references `auth.users(id)`                                    |
-| `full_name`                 | text             | YES      | null         | User's display name                                                         |
-| `headline`                  | text             | YES      | null         | Short professional headline                                                 |
-| `bio`                       | text             | YES      | null         | Longer biography/description                                                |
-| `location`                  | text             | YES      | null         | Human-readable location string for display                                  |
-| `location_lat`              | double precision | YES      | null         | Latitude coordinate for matching                                            |
-| `location_lng`              | double precision | YES      | null         | Longitude coordinate for matching                                           |
-| `interests`                 | text[]           | YES      | null         | Array of interest strings                                                   |
-| `languages`                 | text[]           | YES      | '{}'         | Spoken languages (ISO codes: en, de, es, etc.)                              |
-| `location_mode`             | text             | YES      | 'either'     | One of: remote, in_person, either                                           |
-| `location_preference`       | double precision | YES      | null         | 0.0 = in-person only, 0.5 = either, 1.0 = remote only                       |
-| `availability_slots`        | jsonb            | YES      | null         | Weekly availability grid, e.g. `{"mon": ["morning","evening"]}`             |
-| `collaboration_style`       | text             | YES      | null         | **Optional:** One of: async, sync, hybrid                                   |
-| `portfolio_url`             | text             | YES      | null         | Link to portfolio                                                           |
-| `github_url`                | text             | YES      | null         | Link to GitHub profile                                                      |
-| `source_text`               | text             | YES      | null         | Free-form text description that profile fields are derived from             |
-| `previous_source_text`      | text             | YES      | null         | Previous source_text for single-level undo                                  |
-| `previous_profile_snapshot` | jsonb            | YES      | null         | Previous profile field values (JSON) for single-level undo                  |
-| `embedding`                 | vector(1536)     | YES      | null         | OpenAI embedding for semantic matching                                      |
-| `created_at`                | timestamptz      | NO       | now()        | Record creation timestamp                                                   |
-| `updated_at`                | timestamptz      | NO       | now()        | Last update timestamp (auto-updated)                                        |
-| `timezone`                  | text             | YES      | null         | IANA timezone string (e.g., 'Europe/Berlin')                                |
-| `calendar_visibility`       | text             | YES      | 'match_only' | `'match_only'` or `'team_visible'` — controls who sees calendar busy blocks |
+| Field                       | Type             | Nullable | Default      | Description                                                                                                |
+| --------------------------- | ---------------- | -------- | ------------ | ---------------------------------------------------------------------------------------------------------- |
+| `user_id`                   | uuid             | NO       | -            | Primary key, references `auth.users(id)`                                                                   |
+| `full_name`                 | text             | YES      | null         | User's display name                                                                                        |
+| `headline`                  | text             | YES      | null         | Short professional headline                                                                                |
+| `bio`                       | text             | YES      | null         | Longer biography/description                                                                               |
+| `location`                  | text             | YES      | null         | Human-readable location string for display                                                                 |
+| `location_lat`              | double precision | YES      | null         | Latitude coordinate for matching                                                                           |
+| `location_lng`              | double precision | YES      | null         | Longitude coordinate for matching                                                                          |
+| `interests`                 | text[]           | YES      | null         | Array of interest strings                                                                                  |
+| `languages`                 | text[]           | YES      | '{}'         | Spoken languages (ISO codes: en, de, es, etc.)                                                             |
+| `location_mode`             | text             | YES      | 'either'     | One of: remote, in_person, either                                                                          |
+| `location_preference`       | double precision | YES      | null         | 0.0 = in-person only, 0.5 = either, 1.0 = remote only                                                      |
+| `availability_slots`        | jsonb            | YES      | null         | Weekly availability grid, e.g. `{"mon": ["morning","evening"]}`                                            |
+| `collaboration_style`       | text             | YES      | null         | **Optional:** One of: async, sync, hybrid                                                                  |
+| `portfolio_url`             | text             | YES      | null         | Link to portfolio                                                                                          |
+| `github_url`                | text             | YES      | null         | Link to GitHub profile                                                                                     |
+| `source_text`               | text             | YES      | null         | Free-form text description that profile fields are derived from                                            |
+| `previous_source_text`      | text             | YES      | null         | Previous source_text for single-level undo                                                                 |
+| `previous_profile_snapshot` | jsonb            | YES      | null         | Previous profile field values (JSON) for single-level undo                                                 |
+| `embedding`                 | vector(1536)     | YES      | null         | OpenAI embedding for semantic matching                                                                     |
+| `created_at`                | timestamptz      | NO       | now()        | Record creation timestamp                                                                                  |
+| `updated_at`                | timestamptz      | NO       | now()        | Last update timestamp (auto-updated)                                                                       |
+| `timezone`                  | text             | YES      | null         | IANA timezone string (e.g., 'Europe/Berlin')                                                               |
+| `tier`                      | text             | NO       | 'free'       | User subscription tier: `'free'` or `'premium'`. Controls access to features like deep match explanations. |
+| `calendar_visibility`       | text             | YES      | 'match_only' | `'match_only'` or `'team_visible'` — controls who sees calendar busy blocks                                |
 
 **RLS Policies:**
 
@@ -193,6 +194,9 @@ Project listings created by users seeking collaborators.
 | `location_lng`              | double  | YES      | null       | Longitude                                                                |
 | `max_distance_km`           | integer | YES      | null       | Hard filter for in-person distance                                       |
 | `natural_language_criteria` | text    | YES      | null       | Free-form matching criteria                                              |
+| `identified_roles`          | jsonb   | YES      | null       | LLM-identified distinct roles needed by the posting (string array)       |
+| `hidden_details`            | text    | YES      | null       | Private text revealed only to accepted team members                      |
+| `chip_metadata`             | jsonb   | YES      | null       | Structured metadata for inline editor chips (locations, times, skills)   |
 
 ---
 
@@ -209,6 +213,8 @@ Sequential or parallel invite sequences. A friend_ask tracks inviting connection
 | `current_request_index` | integer     | NO       | 0                 | Index of the currently-invited connection (sequential) |
 | `invite_mode`           | text        | NO       | 'sequential'      | One of: `sequential`, `parallel`                       |
 | `declined_list`         | uuid[]      | NO       | '{}'              | User IDs who declined (used in parallel mode)          |
+| `concurrent_invites`    | integer     | NO       | 1                 | How many invites outstanding at once (sequential mode) |
+| `pending_invitees`      | uuid[]      | NO       | '{}'              | User IDs with currently outstanding invites            |
 | `status`                | text        | NO       | 'pending'         | One of: pending, accepted, completed, cancelled        |
 | `created_at`            | timestamptz | NO       | now()             | Record creation timestamp                              |
 | `updated_at`            | timestamptz | NO       | now()             | Last update timestamp                                  |
@@ -224,18 +230,23 @@ Sequential or parallel invite sequences. A friend_ask tracks inviting connection
 
 Matches between users and projects, including scores and status.
 
-| Field              | Type        | Nullable | Default           | Description                                  |
-| ------------------ | ----------- | -------- | ----------------- | -------------------------------------------- |
-| `id`               | uuid        | NO       | gen_random_uuid() | Primary key                                  |
-| `project_id`       | uuid        | NO       | -                 | References `projects.id`                     |
-| `user_id`          | uuid        | NO       | -                 | References `profiles.user_id`                |
-| `similarity_score` | float       | NO       | -                 | Overall match score (0-1)                    |
-| `explanation`      | text        | YES      | null              | Human-readable match explanation             |
-| `score_breakdown`  | jsonb       | YES      | null              | See JSONB structure below                    |
-| `status`           | text        | NO       | 'pending'         | One of: pending, applied, accepted, declined |
-| `created_at`       | timestamptz | NO       | now()             | Record creation timestamp                    |
-| `responded_at`     | timestamptz | YES      | null              | When user/owner responded                    |
-| `updated_at`       | timestamptz | NO       | now()             | Last update timestamp (auto-updated)         |
+| Field                    | Type        | Nullable | Default           | Description                                  |
+| ------------------------ | ----------- | -------- | ----------------- | -------------------------------------------- |
+| `id`                     | uuid        | NO       | gen_random_uuid() | Primary key                                  |
+| `project_id`             | uuid        | NO       | -                 | References `projects.id`                     |
+| `user_id`                | uuid        | NO       | -                 | References `profiles.user_id`                |
+| `similarity_score`       | float       | NO       | -                 | Overall match score (0-1)                    |
+| `explanation`            | text        | YES      | null              | Human-readable match explanation             |
+| `score_breakdown`        | jsonb       | YES      | null              | See JSONB structure below                    |
+| `status`                 | text        | NO       | 'pending'         | One of: pending, applied, accepted, declined |
+| `created_at`             | timestamptz | NO       | now()             | Record creation timestamp                    |
+| `responded_at`           | timestamptz | YES      | null              | When user/owner responded                    |
+| `updated_at`             | timestamptz | NO       | now()             | Last update timestamp (auto-updated)         |
+| `deep_match_score`       | float       | YES      | null              | LLM deep match score (0-1)                   |
+| `deep_match_explanation` | text        | YES      | null              | LLM explanation of match quality             |
+| `deep_match_concerns`    | text        | YES      | null              | LLM-identified concerns or gaps              |
+| `deep_match_role`        | text        | YES      | null              | Best-matched role for the candidate          |
+| `deep_matched_at`        | timestamptz | YES      | null              | When the deep match was performed            |
 
 **Constraints:**
 
@@ -268,6 +279,27 @@ User-submitted feedback (bugs, suggestions, irritations). Write-once — no `upd
 
 - INSERT: Anyone can submit feedback (including anonymous/unauthenticated)
 - SELECT: Authenticated users can read only their own feedback (`user_id = auth.uid()`)
+
+---
+
+### templates
+
+Posting templates for quick-start content creation.
+
+| Field         | Type        | Nullable | Default           | Description                          |
+| ------------- | ----------- | -------- | ----------------- | ------------------------------------ |
+| `id`          | uuid        | NO       | gen_random_uuid() | Primary key                          |
+| `title`       | text        | NO       | -                 | Template name shown in overlay       |
+| `description` | text        | YES      | null              | Short description of the template    |
+| `content`     | text        | NO       | -                 | Full template text inserted on click |
+| `category`    | text        | YES      | 'general'         | Template category for grouping       |
+| `sort_order`  | integer     | YES      | 0                 | Display order in the overlay         |
+| `is_active`   | boolean     | YES      | true              | Soft delete / deactivation flag      |
+| `created_at`  | timestamptz | YES      | now()             | Record creation timestamp            |
+
+**RLS Policies:**
+
+- Authenticated users can read active templates
 
 ---
 

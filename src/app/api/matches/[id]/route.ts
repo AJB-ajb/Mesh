@@ -43,6 +43,10 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
     score_breakdown: match.score_breakdown,
     status: match.status,
     created_at: match.created_at,
+    deep_match_score: match.deep_match_score ?? null,
+    deep_match_explanation: match.deep_match_explanation ?? null,
+    deep_match_concerns: match.deep_match_concerns ?? null,
+    deep_match_role: match.deep_match_role ?? null,
   };
 
   return apiSuccess({ match: response });
