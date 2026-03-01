@@ -196,6 +196,7 @@ Project listings created by users seeking collaborators.
 | `natural_language_criteria` | text    | YES      | null       | Free-form matching criteria                                              |
 | `identified_roles`          | jsonb   | YES      | null       | LLM-identified distinct roles needed by the posting (string array)       |
 | `hidden_details`            | text    | YES      | null       | Private text revealed only to accepted team members                      |
+| `chip_metadata`             | jsonb   | YES      | null       | Structured metadata for inline editor chips (locations, times, skills)   |
 
 ---
 
