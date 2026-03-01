@@ -4,8 +4,8 @@ Idea-based social platform for quickly finding people to do things with — proj
 
 ## Status
 
-- **Current**: v0.2 — core platform, skills system, invites, waitlist complete
-- **Next**: v0.3 — text-first posting & navigation redesign
+- **Current**: v0.5 — deep matching, multi-role matching, match explanations
+- **Next**: v0.6 — engagement & polish (ghost text, markdown edit mode, N-sequential invites, auto-translation)
 
 See [roadmap.md](roadmap.md) for milestone tracking. See [text_first_rewrite.md](../.prompts/text_first_rewrite.md) for the text-first spec that drives v0.3+.
 
