@@ -44,6 +44,7 @@ function buildChain(resolved: unknown) {
     neq: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
     maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+    single: vi.fn().mockResolvedValue({ data: null, error: null }),
     head: false as unknown,
   };
 
@@ -104,6 +105,18 @@ describe("useConnectionsPage", () => {
           order: vi.fn().mockResolvedValue({ data: [], error: null }),
         };
       }
+      if (table === "profiles") {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi
+            .fn()
+            .mockResolvedValue({
+              data: { full_name: "Test User" },
+              error: null,
+            }),
+        };
+      }
       return buildChain({ data: [], error: null });
     });
 
@@ -141,7 +154,11 @@ describe("useConnectionsPage", () => {
         friend_id: "user-1",
         status: "pending",
         created_at: "2026-01-02T00:00:00Z",
-        friend: { user_id: "user-1", full_name: "Current User", headline: null },
+        friend: {
+          user_id: "user-1",
+          full_name: "Current User",
+          headline: null,
+        },
         user: { user_id: "user-3", full_name: "Bob", headline: "Designer" },
       },
     ];
@@ -158,6 +175,18 @@ describe("useConnectionsPage", () => {
           select: vi.fn().mockReturnThis(),
           or: vi.fn().mockReturnThis(),
           order: vi.fn().mockResolvedValue({ data: [], error: null }),
+        };
+      }
+      if (table === "profiles") {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi
+            .fn()
+            .mockResolvedValue({
+              data: { full_name: "Current User" },
+              error: null,
+            }),
         };
       }
       if (table === "messages") {
@@ -188,7 +217,9 @@ describe("useConnectionsPage", () => {
 
     // One accepted connection
     expect(result.current.mergedConnections).toHaveLength(1);
-    expect(result.current.mergedConnections[0].otherUser.full_name).toBe("Alice");
+    expect(result.current.mergedConnections[0].otherUser.full_name).toBe(
+      "Alice",
+    );
     expect(result.current.mergedConnections[0].friendshipId).toBe("f-1");
 
     // One pending incoming
