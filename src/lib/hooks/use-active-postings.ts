@@ -37,18 +37,18 @@ type ActivePostingsData = {
 async function fetchActivePostings(): Promise<ActivePostingsData> {
   const { supabase, user } = await getUserOrThrow();
 
-  // 1. Fetch postings I created
-  const { data: created } = await supabase
-    .from("postings")
-    .select("*, profiles:creator_id(full_name, user_id)")
-    .eq("creator_id", user.id);
-
-  // 2. Fetch posting IDs where I have an accepted application
-  const { data: joinedApps } = await supabase
-    .from("applications")
-    .select("posting_id")
-    .eq("applicant_id", user.id)
-    .eq("status", "accepted");
+  // 1 & 2. Fetch created postings and accepted applications in parallel
+  const [{ data: created }, { data: joinedApps }] = await Promise.all([
+    supabase
+      .from("postings")
+      .select("*, profiles:creator_id(full_name, user_id)")
+      .eq("creator_id", user.id),
+    supabase
+      .from("applications")
+      .select("posting_id")
+      .eq("applicant_id", user.id)
+      .eq("status", "accepted"),
+  ]);
 
   const joinedPostingIds = (joinedApps ?? []).map((a) => a.posting_id);
 
