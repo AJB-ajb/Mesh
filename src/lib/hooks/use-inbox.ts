@@ -51,7 +51,8 @@ async function fetchInboxData(): Promise<InboxData> {
         .from("notifications")
         .select("*")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false }),
+        .order("created_at", { ascending: false })
+        .limit(50),
       supabase.rpc("get_inbox_conversations", { p_user_id: user.id }),
     ]);
 
@@ -124,9 +125,10 @@ async function fetchConversationMessages(key: string): Promise<Message[]> {
 
   const { data: messagesData, error: messagesError } = await supabase
     .from("messages")
-    .select("*")
+    .select("id, conversation_id, sender_id, content, read, created_at")
     .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .limit(200);
 
   if (messagesError) {
     console.error("Error fetching messages:", messagesError);
