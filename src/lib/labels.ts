@@ -1176,4 +1176,17 @@ export const labels = {
     respondedCount: (n: number, total: number) => `${n} of ${total} responded`,
     dragToSelectHint: "Drag on the calendar to select a meeting time.",
   },
+
+  // ---------------------------------------------------------------------------
+  // Slash commands (editor)
+  // ---------------------------------------------------------------------------
+  slashCommands: {
+    /** Displayed when no commands match the query */
+    noResults: "No commands found",
+    /** Command names and descriptions */
+    time: { label: "Time", description: "Insert a time window" },
+    location: { label: "Location", description: "Insert a location" },
+    skills: { label: "Skills", description: "Insert required skills" },
+    template: { label: "Template", description: "Apply a posting template" },
+  },
 } as const;

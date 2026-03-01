@@ -5,7 +5,6 @@ import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Markdown, type MarkdownStorage } from "tiptap-markdown";
-import { SubmitShortcut } from "./extensions/submit-shortcut";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef } from "react";
 
@@ -46,13 +45,15 @@ export function MeshEditor({
   onBlur,
 }: MeshEditorProps) {
   const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
   const onSubmitRef = useRef(onSubmit);
-  onSubmitRef.current = onSubmit;
   const onFocusRef = useRef(onFocus);
-  onFocusRef.current = onFocus;
   const onBlurRef = useRef(onBlur);
-  onBlurRef.current = onBlur;
+
+  // Keep callback refs in sync via effects (React 19 disallows ref writes during render)
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+  useEffect(() => { onSubmitRef.current = onSubmit; }, [onSubmit]);
+  useEffect(() => { onFocusRef.current = onFocus; }, [onFocus]);
+  useEffect(() => { onBlurRef.current = onBlur; }, [onBlur]);
 
   const editor = useEditor({
     extensions: [
@@ -84,7 +85,6 @@ export function MeshEditor({
         transformCopiedText: true,
         transformPastedText: true,
       }),
-      SubmitShortcut.configure({ onSubmit: () => onSubmitRef.current?.() }),
       ...extraExtensions,
     ],
     content,
@@ -105,6 +105,14 @@ export function MeshEditor({
           "[&_p]:my-1",
           className ?? "",
         ),
+      },
+      handleKeyDown: (_view, event) => {
+        // Cmd/Ctrl+Enter to submit
+        if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+          onSubmitRef.current?.();
+          return true;
+        }
+        return false;
       },
     },
     onUpdate: ({ editor: ed }) => {
