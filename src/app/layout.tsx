@@ -6,6 +6,8 @@ import { SWRProvider } from "@/lib/swr/provider";
 import { FeedbackWidget } from "@/components/feedback/feedback-widget";
 import { Toaster } from "sonner";
 import { ServiceWorkerUpdater } from "@/components/pwa/sw-updater";
+import { BackButtonHandler } from "@/components/capacitor/back-button-handler";
+import { StatusBarInit } from "@/components/capacitor/status-bar-init";
 import { labels } from "@/lib/labels";
 import "./globals.css";
 
@@ -97,6 +99,8 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
         <ServiceWorkerUpdater />
+        <BackButtonHandler />
+        <StatusBarInit />
         <SWRProvider>
           <ThemeProvider>
             {children}

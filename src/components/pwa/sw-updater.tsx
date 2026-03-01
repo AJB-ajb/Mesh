@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { isNativePlatform } from "@/lib/capacitor";
 
 const UPDATE_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
@@ -14,7 +15,11 @@ const UPDATE_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
  */
 export function ServiceWorkerUpdater() {
   useEffect(() => {
-    if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
+    if (
+      typeof navigator === "undefined" ||
+      !("serviceWorker" in navigator) ||
+      isNativePlatform()
+    ) {
       return;
     }
 
