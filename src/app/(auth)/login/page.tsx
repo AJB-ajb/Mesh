@@ -15,7 +15,10 @@ import {
   LinkedInIcon,
   LoaderIcon,
 } from "@/components/icons/auth-icons";
-import { useOAuthSignIn } from "@/lib/hooks/use-oauth-sign-in";
+import {
+  useOAuthSignIn,
+  getOAuthCallbackUrl,
+} from "@/lib/hooks/use-oauth-sign-in";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -26,12 +29,7 @@ function LoginForm() {
   const [formError, setFormError] = useState<string | null>(null);
   const error = searchParams.get("error");
   const next = searchParams.get("next");
-  const getCallbackUrl = () => {
-    const origin = window.location.origin;
-    return next
-      ? `${origin}/callback?next=${encodeURIComponent(next)}`
-      : `${origin}/callback`;
-  };
+  const getCallbackUrl = () => getOAuthCallbackUrl(next);
   const { loadingProvider, signIn, isOAuthLoading } =
     useOAuthSignIn(getCallbackUrl);
 
