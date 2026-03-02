@@ -67,7 +67,6 @@ export default function NewPostingPage() {
   const [showDetails, setShowDetails] = useState(false);
   const [hiddenDetails, setHiddenDetails] = useState("");
   const [editorFocused, setEditorFocused] = useState(false);
-  const [editorInstance, setEditorInstance] = useState<EditorView | null>(null);
   const editorRef = useRef<EditorView | null>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
   const { keyboardVisible } = useMobileKeyboard();
@@ -88,7 +87,6 @@ export default function NewPostingPage() {
 
   const handleEditorReady = useCallback((view: EditorView) => {
     editorRef.current = view;
-    setEditorInstance(view);
   }, []);
 
   // Suggestion chips state
@@ -335,16 +333,16 @@ export default function NewPostingPage() {
       </div>
 
       {/* Slash command menu */}
-      {slash.menuState.isOpen && editorInstance && (
+      {slash.menuState.isOpen && editorRef.current && (
         <SlashCommandMenu
           commands={slash.menuState.commands}
           selectedIndex={slash.menuState.selectedIndex}
           position={(() => {
-            const coords = editorInstance.coordsAtPos(slash.menuState.from);
+            const coords = editorRef.current!.coordsAtPos(slash.menuState.from);
             if (!coords) return { top: 0, left: 0 };
             return { top: coords.bottom + 4, left: coords.left };
           })()}
-          onSelect={(cmd) => slash.selectCommand(editorInstance, cmd)}
+          onSelect={(cmd) => slash.selectCommand(editorRef.current!, cmd)}
           onClose={slash.closeOverlay}
         />
       )}
@@ -472,7 +470,7 @@ export default function NewPostingPage() {
 
       {/* Mobile markdown toolbar */}
       <MarkdownToolbar
-        editor={editorInstance}
+        editor={editorRef.current}
         visible={keyboardVisible && editorFocused}
       />
     </div>

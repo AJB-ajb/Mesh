@@ -44,6 +44,7 @@ export function MeshEditor({
   // Stable callback refs (avoid re-creating the editor on callback changes)
   const onChangeRef = useRef(onChange);
   const onSubmitRef = useRef(onSubmit);
+  const onEditorReadyRef = useRef(onEditorReady);
   const onFocusRef = useRef(onFocus);
   const onBlurRef = useRef(onBlur);
 
@@ -53,6 +54,9 @@ export function MeshEditor({
   useEffect(() => {
     onSubmitRef.current = onSubmit;
   }, [onSubmit]);
+  useEffect(() => {
+    onEditorReadyRef.current = onEditorReady;
+  }, [onEditorReady]);
   useEffect(() => {
     onFocusRef.current = onFocus;
   }, [onFocus]);
@@ -121,13 +125,22 @@ export function MeshEditor({
     const view = new EditorView({ state, parent });
     viewRef.current = view;
 
-    if (autoFocus) {
-      view.focus();
-    }
-
-    onEditorReady?.(view);
+    // Defer focus and onEditorReady to escape React's commit phase.
+    // Calling view.focus() synchronously inside useEffect triggers DOM
+    // focus events that cascade into setState (setEditorFocused), and
+    // calling onEditorReady triggers setEditorInstance — both cause
+    // "Should not already be working" errors in React 19.
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      if (autoFocus) {
+        view.focus();
+      }
+      onEditorReadyRef.current?.(view);
+    });
 
     return () => {
+      cancelled = true;
       view.destroy();
       viewRef.current = null;
     };
