@@ -1,16 +1,55 @@
+/**
+ * POST /api/matches/deep-match
+ *
+ * On-demand deep matching for specific match IDs.
+ * Gated to pro-tier users and rate-limited to 5 requests per hour per user.
+ */
+
+import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api/with-auth";
 import { apiError, apiSuccess, parseBody } from "@/lib/errors";
+import { createRateLimiter } from "@/lib/api/rate-limit";
+import { getUserTier, canAccessFeature } from "@/lib/api/tiers";
 import {
   deepMatchCandidate,
   isDeepMatchAvailable,
 } from "@/lib/matching/deep-match";
 import type { DeepMatchResult } from "@/lib/matching/deep-match";
 
-/**
- * POST /api/matches/deep-match
- * On-demand deep matching for specific match IDs
- */
+/** Module-level limiter — lives for the lifetime of the server process. */
+const limiter = createRateLimiter("deep-match", {
+  maxRequests: 5,
+  windowMs: 60 * 60 * 1000, // 1 hour
+});
+
 export const POST = withAuth(async (req, { user, supabase }) => {
+  // --- Tier gate ---
+  const tier = await getUserTier(user.id);
+  if (!canAccessFeature(tier, "deepMatchCandidates")) {
+    return apiError(
+      "FORBIDDEN",
+      "Deep match is available on the Pro plan. Upgrade to unlock.",
+      403,
+    );
+  }
+
+  // --- Rate limit ---
+  const { allowed, retryAfter } = limiter.check(user.id);
+  if (!allowed) {
+    return NextResponse.json(
+      {
+        error: {
+          code: "FORBIDDEN",
+          message: "Rate limit exceeded. Try again later.",
+        },
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(retryAfter) },
+      },
+    );
+  }
+
   if (!isDeepMatchAvailable()) {
     return apiError("INTERNAL", "Deep matching is not configured", 503);
   }

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { apiError, apiSuccess } from "@/lib/errors";
 import { SchemaType, type Schema } from "@google/generative-ai";
 import { generateStructuredJSON, isGeminiConfigured } from "@/lib/ai/gemini";
+import * as Sentry from "@sentry/nextjs";
 
 /**
  * POST /api/skills/normalize
@@ -251,6 +252,19 @@ ${treeText}`,
         .update({ is_leaf: false })
         .eq("id", parent.id);
     }
+
+    // Log LLM-created skill node to Sentry for admin review
+    Sentry.captureMessage("LLM created new skill node", {
+      level: "info",
+      tags: { operation: "skill-node-creation" },
+      extra: {
+        nodeName: newNode.name,
+        parentName: llmResult.parent_name,
+        userInput: skill,
+        aliases: llmResult.aliases ?? [],
+        userId: user.id,
+      },
+    });
 
     const path = await buildNodePath(supabase, newNode);
     return apiSuccess({
