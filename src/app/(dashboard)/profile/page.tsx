@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -8,11 +8,9 @@ import { labels } from "@/lib/labels";
 
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/lib/hooks/use-profile";
-import { useGithubSync } from "@/lib/hooks/use-github-sync";
 import { useLocation } from "@/lib/hooks/use-location";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { ProfileView } from "@/components/profile/profile-view";
-import { GitHubIntegrationCard } from "@/components/profile/github-integration-card";
 import { IntegrationsSection } from "@/components/profile/integrations-section";
 import { FreeFormUpdate } from "@/components/shared/free-form-update";
 import { NlInputPanel } from "@/components/shared/nl-input-panel";
@@ -37,7 +35,6 @@ function ProfilePageContent() {
     setIsEditing,
     userEmail,
     connectedProviders,
-    isGithubProvider,
     handleChange,
     handleSubmit,
     handleLinkProvider,
@@ -51,15 +48,6 @@ function ProfilePageContent() {
   } = useProfile();
 
   const { busyWindows } = useCalendarBusyBlocks(profileId);
-
-  const {
-    githubSync,
-    isGithubSyncing,
-    githubSyncError,
-    fetchGithubSyncStatus,
-    handleGithubSync,
-    applySuggestion,
-  } = useGithubSync(setForm, setIsEditing);
 
   const location = useLocation(setForm, () => {});
 
@@ -109,13 +97,6 @@ function ProfilePageContent() {
       setIsExtracting(false);
     }
   };
-
-  // Fetch GitHub sync status once we know the user has a GitHub provider
-  useEffect(() => {
-    if (isGithubProvider) {
-      fetchGithubSyncStatus();
-    }
-  }, [isGithubProvider, fetchGithubSyncStatus]);
 
   if (isLoading) {
     return (
@@ -213,14 +194,6 @@ function ProfilePageContent() {
             />
           )}
 
-          <GitHubIntegrationCard
-            isGithubProvider={isGithubProvider}
-            githubSync={githubSync}
-            isGithubSyncing={isGithubSyncing}
-            githubSyncError={githubSyncError}
-            onSync={handleGithubSync}
-            onApplySuggestion={applySuggestion}
-          />
           <FreeFormUpdate
             entityType="profile"
             sourceText={sourceText}
