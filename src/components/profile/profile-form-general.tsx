@@ -2,7 +2,7 @@
 
 import { useCallback, useRef } from "react";
 import { Loader2, MapPin, Search } from "lucide-react";
-import type { Editor } from "@tiptap/core";
+import type { EditorView } from "@codemirror/view";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MeshEditor } from "@/components/editor/mesh-editor";
@@ -32,10 +32,10 @@ export function ProfileFormGeneral({
   onChange,
   location,
 }: ProfileFormGeneralProps) {
-  const bioEditorRef = useRef<Editor | null>(null);
+  const bioEditorRef = useRef<EditorView | null>(null);
 
-  const handleBioEditorReady = useCallback((editor: Editor) => {
-    bioEditorRef.current = editor;
+  const handleBioEditorReady = useCallback((view: EditorView) => {
+    bioEditorRef.current = view;
   }, []);
 
   return (
@@ -84,9 +84,13 @@ export function ProfileFormGeneral({
             type="button"
             onAudioRecorded={transcribeAudio}
             onTranscriptionChange={(text) => {
-              const editor = bioEditorRef.current;
-              if (editor) {
-                editor.chain().focus().insertContent(text).run();
+              const view = bioEditorRef.current;
+              if (view) {
+                const pos = view.state.selection.main.head;
+                view.dispatch({
+                  changes: { from: pos, to: pos, insert: text },
+                });
+                view.focus();
               }
             }}
           />

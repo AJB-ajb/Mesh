@@ -7,7 +7,7 @@ import { transcribeAudio } from "@/lib/transcribe";
 import { labels } from "@/lib/labels";
 import type { PostingFormState } from "@/lib/types/posting";
 import { useCallback, useRef } from "react";
-import type { Editor } from "@tiptap/core";
+import type { EditorView } from "@codemirror/view";
 
 type PostingFormBasicProps = {
   form: PostingFormState;
@@ -20,10 +20,10 @@ export function PostingFormBasic({
   onChange,
   hideDescription,
 }: PostingFormBasicProps) {
-  const editorRef = useRef<Editor | null>(null);
+  const editorRef = useRef<EditorView | null>(null);
 
-  const handleEditorReady = useCallback((editor: Editor) => {
-    editorRef.current = editor;
+  const handleEditorReady = useCallback((view: EditorView) => {
+    editorRef.current = view;
   }, []);
 
   return (
@@ -64,9 +64,13 @@ export function PostingFormBasic({
               type="button"
               onAudioRecorded={transcribeAudio}
               onTranscriptionChange={(text) => {
-                const editor = editorRef.current;
-                if (editor) {
-                  editor.chain().focus().insertContent(text).run();
+                const view = editorRef.current;
+                if (view) {
+                  const pos = view.state.selection.main.head;
+                  view.dispatch({
+                    changes: { from: pos, to: pos, insert: text },
+                  });
+                  view.focus();
                 }
               }}
             />

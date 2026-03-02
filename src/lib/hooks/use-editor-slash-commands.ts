@@ -2,57 +2,57 @@
 
 import { useState, useCallback, useMemo } from "react";
 import {
-  createSlashCommandSuggestion,
-  type SlashCommandSuggestionState,
-} from "@/components/editor/slash-command-renderer";
+  slashCommandPlugin,
+  selectSlashCommand,
+  type SlashMenuState,
+} from "@/components/editor/extensions/slash-command-plugin";
 import type { SlashCommand } from "@/lib/slash-commands/registry";
-import type { Editor } from "@tiptap/core";
+import type { EditorView } from "@codemirror/view";
+import type { Extension } from "@codemirror/state";
 
 export interface UseEditorSlashCommandsReturn {
-  /** Slash command suggestion config for the SlashCommandExtension */
-  suggestionConfig: ReturnType<typeof createSlashCommandSuggestion>;
+  /** CodeMirror extension for slash commands */
+  slashExtension: Extension;
   /** Current slash menu state */
-  menuState: SlashCommandSuggestionState;
+  menuState: SlashMenuState;
+  /** Select a command (for mouse clicks on menu items) */
+  selectCommand: (view: EditorView, command: SlashCommand) => void;
   /** Currently active overlay (e.g. "time", "location") */
   activeOverlay: string | null;
   /** Close the active overlay */
   closeOverlay: () => void;
   /** Handle overlay result -- inserts text at the editor cursor */
-  handleOverlayResult: (text: string) => void;
+  handleOverlayResult: (view: EditorView, text: string) => void;
 }
 
-export function useEditorSlashCommands(
-  editorRef: React.RefObject<Editor | null>,
-): UseEditorSlashCommandsReturn {
-  const [menuState, setMenuState] = useState<SlashCommandSuggestionState>({
+export function useEditorSlashCommands(): UseEditorSlashCommandsReturn {
+  const [menuState, setMenuState] = useState<SlashMenuState>({
     isOpen: false,
     query: "",
     commands: [],
     selectedIndex: 0,
-    clientRect: null,
+    from: 0,
+    to: 0,
   });
   const [activeOverlay, setActiveOverlay] = useState<string | null>(null);
 
-  const handleSelect = useCallback(
-    (command: SlashCommand) => {
-      setMenuState((prev) => ({ ...prev, isOpen: false }));
+  const handleSelect = useCallback((command: SlashCommand) => {
+    setMenuState((prev) => ({ ...prev, isOpen: false }));
+    if (command.type === "action") {
+      setActiveOverlay(command.name);
+    }
+  }, []);
 
-      if (command.type === "action") {
-        setActiveOverlay(command.name);
-      }
-    },
-    [],
-  );
+  const handleStateChange = useCallback((state: SlashMenuState) => {
+    setMenuState(state);
+  }, []);
 
-  const handleStateChange = useCallback(
-    (state: SlashCommandSuggestionState) => {
-      setMenuState(state);
-    },
-    [],
-  );
-
-  const suggestionConfig = useMemo(
-    () => createSlashCommandSuggestion(handleStateChange, handleSelect),
+  const slashExtension = useMemo(
+    () =>
+      slashCommandPlugin({
+        onStateChange: handleStateChange,
+        onSelectCommand: handleSelect,
+      }),
     [handleStateChange, handleSelect],
   );
 
@@ -60,20 +60,27 @@ export function useEditorSlashCommands(
     setActiveOverlay(null);
   }, []);
 
-  const handleOverlayResult = useCallback(
-    (text: string) => {
-      const editor = editorRef.current;
-      if (editor) {
-        editor.chain().focus().insertContent(text).run();
-      }
-      setActiveOverlay(null);
+  const handleOverlayResult = useCallback((view: EditorView, text: string) => {
+    const pos = view.state.selection.main.head;
+    view.dispatch({
+      changes: { from: pos, to: pos, insert: text },
+    });
+    view.focus();
+    setActiveOverlay(null);
+  }, []);
+
+  const selectCommandFromMenu = useCallback(
+    (view: EditorView, command: SlashCommand) => {
+      selectSlashCommand(view);
+      handleSelect(command);
     },
-    [editorRef],
+    [handleSelect],
   );
 
   return {
-    suggestionConfig,
+    slashExtension,
     menuState,
+    selectCommand: selectCommandFromMenu,
     activeOverlay,
     closeOverlay,
     handleOverlayResult,

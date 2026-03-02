@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ChevronDown } from "lucide-react";
-import type { Editor } from "@tiptap/core";
+import type { EditorView } from "@codemirror/view";
 
 import { Button } from "@/components/ui/button";
 import { labels } from "@/lib/labels";
@@ -23,8 +23,6 @@ import {
 import { MeshEditor } from "@/components/editor/mesh-editor";
 import { SpeechInput } from "@/components/ai-elements/speech-input";
 import { transcribeAudio } from "@/lib/transcribe";
-import { MetadataChip } from "@/components/editor/extensions/metadata-chip";
-import { SlashCommandExtension } from "@/components/editor/extensions/slash-command-extension";
 import { useEditorSlashCommands } from "@/lib/hooks/use-editor-slash-commands";
 import { usePostingSuggestions } from "@/lib/hooks/use-posting-suggestions";
 import { useMobileKeyboard } from "@/lib/hooks/use-mobile-keyboard";
@@ -39,10 +37,26 @@ import {
 import type { PostingFormState } from "@/components/posting/posting-form-card";
 import type { ChipMetadataMap, ChipMetadataEntry } from "@/lib/types/posting";
 
+/** Emoji prefixes for plain-text chip insertion (replaces TipTap MetadataChip nodes). */
+const CHIP_EMOJI: Record<string, string> = {
+  location: "\uD83D\uDCCD",
+  time: "\uD83D\uDD52",
+  skills: "\uD83D\uDEE0\uFE0F",
+};
+
 /** Minimum text length before fetching nudges from the API. */
 const NUDGE_MIN_LENGTH = 20;
 /** Debounce delay in ms before fetching nudges. */
 const NUDGE_DEBOUNCE_MS = 3000;
+
+/** Insert text at cursor in a CodeMirror EditorView. */
+function insertAtCursor(view: EditorView, text: string) {
+  const pos = view.state.selection.main.head;
+  view.dispatch({
+    changes: { from: pos, to: pos, insert: text },
+  });
+  view.focus();
+}
 
 export default function NewPostingPage() {
   const router = useRouter();
@@ -53,8 +67,8 @@ export default function NewPostingPage() {
   const [showDetails, setShowDetails] = useState(false);
   const [hiddenDetails, setHiddenDetails] = useState("");
   const [editorFocused, setEditorFocused] = useState(false);
-  const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
-  const editorRef = useRef<Editor | null>(null);
+  const [editorInstance, setEditorInstance] = useState<EditorView | null>(null);
+  const editorRef = useRef<EditorView | null>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
   const { keyboardVisible } = useMobileKeyboard();
 
@@ -66,20 +80,15 @@ export default function NewPostingPage() {
     skills: 0,
   });
 
-  // Slash commands via Tiptap suggestion
-  const slash = useEditorSlashCommands(editorRef);
+  // Slash commands via CodeMirror plugin
+  const slash = useEditorSlashCommands();
 
-  // Tiptap extensions (stable reference)
-  const [extensions] = useState(() => [
-    MetadataChip,
-    SlashCommandExtension.configure({
-      suggestion: slash.suggestionConfig.suggestion,
-    }),
-  ]);
+  // CodeMirror extensions (stable reference)
+  const [extensions] = useState(() => [slash.slashExtension]);
 
-  const handleEditorReady = useCallback((editor: Editor) => {
-    editorRef.current = editor;
-    setEditorInstance(editor);
+  const handleEditorReady = useCallback((view: EditorView) => {
+    editorRef.current = view;
+    setEditorInstance(view);
   }, []);
 
   // Suggestion chips state
@@ -200,9 +209,9 @@ export default function NewPostingPage() {
   };
 
   const handleChipClick = useCallback((chip: { insertText: string }) => {
-    const editor = editorRef.current;
-    if (editor) {
-      editor.chain().focus().insertContent(chip.insertText).run();
+    const view = editorRef.current;
+    if (view) {
+      insertAtCursor(view, chip.insertText);
     }
   }, []);
 
@@ -211,23 +220,19 @@ export default function NewPostingPage() {
   }, []);
 
   const handleNudgeInsert = useCallback((suggestion: string) => {
-    const editor = editorRef.current;
-    if (editor) {
-      editor
-        .chain()
-        .focus()
-        .insertContent("\n" + suggestion)
-        .run();
+    const view = editorRef.current;
+    if (view) {
+      insertAtCursor(view, "\n" + suggestion);
     }
   }, []);
 
   /**
-   * Insert a metadata chip into the editor and store its structured data.
+   * Insert a metadata chip as plain text with emoji prefix and store its structured data.
    */
   const insertChip = useCallback(
     (chipType: string, display: string, data: Record<string, unknown>) => {
-      const editor = editorRef.current;
-      if (!editor) return;
+      const view = editorRef.current;
+      if (!view) return;
 
       const count = chipCounterRef.current[chipType] ?? 0;
       const metadataKey = `${chipType}_${count}`;
@@ -241,15 +246,8 @@ export default function NewPostingPage() {
 
       setChipMetadata((prev) => ({ ...prev, [metadataKey]: entry }));
 
-      editor
-        .chain()
-        .focus()
-        .insertContent({
-          type: "metadataChip",
-          attrs: { metadataKey, chipType, display },
-        })
-        .insertContent(" ")
-        .run();
+      const emoji = CHIP_EMOJI[chipType] ?? "";
+      insertAtCursor(view, `${emoji} ${display} `);
     },
     [],
   );
@@ -261,10 +259,9 @@ export default function NewPostingPage() {
   const handleOverlayResult = useCallback(
     (result: string | OverlayResult) => {
       if (typeof result === "string") {
-        // Plain text insertion (fallback)
-        const editor = editorRef.current;
-        if (editor) {
-          editor.chain().focus().insertContent(result).run();
+        const view = editorRef.current;
+        if (view) {
+          insertAtCursor(view, result);
         }
       } else {
         // Structured result — insert as chip
@@ -329,25 +326,25 @@ export default function NewPostingPage() {
           type="button"
           onAudioRecorded={transcribeAudio}
           onTranscriptionChange={(transcript) => {
-            const editor = editorRef.current;
-            if (editor) {
-              editor.chain().focus().insertContent(transcript).run();
+            const view = editorRef.current;
+            if (view) {
+              insertAtCursor(view, transcript);
             }
           }}
         />
       </div>
 
       {/* Slash command menu */}
-      {slash.menuState.isOpen && slash.menuState.clientRect && (
+      {slash.menuState.isOpen && editorInstance && (
         <SlashCommandMenu
           commands={slash.menuState.commands}
           selectedIndex={slash.menuState.selectedIndex}
           position={(() => {
-            const rect = slash.menuState.clientRect?.();
-            if (!rect) return { top: 0, left: 0 };
-            return { top: rect.bottom + 4, left: rect.left };
+            const coords = editorInstance.coordsAtPos(slash.menuState.from);
+            if (!coords) return { top: 0, left: 0 };
+            return { top: coords.bottom + 4, left: coords.left };
           })()}
-          onSelect={slash.suggestionConfig.selectCommand}
+          onSelect={(cmd) => slash.selectCommand(editorInstance, cmd)}
           onClose={slash.closeOverlay}
         />
       )}
@@ -376,10 +373,7 @@ export default function NewPostingPage() {
           onInsert={(result) => {
             const templateText =
               typeof result === "string" ? result : result.display;
-            const editor = editorRef.current;
-            if (editor) {
-              editor.commands.setContent(templateText);
-            }
+            setText(templateText);
             slash.closeOverlay();
           }}
           onClose={slash.closeOverlay}
@@ -396,7 +390,7 @@ export default function NewPostingPage() {
       )}
 
       {/* Text tools (auto-format, auto-clean) */}
-      <TextTools text={text} onTextChange={setText} editor={editorInstance} />
+      <TextTools text={text} onTextChange={setText} />
 
       {/* Nudge banners */}
       <NudgeBanner
