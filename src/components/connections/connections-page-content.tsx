@@ -93,7 +93,7 @@ function ConnectionsPageInner() {
       </div>
 
       {/* Split-panel layout */}
-      <div className="grid lg:grid-cols-3 gap-0 border border-border rounded-lg overflow-hidden min-h-[600px]">
+      <div className="grid lg:grid-cols-3 gap-0 border border-border rounded-lg overflow-hidden min-h-[50vh] lg:min-h-[600px]">
         {/* Left panel: connection list */}
         <div
           className={cn(
