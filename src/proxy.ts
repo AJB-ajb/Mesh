@@ -2,16 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { updateSession } from "@/lib/supabase/middleware";
 
+/**
+ * Protected routes require an authenticated user.
+ * Unauthenticated visitors are redirected to /login with a ?next= param.
+ *
+ * Note: /onboarding is intentionally NOT protected — users reach it pre-profile.
+ */
 const PROTECTED_ROUTES = [
-  "/discover",
-  "/my-postings",
-  "/active",
   "/posts",
+  "/discover",
   "/connections",
+  "/settings",
   "/profile",
   "/postings",
-  "/settings",
-  "/onboarding",
+  "/my-postings",
+  "/active",
 ];
 const AUTH_ROUTES = ["/login", "/signup"];
 
@@ -39,6 +44,14 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api|callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    /*
+     * Match all routes except:
+     * - /_next/* (Next.js internals)
+     * - /api/* (API routes)
+     * - /callback (OAuth callback)
+     * - /monitoring (Sentry tunnel)
+     * - Static assets (images, fonts, sw.js, favicon)
+     */
+    "/((?!_next/static|_next/image|favicon\\.ico|api|callback|monitoring|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|eot|otf)$).*)",
   ],
 };
