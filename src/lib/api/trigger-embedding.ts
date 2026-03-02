@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/nextjs";
+
 const MAX_RETRIES = 2;
 
 /**
@@ -23,5 +25,12 @@ export async function triggerEmbeddingGeneration(
   }
   console.warn(
     "[embeddings] Failed to trigger embedding generation after retries",
+  );
+  Sentry.captureMessage(
+    "Failed to trigger embedding generation after retries",
+    {
+      level: "warning",
+      tags: { source: "fire-and-forget", operation: "embedding" },
+    },
   );
 }
