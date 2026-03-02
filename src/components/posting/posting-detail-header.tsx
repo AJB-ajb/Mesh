@@ -8,7 +8,8 @@ import { computeWeightedScore, formatScore } from "@/lib/matching/scoring";
 import { labels } from "@/lib/labels";
 import { formatDateAgo } from "@/lib/format";
 import type { SaveStatus } from "@/lib/hooks/use-auto-save";
-import { usePostingDetailContext } from "./posting-detail-context";
+import { usePostingCoreContext } from "./posting-core-context";
+import { usePostingEditContext } from "./posting-edit-context";
 import { OwnerActions } from "./owner-actions";
 import { ApplySection } from "./apply-section";
 
@@ -55,23 +56,9 @@ function SaveStatusIndicator({ status }: { status: SaveStatus }) {
 }
 
 export function PostingDetailHeader() {
-  const {
-    posting,
-    isOwner,
-    matchBreakdown,
-    isDeleting,
-    isExtending,
-    isReposting,
-    form,
-    onFormChange,
-    saveStatus,
-    onDelete,
-    onExtendDeadline,
-    onRepost,
-    error,
-    backHref,
-    backLabel,
-  } = usePostingDetailContext();
+  const { posting, isOwner, matchBreakdown, error, backHref, backLabel } =
+    usePostingCoreContext();
+  const { form, onFormChange, saveStatus } = usePostingEditContext();
 
   const creatorName = posting.profiles?.full_name || "Unknown";
 
@@ -162,15 +149,7 @@ export function PostingDetailHeader() {
         </div>
 
         {isOwner ? (
-          <OwnerActions
-            posting={posting}
-            isDeleting={isDeleting}
-            isExtending={isExtending}
-            isReposting={isReposting}
-            onDelete={onDelete}
-            onExtendDeadline={onExtendDeadline}
-            onRepost={onRepost}
-          />
+          <OwnerActions />
         ) : (
           !hideApplySection && (
             <div className="flex flex-wrap gap-2">

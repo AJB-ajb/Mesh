@@ -5,11 +5,12 @@ import { Clock, Loader2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { labels } from "@/lib/labels";
-import { usePostingDetailContext } from "./posting-detail-context";
+import { usePostingCoreContext } from "./posting-core-context";
+import { usePostingApplicationContext } from "./posting-application-context";
 
 export function ApplySection() {
+  const { posting } = usePostingCoreContext();
   const {
-    posting,
     hasApplied,
     myApplication,
     waitlistPosition,
@@ -21,7 +22,8 @@ export function ApplySection() {
     onCoverMessageChange,
     onApply,
     onWithdraw,
-  } = usePostingDetailContext();
+  } = usePostingApplicationContext();
+
   if (hasApplied) {
     return (
       <div className="flex items-center gap-2">

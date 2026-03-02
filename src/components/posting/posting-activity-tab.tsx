@@ -1,21 +1,17 @@
 "use client";
 
-import { usePostingDetailContext } from "./posting-detail-context";
-import { PostingTeamCard } from "@/components/posting/posting-team-card";
-import { PostingAboutCard } from "@/components/posting/posting-about-card";
-import { GroupChatPanel } from "@/components/posting/group-chat-panel";
-import { PostingSidebar } from "@/components/posting/posting-sidebar";
-import { TeamSchedulingSection } from "@/components/posting/team-scheduling-section";
+import { usePostingCoreContext } from "./posting-core-context";
+import { usePostingApplicationContext } from "./posting-application-context";
+import { PostingTeamCard } from "./posting-team-card";
+import { PostingAboutCard } from "./posting-about-card";
+import { GroupChatPanel } from "./group-chat-panel";
+import { PostingSidebar } from "./posting-sidebar";
+import { TeamSchedulingSection } from "./team-scheduling-section";
 
 export function PostingActivityTab() {
-  const {
-    posting,
-    postingId,
-    isOwner,
-    currentUserId,
-    currentUserName,
-    effectiveApplications,
-  } = usePostingDetailContext();
+  const { posting, postingId, isOwner, currentUserId, currentUserName } =
+    usePostingCoreContext();
+  const { effectiveApplications } = usePostingApplicationContext();
 
   const teamMembers = [
     {

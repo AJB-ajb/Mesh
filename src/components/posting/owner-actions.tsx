@@ -15,7 +15,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { labels } from "@/lib/labels";
-import type { PostingDetail } from "@/lib/hooks/use-posting-detail";
+import { usePostingCoreContext } from "./posting-core-context";
+import { usePostingEditContext } from "./posting-edit-context";
 import { ExtendDeadlineButtons } from "./extend-deadline-buttons";
 
 const isExpired = (expiresAt: string | null) => {
@@ -23,25 +24,17 @@ const isExpired = (expiresAt: string | null) => {
   return new Date(expiresAt) < new Date();
 };
 
-export type OwnerActionsProps = {
-  posting: PostingDetail;
-  isDeleting: boolean;
-  isExtending: boolean;
-  isReposting: boolean;
-  onDelete: () => void;
-  onExtendDeadline: (days: number) => void;
-  onRepost: () => void;
-};
+export function OwnerActions() {
+  const { posting } = usePostingCoreContext();
+  const {
+    isDeleting,
+    isExtending,
+    isReposting,
+    onDelete,
+    onExtendDeadline,
+    onRepost,
+  } = usePostingEditContext();
 
-export function OwnerActions({
-  posting,
-  isDeleting,
-  isExtending,
-  isReposting,
-  onDelete,
-  onExtendDeadline,
-  onRepost,
-}: OwnerActionsProps) {
   return (
     <div className="flex flex-col gap-2 items-end">
       {isExpired(posting.expires_at) && (

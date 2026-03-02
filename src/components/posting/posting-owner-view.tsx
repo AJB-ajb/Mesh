@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { labels } from "@/lib/labels";
 import { useExtractionReview } from "@/lib/hooks/use-extraction-review";
-import { usePostingDetailContext } from "./posting-detail-context";
+import { usePostingCoreContext } from "./posting-core-context";
 import { PostingDetailHeader } from "./posting-detail-header";
 import { ExtractionReviewCard } from "./extraction-review-card";
 import { PostingEditTab } from "./posting-edit-tab";
@@ -14,7 +14,7 @@ import { PostingActivityTab } from "./posting-activity-tab";
 
 export function PostingOwnerView() {
   const { posting, postingId, activeTab, onTabChange, projectEnabled } =
-    usePostingDetailContext();
+    usePostingCoreContext();
 
   const router = useRouter();
   const searchParams = useSearchParams();

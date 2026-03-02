@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { usePostingDetailContext } from "./posting-detail-context";
+import { usePostingCoreContext } from "./posting-core-context";
+import { usePostingApplicationContext } from "./posting-application-context";
 import { PostingDetailHeader } from "./posting-detail-header";
 import { PostingAboutCard } from "./posting-about-card";
 import { PostingCompatibilityCard } from "./posting-compatibility-card";
@@ -19,10 +20,11 @@ export function PostingVisitorView() {
     isOwner,
     currentUserId,
     currentUserProfile,
-    effectiveApplications,
     isAcceptedMember,
     projectEnabled,
-  } = usePostingDetailContext();
+  } = usePostingCoreContext();
+
+  const { effectiveApplications } = usePostingApplicationContext();
 
   const teamMembers = useMemo(
     () => [
