@@ -13,7 +13,13 @@ interface NavItemProps {
   collapsed?: boolean;
 }
 
-export function NavItem({ href, icon: Icon, label, badge, collapsed }: NavItemProps) {
+export function NavItem({
+  href,
+  icon: Icon,
+  label,
+  badge,
+  collapsed,
+}: NavItemProps) {
   const pathname = usePathname();
   const isActive = pathname === href || pathname.startsWith(`${href}/`);
 
@@ -26,21 +32,26 @@ export function NavItem({ href, icon: Icon, label, badge, collapsed }: NavItemPr
         isActive
           ? "bg-sidebar-accent text-sidebar-accent-foreground"
           : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        collapsed && "md:justify-center md:px-2"
+        collapsed && "md:justify-center md:px-2",
       )}
     >
-      <Icon className="h-5 w-5 shrink-0" />
-      <span className={cn(
-        "flex-1 transition-opacity duration-200",
-        collapsed && "md:hidden"
-      )}>
+      <Icon className="size-5 shrink-0" />
+      <span
+        className={cn(
+          "flex-1 transition-opacity duration-200",
+          collapsed && "md:hidden",
+        )}
+      >
         {label}
       </span>
       {badge !== undefined && badge > 0 && (
-        <span className={cn(
-          "flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground transition-all duration-200",
-          collapsed && "md:absolute md:top-0 md:right-0 md:h-4 md:min-w-4 md:text-[10px]"
-        )}>
+        <span
+          className={cn(
+            "flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground transition-all duration-200",
+            collapsed &&
+              "md:absolute md:top-0 md:right-0 md:h-4 md:min-w-4 md:text-[0.625rem]",
+          )}
+        >
           {badge > 99 ? "99+" : badge}
         </span>
       )}
