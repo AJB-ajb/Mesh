@@ -75,12 +75,15 @@ export function Sidebar({ className }: SidebarProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="hidden md:flex h-8 w-8 text-muted-foreground hover:text-foreground"
+          className="hidden md:flex size-8 text-muted-foreground hover:text-foreground"
           onClick={toggleCollapse}
+          aria-label={
+            isCollapsed ? labels.nav.expandSidebar : labels.nav.collapseSidebar
+          }
         >
           <ChevronLeft
             className={cn(
-              "h-4 w-4 transition-transform duration-300",
+              "size-4 transition-transform duration-300",
               isCollapsed && "rotate-180",
             )}
           />
@@ -97,7 +100,7 @@ export function Sidebar({ className }: SidebarProps) {
           asChild
         >
           <Link href="/postings/new">
-            <Plus className="h-4 w-4 flex-shrink-0" />
+            <Plus className="size-4 flex-shrink-0" />
             <span
               className={cn(
                 "transition-opacity duration-200",
