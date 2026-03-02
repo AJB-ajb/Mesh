@@ -6,6 +6,8 @@
  * a fully-qualified URL.
  */
 
+import * as Sentry from "@sentry/nextjs";
+
 const MAX_RETRIES = 2;
 
 function getBaseUrl(): string {
@@ -35,5 +37,12 @@ export async function triggerEmbeddingGenerationServer(
   }
   console.warn(
     "[embeddings] Failed to trigger server-side embedding generation after retries",
+  );
+  Sentry.captureMessage(
+    "Failed to trigger server-side embedding generation after retries",
+    {
+      level: "warning",
+      tags: { source: "fire-and-forget", operation: "embedding" },
+    },
   );
 }

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import * as Sentry from "@sentry/nextjs";
 import { createClient } from "@/lib/supabase/client";
 
 type NotificationPayload = {
@@ -43,11 +44,16 @@ export function sendNotification(
       }),
     })
     .then(({ error }) => {
-      if (error)
+      if (error) {
         console.error(
           `[sendNotification] Error creating ${payload.type}:`,
           error,
         );
+        Sentry.captureException(error, {
+          tags: { source: "fire-and-forget", operation: "notification" },
+          extra: { notificationType: payload.type },
+        });
+      }
     });
 }
 
@@ -86,10 +92,18 @@ export function sendNotifications(
     .from("notifications")
     .insert(rows)
     .then(({ error }) => {
-      if (error)
+      if (error) {
         console.error(
           `[sendNotification] Error creating ${payloads[0]?.type} notifications:`,
           error,
         );
+        Sentry.captureException(error, {
+          tags: { source: "fire-and-forget", operation: "notification" },
+          extra: {
+            notificationType: payloads[0]?.type,
+            count: payloads.length,
+          },
+        });
+      }
     });
 }
