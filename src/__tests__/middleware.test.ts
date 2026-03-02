@@ -51,7 +51,7 @@ describe("proxy (route protection)", () => {
     );
   });
 
-  it("redirects authenticated user on /login to /active", async () => {
+  it("redirects authenticated user on /login to /posts", async () => {
     const passthrough = NextResponse.next();
     mockUpdateSession.mockResolvedValue({
       response: passthrough,
@@ -63,10 +63,10 @@ describe("proxy (route protection)", () => {
 
     expect(response.status).toBe(307);
     const location = response.headers.get("location");
-    expect(location).toContain("/active");
+    expect(location).toContain("/posts");
   });
 
-  it("redirects authenticated user on /signup to /active", async () => {
+  it("redirects authenticated user on /signup to /posts", async () => {
     const passthrough = NextResponse.next();
     mockUpdateSession.mockResolvedValue({
       response: passthrough,
@@ -78,7 +78,7 @@ describe("proxy (route protection)", () => {
 
     expect(response.status).toBe(307);
     const location = response.headers.get("location");
-    expect(location).toContain("/active");
+    expect(location).toContain("/posts");
   });
 
   it("allows unauthenticated user on public route (e.g. /)", async () => {
