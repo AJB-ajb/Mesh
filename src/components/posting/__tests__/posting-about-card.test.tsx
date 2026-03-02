@@ -1,14 +1,16 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { PostingAboutCard } from "../posting-about-card";
-import {
-  PostingDetailProvider,
-  type PostingDetailContextValue,
-} from "../posting-detail-context";
+import { PostingCoreProvider } from "../posting-core-context";
+import { PostingEditProvider } from "../posting-edit-context";
+import { PostingApplicationProvider } from "../posting-application-context";
 import type {
   PostingDetail,
   PostingFormState,
 } from "@/lib/hooks/use-posting-detail";
+import type { PostingCoreContextValue } from "../posting-core-context";
+import type { PostingEditContextValue } from "../posting-edit-context";
+import type { PostingApplicationContextValue } from "../posting-application-context";
 
 // Mock LocationAutocomplete since it's not under test
 vi.mock("@/components/location/location-autocomplete", () => ({
@@ -70,69 +72,89 @@ const baseForm: PostingFormState = {
   hiddenDetails: "",
 };
 
-function buildContextValue(
-  overrides: Partial<PostingDetailContextValue> = {},
-): PostingDetailContextValue {
+const onFormChange = vi.fn();
+
+function makeCoreValue(posting: PostingDetail): PostingCoreContextValue {
   return {
-    posting: basePosting,
-    postingId: "p-1",
+    posting,
+    postingId: posting.id,
     isOwner: false,
     currentUserId: "user-2",
-    currentUserName: null,
     currentUserProfile: null,
+    currentUserName: null,
     matchBreakdown: null,
-    effectiveApplications: [],
-    matchedProfiles: [],
-    hasApplied: false,
-    myApplication: null,
-    waitlistPosition: null,
-    isLoading: false,
-    isEditing: false,
+    backHref: "/my-postings",
+    backLabel: "Back",
+    activeTab: "manage",
+    onTabChange: vi.fn(),
+    onContactCreator: vi.fn(),
+    onStartConversation: vi.fn(),
+    error: null,
+    isAcceptedMember: false,
+    projectEnabled: false,
+    acceptedCount: 0,
+  };
+}
+
+function makeEditValue(
+  form: PostingFormState,
+  isEditing = false,
+): PostingEditContextValue {
+  return {
+    form,
+    onFormChange,
+    isEditing,
     isSaving: false,
     isDeleting: false,
     isExtending: false,
     isReposting: false,
-    isApplying: false,
-    showApplyForm: false,
-    coverMessage: "",
-    error: null,
-    isUpdatingApplication: null,
-    isAcceptedMember: false,
-    projectEnabled: false,
-    form: baseForm,
     saveStatus: "idle" as const,
-    isApplyingUpdate: false,
-    activeTab: "manage",
-    backHref: "/posts",
-    backLabel: "Back",
-    onFormChange: vi.fn(),
-    onSave: vi.fn(),
-    onCancelEdit: vi.fn(),
     onStartEdit: vi.fn(),
+    onCancelEdit: vi.fn(),
+    onSave: vi.fn(),
     onDelete: vi.fn(),
     onExtendDeadline: vi.fn(),
     onRepost: vi.fn(),
-    onApply: vi.fn(),
-    onWithdraw: vi.fn(),
-    onShowApplyForm: vi.fn(),
-    onHideApplyForm: vi.fn(),
-    onCoverMessageChange: vi.fn(),
-    onUpdateStatus: vi.fn(),
-    onStartConversation: vi.fn(),
-    onContactCreator: vi.fn(),
+    isApplyingUpdate: false,
     onApplyUpdate: vi.fn(),
     onUndoUpdate: vi.fn(),
-    onTabChange: vi.fn(),
-    ...overrides,
   };
 }
 
-function renderWithContext(overrides: Partial<PostingDetailContextValue> = {}) {
-  const value = buildContextValue(overrides);
+function makeAppValue(): PostingApplicationContextValue {
+  return {
+    effectiveApplications: [],
+    matchedProfiles: [],
+    myApplication: null,
+    hasApplied: false,
+    waitlistPosition: null,
+    showApplyForm: false,
+    coverMessage: "",
+    isApplying: false,
+    onShowApplyForm: vi.fn(),
+    onHideApplyForm: vi.fn(),
+    onCoverMessageChange: vi.fn(),
+    onApply: vi.fn(),
+    onWithdraw: vi.fn(),
+    isUpdatingApplication: null,
+    onUpdateStatus: vi.fn(),
+    isLoading: false,
+  };
+}
+
+function renderWithContext(
+  posting: PostingDetail = basePosting,
+  form: PostingFormState = baseForm,
+  isEditing = false,
+) {
   return render(
-    <PostingDetailProvider value={value}>
-      <PostingAboutCard />
-    </PostingDetailProvider>,
+    <PostingCoreProvider value={makeCoreValue(posting)}>
+      <PostingApplicationProvider value={makeAppValue()}>
+        <PostingEditProvider value={makeEditValue(form, isEditing)}>
+          <PostingAboutCard />
+        </PostingEditProvider>
+      </PostingApplicationProvider>
+    </PostingCoreProvider>,
   );
 }
 
@@ -156,7 +178,8 @@ describe("PostingAboutCard", () => {
   });
 
   it("shows 'No specific skills listed' when skills are empty", () => {
-    renderWithContext({ posting: { ...basePosting, skills: [] } });
+    const posting = { ...basePosting, skills: [] };
+    renderWithContext(posting);
     expect(screen.getByText("No specific skills listed")).toBeInTheDocument();
   });
 
@@ -166,9 +189,8 @@ describe("PostingAboutCard", () => {
   });
 
   it("renders team size with different min/max values", () => {
-    renderWithContext({
-      posting: { ...basePosting, team_size_min: 2, team_size_max: 5 },
-    });
+    const posting = { ...basePosting, team_size_min: 2, team_size_max: 5 };
+    renderWithContext(posting);
     expect(screen.getByText(/Min 2 · Looking for 5/)).toBeInTheDocument();
   });
 
@@ -178,9 +200,8 @@ describe("PostingAboutCard", () => {
   });
 
   it("hides estimated time section when estimated_time is empty", () => {
-    renderWithContext({
-      posting: { ...basePosting, estimated_time: "" },
-    });
+    const posting = { ...basePosting, estimated_time: "" };
+    renderWithContext(posting);
     expect(screen.queryByText("Estimated Time")).not.toBeInTheDocument();
   });
 
@@ -192,48 +213,46 @@ describe("PostingAboutCard", () => {
   it("renders location mode display for remote", () => {
     renderWithContext();
     // Remote shows house emoji and "Remote" label
-    expect(screen.getByText(/🏠/)).toBeInTheDocument();
+    expect(screen.getByText(/\u{1F3E0}/u)).toBeInTheDocument();
   });
 
   it("renders location mode display for in_person", () => {
-    renderWithContext({
-      posting: {
-        ...basePosting,
-        location_mode: "in_person",
-        location_name: "Berlin, Germany",
-        max_distance_km: 50,
-      },
-    });
+    const posting = {
+      ...basePosting,
+      location_mode: "in_person",
+      location_name: "Berlin, Germany",
+      max_distance_km: 50,
+    };
+    renderWithContext(posting);
     expect(screen.getByText(/Berlin, Germany/)).toBeInTheDocument();
     expect(screen.getByText("Within 50 km")).toBeInTheDocument();
   });
 
   it("renders tags as badges in view mode", () => {
-    renderWithContext({
-      posting: {
-        ...basePosting,
-        tags: ["remote", "weekend", "beginner-friendly"],
-      },
-    });
+    const posting = {
+      ...basePosting,
+      tags: ["remote", "weekend", "beginner-friendly"],
+    };
+    renderWithContext(posting);
     expect(screen.getByText("#remote")).toBeInTheDocument();
     expect(screen.getByText("#weekend")).toBeInTheDocument();
     expect(screen.getByText("#beginner-friendly")).toBeInTheDocument();
   });
 
   it("renders context identifier in view mode", () => {
-    renderWithContext({
-      posting: { ...basePosting, context_identifier: "CS101" },
-    });
+    const posting = { ...basePosting, context_identifier: "CS101" };
+    renderWithContext(posting);
     expect(screen.getByText("CS101")).toBeInTheDocument();
   });
 
-  // skill_level_min column dropped — now per-skill in posting_skills join table
+  // skill_level_min column dropped -- now per-skill in posting_skills join table
 
   it("renders textarea in editing mode", () => {
-    renderWithContext({
-      isEditing: true,
-      form: { ...baseForm, description: "Edit me" },
-    });
+    renderWithContext(
+      basePosting,
+      { ...baseForm, description: "Edit me" },
+      true,
+    );
     const textarea = screen.getByDisplayValue("Edit me");
     expect(textarea).toBeInTheDocument();
     expect(textarea.tagName.toLowerCase()).toBe("textarea");

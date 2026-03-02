@@ -1,13 +1,13 @@
 "use client";
 
-import { usePostingDetailContext } from "./posting-detail-context";
-import { PostingApplicationsCard } from "@/components/posting/posting-applications-card";
-import { PostingMatchedProfilesCard } from "@/components/posting/posting-matched-profiles-card";
-import { PostingSidebar } from "@/components/posting/posting-sidebar";
-import { SequentialInviteCard } from "@/components/posting/sequential-invite-card";
+import { usePostingCoreContext } from "./posting-core-context";
+import { PostingApplicationsCard } from "./posting-applications-card";
+import { PostingMatchedProfilesCard } from "./posting-matched-profiles-card";
+import { PostingSidebar } from "./posting-sidebar";
+import { SequentialInviteCard } from "./sequential-invite-card";
 
 export function PostingManageTab() {
-  const { postingId, currentUserId } = usePostingDetailContext();
+  const { postingId, currentUserId } = usePostingCoreContext();
 
   return (
     <div className="grid gap-6 lg:grid-cols-3 mt-6">

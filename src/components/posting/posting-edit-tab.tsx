@@ -2,20 +2,15 @@
 
 import { labels } from "@/lib/labels";
 import { FreeFormUpdate } from "@/components/shared/free-form-update";
-import { usePostingDetailContext } from "./posting-detail-context";
-import { PostingAboutCard } from "@/components/posting/posting-about-card";
-import { PostingSidebar } from "@/components/posting/posting-sidebar";
+import { usePostingCoreContext } from "./posting-core-context";
+import { usePostingEditContext } from "./posting-edit-context";
+import { PostingAboutCard } from "./posting-about-card";
+import { PostingSidebar } from "./posting-sidebar";
 
 export function PostingEditTab() {
-  const {
-    posting,
-    postingId,
-    form,
-    onFormChange,
-    isApplyingUpdate,
-    onApplyUpdate,
-    onUndoUpdate,
-  } = usePostingDetailContext();
+  const { posting, postingId } = usePostingCoreContext();
+  const { form, onFormChange, isApplyingUpdate, onApplyUpdate, onUndoUpdate } =
+    usePostingEditContext();
 
   return (
     <div className="grid gap-6 lg:grid-cols-3 mt-6">
