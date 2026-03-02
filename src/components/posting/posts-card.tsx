@@ -34,8 +34,8 @@ export function PostsCard({ item }: PostsCardProps) {
     item.role === "owner" ? labels.active.youCreated : labels.active.youJoined;
 
   return (
-    <Link href={item.href}>
-      <Card className="transition-colors hover:bg-muted/50">
+    <Link href={item.href} className="block min-w-0">
+      <Card className="overflow-hidden transition-colors hover:bg-muted/50">
         <CardContent className="p-4 sm:p-6">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">

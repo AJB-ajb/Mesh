@@ -59,10 +59,10 @@ export function PostingDiscoverCard({
   );
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="min-w-0 overflow-hidden">
       <CardHeader className="pb-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-          <div className="space-y-1 flex-1">
+          <div className="min-w-0 space-y-1 flex-1">
             <div className="flex items-center gap-3 flex-wrap">
               <CardTitle className="text-xl">
                 <Link
@@ -115,7 +115,7 @@ export function PostingDiscoverCard({
               )}
             </div>
           </div>
-          <div className="flex gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             {!isOwner && onToggleBookmark && (
               <Button
                 variant="ghost"
