@@ -208,7 +208,10 @@ function createSlashListener(callbacks: SlashCommandCallbacks) {
     const next = update.state.field(slashMenuState);
     if (next !== prev) {
       prev = next;
-      callbacks.onStateChange(next);
+      // Defer to escape CodeMirror's synchronous update cycle — React
+      // setState calls made during CM6 updateListener can be dropped
+      // when they coincide with React's own commit phase.
+      queueMicrotask(() => callbacks.onStateChange(next));
     }
   });
 }
