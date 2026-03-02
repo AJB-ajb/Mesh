@@ -17,6 +17,8 @@ import {
   checkPageHeight,
   findSmallTouchTargets,
   checkElementsDoNotOverlap,
+  findHiddenOverflowViolations,
+  findViewportExceedingElements,
 } from "../utils/layout-helpers";
 
 // ---------------------------------------------------------------------------
@@ -345,4 +347,76 @@ test.describe("Layout > Element overlap", () => {
       `Header overlaps main — Header: ${JSON.stringify(result.rectA)}, Main: ${JSON.stringify(result.rectB)}`,
     ).toBe(false);
   });
+});
+
+// ---------------------------------------------------------------------------
+// Group 7: No hidden horizontal overflow
+//   Catches containers with overflow-x: hidden that silently clip content.
+// ---------------------------------------------------------------------------
+
+test.describe("Layout > No hidden horizontal overflow", () => {
+  for (const viewport of ALL_VIEWPORTS) {
+    for (const { path, name } of PUBLIC_PAGES) {
+      test(`${name} (${path}) — ${viewport}`, async ({ page }) => {
+        await page.setViewportSize(VIEWPORTS[viewport]);
+        await page.goto(path, { waitUntil: "domcontentloaded" });
+        await page.waitForTimeout(300);
+
+        const violations = await findHiddenOverflowViolations(page);
+        expect(
+          violations,
+          `Hidden overflow clipping on ${path} @ ${viewport}: ${JSON.stringify(violations)}`,
+        ).toEqual([]);
+      });
+    }
+
+    for (const { path, name } of AUTHED_PAGES) {
+      test(`${name} (${path}) — ${viewport}`, async ({ page }) => {
+        test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
+        await navigateToPage(page, path, viewport, true);
+
+        const violations = await findHiddenOverflowViolations(page);
+        expect(
+          violations,
+          `Hidden overflow clipping on ${path} @ ${viewport}: ${JSON.stringify(violations)}`,
+        ).toEqual([]);
+      });
+    }
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Group 8: Content within viewport bounds
+//   Catches individual elements whose bounding rect extends past the viewport.
+// ---------------------------------------------------------------------------
+
+test.describe("Layout > Content within viewport bounds", () => {
+  for (const viewport of ALL_VIEWPORTS) {
+    for (const { path, name } of PUBLIC_PAGES) {
+      test(`${name} (${path}) — ${viewport}`, async ({ page }) => {
+        await page.setViewportSize(VIEWPORTS[viewport]);
+        await page.goto(path, { waitUntil: "domcontentloaded" });
+        await page.waitForTimeout(300);
+
+        const violations = await findViewportExceedingElements(page);
+        expect(
+          violations,
+          `Elements exceed viewport on ${path} @ ${viewport}: ${JSON.stringify(violations)}`,
+        ).toEqual([]);
+      });
+    }
+
+    for (const { path, name } of AUTHED_PAGES) {
+      test(`${name} (${path}) — ${viewport}`, async ({ page }) => {
+        test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
+        await navigateToPage(page, path, viewport, true);
+
+        const violations = await findViewportExceedingElements(page);
+        expect(
+          violations,
+          `Elements exceed viewport on ${path} @ ${viewport}: ${JSON.stringify(violations)}`,
+        ).toEqual([]);
+      });
+    }
+  }
 });

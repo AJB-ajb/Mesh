@@ -54,6 +54,21 @@ export type OverlapResult = {
   rectB: { x: number; y: number; width: number; height: number } | null;
 };
 
+export type HiddenOverflowViolation = {
+  selector: string;
+  scrollWidth: number;
+  clientWidth: number;
+  excessPx: number;
+};
+
+export type ViewportExceedingViolation = {
+  selector: string;
+  right: number;
+  left: number;
+  viewportWidth: number;
+  excessPx: number;
+};
+
 // ---------------------------------------------------------------------------
 // 1. findOverflowViolations
 //    Walks visible elements, finds those with computed overflow: auto|scroll
@@ -326,4 +341,230 @@ export async function checkElementsDoNotOverlap(
     },
     { selA: selectorA, selB: selectorB },
   );
+}
+
+// ---------------------------------------------------------------------------
+// Allowlist for hidden-overflow containers that intentionally clip content.
+// ---------------------------------------------------------------------------
+
+export const HIDDEN_OVERFLOW_ALLOWLIST = [
+  ...SCROLLABLE_ALLOWLIST,
+  ".truncate", // Intentional text truncation
+  "[class*='line-clamp']", // Intentional multi-line clamping
+  ".overflow-x-auto", // Horizontally scrollable by design
+  ".sr-only", // Screen-reader-only elements (intentionally clipped to 1px)
+] as const;
+
+// ---------------------------------------------------------------------------
+// 6. findHiddenOverflowViolations
+//    Detects containers with overflow-x: hidden whose scrollWidth > clientWidth,
+//    meaning they are silently clipping content wider than the container.
+// ---------------------------------------------------------------------------
+
+export async function findHiddenOverflowViolations(
+  page: Page,
+  allowlist: readonly string[] = HIDDEN_OVERFLOW_ALLOWLIST,
+): Promise<HiddenOverflowViolation[]> {
+  return page.evaluate(
+    ({ allowlist }) => {
+      const buildSelector = new Function(
+        "el",
+        `
+        if (el.id) return el.tagName.toLowerCase() + '#' + el.id;
+        let s = el.tagName.toLowerCase();
+        if (el.className && typeof el.className === 'string') {
+          const classes = el.className.trim().split(/\\s+/).slice(0, 3).join('.');
+          if (classes) s += '.' + classes;
+        }
+        return s;
+        `,
+      ) as (el: Element) => string;
+
+      function isAllowlisted(el: Element): boolean {
+        for (const sel of allowlist) {
+          try {
+            if (el.matches(sel)) return true;
+          } catch {
+            // Invalid selector, skip
+          }
+        }
+        // Also allow children of allowlisted containers
+        let parent = el.parentElement;
+        while (parent) {
+          for (const sel of allowlist) {
+            try {
+              if (parent.matches(sel)) return true;
+            } catch {
+              // Invalid selector, skip
+            }
+          }
+          parent = parent.parentElement;
+        }
+        return false;
+      }
+
+      const violations: {
+        selector: string;
+        scrollWidth: number;
+        clientWidth: number;
+        excessPx: number;
+      }[] = [];
+
+      const elements = document.querySelectorAll("*");
+      for (const el of elements) {
+        if (!(el instanceof HTMLElement)) continue;
+        const style = getComputedStyle(el);
+        const ox = style.overflowX;
+        // Only check elements with overflow-x: hidden
+        if (ox !== "hidden") continue;
+
+        // Skip sr-only elements — they use overflow:hidden by design
+        if (
+          el.classList.contains("sr-only") ||
+          (style.position === "absolute" &&
+            style.clip === "rect(0px, 0px, 0px, 0px)")
+        )
+          continue;
+
+        // 1px tolerance for rounding
+        const excess = el.scrollWidth - el.clientWidth;
+        if (excess <= 1) continue;
+
+        if (isAllowlisted(el)) continue;
+
+        violations.push({
+          selector: buildSelector(el),
+          scrollWidth: el.scrollWidth,
+          clientWidth: el.clientWidth,
+          excessPx: excess,
+        });
+      }
+
+      return violations;
+    },
+    { allowlist: [...allowlist] },
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 7. findViewportExceedingElements
+//    Walks visible content elements and flags those whose bounding rect
+//    extends beyond the viewport edges (right or left).
+// ---------------------------------------------------------------------------
+
+export async function findViewportExceedingElements(
+  page: Page,
+): Promise<ViewportExceedingViolation[]> {
+  return page.evaluate(() => {
+    const buildSelector = new Function(
+      "el",
+      `
+      if (el.id) return el.tagName.toLowerCase() + '#' + el.id;
+      let s = el.tagName.toLowerCase();
+      if (el.className && typeof el.className === 'string') {
+        const classes = el.className.trim().split(/\\s+/).slice(0, 3).join('.');
+        if (classes) s += '.' + classes;
+      }
+      return s;
+      `,
+    ) as (el: Element) => string;
+
+    const vpWidth = window.innerWidth;
+    const TOLERANCE = 1; // 1px rounding tolerance
+
+    // Only check meaningful content elements
+    const contentSelectors = [
+      "[data-slot='card']", // shadcn Card components
+      "button",
+      "a",
+      "input",
+      "select",
+      "textarea",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+      "h6",
+      "img",
+      "[role='button']",
+      "[role='group']",
+      ".flex", // Flex containers often cause overflow
+    ].join(", ");
+
+    // Check if element is inside a container that clips or scrolls horizontally.
+    // Elements inside overflow-x: hidden/auto/scroll ancestors are not truly
+    // visible beyond the viewport — hidden-overflow bugs are caught by
+    // findHiddenOverflowViolations instead.
+    function isInsideHorizontalClipOrScroll(el: Element): boolean {
+      let parent = el.parentElement;
+      while (parent && parent !== document.documentElement) {
+        const ps = getComputedStyle(parent);
+        const ox = ps.overflowX;
+        if (ox === "hidden" || ox === "auto" || ox === "scroll") {
+          return true;
+        }
+        parent = parent.parentElement;
+      }
+      return false;
+    }
+
+    const elements = document.querySelectorAll(contentSelectors);
+    const violatingEls: Element[] = [];
+
+    for (const el of elements) {
+      if (!(el instanceof HTMLElement)) continue;
+
+      const rect = el.getBoundingClientRect();
+      // Skip zero-size or invisible elements
+      if (rect.width === 0 || rect.height === 0) continue;
+
+      const style = getComputedStyle(el);
+      if (style.display === "none" || style.visibility === "hidden") continue;
+      // Skip sr-only
+      if (
+        el.classList.contains("sr-only") ||
+        (style.position === "absolute" &&
+          style.clip === "rect(0px, 0px, 0px, 0px)")
+      )
+        continue;
+
+      // Skip elements not in the vertical viewport (offscreen above/below)
+      if (rect.bottom < 0 || rect.top > window.innerHeight) continue;
+
+      const exceedsRight = rect.right > vpWidth + TOLERANCE;
+      const exceedsLeft = rect.left < -TOLERANCE;
+
+      if (!exceedsRight && !exceedsLeft) continue;
+
+      // Skip elements inside containers that clip or scroll horizontally —
+      // those are caught by findHiddenOverflowViolations instead
+      if (isInsideHorizontalClipOrScroll(el)) continue;
+
+      violatingEls.push(el);
+    }
+
+    // Deduplicate: only report outermost violating ancestor
+    const outermost = violatingEls.filter((el) => {
+      let parent = el.parentElement;
+      while (parent) {
+        if (violatingEls.includes(parent)) return false;
+        parent = parent.parentElement;
+      }
+      return true;
+    });
+
+    return outermost.map((el) => {
+      const rect = el.getBoundingClientRect();
+      const excessRight = Math.max(0, rect.right - vpWidth);
+      const excessLeft = Math.max(0, -rect.left);
+      return {
+        selector: buildSelector(el),
+        right: Math.round(rect.right),
+        left: Math.round(rect.left),
+        viewportWidth: vpWidth,
+        excessPx: Math.round(Math.max(excessRight, excessLeft)),
+      };
+    });
+  });
 }
