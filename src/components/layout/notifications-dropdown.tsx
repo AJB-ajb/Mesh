@@ -29,16 +29,16 @@ function getNotificationIcon(type: string) {
     case "application_received":
     case "application_accepted":
     case "application_rejected":
-      return <FolderKanban className="h-4 w-4" />;
+      return <FolderKanban className="size-4" />;
     case "new_message":
     case "new_group_message":
-      return <MessageSquare className="h-4 w-4" />;
+      return <MessageSquare className="size-4" />;
     case "sequential_invite":
-      return <ListOrdered className="h-4 w-4" />;
+      return <ListOrdered className="size-4" />;
     case "friend_request":
-      return <Users className="h-4 w-4" />;
+      return <Users className="size-4" />;
     default:
-      return <Bell className="h-4 w-4" />;
+      return <Bell className="size-4" />;
   }
 }
 
@@ -168,7 +168,7 @@ export function NotificationsDropdown({ className }: { className?: string }) {
         aria-expanded={open}
         aria-haspopup="true"
       >
-        <Bell className="h-5 w-5" />
+        <Bell className="size-5" />
         <span className="sr-only">{labels.nav.notifications}</span>
         {unreadCount > 0 && (
           <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs font-medium text-destructive-foreground">
@@ -192,7 +192,7 @@ export function NotificationsDropdown({ className }: { className?: string }) {
                 className="h-auto px-2 py-1 text-xs"
                 onClick={() => markAllAsRead()}
               >
-                <CheckCheck className="mr-1 h-3 w-3" />
+                <CheckCheck className="mr-1 size-3" />
                 {labels.notification.markAllRead}
               </Button>
             )}
@@ -202,7 +202,7 @@ export function NotificationsDropdown({ className }: { className?: string }) {
           <div className="max-h-96 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                <Bell className="h-8 w-8 opacity-50" />
+                <Bell className="size-8 opacity-50" />
                 <p className="mt-2 text-sm">{labels.notification.empty}</p>
               </div>
             ) : (
@@ -214,15 +214,23 @@ export function NotificationsDropdown({ className }: { className?: string }) {
                   return (
                     <div
                       key={notification.id}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleNotificationClick(notification);
+                        }
+                      }}
                       className={cn(
-                        "flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/50 cursor-pointer",
+                        "flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                         !notification.read && "bg-primary/5",
                       )}
                       onClick={() => handleNotificationClick(notification)}
                     >
                       <div
                         className={cn(
-                          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+                          "flex size-8 shrink-0 items-center justify-center rounded-full",
                           getIconColor(notification.type),
                         )}
                       >
@@ -261,9 +269,9 @@ export function NotificationsDropdown({ className }: { className?: string }) {
                               }
                             >
                               {isResponding ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
+                                <Loader2 className="size-3 animate-spin" />
                               ) : (
-                                <Check className="h-3 w-3" />
+                                <Check className="size-3" />
                               )}
                               {labels.inbox.joinAction}
                             </Button>
@@ -282,7 +290,7 @@ export function NotificationsDropdown({ className }: { className?: string }) {
                         )}
                       </div>
                       {!notification.read && (
-                        <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                        <div className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
                       )}
                     </div>
                   );
