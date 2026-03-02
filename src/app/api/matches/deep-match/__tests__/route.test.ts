@@ -12,14 +12,13 @@ vi.mock("@/lib/supabase/server", () => ({
   })),
 }));
 
-// ---------- Matching module mock ----------
-const mockMatchProfileToPostings = vi.fn();
-const mockCreateMatchRecords = vi.fn();
+// ---------- Deep match mock ----------
+const mockDeepMatchCandidate = vi.fn();
+const mockIsDeepMatchAvailable = vi.fn();
 
-vi.mock("@/lib/matching/profile-to-posting", () => ({
-  matchProfileToPostings: (...args: unknown[]) =>
-    mockMatchProfileToPostings(...args),
-  createMatchRecords: (...args: unknown[]) => mockCreateMatchRecords(...args),
+vi.mock("@/lib/matching/deep-match", () => ({
+  deepMatchCandidate: (...args: unknown[]) => mockDeepMatchCandidate(...args),
+  isDeepMatchAvailable: () => mockIsDeepMatchAvailable(),
 }));
 
 // ---------- Tier mock ----------
@@ -55,6 +54,8 @@ function chain(finalValue: { data: unknown; error: unknown }) {
     "update",
     "delete",
     "eq",
+    "in",
+    "or",
     "single",
     "maybeSingle",
   ]) {
@@ -65,17 +66,22 @@ function chain(finalValue: { data: unknown; error: unknown }) {
   return self;
 }
 
-const makeReq = () =>
-  new Request("http://localhost/api/matches/deep-match", { method: "POST" });
+const makeReq = (body?: Record<string, unknown>) =>
+  new Request("http://localhost/api/matches/deep-match", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body ?? { matchIds: ["m1"] }),
+  });
 const routeCtx = { params: Promise.resolve({}) };
 
 describe("POST /api/matches/deep-match", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Default: pro tier, access allowed, rate limit ok
+    // Default: pro tier, access allowed, rate limit ok, deep match available
     mockGetUserTier.mockResolvedValue("pro");
     mockCanAccessFeature.mockReturnValue(true);
     mockCheck.mockReturnValue({ allowed: true });
+    mockIsDeepMatchAvailable.mockReturnValue(true);
   });
 
   it("returns 401 when not authenticated", async () => {
@@ -112,51 +118,96 @@ describe("POST /api/matches/deep-match", () => {
     expect(res.headers.get("Retry-After")).toBe("1800");
   });
 
-  it("returns matches successfully", async () => {
+  it("returns 503 when deep match is not configured", async () => {
     authedUser();
-    mockFrom.mockReturnValue(
-      chain({
-        data: { bio: "Developer", headline: "Dev" },
-        error: null,
-      }),
-    );
+    mockIsDeepMatchAvailable.mockReturnValue(false);
 
-    const matches = [
-      {
-        matchId: "m1",
-        posting: {
+    const res = await POST(makeReq(), routeCtx);
+    const body = await res.json();
+
+    expect(res.status).toBe(503);
+    expect(body.error.message).toContain("not configured");
+  });
+
+  it("returns 400 when matchIds is missing", async () => {
+    authedUser();
+
+    const res = await POST(
+      new Request("http://localhost/api/matches/deep-match", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      }),
+      routeCtx,
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error.message).toContain("matchIds");
+  });
+
+  it("returns results for valid match IDs", async () => {
+    authedUser();
+
+    const matchChain = chain({
+      data: [
+        {
+          id: "m1",
+          posting_id: "p1",
+          user_id: "user-1",
+          similarity_score: 0.7,
+          score_breakdown: { semantic: 0.8 },
+        },
+      ],
+      error: null,
+    });
+    const postingChain = chain({
+      data: [
+        {
           id: "p1",
           title: "React Project",
-          created_at: "2026-01-01",
+          source_text: "Looking for React dev",
+          description: "",
         },
-        score: 0.85,
-        scoreBreakdown: { skills: 0.9 },
-      },
-    ];
-    mockMatchProfileToPostings.mockResolvedValue(matches);
-    mockCreateMatchRecords.mockResolvedValue(undefined);
+      ],
+      error: null,
+    });
+    const profileChain = chain({
+      data: [
+        {
+          user_id: "user-1",
+          source_text: "Experienced React developer",
+          bio: "",
+          headline: "",
+        },
+      ],
+      error: null,
+    });
+    const updateChain = chain({ data: null, error: null });
+
+    let callCount = 0;
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return matchChain;
+      if (callCount === 2) return postingChain;
+      if (callCount === 3) return profileChain;
+      return updateChain;
+    });
+
+    mockDeepMatchCandidate.mockResolvedValue({
+      score: 85,
+      explanation: "Great match",
+      concerns: [],
+      matchedRole: "developer",
+    });
 
     const res = await POST(makeReq(), routeCtx);
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body.matches).toHaveLength(1);
-    expect(body.matches[0].id).toBe("m1");
-    expect(body.matches[0].score).toBe(0.85);
-    expect(mockMatchProfileToPostings).toHaveBeenCalledWith("user-1", 20);
-    expect(mockCreateMatchRecords).toHaveBeenCalled();
-  });
-
-  it("returns 400 when profile not found", async () => {
-    authedUser();
-    mockFrom.mockReturnValue(
-      chain({ data: null, error: { message: "not found" } }),
-    );
-
-    const res = await POST(makeReq(), routeCtx);
-    const body = await res.json();
-
-    expect(res.status).toBe(400);
-    expect(body.error.message).toContain("Profile not found");
+    expect(body.results).toHaveLength(1);
+    expect(body.results[0].matchId).toBe("m1");
+    expect(body.results[0].result.score).toBe(85);
+    expect(mockDeepMatchCandidate).toHaveBeenCalled();
   });
 });
