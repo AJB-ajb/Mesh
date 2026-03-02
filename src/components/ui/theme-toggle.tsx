@@ -1,12 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Sunset } from "lucide-react";
 import { useTheme } from "next-themes";
 
-import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+const THEMES = ["light", "dark", "dusk"] as const;
 
 interface ThemeToggleProps {
   className?: string;
@@ -16,7 +17,6 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
 
-  // Avoid hydration mismatch
   React.useEffect(() => {
     setMounted(true);
   }, []);
@@ -30,20 +30,24 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
         disabled
       >
         <Sun className="h-5 w-5" />
-        <span className="sr-only">{labels.a11y.toggleTheme}</span>
+        <span className="sr-only">Toggle theme</span>
       </Button>
     );
   }
+
+  const currentIndex = THEMES.indexOf(theme as (typeof THEMES)[number]);
+  const next = THEMES[(currentIndex + 1) % THEMES.length];
 
   return (
     <Button
       variant="ghost"
       size="icon"
       className={cn("relative", className)}
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      onClick={() => setTheme(next)}
     >
-      <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+      {theme === "light" && <Sun className="h-5 w-5 animate-fade-in" />}
+      {theme === "dark" && <Moon className="h-5 w-5 animate-fade-in" />}
+      {theme === "dusk" && <Sunset className="h-5 w-5 animate-fade-in" />}
       <span className="sr-only">Toggle theme</span>
     </Button>
   );
