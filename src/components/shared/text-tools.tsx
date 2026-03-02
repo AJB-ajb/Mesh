@@ -13,8 +13,6 @@ import { labels } from "@/lib/labels";
 export interface TextToolsProps {
   text: string;
   onTextChange: (newText: string) => void;
-  /** When provided, also sets editor content for rich text sync */
-  editor?: import("@tiptap/core").Editor | null;
   disabled?: boolean;
 }
 
@@ -31,7 +29,6 @@ const UNDO_TIMEOUT_MS = 8_000;
 export function TextTools({
   text,
   onTextChange,
-  editor,
   disabled,
 }: TextToolsProps) {
   const [isFormatting, setIsFormatting] = useState(false);
@@ -90,7 +87,6 @@ export function TextTools({
 
       const oldText = text;
       onTextChange(data.formatted);
-      editor?.commands.setContent(data.formatted);
       setPreviousText(oldText);
       setFeedbackMessage(labels.textTools.appliedFormat);
       startUndoTimer();
@@ -128,7 +124,6 @@ export function TextTools({
 
       const oldText = text;
       onTextChange(data.cleaned);
-      editor?.commands.setContent(data.cleaned);
       setPreviousText(oldText);
       setFeedbackMessage(labels.textTools.appliedClean);
       startUndoTimer();
@@ -142,7 +137,6 @@ export function TextTools({
   const handleUndo = () => {
     if (previousText !== null) {
       onTextChange(previousText);
-      editor?.commands.setContent(previousText);
       setPreviousText(null);
       setFeedbackMessage(null);
       if (undoTimeoutRef.current) {

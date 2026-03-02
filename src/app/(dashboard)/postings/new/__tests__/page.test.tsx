@@ -11,7 +11,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => mockRouter,
 }));
 
-// Mock MeshEditor — Tiptap relies on browser APIs unavailable in jsdom.
+// Mock MeshEditor — CodeMirror relies on browser APIs unavailable in jsdom.
 // This lightweight mock exposes the same props surface as the real component
 // so the page's wiring (onChange, onSubmit, etc.) is still exercised.
 vi.mock("@/components/editor/mesh-editor", () => ({

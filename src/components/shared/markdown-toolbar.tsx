@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import type { EditorView } from "@codemirror/view";
 import { Button } from "@/components/ui/button";
 import { labels } from "@/lib/labels";
 
@@ -94,37 +95,78 @@ function executeAction(
 interface MarkdownToolbarProps {
   /** Legacy textarea mode */
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
-  /** Tiptap editor mode — takes precedence over textareaRef */
-  editor?: import("@tiptap/core").Editor | null;
+  /** CodeMirror editor mode — takes precedence over textareaRef */
+  editor?: EditorView | null;
   onChange?: (newValue: string) => void;
   visible: boolean;
 }
 
 // ---------------------------------------------------------------------------
-// Editor-mode action executor
+// Editor-mode action executor (CodeMirror)
 // ---------------------------------------------------------------------------
 
-function executeEditorAction(
-  editor: import("@tiptap/core").Editor,
-  action: ToolbarAction,
-): void {
+function executeEditorAction(view: EditorView, action: ToolbarAction): void {
+  const { head } = view.state.selection.main;
+  const doc = view.state.doc;
+
   switch (action) {
-    case "slash":
-      editor.chain().focus().insertContent("/").run();
+    case "slash": {
+      view.dispatch({
+        changes: { from: head, to: head, insert: "/" },
+        selection: { anchor: head + 1 },
+      });
       break;
-    case "heading":
-      editor.chain().focus().toggleHeading({ level: 2 }).run();
+    }
+    case "heading": {
+      const line = doc.lineAt(head);
+      view.dispatch({
+        changes: { from: line.from, to: line.from, insert: "## " },
+        selection: { anchor: head + 3 },
+      });
       break;
-    case "bold":
-      editor.chain().focus().toggleBold().run();
+    }
+    case "bold": {
+      const { from, to } = view.state.selection.main;
+      const selected = doc.sliceString(from, to);
+      if (selected) {
+        view.dispatch({
+          changes: { from, to, insert: `**${selected}**` },
+          selection: { anchor: from + 2, head: from + 2 + selected.length },
+        });
+      } else {
+        view.dispatch({
+          changes: { from: head, to: head, insert: "****" },
+          selection: { anchor: head + 2 },
+        });
+      }
       break;
-    case "list":
-      editor.chain().focus().toggleBulletList().run();
+    }
+    case "list": {
+      const line = doc.lineAt(head);
+      view.dispatch({
+        changes: { from: line.from, to: line.from, insert: "- " },
+        selection: { anchor: head + 2 },
+      });
       break;
-    case "code":
-      editor.chain().focus().toggleCode().run();
+    }
+    case "code": {
+      const { from, to } = view.state.selection.main;
+      const selected = doc.sliceString(from, to);
+      if (selected) {
+        view.dispatch({
+          changes: { from, to, insert: `\`${selected}\`` },
+          selection: { anchor: from + 1, head: from + 1 + selected.length },
+        });
+      } else {
+        view.dispatch({
+          changes: { from: head, to: head, insert: "``" },
+          selection: { anchor: head + 1 },
+        });
+      }
       break;
+    }
   }
+  view.focus();
 }
 
 // ---------------------------------------------------------------------------
@@ -140,7 +182,7 @@ function ToolbarButton({
   title,
 }: {
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
-  editor?: import("@tiptap/core").Editor | null;
+  editor?: EditorView | null;
   onChange?: (newValue: string) => void;
   action: ToolbarAction;
   label: string;
