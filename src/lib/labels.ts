@@ -887,6 +887,9 @@ export const labels = {
     copyright: "\u00a9 2026 Mesh",
     posts: "Posts",
     bottomBar: "Tab navigation",
+    collapseSidebar: "Collapse sidebar",
+    expandSidebar: "Expand sidebar",
+    clearSearch: "Clear search",
   },
 
   // ---------------------------------------------------------------------------
