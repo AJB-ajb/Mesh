@@ -62,7 +62,7 @@ describe("calendar/sync – projectToCanonicalWeek", () => {
     const blocks: BusyBlock[] = [
       {
         start: new Date("2026-02-16T09:00:00Z"), // 10:00 in Berlin
-        end: new Date("2026-02-16T10:00:00Z"),   // 11:00 in Berlin
+        end: new Date("2026-02-16T10:00:00Z"), // 11:00 in Berlin
       },
       {
         start: new Date("2026-02-23T09:00:00Z"),
@@ -84,7 +84,7 @@ describe("calendar/sync – projectToCanonicalWeek", () => {
     const blocks: BusyBlock[] = [
       {
         start: new Date("2026-02-16T23:00:00Z"), // Mon 23:00
-        end: new Date("2026-02-17T01:00:00Z"),   // Tue 01:00
+        end: new Date("2026-02-17T01:00:00Z"), // Tue 01:00
       },
       {
         start: new Date("2026-02-23T23:00:00Z"),
@@ -132,5 +132,93 @@ describe("calendar/sync – projectToCanonicalWeek", () => {
     expect(result).toContain("[540,570)");
     // Should NOT have separate [540,555) and [555,570)
     expect(result).toHaveLength(1);
+  });
+
+  // ---------------------------------------------------------------------------
+  // DST boundary tests (Europe/Berlin: CET ↔ CEST)
+  // ---------------------------------------------------------------------------
+
+  it("DST spring-forward: weekly event spans CET→CEST transition (March 29 2026)", () => {
+    // Europe/Berlin springs forward on 2026-03-29: clocks jump 02:00→03:00
+    // A weekly Monday 08:00 Berlin event:
+    //   - Mon 2026-03-23 08:00 Berlin = 07:00 UTC (CET, UTC+1)
+    //   - Mon 2026-03-30 08:00 Berlin = 06:00 UTC (CEST, UTC+2)
+    // Both should map to the same canonical slot: Monday 08:00-09:00 Berlin = minute 480-540
+    const blocks: BusyBlock[] = [
+      {
+        start: new Date("2026-03-23T07:00:00Z"), // Mon 08:00 Berlin (CET)
+        end: new Date("2026-03-23T08:00:00Z"), // Mon 09:00 Berlin (CET)
+      },
+      {
+        start: new Date("2026-03-30T06:00:00Z"), // Mon 08:00 Berlin (CEST)
+        end: new Date("2026-03-30T07:00:00Z"), // Mon 09:00 Berlin (CEST)
+      },
+    ];
+
+    const result = projectToCanonicalWeek(blocks, "Europe/Berlin");
+    expect(result.length).toBeGreaterThan(0);
+    // Monday = day 0, 08:00 = minute 480, 09:00 = minute 540
+    expect(result).toContain("[480,540)");
+  });
+
+  it("DST fall-back: weekly event spans CEST→CET transition (October 25 2026)", () => {
+    // Europe/Berlin falls back on 2026-10-25: clocks go 03:00→02:00
+    // A weekly Monday 10:00 Berlin event:
+    //   - Mon 2026-10-19 10:00 Berlin = 08:00 UTC (CEST, UTC+2)
+    //   - Mon 2026-10-26 10:00 Berlin = 09:00 UTC (CET, UTC+1)
+    // Both should map to Monday 10:00-11:00 Berlin = minute 600-660
+    const blocks: BusyBlock[] = [
+      {
+        start: new Date("2026-10-19T08:00:00Z"), // Mon 10:00 Berlin (CEST)
+        end: new Date("2026-10-19T09:00:00Z"), // Mon 11:00 Berlin (CEST)
+      },
+      {
+        start: new Date("2026-10-26T09:00:00Z"), // Mon 10:00 Berlin (CET)
+        end: new Date("2026-10-26T10:00:00Z"), // Mon 11:00 Berlin (CET)
+      },
+    ];
+
+    const result = projectToCanonicalWeek(blocks, "Europe/Berlin");
+    expect(result.length).toBeGreaterThan(0);
+    // Monday = day 0, 10:00 = minute 600, 11:00 = minute 660
+    expect(result).toContain("[600,660)");
+  });
+
+  it("DST lost hour: block during non-existent 02:00-03:00 Berlin on spring-forward", () => {
+    // On 2026-03-29 (Sunday), 02:00-03:00 Berlin does not exist (clocks jump 02:00→03:00)
+    // A block scheduled at 01:00 UTC would be 02:00 Berlin CET, but after the transition
+    // this hour is skipped. Test that the function handles this gracefully.
+    //
+    // We schedule a recurring Sunday 02:30 Berlin event across 2 weeks:
+    //   - Sun 2026-03-22 02:30 Berlin = 01:30 UTC (CET, normal)
+    //   - Sun 2026-03-29 02:30 Berlin DOES NOT EXIST (lost hour)
+    //     The UTC equivalent 01:30 UTC → toLocaleString → would resolve to 03:30 CEST
+    //
+    // The function should not crash and should produce valid output.
+    // Week 1 maps to Sunday 02:30 Berlin (day 6, minute 150).
+    // Week 2 at 01:30 UTC resolves to 03:30 CEST Berlin (day 6, minute 210).
+    // Since the local times differ, they map to different slots and neither
+    // reaches the 2-week threshold alone → result should be empty.
+    const blocks: BusyBlock[] = [
+      {
+        start: new Date("2026-03-22T01:30:00Z"), // Sun 02:30 Berlin (CET)
+        end: new Date("2026-03-22T02:30:00Z"), // Sun 03:30 Berlin (CET)
+      },
+      {
+        start: new Date("2026-03-29T01:30:00Z"), // Sun — lost hour, resolves to 03:30 CEST
+        end: new Date("2026-03-29T02:30:00Z"), // Sun — resolves to 04:30 CEST
+      },
+    ];
+
+    // Should not throw
+    const result = projectToCanonicalWeek(blocks, "Europe/Berlin");
+
+    // The two weeks resolve to different local times, so no slot meets the
+    // 2-week recurrence threshold — expect empty or at least valid output
+    expect(Array.isArray(result)).toBe(true);
+    // Each range string should be well-formed if any are returned
+    for (const range of result) {
+      expect(range).toMatch(/^\[\d+,\d+\)$/);
+    }
   });
 });

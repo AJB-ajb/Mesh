@@ -34,6 +34,7 @@ Supabase channels for notifications, conversations, and presence. Implemented as
 1. **Text extraction**: Gemini 2.0 Flash parses free-form text → structured profile/posting fields (`src/lib/ai/`)
 2. **Embeddings**: OpenAI text-embedding-3-small generates 1536d vectors stored in pgvector
 3. **Matching**: Cosine similarity + weighted scoring across dimensions (`src/lib/matching/`)
+4. **Deep matching**: On-demand AI comparison of candidate profiles against postings via `POST /api/matches/deep-match`. Uses Gemini to produce a detailed score, explanation, concerns, and matched role for up to 10 matches per request (`src/lib/matching/deep-match.ts`)
 
 ## Critical File Paths
 
@@ -43,7 +44,7 @@ Supabase channels for notifications, conversations, and presence. Implemented as
 | Pages      | `src/app/(dashboard)/` | Authenticated app pages                           |
 | API        | `src/app/api/`         | REST endpoints (matches, postings, extract, etc.) |
 | Hooks      | `src/lib/hooks/`       | SWR data-fetching hooks                           |
-| AI         | `src/lib/ai/`          | Gemini, OpenAI, LangChain integrations            |
+| AI         | `src/lib/ai/`          | Gemini, OpenAI integrations                       |
 | Matching   | `src/lib/matching/`    | Scoring algorithms                                |
 | Supabase   | `src/lib/supabase/`    | Client factories, types, middleware               |
 | Components | `src/components/`      | UI (layout, posting, profile, match, ui/)         |
@@ -53,7 +54,7 @@ Supabase channels for notifications, conversations, and presence. Implemented as
 
 See [data-model.md](data-model.md) for the full database schema.
 
-Core tables: `profiles` (1:1 with auth.users) → `projects` (postings) → `matches` (user×posting scores).
+Core tables: `profiles` (1:1 with auth.users) → `postings` → `matches` (user×posting scores).
 
 ## Testing
 
