@@ -2,13 +2,13 @@
 
 ## Version & Status
 
-- **Current version**: 0.2.0
-- **Last updated**: 2026-02-27
+- **Current version**: 0.5.0
+- **Last updated**: 2026-03-01
 - **Versioning**: Milestone-based semver (`MAJOR.MINOR.PATCH`). See [Update Protocol](#update-protocol).
 
 ---
 
-## Implemented (v0.1 → v0.2)
+## Implemented (v0.1 → v0.4)
 
 ### Core Platform (v0.1)
 
@@ -92,59 +92,56 @@
 - [x] Connection improvements — QR code, share profile link, connect button, search by name/email
 - [x] Availability input & matching — minute-level windows, quick/detailed mode, overlap scoring. Phases 1–2 of [availability-calendar spec](availability-calendar.md)
 
+### Text-First Posting & Navigation (v0.3)
+
+- [x] Text-first posting creation — single text field + "Post" button, instant publish, background LLM extraction
+- [x] Extracted metadata review — post-publish card for reviewing/correcting extracted fields
+- [x] Markdown rendering (view mode) — posting/profile text rendered as markdown (#28)
+- [x] Discover page — single feed sorted by match score with saved filter
+- [x] My Postings page — flat list of own postings with team fill and pending actions
+- [x] Posting detail tabs — Edit / Manage / Project tabs with disabled states
+- [x] Active page — active projects with unread messages, role, team fill
+- [x] Notifications → header bell — bell dropdown, removed `/inbox` route
+- [x] Sidebar & routing update — new nav items, default landing → Active
+- [x] Remove Dashboard page — removed `/dashboard` route and components
+
+### Smart Input & Profile (v0.4)
+
+- [x] Slash commands — `/time`, `/location`, `/skills`, `/template` with popup menu and overlay pickers
+- [x] Quick chips — context-sensitive suggestion chips below text field (rule-based, 4 dimensions)
+- [x] Post-write nudges — LLM suggests missing dimensions after writing (non-blocking, dismissible)
+- [x] Auto-format / auto-clean — text tools with direct edit and inline undo
+- [x] Profile text-first — paste-and-go onboarding + guided prompts for new users + extraction review
+- [x] Mobile keyboard toolbar — quick-access buttons for `/`, `#`, `**`, `-`, `` ` `` above keyboard
+- [x] Skill gap filling — prompt to describe skills when viewing postings requiring skills not in profile
+
+### Deep Matching (v0.5)
+
+- [x] LLM deep match (Stage 2) — LLM evaluates top ~10–20 fast-filter candidates using full posting + profile text
+- [x] Multi-role matching — LLM identifies distinct roles in a posting, matches candidates per role separately
+- [x] Match explanations (premium) — human-readable explanation of match quality (tier-gated, cached)
+- [x] Hard filter enforcement — two-stage: hard filters (context, category, skill, location, availability) then soft scoring
+- [x] Tree-aware skill filtering — parent skill selection includes all descendants via recursive CTE (`get_skill_descendants`)
+- [x] Per-skill matching scoring — per-skill level comparison from `posting_skills` join table (replaces averaged `skill_level_min`)
+- [x] Drop old skill columns — removed `skills text[]`, `skill_levels jsonb`, `skill_level_min integer` (`20260218155203`)
+- [x] Max distance matching (#31) — location distance as a matching dimension (haversine, normalized by 5000 km)
+
+### Engagement & Polish (v0.5)
+
+- [x] Template library (DB-backed) — persistent template storage (DB table + CRUD API)
+- [x] N-sequential invites — generalized invite flow: maintain N outstanding invitations with backfill
+- [x] Post-accept info reveal — hidden details auto-revealed on acceptance
+- [x] Slash command overlays — upgraded /skills (SkillPicker) and /location (LocationAutocomplete) overlays
+- [x] Text tools direct edit — auto-format/clean applies directly with inline undo
+- [x] PWA auto-update — safe runtime caching, automatic SW update + reload, iOS visibilitychange fix
+
 ---
 
 ## Milestones
 
-> **Direction**: The text-first rewrite ([text_first_rewrite.md](../.prompts/text_first_rewrite.md)) is the primary driver for v0.3+. Milestones are organized around its phases. Where this roadmap and the text-first spec conflict, the text-first spec takes precedence.
+> **Direction**: The text-first rewrite ([text_first_rewrite.md](../.prompts/text_first_rewrite.md)) is the primary driver for v0.5+. Milestones are organized around its phases. Where this roadmap and the text-first spec conflict, the text-first spec takes precedence.
 
-### v0.3 — Text-First Posting & Navigation
-
-Replace the multi-step posting form with a text field. Finish the navigation redesign. See [text_first_rewrite.md](../.prompts/text_first_rewrite.md) §1–5 and [ux.md](ux.md) for page layouts.
-
-| Feature                        | Issue | Effort       | Description                                                                                                        |
-| ------------------------------ | ----- | ------------ | ------------------------------------------------------------------------------------------------------------------ |
-| Text-first posting creation    | —     | Large        | Single text field + "Post" button. Instant publish, background LLM extraction of metadata (skills, time, location) |
-| Extracted metadata review      | —     | Medium       | Post-publish card for reviewing/correcting extracted fields. Corrections update metadata, never modify user's text |
-| Markdown rendering (view mode) | #28   | Medium       | Render posting/profile text as markdown. Restricted dialect: bold, lists, headings, inline code, links             |
-| Discover page                  | —     | Medium       | New `/discover` — single feed, sorted by match score, saved filter                                                 |
-| My Postings page               | —     | Small-Medium | Refactor `/postings` to flat list of own postings. Cards show team fill, pending actions                           |
-| Posting detail tabs            | —     | Medium       | `/postings/[id]` → Edit · Manage · Project tabs. Disabled states for inactive tabs                                 |
-| Active page                    | —     | Medium       | New `/active` — active projects (min team reached). Cards show unread messages, role, team fill                    |
-| Notifications → header bell    | —     | Small-Medium | Move notifications to header bell dropdown. Remove `/inbox` route                                                  |
-| Sidebar & routing update       | —     | Small        | Update nav items, default landing → Active, remove old routes (dashboard, matches, bookmarks, inbox)               |
-| Remove Dashboard page          | —     | Small        | Remove `/dashboard` route and components                                                                           |
-
-### v0.4 — Smart Input & Profile
-
-Progressive intelligence on the text field + text-first profile creation. See [text_first_rewrite.md](../.prompts/text_first_rewrite.md) §4.
-
-| Feature                  | Issue | Effort       | Description                                                                                         |
-| ------------------------ | ----- | ------------ | --------------------------------------------------------------------------------------------------- |
-| Slash commands           | —     | Medium-Large | `/time`, `/location`, `/skills`, `/template` — structured input that produces text or metadata      |
-| Quick chips              | —     | Medium       | Context-sensitive suggestion chips below text field (mobile-first). Rule-based initially, LLM later |
-| Post-write nudges        | —     | Medium       | LLM suggests missing dimensions after writing (non-blocking, dismissible)                           |
-| Auto-format / auto-clean | —     | Medium       | Text tools: add markdown structure (✨) and correct grammar/spelling (🧹) with diff preview         |
-| Profile text-first       | —     | Medium       | Paste-and-go profile creation + guided prompts for new users. Same text editor as postings          |
-| Mobile keyboard toolbar  | —     | Small        | Quick-access buttons for `/`, `#`, `**`, `-`, `` ` `` above keyboard in markdown fields             |
-| Skill gap filling        | —     | Small-Medium | Prompt to describe skills when viewing postings requiring skills not in user's profile              |
-
-### v0.5 — Deep Matching
-
-LLM-based Stage 2 matching + skill system refinements. See [text_first_rewrite.md](../.prompts/text_first_rewrite.md) §6 and [matching.md](matching.md).
-
-| Feature                      | Issue | Effort | Description                                                                                       |
-| ---------------------------- | ----- | ------ | ------------------------------------------------------------------------------------------------- |
-| LLM deep match (Stage 2)     | —     | Large  | LLM evaluates top ~10–20 fast-filter candidates using full posting + profile text                 |
-| Multi-role matching          | —     | Medium | LLM identifies distinct roles in a posting, matches candidates per role separately                |
-| Match explanations (premium) | —     | Medium | Human-readable explanation of match quality. Free tier: score only; premium: full explanation     |
-| Hard filter enforcement      | —     | Medium | Two-stage: hard filters (context, category, skill, location) then soft scoring                    |
-| Tree-aware skill filtering   | —     | Medium | Parent skill selection includes all descendants via recursive CTE                                 |
-| Per-skill matching scoring   | —     | Medium | Per-skill level comparison from `posting_skills` join table (replaces averaged `skill_level_min`) |
-| Drop old skill columns       | —     | Small  | Remove `skills text[]`, `skill_levels jsonb`, `skill_level_min integer` after migration verified  |
-| Max distance matching        | #31   | Medium | Location distance as a matching dimension                                                         |
-
-### v0.6 — Engagement & Polish
+### v0.6 — Rich Editing & Polish
 
 | Feature                    | Issue | Effort           | Description                                                                                                    |
 | -------------------------- | ----- | ---------------- | -------------------------------------------------------------------------------------------------------------- |
@@ -157,6 +154,23 @@ LLM-based Stage 2 matching + skill system refinements. See [text_first_rewrite.m
 | Posting images             | #29   | Medium           | Upload and display images on postings                                                                          |
 | Email auth fix (SMTP)      | #37   | Small            | Configure Supabase SMTP for confirmation emails                                                                |
 
+### v0.7 — Mobile (Capacitor, Android)
+
+Minimal native Android shell wrapping the hosted web app. iOS deferred — PWA covers iOS users. No native push initially; PWA web push serves as the notification channel.
+
+**Approach:** Hosted URL mode — the Capacitor WebView loads `https://meshit.app`. Web deploys update the app instantly without Play Store review. Native builds only needed for plugin/shell changes. See [mobile_support_capacitor.md](../.prompts/mobile_support_capacitor.md) for UX considerations.
+
+| Feature                          | Issue | Effort | Description                                                                                       |
+| -------------------------------- | ----- | ------ | ------------------------------------------------------------------------------------------------- |
+| Capacitor init + Android project | —     | Small  | `npx cap init`, add `android/` project, `capacitor.config.ts` pointing at hosted URL              |
+| Splash screen                    | —     | Small  | Native splash screen while WebView loads (`@capacitor/splash-screen`)                             |
+| Status bar theming               | —     | Small  | Match status bar to dark theme (`@capacitor/status-bar`)                                          |
+| Android back button              | —     | Small  | Handle hardware back button navigation (`@capacitor/app`)                                         |
+| App icons + store assets         | —     | Small  | Generate required icon sizes, screenshots, Play Store metadata                                    |
+| Android signing + build          | —     | Small  | Keystore setup, `gradlew bundleRelease`, Play Store listing                                       |
+| Platform detection utility       | —     | Small  | `Capacitor.isNativePlatform()` helper — suppress PWA install prompt in native shell               |
+| Android push notifications (FCM) | —     | Medium | Firebase Cloud Messaging via `@capacitor/push-notifications`. Replaces web push in native context |
+
 ### v1.0 — Launch
 
 | Feature               | Issue | Effort       | Description                                                                                             |
@@ -166,6 +180,14 @@ LLM-based Stage 2 matching + skill system refinements. See [text_first_rewrite.m
 | Match pre-computation | #13   | Large        | Background pre-computation for instant match results at scale                                           |
 | LLM cost tiering      | —     | Medium       | Tier models by feature: cheap for chips/format, mid for extraction, high for deep matching              |
 | Production hardening  | —     | Large        | Performance audit, error monitoring, rate limiting, security review                                     |
+
+### v1.1 — Post-Launch
+
+| Feature                      | Issue | Effort | Description                                                                        |
+| ---------------------------- | ----- | ------ | ---------------------------------------------------------------------------------- |
+| Posting images               | #29   | Medium | Upload and display images on postings (Supabase Storage)                           |
+| Ghost text (LLM suggestions) | —     | Medium | Context-aware inline suggestions as user types, including prefilled slash commands |
+| Email auth fix (SMTP)        | #37   | Small  | Configure Supabase SMTP for confirmation emails                                    |
 
 ---
 
@@ -178,10 +200,14 @@ These are ideas without a target milestone. They'll be prioritized as the produc
 - Auto-generated thumbnails — generate posting thumbnails from text via Gemini
 - Analytics dashboard for posting owners
 - Public posting embed / share links
-- Mobile app (React Native or PWA enhancement)
+- iOS Capacitor build — Apple Developer account, Xcode signing, App Store listing (deferred; PWA covers iOS)
+- Deep links — `meshit.app/postings/123` opens native app via `@capacitor/app` universal links
 - Standardize date formatting across the app (#44)
 - Add skeleton/spinner loading states for slow connections (#48)
 - Configurable matching weights — weight sliders per posting (revisit after deep matching)
+- Email + push notifications (#14) — email and push delivery channels (in-app already implemented)
+- Daily digest — cron-based email digest of new relevant postings (Resend)
+- Auto-translation — posts auto-translated based on user language settings, communication language as matching criterion
 
 ---
 
