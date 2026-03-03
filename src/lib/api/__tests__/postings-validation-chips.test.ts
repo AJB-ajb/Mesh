@@ -6,8 +6,8 @@ import {
 } from "@/lib/api/postings-validation";
 import type { ChipMetadataMap } from "@/lib/types/posting";
 
-describe("postings-validation chipMetadata", () => {
-  it("includes chip_metadata in DB row when provided", () => {
+describe("postings-validation chipMetadata (deprecated)", () => {
+  it("no longer includes chip_metadata in DB row even when provided", () => {
     const chipMetadata: ChipMetadataMap = {
       location_0: {
         type: "location",
@@ -21,7 +21,8 @@ describe("postings-validation chipMetadata", () => {
       "create",
     );
 
-    expect(row.chip_metadata).toEqual(chipMetadata);
+    // chipMetadata is deprecated in v0.6 and no longer written to new rows
+    expect(row).not.toHaveProperty("chip_metadata");
   });
 
   it("omits chip_metadata when empty object provided", () => {
@@ -39,7 +40,7 @@ describe("postings-validation chipMetadata", () => {
     expect(row).not.toHaveProperty("chip_metadata");
   });
 
-  it("validates posting body with chipMetadata", () => {
+  it("validates posting body with chipMetadata (field still accepted)", () => {
     expect(() =>
       validatePostingBody(
         {
@@ -57,7 +58,7 @@ describe("postings-validation chipMetadata", () => {
     ).not.toThrow();
   });
 
-  it("includes chip_metadata alongside other fields", () => {
+  it("builds row with other fields even when chipMetadata provided", () => {
     const chipMetadata: ChipMetadataMap = {
       skills_0: {
         type: "skills",
@@ -80,7 +81,7 @@ describe("postings-validation chipMetadata", () => {
       "create",
     );
 
-    expect(row.chip_metadata).toEqual(chipMetadata);
+    expect(row).not.toHaveProperty("chip_metadata");
     expect(row.category).toBe("tech");
     expect(row.description).toBe("Looking for devs");
   });
