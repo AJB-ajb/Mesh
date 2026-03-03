@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { labels } from "@/lib/labels";
-import { formatDateAgo } from "@/lib/format";
+import { formatDateAgo, stripTitleMarkdown } from "@/lib/format";
 import type { PostsCardData } from "@/lib/hooks/use-posts-page";
 
 function getStatusColor(status: string) {
@@ -40,8 +40,11 @@ export function PostsCard({ item }: PostsCardProps) {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold truncate" title={item.title}>
-                  {item.title}
+                <h3
+                  className="font-semibold truncate"
+                  title={stripTitleMarkdown(item.title)}
+                >
+                  {stripTitleMarkdown(item.title)}
                 </h3>
                 <Badge
                   variant="secondary"

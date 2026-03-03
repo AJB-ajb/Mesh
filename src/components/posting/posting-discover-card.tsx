@@ -21,7 +21,7 @@ import { BadgeList } from "@/components/ui/badge-list";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { formatScore } from "@/lib/matching/scoring";
-import { getInitials, formatDateAgo } from "@/lib/format";
+import { getInitials, formatDateAgo, stripTitleMarkdown } from "@/lib/format";
 import { labels } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { categoryStyles } from "@/lib/posting/styles";
@@ -73,7 +73,7 @@ export function PostingDiscoverCard({
                   }
                   className="hover:underline cursor-pointer"
                 >
-                  {posting.title?.replace(/^#{1,6}\s+/, "")}
+                  {stripTitleMarkdown(posting.title)}
                 </Link>
               </CardTitle>
               {posting.category && (
