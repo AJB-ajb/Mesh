@@ -10,7 +10,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  workers: process.env.CI ? 2 : 4,
   reporter: "html",
   use: {
     baseURL: "http://localhost:3000",
@@ -35,10 +35,13 @@ export default defineConfig({
       dependencies: ["setup"],
       testMatch: /e2e\/layout\.spec\.ts/,
     },
-    // Public + auth-flow tests — fresh browser, no saved state
+    // Public + auth-flow tests — fresh browser, no saved state.
+    // Runs after chromium so auth-feature logout can't invalidate
+    // the storageState session used by layout tests.
     {
       name: "public",
       use: { ...devices["Desktop Chrome"] },
+      dependencies: ["chromium"],
       testMatch: /e2e\/(home|navigation|auth-feature)\.spec\.ts/,
     },
   ],

@@ -75,6 +75,17 @@ async function navigateToPage(
 ) {
   await page.setViewportSize(VIEWPORTS[viewport]);
   await page.goto(path, { waitUntil: "load" });
+
+  // Fail loudly if middleware redirected to /login — the storageState session
+  // may have expired or Supabase rejected the token under load.
+  const url = new URL(page.url());
+  if (url.pathname.startsWith("/login") && !path.startsWith("/login")) {
+    throw new Error(
+      `Auth redirect: navigated to ${path} but landed on ${url.pathname}. ` +
+        `storageState session invalid or Supabase getUser() failed.`,
+    );
+  }
+
   // Give layout a moment to settle after load (SWR hydration, etc.)
   await page.waitForTimeout(1000);
 }
