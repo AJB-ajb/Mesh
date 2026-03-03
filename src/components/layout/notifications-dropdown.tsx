@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
+import { useRovingIndex } from "@/lib/hooks/use-roving-index";
 import { useNotifications } from "@/lib/hooks/use-notifications";
 import { formatTimeAgoShort } from "@/lib/format";
 import type { Notification } from "@/lib/supabase/realtime";
@@ -78,6 +79,43 @@ export function NotificationsDropdown({ className }: { className?: string }) {
   const { unreadCount, notifications, markAsRead, markAllAsRead } =
     useNotifications();
 
+  const handleNotificationClick = useCallback(
+    (notification: Notification) => {
+      if (!notification.read) {
+        markAsRead(notification.id);
+      }
+      if (notification.type === "friend_request") {
+        router.push("/connections");
+      } else if (
+        notification.type === "new_message" &&
+        notification.related_user_id
+      ) {
+        router.push(`/connections?user=${notification.related_user_id}`);
+      } else if (
+        notification.type === "new_group_message" &&
+        notification.related_posting_id
+      ) {
+        router.push(`/postings/${notification.related_posting_id}?tab=project`);
+      } else if (notification.related_posting_id) {
+        router.push(`/postings/${notification.related_posting_id}`);
+      }
+      setOpen(false);
+    },
+    [markAsRead, router],
+  );
+
+  const onActivateNotification = useCallback(
+    (index: number) => {
+      if (notifications[index]) handleNotificationClick(notifications[index]);
+    },
+    [notifications, handleNotificationClick],
+  );
+
+  const roving = useRovingIndex({
+    itemCount: notifications.length,
+    onActivate: onActivateNotification,
+  });
+
   // Close on outside click
   useEffect(() => {
     if (!open) return;
@@ -106,31 +144,6 @@ export function NotificationsDropdown({ className }: { className?: string }) {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open]);
-
-  const handleNotificationClick = useCallback(
-    (notification: Notification) => {
-      if (!notification.read) {
-        markAsRead(notification.id);
-      }
-      if (notification.type === "friend_request") {
-        router.push("/connections");
-      } else if (
-        notification.type === "new_message" &&
-        notification.related_user_id
-      ) {
-        router.push(`/connections?user=${notification.related_user_id}`);
-      } else if (
-        notification.type === "new_group_message" &&
-        notification.related_posting_id
-      ) {
-        router.push(`/postings/${notification.related_posting_id}?tab=project`);
-      } else if (notification.related_posting_id) {
-        router.push(`/postings/${notification.related_posting_id}`);
-      }
-      setOpen(false);
-    },
-    [markAsRead, router],
-  );
 
   const handleInviteResponse = useCallback(
     async (notification: Notification, action: "accept" | "decline") => {
@@ -206,16 +219,22 @@ export function NotificationsDropdown({ className }: { className?: string }) {
                 <p className="mt-2 text-sm">{labels.notification.empty}</p>
               </div>
             ) : (
-              <div className="divide-y divide-border">
-                {notifications.map((notification) => {
+              <div
+                className="divide-y divide-border"
+                {...roving.getContainerProps()}
+              >
+                {notifications.map((notification, i) => {
                   const isResponding = respondingTo === notification.id;
                   const showInviteActions = isActionableInvite(notification);
+                  const itemProps = roving.getItemProps(i);
 
                   return (
                     <div
                       key={notification.id}
                       role="button"
-                      tabIndex={0}
+                      tabIndex={itemProps.tabIndex}
+                      data-active={itemProps["data-active"]}
+                      onFocus={itemProps.onFocus}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();

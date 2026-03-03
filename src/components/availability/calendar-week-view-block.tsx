@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
+import { labels } from "@/lib/labels";
 import type { RecurringWindow } from "@/lib/types/availability";
 
 const HOUR_HEIGHT = 48; // must match use-calendar-drag.ts
@@ -92,6 +93,7 @@ export function CalendarWeekViewBlock({
         {!readOnly && !isPreview && (
           <button
             type="button"
+            aria-label={labels.a11y.deleteAvailabilityBlock}
             className="ml-0.5 shrink-0 rounded-sm p-0 text-muted-foreground hover:text-destructive"
             onClick={(e) => {
               e.stopPropagation();
