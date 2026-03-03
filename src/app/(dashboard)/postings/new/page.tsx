@@ -101,6 +101,17 @@ export default function NewPostingPage() {
   const nudgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastNudgeTextRef = useRef<string>("");
 
+  // Warn on unsaved changes when navigating away
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (text.trim()) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [text]);
+
   // Scroll to error when it appears
   useEffect(() => {
     if (error && errorRef.current) {
@@ -167,7 +178,10 @@ export default function NewPostingPage() {
 
   const handleSubmit = useCallback(async () => {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      setError(labels.postingCreation.errorEmptyPosting);
+      return;
+    }
 
     setError(null);
     setIsSaving(true);
@@ -333,6 +347,7 @@ export default function NewPostingPage() {
       </div>
 
       {/* Slash command menu */}
+      {/* eslint-disable react-hooks/refs -- editor ref access is intentional in this block */}
       {slash.menuState.isOpen && editorRef.current && (
         <SlashCommandMenu
           commands={slash.menuState.commands}
@@ -346,6 +361,7 @@ export default function NewPostingPage() {
           onClose={slash.closeOverlay}
         />
       )}
+      {/* eslint-enable react-hooks/refs */}
 
       {/* Slash command overlays */}
       {slash.activeOverlay === "time" && (
@@ -470,6 +486,7 @@ export default function NewPostingPage() {
 
       {/* Mobile markdown toolbar */}
       <MarkdownToolbar
+        // eslint-disable-next-line react-hooks/refs -- stable ref passed as prop
         editor={editorRef.current}
         visible={keyboardVisible && editorFocused}
       />
