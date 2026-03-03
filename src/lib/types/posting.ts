@@ -9,6 +9,7 @@ import type {
 // Chip metadata — structured data for inline metadata chips
 // ---------------------------------------------------------------------------
 
+/** @deprecated Chip metadata is being replaced by mesh: link syntax in v0.6. Kept for DB compatibility. */
 export interface ChipMetadataLocation {
   type: "location";
   display: string;
@@ -19,6 +20,7 @@ export interface ChipMetadataLocation {
   };
 }
 
+/** @deprecated Chip metadata is being replaced by mesh: link syntax in v0.6. Kept for DB compatibility. */
 export interface ChipMetadataTime {
   type: "time";
   display: string;
@@ -30,6 +32,7 @@ export interface ChipMetadataTime {
   };
 }
 
+/** @deprecated Chip metadata is being replaced by mesh: link syntax in v0.6. Kept for DB compatibility. */
 export interface ChipMetadataSkills {
   type: "skills";
   display: string;
@@ -38,12 +41,13 @@ export interface ChipMetadataSkills {
   };
 }
 
+/** @deprecated Chip metadata is being replaced by mesh: link syntax in v0.6. Kept for DB compatibility. */
 export type ChipMetadataEntry =
   | ChipMetadataLocation
   | ChipMetadataTime
   | ChipMetadataSkills;
 
-/** Map of metadataKey → chip entry, stored in postings.chip_metadata */
+/** @deprecated Chip metadata is being replaced by mesh: link syntax in v0.6. Kept for DB compatibility. */
 export type ChipMetadataMap = Record<string, ChipMetadataEntry>;
 
 export type PostingFormState = {
