@@ -3,12 +3,12 @@
  * Relational layout checks across viewports — catches cut elements,
  * wrong sizing, excessive scrolling, and overlap bugs.
  *
- * Public pages run without auth. Authenticated pages use loginAsUser()
- * and skip gracefully when TEST_USER_PASSWORD is unset.
+ * Public pages run without auth. Authenticated pages reuse the session
+ * saved by auth.setup.ts (storageState) and skip when TEST_USER_PASSWORD
+ * is unset.
  */
 
 import { test, expect } from "@playwright/test";
-import { loginAsUser } from "../utils/auth-helpers";
 import {
   VIEWPORTS,
   type ViewportName,
@@ -28,11 +28,6 @@ import {
 // ---------------------------------------------------------------------------
 
 const hasAuth = !!process.env.TEST_USER_PASSWORD;
-
-const TEST_USER = {
-  email: "ajb60721@gmail.com",
-  password: process.env.TEST_USER_PASSWORD ?? "",
-};
 
 const PUBLIC_PAGES = [
   { path: "/", name: "Landing" },
@@ -73,22 +68,12 @@ const PAGE_HEIGHT_LIMITS: Record<string, number> = {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function isAuthedPage(path: string): boolean {
-  return AUTHED_PAGES.some((p) => p.path === path);
-}
-
 async function navigateToPage(
   page: import("@playwright/test").Page,
   path: string,
   viewport: ViewportName,
-  authenticated: boolean,
 ) {
   await page.setViewportSize(VIEWPORTS[viewport]);
-
-  if (authenticated && isAuthedPage(path)) {
-    await loginAsUser(page, TEST_USER);
-  }
-
   await page.goto(path, { waitUntil: "load" });
   // Give layout a moment to settle after load (SWR hydration, etc.)
   await page.waitForTimeout(1000);
@@ -117,7 +102,7 @@ test.describe("Layout > No horizontal overflow", () => {
     for (const { path, name } of AUTHED_PAGES) {
       test(`${name} (${path}) — ${viewport}`, async ({ page }) => {
         test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-        await navigateToPage(page, path, viewport, true);
+        await navigateToPage(page, path, viewport);
 
         const result = await checkNoHorizontalPageOverflow(page);
         expect(
@@ -152,7 +137,7 @@ test.describe("Layout > No unexpected overflow containers", () => {
     for (const { path, name } of AUTHED_PAGES) {
       test(`${name} (${path}) — ${viewport}`, async ({ page }) => {
         test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-        await navigateToPage(page, path, viewport, true);
+        await navigateToPage(page, path, viewport);
 
         const violations = await findOverflowViolations(page);
         expect(
@@ -190,7 +175,7 @@ test.describe("Layout > Touch targets", () => {
   for (const { path, name } of AUTHED_PAGES) {
     test(`${name} (${path}) — mobile`, async ({ page }) => {
       test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-      await navigateToPage(page, path, "mobile", true);
+      await navigateToPage(page, path, "mobile");
 
       const violations = await findSmallTouchTargets(
         page,
@@ -246,7 +231,7 @@ test.describe("Layout > Viewport containment", () => {
     page,
   }) => {
     test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-    await navigateToPage(page, "/posts", "mobile", true);
+    await navigateToPage(page, "/posts", "mobile");
 
     await expect(page.locator("header")).toBeVisible();
     await expect(
@@ -263,7 +248,7 @@ test.describe("Layout > Viewport containment", () => {
     page,
   }) => {
     test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-    await navigateToPage(page, "/posts", "desktop", true);
+    await navigateToPage(page, "/posts", "desktop");
 
     await expect(page.locator("header")).toBeVisible();
     await expect(page.locator("aside")).toBeVisible();
@@ -303,7 +288,7 @@ test.describe("Layout > Page height", () => {
         page,
       }) => {
         test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-        await navigateToPage(page, path, viewport, true);
+        await navigateToPage(page, path, viewport);
 
         const result = await checkPageHeight(page, maxMult);
         expect(
@@ -322,7 +307,7 @@ test.describe("Layout > Page height", () => {
 test.describe("Layout > Element overlap", () => {
   test("FAB does not overlap bottom bar (mobile)", async ({ page }) => {
     test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-    await navigateToPage(page, "/posts", "mobile", true);
+    await navigateToPage(page, "/posts", "mobile");
 
     const result = await checkElementsDoNotOverlap(
       page,
@@ -337,7 +322,7 @@ test.describe("Layout > Element overlap", () => {
 
   test("Header does not overlap main content (mobile)", async ({ page }) => {
     test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-    await navigateToPage(page, "/posts", "mobile", true);
+    await navigateToPage(page, "/posts", "mobile");
 
     const result = await checkElementsDoNotOverlap(
       page,
@@ -375,7 +360,7 @@ test.describe("Layout > No hidden horizontal overflow", () => {
     for (const { path, name } of AUTHED_PAGES) {
       test(`${name} (${path}) — ${viewport}`, async ({ page }) => {
         test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-        await navigateToPage(page, path, viewport, true);
+        await navigateToPage(page, path, viewport);
 
         const violations = await findHiddenOverflowViolations(page);
         expect(
@@ -411,7 +396,7 @@ test.describe("Layout > Content within viewport bounds", () => {
     for (const { path, name } of AUTHED_PAGES) {
       test(`${name} (${path}) — ${viewport}`, async ({ page }) => {
         test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-        await navigateToPage(page, path, viewport, true);
+        await navigateToPage(page, path, viewport);
 
         const violations = await findViewportExceedingElements(page);
         expect(
@@ -462,7 +447,7 @@ test.describe("Layout > No clipped positioned elements", () => {
     for (const { path, name } of AUTHED_PAGES) {
       test(`${name} (${path}) — ${viewport}`, async ({ page }) => {
         test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-        await navigateToPage(page, path, viewport, true);
+        await navigateToPage(page, path, viewport);
 
         const violations = await findClippedPositionedElements(
           page,
@@ -489,7 +474,7 @@ test.describe("Layout > Minimum spacing", () => {
   for (const { path, name } of AUTHED_PAGES) {
     test(`${name} — header to main gap >= 12px (mobile)`, async ({ page }) => {
       test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-      await navigateToPage(page, path, "mobile", true);
+      await navigateToPage(page, path, "mobile");
 
       const result = await checkMinimumSpacing(
         page,
@@ -505,7 +490,7 @@ test.describe("Layout > Minimum spacing", () => {
 
     test(`${name} — header to main gap >= 16px (desktop)`, async ({ page }) => {
       test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-      await navigateToPage(page, path, "desktop", true);
+      await navigateToPage(page, path, "desktop");
 
       const result = await checkMinimumSpacing(
         page,
