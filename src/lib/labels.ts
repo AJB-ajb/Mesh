@@ -1553,6 +1553,16 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
+  // Posting card (unified)
+  // ---------------------------------------------------------------------------
+  postingCard: {
+    moreDetails: "More details",
+    lessDetails: "Less details",
+    postedByYou: "Posted by you",
+    postedBy: "Posted by",
+  },
+
+  // ---------------------------------------------------------------------------
   // Hidden details (post-accept reveal)
   // ---------------------------------------------------------------------------
   hiddenDetails: {

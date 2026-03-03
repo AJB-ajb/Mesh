@@ -9,7 +9,7 @@ import { labels } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PostsCard } from "@/components/posting/posts-card";
+import { UnifiedPostingCard } from "@/components/posting";
 import { usePostsPage, type PostsPageFilter } from "@/lib/hooks/use-posts-page";
 
 const FILTERS: PostsPageFilter[] = [
@@ -104,7 +104,22 @@ function PostsContent() {
       ) : (
         <div className="grid gap-4">
           {posts.map((item) => (
-            <PostsCard key={item.id} item={item} />
+            <UnifiedPostingCard
+              key={item.id}
+              variant="compact"
+              id={item.id}
+              title={item.title}
+              description={item.description}
+              status={item.status}
+              category={item.category}
+              createdAt={item.createdAt}
+              creatorId={item.creatorId}
+              teamSizeMin={item.teamSizeMin}
+              teamSizeMax={item.teamSizeMax}
+              role={item.role}
+              unreadCount={item.unreadCount}
+              href={item.href}
+            />
           ))}
         </div>
       )}
