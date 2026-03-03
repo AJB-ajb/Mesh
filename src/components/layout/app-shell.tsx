@@ -5,6 +5,7 @@ import { BottomBar } from "./bottom-bar";
 import { CreatePostingFab } from "./create-posting-fab";
 import { TestModeBanner } from "./test-mode-banner";
 import { SkipLink } from "@/components/ui/skip-link";
+import { GlobalKeyboardShortcuts } from "./global-keyboard-shortcuts";
 import { PresenceProvider } from "@/components/providers/presence-provider";
 
 interface AppShellProps {
@@ -32,6 +33,7 @@ export function AppShell({ children, className }: AppShellProps) {
         </div>
         <BottomBar />
         <CreatePostingFab />
+        <GlobalKeyboardShortcuts />
       </div>
     </PresenceProvider>
   );

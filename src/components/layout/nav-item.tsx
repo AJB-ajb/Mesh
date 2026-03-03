@@ -11,6 +11,8 @@ interface NavItemProps {
   label: string;
   badge?: number;
   collapsed?: boolean;
+  tabIndex?: 0 | -1;
+  onFocus?: () => void;
 }
 
 export function NavItem({
@@ -19,6 +21,8 @@ export function NavItem({
   label,
   badge,
   collapsed,
+  tabIndex,
+  onFocus,
 }: NavItemProps) {
   const pathname = usePathname();
   const isActive = pathname === href || pathname.startsWith(`${href}/`);
@@ -27,6 +31,8 @@ export function NavItem({
     <Link
       href={href}
       title={collapsed ? label : undefined}
+      tabIndex={tabIndex}
+      onFocus={onFocus}
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
         isActive
