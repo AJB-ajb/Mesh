@@ -14,17 +14,10 @@ import {
 } from "@/components/posting/posting-form-card";
 import { MarkdownToolbar } from "@/components/shared/markdown-toolbar";
 import { TextTools } from "@/components/shared/text-tools";
-import { SuggestionChips } from "@/components/shared/suggestion-chips";
-import {
-  NudgeBanner,
-  nudgeMessage,
-  type NudgeItem,
-} from "@/components/shared/nudge-banner";
 import { MeshEditor } from "@/components/editor/mesh-editor";
 import { SpeechInput } from "@/components/ai-elements/speech-input";
 import { transcribeAudio } from "@/lib/transcribe";
 import { useEditorSlashCommands } from "@/lib/hooks/use-editor-slash-commands";
-import { usePostingSuggestions } from "@/lib/hooks/use-posting-suggestions";
 import { useMobileKeyboard } from "@/lib/hooks/use-mobile-keyboard";
 import { SlashCommandMenu } from "@/components/shared/slash-command-menu";
 import {
@@ -43,11 +36,6 @@ const CHIP_EMOJI: Record<string, string> = {
   time: "\uD83D\uDD52",
   skills: "\uD83D\uDEE0\uFE0F",
 };
-
-/** Minimum text length before fetching nudges from the API. */
-const NUDGE_MIN_LENGTH = 20;
-/** Debounce delay in ms before fetching nudges. */
-const NUDGE_DEBOUNCE_MS = 3000;
 
 /** Insert text at cursor in a CodeMirror EditorView. */
 function insertAtCursor(view: EditorView, text: string) {
@@ -89,18 +77,6 @@ export default function NewPostingPage() {
     editorRef.current = view;
   }, []);
 
-  // Suggestion chips state
-  const { chips } = usePostingSuggestions(text);
-  const [chipsDismissed, setChipsDismissed] = useState(false);
-
-  // Nudge state
-  const [nudges, setNudges] = useState<NudgeItem[]>([]);
-  const [dismissedNudges, setDismissedNudges] = useState<Set<string>>(
-    new Set(),
-  );
-  const nudgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastNudgeTextRef = useRef<string>("");
-
   // Warn on unsaved changes when navigating away
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
@@ -123,58 +99,6 @@ export default function NewPostingPage() {
       });
     }
   }, [error]);
-
-  // Debounced nudge fetching
-  useEffect(() => {
-    if (nudgeTimerRef.current) {
-      clearTimeout(nudgeTimerRef.current);
-    }
-
-    const trimmed = text.trim();
-    if (trimmed.length < NUDGE_MIN_LENGTH) {
-      return;
-    }
-
-    // Don't re-fetch if text hasn't meaningfully changed
-    if (trimmed === lastNudgeTextRef.current) {
-      return;
-    }
-
-    nudgeTimerRef.current = setTimeout(() => {
-      lastNudgeTextRef.current = trimmed;
-
-      fetch("/api/extract/posting/nudge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: trimmed }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.nudges && Array.isArray(data.nudges)) {
-            queueMicrotask(() => {
-              setNudges(
-                data.nudges.map(
-                  (n: { dimension: string; suggestion: string }) => ({
-                    dimension: n.dimension,
-                    message: nudgeMessage(n.dimension),
-                    suggestion: n.suggestion,
-                  }),
-                ),
-              );
-            });
-          }
-        })
-        .catch(() => {
-          // Silently ignore nudge errors — non-critical feature
-        });
-    }, NUDGE_DEBOUNCE_MS);
-
-    return () => {
-      if (nudgeTimerRef.current) {
-        clearTimeout(nudgeTimerRef.current);
-      }
-    };
-  }, [text]);
 
   const handleSubmit = useCallback(async () => {
     const trimmed = text.trim();
@@ -219,24 +143,6 @@ export default function NewPostingPage() {
   const handleFormChange = (field: keyof PostingFormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
-
-  const handleChipClick = useCallback((chip: { insertText: string }) => {
-    const view = editorRef.current;
-    if (view) {
-      insertAtCursor(view, chip.insertText);
-    }
-  }, []);
-
-  const handleNudgeDismiss = useCallback((dimension: string) => {
-    setDismissedNudges((prev) => new Set(prev).add(dimension));
-  }, []);
-
-  const handleNudgeInsert = useCallback((suggestion: string) => {
-    const view = editorRef.current;
-    if (view) {
-      insertAtCursor(view, "\n" + suggestion);
-    }
-  }, []);
 
   /**
    * Insert a metadata chip as plain text with emoji prefix and store its structured data.
@@ -285,8 +191,6 @@ export default function NewPostingPage() {
     },
     [slash, insertChip],
   );
-
-  const visibleNudges = nudges.filter((n) => !dismissedNudges.has(n.dimension));
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 pb-20">
@@ -407,24 +311,8 @@ export default function NewPostingPage() {
         />
       )}
 
-      {/* Suggestion chips */}
-      {!chipsDismissed && (
-        <SuggestionChips
-          chips={chips}
-          onChipClick={handleChipClick}
-          onDismiss={() => setChipsDismissed(true)}
-        />
-      )}
-
       {/* Text tools (auto-format, auto-clean) */}
       <TextTools text={text} onTextChange={setText} />
-
-      {/* Nudge banners */}
-      <NudgeBanner
-        nudges={visibleNudges}
-        onDismiss={handleNudgeDismiss}
-        onInsertSuggestion={handleNudgeInsert}
-      />
 
       {/* Post button */}
       <div className="flex justify-end">
