@@ -281,6 +281,7 @@ export default function NewPostingPage() {
         insertChip(chipType, result.display, result.data ?? {});
       }
       slash.closeOverlay();
+      editorRef.current?.focus();
     },
     [slash, insertChip],
   );
@@ -358,7 +359,7 @@ export default function NewPostingPage() {
             return { top: coords.bottom + 4, left: coords.left };
           })()}
           onSelect={(cmd) => slash.selectCommand(editorRef.current!, cmd)}
-          onClose={slash.closeOverlay}
+          onClose={() => slash.closeMenu(editorRef.current)}
         />
       )}
       {/* eslint-enable react-hooks/refs */}
@@ -367,19 +368,28 @@ export default function NewPostingPage() {
       {slash.activeOverlay === "time" && (
         <TimePickerOverlay
           onInsert={handleOverlayResult}
-          onClose={slash.closeOverlay}
+          onClose={() => {
+            slash.closeOverlay();
+            editorRef.current?.focus();
+          }}
         />
       )}
       {slash.activeOverlay === "location" && (
         <LocationOverlay
           onInsert={handleOverlayResult}
-          onClose={slash.closeOverlay}
+          onClose={() => {
+            slash.closeOverlay();
+            editorRef.current?.focus();
+          }}
         />
       )}
       {slash.activeOverlay === "skills" && (
         <SkillPickerOverlay
           onInsert={handleOverlayResult}
-          onClose={slash.closeOverlay}
+          onClose={() => {
+            slash.closeOverlay();
+            editorRef.current?.focus();
+          }}
         />
       )}
       {slash.activeOverlay === "template" && (
@@ -390,7 +400,10 @@ export default function NewPostingPage() {
             setText(templateText);
             slash.closeOverlay();
           }}
-          onClose={slash.closeOverlay}
+          onClose={() => {
+            slash.closeOverlay();
+            editorRef.current?.focus();
+          }}
         />
       )}
 

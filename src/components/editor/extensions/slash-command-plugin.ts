@@ -187,6 +187,23 @@ function createSlashKeymap(callbacks: SlashCommandCallbacks) {
       },
     },
     {
+      key: "Tab",
+      run(view) {
+        const state = view.state.field(slashMenuState);
+        if (!state.isOpen || state.commands.length === 0) return false;
+        const cmd = state.commands[state.selectedIndex];
+        if (!cmd) return false;
+
+        // Delete the /query text
+        view.dispatch({
+          changes: { from: state.from, to: state.to, insert: "" },
+          effects: closeSlashMenu.of(undefined),
+        });
+        callbacks.onSelectCommand(cmd);
+        return true;
+      },
+    },
+    {
       key: "Escape",
       run(view) {
         const state = view.state.field(slashMenuState);
@@ -248,4 +265,14 @@ export function selectSlashCommand(view: EditorView): void {
     changes: { from: state.from, to: state.to, insert: "" },
     effects: closeSlashMenu.of(undefined),
   });
+}
+
+/**
+ * Programmatically close the slash menu from React (e.g. clicking outside).
+ * Dispatches the close effect only if the menu is currently open.
+ */
+export function dispatchCloseSlashMenu(view: EditorView): void {
+  const state = view.state.field(slashMenuState);
+  if (!state.isOpen) return;
+  view.dispatch({ effects: closeSlashMenu.of(undefined) });
 }
