@@ -14,7 +14,8 @@ import { useSkillDescendants } from "@/lib/hooks/use-skill-descendants";
 import { usePostingInterest } from "@/lib/hooks/use-posting-interest";
 import { useBookmarks } from "@/lib/hooks/use-bookmarks";
 import { applyFilters } from "@/lib/filters/apply-filters";
-import { PostingDiscoverCard } from "@/components/posting/posting-discover-card";
+import { UnifiedPostingCard } from "@/components/posting";
+import { stripTitleMarkdown } from "@/lib/format";
 import { PostingFilters } from "@/components/posting/posting-filters";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -225,9 +226,32 @@ function DiscoverContent() {
               !isAlreadyInterested;
 
             return (
-              <PostingDiscoverCard
+              <UnifiedPostingCard
                 key={posting.id}
-                posting={posting}
+                variant="full"
+                id={posting.id}
+                title={stripTitleMarkdown(posting.title)}
+                description={posting.description ?? ""}
+                status={posting.status}
+                category={posting.category}
+                createdAt={posting.created_at}
+                creatorId={posting.creator_id}
+                creator={{
+                  name: posting.profiles?.full_name || "Unknown",
+                  userId: posting.profiles?.user_id,
+                }}
+                skills={posting.skills}
+                tags={posting.tags}
+                teamSizeMin={posting.team_size_min}
+                teamSizeMax={posting.team_size_max}
+                estimatedTime={posting.estimated_time}
+                locationMode={posting.location_mode}
+                locationName={posting.location_name}
+                visibility={posting.visibility}
+                mode={posting.mode}
+                contextIdentifier={posting.context_identifier}
+                compatibilityScore={posting.compatibility_score}
+                scoreBreakdown={posting.score_breakdown}
                 isOwner={isOwner}
                 isAlreadyInterested={isAlreadyInterested}
                 isInteresting={isInteresting}

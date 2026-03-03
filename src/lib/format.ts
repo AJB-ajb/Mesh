@@ -108,6 +108,20 @@ export function stripTitleMarkdown(title: string | null | undefined): string {
 export const NOT_SPECIFIED = "Not specified";
 
 /**
+ * Extract a title from a description string.
+ * Takes the first sentence (up to first period, question mark, exclamation mark, or newline),
+ * capped at 100 characters.
+ */
+export function extractTitleFromDescription(desc: string): string {
+  if (!desc) return "";
+  // First line or first sentence
+  const firstLine = desc.split(/\n/)[0] ?? "";
+  const firstSentence = firstLine.match(/^[^.!?]*/)?.[0] ?? firstLine;
+  const result = firstSentence.trim();
+  return result.length > 100 ? result.slice(0, 97) + "..." : result;
+}
+
+/**
  * Get up to 2 uppercase initials from a full name.
  */
 export function getInitials(name: string | null | undefined): string {
