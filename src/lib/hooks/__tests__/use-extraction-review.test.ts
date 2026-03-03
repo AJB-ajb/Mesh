@@ -29,38 +29,43 @@ describe("useExtractionReview", () => {
       }),
     );
     expect(result.current.status).toBe("idle");
-    expect(result.current.extracted).toBeNull();
+    expect(result.current.appliedFields).toBeNull();
   });
 
-  it("triggers extraction when shouldExtract is true", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          posting: {
-            category: "study",
-            skills: ["React", "TypeScript"],
-            team_size_min: 2,
-            team_size_max: 4,
-            estimated_time: "2 weeks",
-            tags: ["hackathon"],
-          },
-        }),
-    });
+  it("auto-applies extracted fields and transitions to applied", async () => {
+    // First call: extraction API, second call: PATCH
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            posting: {
+              category: "study",
+              skills: ["React", "TypeScript"],
+              team_size_min: 2,
+              team_size_max: 4,
+              estimated_time: "2 weeks",
+              tags: ["hackathon"],
+            },
+          }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
 
+    const onMutate = vi.fn();
     const { result } = renderHook(() =>
       useExtractionReview({
         postingId: "p1",
         sourceText: "Looking for devs",
         shouldExtract: true,
+        onMutate,
       }),
     );
 
     await waitFor(() => {
-      expect(result.current.status).toBe("done");
+      expect(result.current.status).toBe("applied");
     });
 
-    expect(result.current.extracted).toEqual({
+    expect(result.current.appliedFields).toEqual({
       category: "study",
       skills: ["React", "TypeScript"],
       team_size_min: 2,
@@ -68,6 +73,10 @@ describe("useExtractionReview", () => {
       estimated_time: "2 weeks",
       tags: ["hackathon"],
     });
+
+    // Should have called PATCH
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(onMutate).toHaveBeenCalled();
   });
 
   it("sets error status on extraction failure", async () => {
@@ -90,13 +99,15 @@ describe("useExtractionReview", () => {
   });
 
   it("dismiss resets state", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          posting: { category: "study" },
-        }),
-    });
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            posting: { category: "study" },
+          }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
 
     const { result } = renderHook(() =>
       useExtractionReview({
@@ -107,7 +118,7 @@ describe("useExtractionReview", () => {
     );
 
     await waitFor(() => {
-      expect(result.current.status).toBe("done");
+      expect(result.current.status).toBe("applied");
     });
 
     act(() => {
@@ -115,6 +126,62 @@ describe("useExtractionReview", () => {
     });
 
     expect(result.current.status).toBe("idle");
-    expect(result.current.extracted).toBeNull();
+    expect(result.current.appliedFields).toBeNull();
+  });
+
+  it("undo reverts fields via PATCH and calls onMutate", async () => {
+    const currentPosting = {
+      category: "other",
+      skills: ["Python"],
+      team_size_min: 1,
+      team_size_max: 2,
+      estimated_time: "1 week",
+      tags: ["old"],
+    };
+
+    // extraction API, auto-apply PATCH, undo PATCH
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            posting: {
+              category: "study",
+              skills: ["React"],
+              team_size_min: 3,
+              team_size_max: 5,
+              estimated_time: "2 weeks",
+              tags: ["new"],
+            },
+          }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
+
+    const onMutate = vi.fn();
+    const { result } = renderHook(() =>
+      useExtractionReview({
+        postingId: "p1",
+        sourceText: "text",
+        shouldExtract: true,
+        currentPosting,
+        onMutate,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("applied");
+    });
+
+    await act(async () => {
+      await result.current.undo();
+    });
+
+    expect(result.current.status).toBe("idle");
+    expect(result.current.appliedFields).toBeNull();
+    // 3 calls: extract, auto-apply PATCH, undo PATCH
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+    // onMutate called for both auto-apply and undo
+    expect(onMutate).toHaveBeenCalledTimes(2);
   });
 });
