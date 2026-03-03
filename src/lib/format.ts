@@ -94,6 +94,14 @@ export function formatDateAgo(date: string | Date): string {
 }
 
 /**
+ * Strip leading markdown heading syntax (e.g. "## Title" → "Title").
+ */
+export function stripTitleMarkdown(title: string | null | undefined): string {
+  if (!title) return "";
+  return title.replace(/^#{1,6}\s+/, "");
+}
+
+/**
  * Default placeholder for unset/empty values.
  * Style convention: lowercase "s" in "specified".
  */

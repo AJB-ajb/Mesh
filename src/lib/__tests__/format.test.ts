@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { formatDate, formatTimeAgo, getInitials } from "../format";
+import {
+  formatDate,
+  formatTimeAgo,
+  getInitials,
+  stripTitleMarkdown,
+} from "../format";
 
 describe("formatDate", () => {
   afterEach(() => {
@@ -72,6 +77,40 @@ describe("formatTimeAgo", () => {
     expect(result).not.toContain("ago");
     expect(result).not.toContain("Just now");
     vi.useRealTimers();
+  });
+});
+
+describe("stripTitleMarkdown", () => {
+  it("strips single # heading", () => {
+    expect(stripTitleMarkdown("# My Title")).toBe("My Title");
+  });
+
+  it("strips ## heading", () => {
+    expect(stripTitleMarkdown("## My Title")).toBe("My Title");
+  });
+
+  it("strips ###### heading", () => {
+    expect(stripTitleMarkdown("###### Deep Heading")).toBe("Deep Heading");
+  });
+
+  it("returns plain text unchanged", () => {
+    expect(stripTitleMarkdown("No heading here")).toBe("No heading here");
+  });
+
+  it("returns empty string for null", () => {
+    expect(stripTitleMarkdown(null)).toBe("");
+  });
+
+  it("returns empty string for undefined", () => {
+    expect(stripTitleMarkdown(undefined)).toBe("");
+  });
+
+  it("returns empty string for empty string", () => {
+    expect(stripTitleMarkdown("")).toBe("");
+  });
+
+  it("does not strip # without trailing space", () => {
+    expect(stripTitleMarkdown("#NoSpace")).toBe("#NoSpace");
   });
 });
 
