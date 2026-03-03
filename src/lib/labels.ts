@@ -239,6 +239,7 @@ export const labels = {
     // Text-first posting
     textPlaceholder:
       "Describe what you're looking for...\n\nExample: Looking for 2 people to practice Spanish conversation twice a week. I'm intermediate level and want to improve my fluency.",
+    errorEmptyPosting: "Please write a description before posting.",
     postButton: "Post",
     editDetailsToggle: "Edit details manually",
     editDetailsHint:
@@ -540,6 +541,9 @@ export const labels = {
     connected: "Connected",
     notConnected: "Not connected",
     expired: "Expired",
+    themeLight: "Light",
+    themeDark: "Dark",
+    themeDusk: "Dusk",
   } as const,
 
   // ---------------------------------------------------------------------------
