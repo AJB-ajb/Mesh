@@ -1060,6 +1060,38 @@ export const labels = {
   a11y: {
     skipToMainContent: "Skip to main content",
     toggleTheme: "Toggle theme",
+    deleteAvailabilityBlock: "Delete availability block",
+    shortcuts: {
+      openSearch: "Open search / command palette",
+      showHelp: "Show keyboard shortcuts",
+      escape: "Close dialog or panel",
+      arrowKeys: "Navigate within lists",
+      enter: "Select or activate",
+      tab: "Move between sections",
+    },
+  },
+
+  // ---------------------------------------------------------------------------
+  // Command palette (global search actions)
+  // ---------------------------------------------------------------------------
+  commandPalette: {
+    actionsHeading: "Quick Actions",
+    goToDiscover: "Go to Discover",
+    goToDiscoverDesc: "Browse and find postings",
+    goToPosts: "Go to Posts",
+    goToPostsDesc: "View your postings and projects",
+    goToConnections: "Go to Connections",
+    goToConnectionsDesc: "Your network and messages",
+    goToProfile: "Go to Profile",
+    goToProfileDesc: "View and edit your profile",
+    goToSettings: "Go to Settings",
+    goToSettingsDesc: "App preferences and account",
+    createPosting: "Create New Posting",
+    createPostingDesc: "Start a new posting",
+    toggleTheme: "Toggle Theme",
+    toggleThemeDesc: "Switch between light, dark, and dusk",
+    keyboardShortcuts: "Keyboard Shortcuts",
+    keyboardShortcutsTitle: "Keyboard Shortcuts",
   },
 
   // ---------------------------------------------------------------------------

@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import type { SearchResult } from "@/lib/hooks/use-search";
 
+// Mock scrollIntoView (not implemented in jsdom)
+Element.prototype.scrollIntoView = vi.fn();
+
 // Mock matchMedia for useIsMobile hook
 Object.defineProperty(window, "matchMedia", {
   writable: true,
@@ -31,6 +34,14 @@ vi.mock("next/navigation", () => ({
 const mockUseSearch = vi.fn();
 vi.mock("@/lib/hooks/use-search", () => ({
   useSearch: (...args: unknown[]) => mockUseSearch(...args),
+}));
+
+// Mock next-themes
+vi.mock("next-themes", () => ({
+  useTheme: () => ({
+    theme: "light",
+    setTheme: vi.fn(),
+  }),
 }));
 
 import { GlobalSearch } from "../global-search";

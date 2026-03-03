@@ -4,7 +4,9 @@ import { FolderKanban, Loader2, ArrowRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { labels } from "@/lib/labels";
 import type { SearchResult } from "@/lib/hooks/use-search";
+import type { PaletteAction } from "@/lib/command-palette/actions";
 
 // ---------------------------------------------------------------------------
 // GlobalSearchResults — result list rendering with badges/icons/nav
@@ -16,6 +18,8 @@ type GlobalSearchResultsProps = {
   isLoading: boolean;
   selectedIndex: number;
   onSelect: (result: SearchResult) => void;
+  actions?: PaletteAction[];
+  onActionExecute?: (action: PaletteAction) => void;
 };
 
 export function GlobalSearchResults({
@@ -24,7 +28,11 @@ export function GlobalSearchResults({
   isLoading,
   selectedIndex,
   onSelect,
+  actions = [],
+  onActionExecute,
 }: GlobalSearchResultsProps) {
+  const actionsCount = actions.length;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -33,7 +41,7 @@ export function GlobalSearchResults({
     );
   }
 
-  if (results.length === 0 && query) {
+  if (results.length === 0 && actionsCount === 0 && query) {
     return (
       <div className="py-8 text-center text-sm text-muted-foreground">
         No results found for &quot;{query}&quot;
@@ -41,7 +49,7 @@ export function GlobalSearchResults({
     );
   }
 
-  if (results.length === 0) {
+  if (results.length === 0 && actionsCount === 0) {
     return (
       <div className="py-6 text-center text-sm text-muted-foreground">
         Start typing to search...
@@ -51,6 +59,37 @@ export function GlobalSearchResults({
 
   return (
     <div className="max-h-[400px] overflow-y-auto">
+      {/* Quick Actions Section */}
+      {actionsCount > 0 && (
+        <div>
+          <div className="px-3 py-2 text-xs font-medium text-muted-foreground bg-muted/50">
+            {labels.commandPalette.actionsHeading}
+          </div>
+          {actions.map((action, i) => {
+            const Icon = action.icon;
+            return (
+              <button
+                key={action.id}
+                data-index={i}
+                onClick={() => onActionExecute?.(action)}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-accent transition-colors",
+                  selectedIndex === i && "bg-accent",
+                )}
+              >
+                <Icon className="size-4 text-muted-foreground shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium">{action.label}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    {action.description}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Postings Section */}
       {results.some((r) => r.type === "posting") && (
         <div>
@@ -60,9 +99,10 @@ export function GlobalSearchResults({
           {results
             .filter((r) => r.type === "posting")
             .map((result) => {
-              const globalIdx = results.findIndex(
+              const resultIdx = results.findIndex(
                 (r) => r.id === result.id && r.type === result.type,
               );
+              const globalIdx = actionsCount + resultIdx;
               return (
                 <button
                   key={`${result.type}-${result.id}`}
@@ -124,9 +164,10 @@ export function GlobalSearchResults({
           {results
             .filter((r) => r.type === "profile")
             .map((result) => {
-              const globalIdx = results.findIndex(
+              const resultIdx = results.findIndex(
                 (r) => r.id === result.id && r.type === result.type,
               );
+              const globalIdx = actionsCount + resultIdx;
               return (
                 <button
                   key={`${result.type}-${result.id}`}

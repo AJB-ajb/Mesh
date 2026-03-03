@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Compass,
   FolderKanban,
@@ -14,6 +15,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
+import { useRovingIndex } from "@/lib/hooks/use-roving-index";
 import { Button } from "@/components/ui/button";
 import { Logo } from "./logo";
 import { NavItem } from "./nav-item";
@@ -34,6 +36,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ className }: SidebarProps) {
+  const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(() => {
     // Only access localStorage on client side
     if (typeof window !== "undefined") {
@@ -41,6 +44,30 @@ export function Sidebar({ className }: SidebarProps) {
       return saved ? JSON.parse(saved) : false;
     }
     return false;
+  });
+
+  const onActivatePrimary = useCallback(
+    (index: number) => {
+      router.push(navigation[index].href);
+    },
+    [router],
+  );
+
+  const onActivateSecondary = useCallback(
+    (index: number) => {
+      router.push(secondaryNavigation[index].href);
+    },
+    [router],
+  );
+
+  const primaryRoving = useRovingIndex({
+    itemCount: navigation.length,
+    onActivate: onActivatePrimary,
+  });
+
+  const secondaryRoving = useRovingIndex({
+    itemCount: secondaryNavigation.length,
+    onActivate: onActivateSecondary,
   });
 
   // Save collapsed state
@@ -118,28 +145,37 @@ export function Sidebar({ className }: SidebarProps) {
         className="flex-1 space-y-1 px-3"
         role="navigation"
         aria-label={labels.nav.mainNavigation}
+        onKeyDown={primaryRoving.getContainerProps().onKeyDown}
       >
-        {navigation.map((item) => (
+        {navigation.map((item, i) => (
           <NavItem
             key={item.href}
             href={item.href}
             icon={item.icon}
             label={item.label}
             collapsed={isCollapsed}
+            tabIndex={primaryRoving.getItemProps(i).tabIndex}
+            onFocus={primaryRoving.getItemProps(i).onFocus}
           />
         ))}
       </nav>
 
       {/* Secondary Navigation */}
       <div className="border-t border-sidebar-border px-3 py-4">
-        <nav className="space-y-1" aria-label={labels.nav.secondaryNavigation}>
-          {secondaryNavigation.map((item) => (
+        <nav
+          className="space-y-1"
+          aria-label={labels.nav.secondaryNavigation}
+          onKeyDown={secondaryRoving.getContainerProps().onKeyDown}
+        >
+          {secondaryNavigation.map((item, i) => (
             <NavItem
               key={item.href}
               href={item.href}
               icon={item.icon}
               label={item.label}
               collapsed={isCollapsed}
+              tabIndex={secondaryRoving.getItemProps(i).tabIndex}
+              onFocus={secondaryRoving.getItemProps(i).onFocus}
             />
           ))}
         </nav>

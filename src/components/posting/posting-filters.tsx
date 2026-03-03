@@ -213,6 +213,7 @@ export function PostingFilters({
             <button
               key={cat.value}
               onClick={() => onCategoryChange(cat.value)}
+              aria-pressed={filterCategory === cat.value}
               className={`shrink-0 rounded-full px-3 py-1 text-sm font-medium transition-colors ${
                 filterCategory === cat.value
                   ? "bg-primary text-primary-foreground"
@@ -233,6 +234,7 @@ export function PostingFilters({
           {showSavedToggle && (
             <button
               onClick={onToggleSaved}
+              aria-pressed={showSaved}
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors ${
                 showSaved
                   ? "bg-primary text-primary-foreground ring-2 ring-primary/30 shadow-sm"
