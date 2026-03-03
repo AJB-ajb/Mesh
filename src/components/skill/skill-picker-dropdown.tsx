@@ -72,13 +72,15 @@ export function SkillPickerDropdown({
         </div>
       )}
 
-      <div className="max-h-60 overflow-y-auto p-1">
+      <div className="max-h-60 overflow-y-auto p-1" role="listbox">
         {/* Search results */}
         {showSearchResults &&
           filteredResults.map((result, index) => (
             <button
               key={result.id}
               type="button"
+              role="option"
+              aria-selected={index === selectedIndex}
               onClick={() => onSelectSkill(result)}
               className={`flex w-full items-start gap-2 rounded-sm px-3 py-2 text-left text-sm transition-colors ${
                 index === selectedIndex
@@ -103,6 +105,8 @@ export function SkillPickerDropdown({
             <button
               key={node.id}
               type="button"
+              role="option"
+              aria-selected={index === selectedIndex}
               onClick={() => {
                 if (node.isLeaf) {
                   onBrowseSelect(node.id, node.name);

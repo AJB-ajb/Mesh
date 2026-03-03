@@ -19,6 +19,7 @@ import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { OnlineStatus, OnlineStatusBadge } from "@/components/ui/online-status";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
+import { useRovingIndex } from "@/lib/hooks/use-roving-index";
 import { useRealtimeChat } from "@/lib/hooks/use-realtime-chat";
 import { useSendMessage } from "@/lib/hooks/use-send-message";
 import { usePresenceContext } from "@/components/providers/presence-provider";
@@ -45,6 +46,18 @@ export function ConversationList({
 }: ConversationListProps) {
   const { isUserOnline } = usePresenceContext();
 
+  const onActivate = useCallback(
+    (index: number) => {
+      if (conversations[index]) onSelect(conversations[index]);
+    },
+    [conversations, onSelect],
+  );
+
+  const roving = useRovingIndex({
+    itemCount: conversations.length,
+    onActivate,
+  });
+
   if (conversations.length === 0) {
     return (
       <Card>
@@ -60,60 +73,66 @@ export function ConversationList({
   }
 
   return (
-    <>
-      {conversations.map((conversation) => (
-        <button
-          key={conversation.id}
-          onClick={() => onSelect(conversation)}
-          className={cn(
-            "w-full flex items-start gap-3 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted/50",
-            selectedConversationId === conversation.id &&
-              "bg-muted border-primary/50",
-            conversation.unread_count &&
-              conversation.unread_count > 0 &&
-              "bg-primary/5",
-          )}
-        >
-          <OnlineStatusBadge
-            isOnline={isUserOnline(conversation.other_user?.user_id || "")}
+    <div {...roving.getContainerProps()}>
+      {conversations.map((conversation, i) => {
+        const itemProps = roving.getItemProps(i);
+        return (
+          <button
+            key={conversation.id}
+            tabIndex={itemProps.tabIndex}
+            data-active={itemProps["data-active"]}
+            onFocus={itemProps.onFocus}
+            onClick={() => onSelect(conversation)}
+            className={cn(
+              "w-full flex items-start gap-3 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted/50",
+              selectedConversationId === conversation.id &&
+                "bg-muted border-primary/50",
+              conversation.unread_count &&
+                conversation.unread_count > 0 &&
+                "bg-primary/5",
+            )}
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-sm font-medium shrink-0">
-              {getInitials(conversation.other_user?.full_name || null)}
-            </div>
-          </OnlineStatusBadge>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <h4 className="font-medium truncate">
-                {conversation.other_user?.full_name || labels.common.unknown}
-              </h4>
+            <OnlineStatusBadge
+              isOnline={isUserOnline(conversation.other_user?.user_id || "")}
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-sm font-medium shrink-0">
+                {getInitials(conversation.other_user?.full_name || null)}
+              </div>
+            </OnlineStatusBadge>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium truncate">
+                  {conversation.other_user?.full_name || labels.common.unknown}
+                </h4>
+                {conversation.last_message && (
+                  <span className="text-xs text-muted-foreground">
+                    {formatTimeAgoShort(conversation.last_message.created_at)}
+                  </span>
+                )}
+              </div>
+              {conversation.posting && (
+                <p className="text-xs text-primary truncate">
+                  Re: {conversation.posting.title}
+                </p>
+              )}
               {conversation.last_message && (
-                <span className="text-xs text-muted-foreground">
-                  {formatTimeAgoShort(conversation.last_message.created_at)}
-                </span>
+                <p className="text-sm text-muted-foreground truncate">
+                  {conversation.last_message.sender_id === currentUserId
+                    ? labels.chat.youPrefix
+                    : ""}
+                  {conversation.last_message.content}
+                </p>
               )}
             </div>
-            {conversation.posting && (
-              <p className="text-xs text-primary truncate">
-                Re: {conversation.posting.title}
-              </p>
+            {conversation.unread_count && conversation.unread_count > 0 && (
+              <Badge variant="destructive" className="h-5 min-w-5 px-1.5">
+                {conversation.unread_count}
+              </Badge>
             )}
-            {conversation.last_message && (
-              <p className="text-sm text-muted-foreground truncate">
-                {conversation.last_message.sender_id === currentUserId
-                  ? labels.chat.youPrefix
-                  : ""}
-                {conversation.last_message.content}
-              </p>
-            )}
-          </div>
-          {conversation.unread_count && conversation.unread_count > 0 && (
-            <Badge variant="destructive" className="h-5 min-w-5 px-1.5">
-              {conversation.unread_count}
-            </Badge>
-          )}
-        </button>
-      ))}
-    </>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

@@ -1,14 +1,20 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import { Search, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { labels } from "@/lib/labels";
 import { useSearch } from "@/lib/hooks/use-search";
 import type { SearchResult } from "@/lib/hooks/use-search";
+import { createActions } from "@/lib/command-palette/actions";
+import type { PaletteAction } from "@/lib/command-palette/actions";
+import { filterActions } from "@/lib/command-palette/filter-actions";
 import { GlobalSearchResults } from "./global-search-results";
+
+const THEMES = ["light", "dark", "dusk"] as const;
 
 function useIsMac() {
   const [isMac, setIsMac] = useState(true);
@@ -32,6 +38,7 @@ function useIsMobile() {
 
 export function GlobalSearch() {
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
   const isMac = useIsMac();
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
@@ -43,6 +50,25 @@ export function GlobalSearch() {
 
   const { results, isLoading } = useSearch(debouncedQuery);
 
+  // Build action registry
+  const cycleTheme = useCallback(() => {
+    const currentIndex = THEMES.indexOf(theme as (typeof THEMES)[number]);
+    const next = THEMES[(currentIndex + 1) % THEMES.length];
+    setTheme(next);
+  }, [theme, setTheme]);
+
+  const allActions = useMemo(
+    () => createActions({ router, cycleTheme }),
+    [router, cycleTheme],
+  );
+
+  const filteredActions = useMemo(
+    () => filterActions(allActions, query),
+    [allActions, query],
+  );
+
+  const combinedLength = filteredActions.length + results.length;
+
   // Debounce the query
   useEffect(() => {
     if (!query.trim()) {
@@ -53,12 +79,12 @@ export function GlobalSearch() {
     return () => clearTimeout(timeoutId);
   }, [query]);
 
-  // Reset selected index when results change
+  // Reset selected index when results or actions change
   useEffect(() => {
     queueMicrotask(() => setSelectedIndex(0));
-  }, [results.length]);
+  }, [results.length, filteredActions.length]);
 
-  // Handle selection
+  // Handle search result selection
   const handleSelect = useCallback(
     (result: SearchResult) => {
       if (result.type === "posting") {
@@ -72,24 +98,49 @@ export function GlobalSearch() {
     [router],
   );
 
+  // Handle action execution
+  const handleActionExecute = useCallback(
+    (action: PaletteAction) => {
+      action.execute({ router, cycleTheme });
+      setIsOpen(false);
+      setQuery("");
+    },
+    [router, cycleTheme],
+  );
+
   // Keyboard navigation
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setSelectedIndex((prev) => Math.min(prev + 1, results.length - 1));
+        setSelectedIndex((prev) => Math.min(prev + 1, combinedLength - 1));
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setSelectedIndex((prev) => Math.max(prev - 1, 0));
-      } else if (e.key === "Enter" && results[selectedIndex]) {
+      } else if (e.key === "Enter") {
         e.preventDefault();
-        handleSelect(results[selectedIndex]);
+        // Actions come first in the combined list
+        if (selectedIndex < filteredActions.length) {
+          handleActionExecute(filteredActions[selectedIndex]);
+        } else {
+          const resultIndex = selectedIndex - filteredActions.length;
+          if (results[resultIndex]) {
+            handleSelect(results[resultIndex]);
+          }
+        }
       } else if (e.key === "Escape") {
         setIsOpen(false);
         setQuery("");
       }
     },
-    [results, selectedIndex, handleSelect],
+    [
+      combinedLength,
+      filteredActions,
+      results,
+      selectedIndex,
+      handleSelect,
+      handleActionExecute,
+    ],
   );
 
   // Global keyboard shortcut (Cmd/Ctrl + K)
@@ -127,13 +178,13 @@ export function GlobalSearch() {
 
   // Scroll selected item into view
   useEffect(() => {
-    if (resultsRef.current && results.length > 0) {
+    if (resultsRef.current && combinedLength > 0) {
       const selectedElement = resultsRef.current.querySelector(
         `[data-index="${selectedIndex}"]`,
       );
       selectedElement?.scrollIntoView({ block: "nearest" });
     }
-  }, [selectedIndex, results.length]);
+  }, [selectedIndex, combinedLength]);
 
   return (
     <div className="relative flex-1 max-w-md">
@@ -173,8 +224,8 @@ export function GlobalSearch() {
         )}
       </div>
 
-      {/* Results Dropdown */}
-      {isOpen && (query || results.length > 0) && (
+      {/* Results Dropdown — show when open (actions always available) */}
+      {isOpen && (
         <div
           ref={resultsRef}
           className="absolute top-full left-0 right-0 mt-2 rounded-lg border border-border bg-popover shadow-lg overflow-hidden z-50"
@@ -185,6 +236,8 @@ export function GlobalSearch() {
             isLoading={isLoading}
             selectedIndex={selectedIndex}
             onSelect={handleSelect}
+            actions={filteredActions}
+            onActionExecute={handleActionExecute}
           />
 
           {/* Footer */}
