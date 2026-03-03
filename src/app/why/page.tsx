@@ -41,8 +41,8 @@ const problemItems = [
 const howDifferentItems = [
   {
     icon: Lightbulb,
-    title: labels.why.howDifferentIdeaFirst,
-    body: labels.why.howDifferentIdeaFirstBody,
+    title: labels.why.howDifferentActivityFirst,
+    body: labels.why.howDifferentActivityFirstBody,
   },
   {
     icon: UserPlus,

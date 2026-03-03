@@ -1,6 +1,6 @@
 # Mesh
 
-Idea-based social platform for quickly finding people to do things with — projects, activities, and spontaneous plans.
+Platform for effective activity coordination in small groups — finding the right people for projects, activities, and spontaneous plans.
 
 ## Status
 
@@ -11,13 +11,18 @@ See [roadmap.md](roadmap.md) for milestone tracking. See [text_first_rewrite.md]
 
 ## Problem
 
-- Finding people to do things with requires high effort (scanning Slack/WhatsApp channels, messaging connections one by one)
-- Large communities don't scale for individual matching
-- Skill levels and personal compatibility are rarely explicit
+People coordinate activities through messaging apps, email, and in-person conversations. This doesn't work well:
 
-- Idea first approach
-- Fast setup first approach
-- Natural language interface
+- **High friction.** Finding people means messaging connections one by one or scanning Slack/WhatsApp channels — lots of back-and-forth.
+- **Broadcasting is wasteful.** Messaging in large groups shows 100 people a message where only 5 are interested.
+- **Wrong unit of organization.** Messaging apps are about messages. Mesh is about activities. The activity posting is the fundamental unit, not a thread of messages.
+- **Compatibility is invisible.** Skill levels, work style preferences, and scheduling availability are rarely explicit in current tools.
+
+### Approach
+
+- Activity-first: start with what you want to do, then find people
+- Fast setup: post in 30 seconds, no profile required
+- Natural language: describe your activity like you would in a chat message; AI extracts structure
 
 ### Key Issues
 
@@ -95,11 +100,11 @@ See [ux.md](ux.md).
 
 ## Motivation
 
-- Collaboration is a core human need
-- 1:1 coordination is common but poorly served by current tools
-- Small teams (2-4) outperform large groups for most tasks
-- Current tools (Slack, WhatsApp) don't scale for matching
-- Pair work is undervalued and underutilized
+- Collaboration is a core human need, but coordinating it is unreasonably hard
+- Small teams (2-5) outperform large groups for most tasks — yet current tools serve crowds, not small groups
+- 1:1 and pair coordination is the most common case but the least served by existing tools
+- Current tools (Slack, WhatsApp, email) are built around messages, not activities — they don't scale for matching or coordination
+- Mesh is both a coordination tool (for people you know) and a matching tool (for people you don't yet know), unified under a single activity-first interface
 
 See [vision.md](vision.md) for deeper philosophy, insights, and target audience analysis.
 

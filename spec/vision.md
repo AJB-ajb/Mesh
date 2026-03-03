@@ -2,6 +2,20 @@
 
 This document captures the high-level product philosophy, motivations, and strategic insights behind Mesh. It complements the technical specs ([mesh.md](mesh.md), [ux.md](ux.md), [matching.md](matching.md), [use-cases.md](use-cases.md)) with subjective and motivational reasoning.
 
+## Why Not Messaging Apps?
+
+Messaging apps are about messages. Mesh is about activities.
+
+When you want to find a tennis partner, organize a study group, or staff a hackathon team, the natural action in messaging apps is to write a message — either to one person (high effort, doesn't scale) or to a large group (wasteful: 100 people see it, 5 care). The activity itself — what you want to do, when, where, what skills are needed — gets buried in a thread of replies.
+
+Mesh makes the **activity posting** the fundamental unit. You describe what you want to do once, and the platform handles finding compatible people, resolving scheduling, and managing group formation. The conversation happens _after_ the right people are assembled, not before.
+
+## Effectiveness Over Engagement
+
+Many apps optimize for engagement — time spent in app. Mesh optimizes for effectiveness — getting things done. The app should be pleasant to use, but not addictive. People should be able to coordinate quickly and then move on with their lives.
+
+This belief shapes design decisions: no infinite feeds, no engagement-maximizing notifications, no dark patterns that keep people scrolling.
+
 ## Core Insight: Small Groups
 
 Most useful activities have an optimal number of participants — typically 2 to 5.
@@ -60,6 +74,14 @@ Asking connections for spontaneous activities (e.g., "learn topic X together tod
 - **High adoption is critical.** The product requires network effects to work.
 - **30-second onboarding.** A not-yet-registered user with a written posting description should be able to post in under 30 seconds: click "Post" on hero → OAuth login → paste description → post.
 - **No personal configuration required to post.** Personal profile setup can improve matching quality but must not be a gate.
+
+## Why AI Matching?
+
+Matching people and activities is intelligence-complete. No rigid set of forms, filters, and categories can capture the full space of what makes two people good collaborators for a specific activity.
+
+- Some matchings work perfectly. Some would work with small adaptations. Some don't work at all. You need reasoning to tell which is which.
+- Language models can do this reasoning — and they improve each month.
+- Mesh uses AI not as a gimmick but as the core mechanism that makes multi-dimensional matching feasible at all: evaluating compatibility across skills, work style, availability, location, and the nuances in natural-language descriptions that structured data can't capture.
 
 ## Design Inspiration
 
