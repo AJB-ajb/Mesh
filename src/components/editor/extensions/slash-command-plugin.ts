@@ -138,7 +138,7 @@ export interface SlashCommandCallbacks {
   /** Called whenever the slash menu state changes. */
   onStateChange: (state: SlashMenuState) => void;
   /** Called when the user selects a command (Enter key or mouse click). */
-  onSelectCommand: (command: SlashCommand) => void;
+  onSelectCommand: (command: SlashCommand, view?: EditorView) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -182,7 +182,7 @@ function createSlashKeymap(callbacks: SlashCommandCallbacks) {
           changes: { from: state.from, to: state.to, insert: "" },
           effects: closeSlashMenu.of(undefined),
         });
-        callbacks.onSelectCommand(cmd);
+        callbacks.onSelectCommand(cmd, view);
         return true;
       },
     },
@@ -199,7 +199,7 @@ function createSlashKeymap(callbacks: SlashCommandCallbacks) {
           changes: { from: state.from, to: state.to, insert: "" },
           effects: closeSlashMenu.of(undefined),
         });
-        callbacks.onSelectCommand(cmd);
+        callbacks.onSelectCommand(cmd, view);
         return true;
       },
     },

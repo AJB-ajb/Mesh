@@ -28,6 +28,12 @@ export interface UseEditorSlashCommandsReturn {
   handleOverlayResult: (view: EditorView, text: string) => void;
 }
 
+/** Map of content command names to the text they insert at cursor. */
+const CONTENT_INSERTS: Record<string, { text: string; cursorOffset: number }> =
+  {
+    hidden: { text: "||\n\n||", cursorOffset: 3 },
+  };
+
 export function useEditorSlashCommands(): UseEditorSlashCommandsReturn {
   const [menuState, setMenuState] = useState<SlashMenuState>({
     isOpen: false,
@@ -39,12 +45,25 @@ export function useEditorSlashCommands(): UseEditorSlashCommandsReturn {
   });
   const [activeOverlay, setActiveOverlay] = useState<string | null>(null);
 
-  const handleSelect = useCallback((command: SlashCommand) => {
-    setMenuState((prev) => ({ ...prev, isOpen: false }));
-    if (command.type === "action") {
-      setActiveOverlay(command.name);
-    }
-  }, []);
+  const handleSelect = useCallback(
+    (command: SlashCommand, view?: EditorView) => {
+      setMenuState((prev) => ({ ...prev, isOpen: false }));
+      if (command.type === "action") {
+        setActiveOverlay(command.name);
+      } else if (command.type === "content" && view) {
+        const insert = CONTENT_INSERTS[command.name];
+        if (insert) {
+          const pos = view.state.selection.main.head;
+          view.dispatch({
+            changes: { from: pos, to: pos, insert: insert.text },
+            selection: { anchor: pos + insert.cursorOffset },
+          });
+          view.focus();
+        }
+      }
+    },
+    [],
+  );
 
   const handleStateChange = useCallback((state: SlashMenuState) => {
     setMenuState(state);
@@ -81,7 +100,7 @@ export function useEditorSlashCommands(): UseEditorSlashCommandsReturn {
   const selectCommandFromMenu = useCallback(
     (view: EditorView, command: SlashCommand) => {
       selectSlashCommand(view);
-      handleSelect(command);
+      handleSelect(command, view);
     },
     [handleSelect],
   );

@@ -96,7 +96,7 @@ describe("useSlashCommands", () => {
     });
 
     expect(result.current.menuOpen).toBe(true);
-    expect(result.current.filteredCommands.length).toBe(4);
+    expect(result.current.filteredCommands.length).toBe(5);
   });
 
   it("opens menu when / is after whitespace", () => {
@@ -180,7 +180,7 @@ describe("useSlashCommands", () => {
       result.current.onKeyDown(upEvent);
     });
 
-    expect(result.current.selectedIndex).toBe(3); // last index (4 commands)
+    expect(result.current.selectedIndex).toBe(4); // last index (5 commands)
   });
 
   it("Enter selects command and opens overlay for action type", () => {
