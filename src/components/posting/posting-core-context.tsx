@@ -27,6 +27,8 @@ export type PostingCoreContextValue = {
   onStartConversation: (otherUserId: string) => Promise<void>;
   // Error state
   error: string | null;
+  // Data refresh
+  onMutate: () => void;
   // Derived state
   isAcceptedMember: boolean;
   projectEnabled: boolean;

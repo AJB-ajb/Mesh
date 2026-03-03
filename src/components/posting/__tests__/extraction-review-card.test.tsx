@@ -4,9 +4,8 @@ import { ExtractionReviewCard } from "../extraction-review-card";
 
 const defaultProps = {
   status: "idle" as const,
-  extracted: null,
-  acceptAll: vi.fn(),
-  acceptField: vi.fn(),
+  appliedFields: null,
+  undo: vi.fn(),
   dismiss: vi.fn(),
   retry: vi.fn(),
 };
@@ -28,12 +27,12 @@ describe("ExtractionReviewCard", () => {
     expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
   });
 
-  it("shows extracted fields when done", () => {
+  it("shows applied summary with undo when applied", () => {
     render(
       <ExtractionReviewCard
         {...defaultProps}
-        status="done"
-        extracted={{
+        status="applied"
+        appliedFields={{
           category: "study",
           skills: ["React", "TypeScript"],
           tags: ["hackathon"],
@@ -44,7 +43,6 @@ describe("ExtractionReviewCard", () => {
     expect(screen.getByText("React")).toBeInTheDocument();
     expect(screen.getByText("TypeScript")).toBeInTheDocument();
     expect(screen.getByText("#hackathon")).toBeInTheDocument();
-    expect(screen.getByText("Accept All")).toBeInTheDocument();
-    expect(screen.getByText("Dismiss")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /undo/i })).toBeInTheDocument();
   });
 });

@@ -278,11 +278,10 @@ export const labels = {
   // ---------------------------------------------------------------------------
   extractionReview: {
     title: "Extracted Details",
-    subtitle:
-      "We extracted these details from your text. Accept or dismiss each.",
-    acceptAll: "Accept All",
-    dismiss: "Dismiss",
     accept: "Accept",
+    applied: "AI filled in some details",
+    undo: "Undo",
+    appliedDismiss: "Dismiss extraction summary",
     retry: "Retry",
     extracting: "Extracting details from your text...",
     error: "Failed to extract details.",

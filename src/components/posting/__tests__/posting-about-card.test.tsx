@@ -90,6 +90,7 @@ function makeCoreValue(posting: PostingDetail): PostingCoreContextValue {
     onContactCreator: vi.fn(),
     onStartConversation: vi.fn(),
     error: null,
+    onMutate: vi.fn(),
     isAcceptedMember: false,
     projectEnabled: false,
     acceptedCount: 0,

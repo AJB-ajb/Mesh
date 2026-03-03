@@ -13,8 +13,14 @@ import { PostingManageTab } from "./posting-manage-tab";
 import { PostingActivityTab } from "./posting-activity-tab";
 
 export function PostingOwnerView() {
-  const { posting, postingId, activeTab, onTabChange, projectEnabled } =
-    usePostingCoreContext();
+  const {
+    posting,
+    postingId,
+    activeTab,
+    onTabChange,
+    projectEnabled,
+    onMutate,
+  } = usePostingCoreContext();
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -27,6 +33,8 @@ export function PostingOwnerView() {
     postingId,
     sourceText: sourceText ?? null,
     shouldExtract: extractionPending ?? false,
+    currentPosting: posting,
+    onMutate,
   });
 
   return (
@@ -36,9 +44,8 @@ export function PostingOwnerView() {
       {/* Extraction review card (after text-first creation) */}
       <ExtractionReviewCard
         status={extraction.status}
-        extracted={extraction.extracted}
-        acceptAll={extraction.acceptAll}
-        acceptField={extraction.acceptField}
+        appliedFields={extraction.appliedFields}
+        undo={extraction.undo}
         dismiss={extraction.dismiss}
         retry={extraction.retry}
       />
