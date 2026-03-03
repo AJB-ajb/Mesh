@@ -35,14 +35,19 @@ export default defineConfig({
       dependencies: ["setup"],
       testMatch: /e2e\/layout\.spec\.ts/,
     },
-    // Public + auth-flow tests — fresh browser, no saved state.
-    // Runs after chromium so auth-feature logout can't invalidate
-    // the storageState session used by layout tests.
+    // Public pages — no auth, no interference, run in parallel
     {
       name: "public",
       use: { ...devices["Desktop Chrome"] },
+      testMatch: /e2e\/(home|navigation)\.spec\.ts/,
+    },
+    // Auth-flow tests (login/logout UI) — must run after layout tests
+    // because the logout test invalidates the Supabase session server-side.
+    {
+      name: "auth-flow",
+      use: { ...devices["Desktop Chrome"] },
       dependencies: ["chromium"],
-      testMatch: /e2e\/(home|navigation|auth-feature)\.spec\.ts/,
+      testMatch: /e2e\/auth-feature\.spec\.ts/,
     },
   ],
   webServer: {
