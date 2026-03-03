@@ -171,7 +171,7 @@ export function NotificationsDropdown({ className }: { className?: string }) {
         <Bell className="size-5" />
         <span className="sr-only">{labels.nav.notifications}</span>
         {unreadCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs font-medium text-destructive-foreground">
+          <span className="absolute -right-0.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs font-medium text-destructive-foreground">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
