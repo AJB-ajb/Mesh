@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -331,18 +331,42 @@ export function SkillPickerOverlay({ onInsert, onClose }: OverlayProps) {
     );
   };
 
-  const serializeSkills = (): string => {
+  const handleInsert = useCallback(() => {
+    if (selectedSkills.length === 0) return;
     const parts = selectedSkills.map((s) =>
       s.levelMin != null
         ? labels.slashCommands.skillsMinLevel(s.name, s.levelMin)
         : labels.slashCommands.skillsAnyLevel(s.name),
     );
-    return `${labels.slashCommands.skillsPrefix} ${parts.join(", ")}`;
-  };
+    const display = `${labels.slashCommands.skillsPrefix} ${parts.join(", ")}`;
+    onInsert({
+      display,
+      data: {
+        skills: selectedSkills.map((s) => ({
+          skillId: s.skillId,
+          name: s.name,
+          levelMin: s.levelMin,
+        })),
+      },
+    });
+  }, [selectedSkills, onInsert]);
+
+  const isMac =
+    typeof navigator !== "undefined" &&
+    /Mac|iPhone|iPad/.test(navigator.userAgent);
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent
+        className="sm:max-w-lg"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onKeyDown={(e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+            e.preventDefault();
+            handleInsert();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{labels.slashCommands.skillsTitle}</DialogTitle>
         </DialogHeader>
@@ -353,6 +377,7 @@ export function SkillPickerOverlay({ onInsert, onClose }: OverlayProps) {
           onRemove={handleRemove}
           onUpdateLevel={handleUpdateLevel}
           placeholder={labels.slashCommands.skillsPlaceholder}
+          autoFocus
         />
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>
@@ -361,20 +386,12 @@ export function SkillPickerOverlay({ onInsert, onClose }: OverlayProps) {
           <Button
             type="button"
             disabled={selectedSkills.length === 0}
-            onClick={() =>
-              onInsert({
-                display: serializeSkills(),
-                data: {
-                  skills: selectedSkills.map((s) => ({
-                    skillId: s.skillId,
-                    name: s.name,
-                    levelMin: s.levelMin,
-                  })),
-                },
-              })
-            }
+            onClick={handleInsert}
           >
-            {labels.slashCommands.insertButton}
+            {labels.slashCommands.insertButton}{" "}
+            <kbd className="ml-1.5 hidden text-[10px] opacity-60 sm:inline">
+              {isMac ? "\u2318" : "Ctrl+"}\u23CE
+            </kbd>
           </Button>
         </DialogFooter>
       </DialogContent>

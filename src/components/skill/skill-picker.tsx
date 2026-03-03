@@ -36,6 +36,7 @@ type SkillPickerProfileProps = {
   onUpdateLevel: (skillId: string, level: number) => void;
   placeholder?: string;
   disabled?: boolean;
+  autoFocus?: boolean;
 };
 
 type SkillPickerPostingProps = {
@@ -46,6 +47,7 @@ type SkillPickerPostingProps = {
   onUpdateLevel: (skillId: string, levelMin: number | null) => void;
   placeholder?: string;
   disabled?: boolean;
+  autoFocus?: boolean;
 };
 
 type SkillPickerProps = SkillPickerProfileProps | SkillPickerPostingProps;
@@ -63,6 +65,7 @@ export function SkillPicker(props: SkillPickerProps) {
     onUpdateLevel,
     placeholder = "Search skills...",
     disabled = false,
+    autoFocus = false,
   } = props;
 
   const {
@@ -110,6 +113,7 @@ export function SkillPicker(props: SkillPickerProps) {
             onFocus={handleFocus}
             placeholder={placeholder}
             disabled={disabled}
+            autoFocus={autoFocus}
             className="pl-9 pr-9"
           />
           {isLoading && (
