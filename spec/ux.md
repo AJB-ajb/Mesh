@@ -139,11 +139,13 @@ Single unified feed replacing the old Postings (Discover tab), Matches, and Book
 - **Sort control:** match score (default), newest, etc.
 - **Saved filter:** toggle to show only bookmarked postings
 - **Filter panel** (collapsible): category, visibility (public/private), location, team size, time commitment
-- **Posting cards** in a flat list, each showing:
-  - Title, description snippet
-  - Match score percentage
-  - Category badge, team size, location
-  - Bookmark star (toggle)
+- **Posting cards** in a flat list — text-first rendering (see [text_first_rewrite.md §6](../.prompts/todo/text_first_rewrite.md)):
+  - Creator name + time ago (top, like a message sender)
+  - Posting text as primary content (3–4 lines, not truncated to 2)
+  - Title is the first line of text (rendered slightly bolder), not a separate field
+  - Match score (Discover feed only — hidden in connections/invites/personal contexts)
+  - Minimal meta line: only info not already in the text (location, spots open)
+  - Skills as feed-level filter pills, not duplicated per card
   - Apply / Express interest action
 
 ### Posts (`/posts`)
@@ -214,7 +216,7 @@ Not a page — lives in the **header bell icon** as a dropdown.
 
 ## Interaction Patterns
 
-- **AI compatibility scores** shown on posting cards across Discover feed (match score on every card)
+- **AI compatibility scores** shown on posting cards in Discover feed only (hidden in connections, invites, personal contexts)
 - **Real-time messaging** with typing indicators and presence status — 1:1 DMs in Connections, group chat in Active (Project tab)
 - **Progressive disclosure:** empty states guide the user to their next action (Active → Discover, Connections → Add)
 - **Invite:** invite connections to any posting (not restricted by visibility). Two modes:
@@ -229,13 +231,15 @@ Not a page — lives in the **header bell icon** as a dropdown.
 
 ### Text-First Input (v0.3+)
 
-The posting and profile input paradigm is shifting from form-first to text-first. See [text_first_rewrite.md](../.prompts/text_first_rewrite.md) for the full spec. Key changes:
+The posting and profile input paradigm is text-first. See [text_first_rewrite.md](../.prompts/todo/text_first_rewrite.md) for the full spec. Key changes:
 
 - **Primary input is a text field**, not a multi-step form. Write what you want, post it, done.
 - **Structure is derived, not inputted.** LLM extracts metadata (skills, time, location, category) from text in the background after posting.
 - **Posting is instant.** Extraction and matching happen after the posting is live — no gating on LLM processing.
-- **Markdown format.** Postings and profiles are lightweight markdown (bold, lists, headings, inline code, links). Rendered inline while editing, fully rendered when viewing.
-- **Slash commands** (`/time`, `/location`, `/skills`, `/template`) for optional precision — content commands produce text, action commands set metadata.
-- **Quick chips** below the text field for context-sensitive suggestions on mobile.
-- **Text tools**: Auto-format (✨) adds markdown structure, Auto-clean (🧹) corrects grammar/spelling. Both show diffs for approval.
-- **Post-write nudges**: LLM suggests missing dimensions (e.g., "You haven't mentioned **when**"), non-blocking.
+- **Markdown format.** Lightweight markdown (bold, lists, headings, inline code, links). Edit mode shows syntax-highlighted markers (e.g., `**bold**` renders bold but keeps the `**` visible). View mode fully renders.
+- **`mesh:` link syntax** for optional precision — `[📍 location](mesh:location?lat=...&lng=...)` embeds structured metadata in the text. Slash commands insert these; plain text is always fine too.
+- **`||hidden||` content** — text wrapped in `||` markers is hidden until acceptance. Solves the "send me the details" back-and-forth.
+- **`||?||` prompts** — questions wrapped in `||?` markers become interactive form elements on acceptance (LLM converts natural language to UI).
+- **Slash commands** as a command palette — content commands (`/time`, `/location`, `/skills`, `/template`, `/hidden`), setting commands (`/visibility`, `/size`, `/autoaccept`), and action commands (`/invite`, `/link`, `/repost`, `/format`, `/clean`). Tab completes, Enter executes.
+- **Text tools**: Auto-format (✨) adds markdown structure, Auto-clean (🧹) corrects grammar/spelling. Both apply directly with inline undo.
+- **Quick chips and post-write nudges**: Deferred — focus on core flow first. Revisit when base editor and commands are polished.

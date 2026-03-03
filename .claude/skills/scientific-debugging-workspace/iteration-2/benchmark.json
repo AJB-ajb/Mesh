@@ -1,0 +1,292 @@
+{
+  "iteration": 2,
+  "date": "2026-03-02",
+  "test_cases": ["eval-stale-closure", "eval-css-overflow", "eval-async-race"],
+  "configurations": [
+    "with_skill_opus",
+    "with_skill_sonnet",
+    "with_skill_haiku"
+  ],
+  "runs": [
+    {
+      "eval_id": "eval-stale-closure",
+      "eval_name": "React Stale Closure Bug",
+      "configuration": "with_skill_opus",
+      "run_number": 1,
+      "result": {
+        "score": "5/5",
+        "token_count": 20142,
+        "duration_seconds": 80.8,
+        "assertions_passed": 5,
+        "assertions_total": 5
+      },
+      "expectations": {
+        "assertion_1": "Pass",
+        "assertion_2": "Pass",
+        "assertion_3": "Pass",
+        "assertion_4": "Pass",
+        "assertion_5": "Pass"
+      }
+    },
+    {
+      "eval_id": "eval-stale-closure",
+      "eval_name": "React Stale Closure Bug",
+      "configuration": "with_skill_sonnet",
+      "run_number": 2,
+      "result": {
+        "score": "5/5",
+        "token_count": 19719,
+        "duration_seconds": 71.9,
+        "assertions_passed": 5,
+        "assertions_total": 5
+      },
+      "expectations": {
+        "assertion_1": "Pass",
+        "assertion_2": "Pass",
+        "assertion_3": "Pass",
+        "assertion_4": "Pass",
+        "assertion_5": "Pass"
+      }
+    },
+    {
+      "eval_id": "eval-stale-closure",
+      "eval_name": "React Stale Closure Bug",
+      "configuration": "with_skill_haiku",
+      "run_number": 3,
+      "result": {
+        "score": "3/5",
+        "token_count": 20132,
+        "duration_seconds": 32.0,
+        "assertions_passed": 3,
+        "assertions_total": 5
+      },
+      "expectations": {
+        "assertion_1": "Fail",
+        "assertion_2": "Fail",
+        "assertion_3": "Pass",
+        "assertion_4": "Pass",
+        "assertion_5": "Pass"
+      }
+    },
+    {
+      "eval_id": "eval-css-overflow",
+      "eval_name": "CSS Overflow Layout Bug",
+      "configuration": "with_skill_opus",
+      "run_number": 4,
+      "result": {
+        "score": "5/5",
+        "token_count": 22118,
+        "duration_seconds": 87.4,
+        "assertions_passed": 5,
+        "assertions_total": 5
+      },
+      "expectations": {
+        "assertion_1": "Pass",
+        "assertion_2": "Pass",
+        "assertion_3": "Pass",
+        "assertion_4": "Pass",
+        "assertion_5": "Pass"
+      }
+    },
+    {
+      "eval_id": "eval-css-overflow",
+      "eval_name": "CSS Overflow Layout Bug",
+      "configuration": "with_skill_sonnet",
+      "run_number": 5,
+      "result": {
+        "score": "5/5",
+        "token_count": 20154,
+        "duration_seconds": 50.2,
+        "assertions_passed": 5,
+        "assertions_total": 5
+      },
+      "expectations": {
+        "assertion_1": "Pass",
+        "assertion_2": "Pass",
+        "assertion_3": "Pass",
+        "assertion_4": "Pass",
+        "assertion_5": "Pass"
+      }
+    },
+    {
+      "eval_id": "eval-css-overflow",
+      "eval_name": "CSS Overflow Layout Bug",
+      "configuration": "with_skill_haiku",
+      "run_number": 6,
+      "result": {
+        "score": "4/5",
+        "token_count": 20554,
+        "duration_seconds": 25.3,
+        "assertions_passed": 4,
+        "assertions_total": 5
+      },
+      "expectations": {
+        "assertion_1": "Pass",
+        "assertion_2": "Fail",
+        "assertion_3": "Pass",
+        "assertion_4": "Pass",
+        "assertion_5": "Pass"
+      }
+    },
+    {
+      "eval_id": "eval-async-race",
+      "eval_name": "Async Race Condition Bug",
+      "configuration": "with_skill_opus",
+      "run_number": 7,
+      "result": {
+        "score": "5/5",
+        "token_count": 20318,
+        "duration_seconds": 72.5,
+        "assertions_passed": 5,
+        "assertions_total": 5
+      },
+      "expectations": {
+        "assertion_1": "Pass",
+        "assertion_2": "Pass",
+        "assertion_3": "Pass",
+        "assertion_4": "Pass",
+        "assertion_5": "Pass"
+      }
+    },
+    {
+      "eval_id": "eval-async-race",
+      "eval_name": "Async Race Condition Bug",
+      "configuration": "with_skill_sonnet",
+      "run_number": 8,
+      "result": {
+        "score": "5/5",
+        "token_count": 20050,
+        "duration_seconds": 65.5,
+        "assertions_passed": 5,
+        "assertions_total": 5
+      },
+      "expectations": {
+        "assertion_1": "Pass",
+        "assertion_2": "Pass",
+        "assertion_3": "Pass",
+        "assertion_4": "Pass",
+        "assertion_5": "Pass"
+      }
+    },
+    {
+      "eval_id": "eval-async-race",
+      "eval_name": "Async Race Condition Bug",
+      "configuration": "with_skill_haiku",
+      "run_number": 9,
+      "result": {
+        "score": "4/5",
+        "token_count": 19620,
+        "duration_seconds": 28.1,
+        "assertions_passed": 4,
+        "assertions_total": 5
+      },
+      "expectations": {
+        "assertion_1": "Pass",
+        "assertion_2": "Fail",
+        "assertion_3": "Pass",
+        "assertion_4": "Pass",
+        "assertion_5": "Pass"
+      }
+    }
+  ],
+  "summary": {
+    "total_runs": 9,
+    "total_assertions": 45,
+    "total_passed": 42,
+    "overall_pass_rate": 0.9333,
+    "by_configuration": {
+      "with_skill_opus": {
+        "runs": 3,
+        "assertions_passed": 15,
+        "assertions_total": 15,
+        "pass_rate": 1.0,
+        "avg_tokens": 20859,
+        "avg_duration_seconds": 80.17
+      },
+      "with_skill_sonnet": {
+        "runs": 3,
+        "assertions_passed": 15,
+        "assertions_total": 15,
+        "pass_rate": 1.0,
+        "avg_tokens": 19974,
+        "avg_duration_seconds": 62.53
+      },
+      "with_skill_haiku": {
+        "runs": 3,
+        "assertions_passed": 11,
+        "assertions_total": 15,
+        "pass_rate": 0.7333,
+        "avg_tokens": 20102,
+        "avg_duration_seconds": 28.47
+      }
+    },
+    "by_test_case": {
+      "eval-stale-closure": {
+        "runs": 3,
+        "assertions_passed": 13,
+        "assertions_total": 15,
+        "pass_rate": 0.8667
+      },
+      "eval-css-overflow": {
+        "runs": 3,
+        "assertions_passed": 14,
+        "assertions_total": 15,
+        "pass_rate": 0.9333
+      },
+      "eval-async-race": {
+        "runs": 3,
+        "assertions_passed": 14,
+        "assertions_total": 15,
+        "pass_rate": 0.9333
+      }
+    },
+    "by_assertion": {
+      "assertion_1_lists_hypotheses": {
+        "passed": 8,
+        "total": 9,
+        "pass_rate": 0.8889,
+        "failures": ["eval-stale-closure / haiku"]
+      },
+      "assertion_2_proposes_experiment": {
+        "passed": 6,
+        "total": 9,
+        "pass_rate": 0.6667,
+        "failures": [
+          "eval-stale-closure / haiku",
+          "eval-css-overflow / haiku",
+          "eval-async-race / haiku"
+        ]
+      },
+      "assertion_3_explains_evidence": {
+        "passed": 9,
+        "total": 9,
+        "pass_rate": 1.0,
+        "failures": []
+      },
+      "assertion_4_root_cause": {
+        "passed": 9,
+        "total": 9,
+        "pass_rate": 1.0,
+        "failures": []
+      },
+      "assertion_5_correct_fix": {
+        "passed": 9,
+        "total": 9,
+        "pass_rate": 1.0,
+        "failures": []
+      }
+    }
+  },
+  "notes": [
+    "Iteration 2 shows significant improvement: 93.33% pass rate vs 60% baseline (without skill, opus only, 3/5 assertions).",
+    "Opus and Sonnet achieve perfect 100% pass rates (15/15 assertions each).",
+    "Haiku's main weakness is assertion 2 (proposes diagnostic experiment): fails on all three test cases. Haiku tends to skip the explicit experimental proposal step.",
+    "Haiku completes tasks 3x faster (avg 28.5s) vs Opus (avg 80.2s), suggesting a speed-accuracy tradeoff in the skill execution.",
+    "Assertion 3 (explains evidence) and Assertion 5 (correct fix) both achieve 100% pass rates across all models.",
+    "Assertion 4 (root cause identification) achieves 100% pass rate across all models, indicating the skill effectively guides root cause analysis.",
+    "Assertion 1 (lists hypotheses) shows only one failure (haiku on stale-closure), indicating good hypothesis enumeration overall.",
+    "Token usage is consistent across models (~19.6-22.1k) and test cases, suggesting standardized prompt length.",
+    "Sonnet offers a good balance: 100% pass rate with 36% faster execution than Opus.",
+    "The skill consistently improves structured debugging methodology across all three models compared to baseline."
+  ]
+}

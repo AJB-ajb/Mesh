@@ -1,0 +1,12 @@
+{
+  "eval_id": 3,
+  "eval_name": "async-race",
+  "prompt": "Our userService.js has a nasty intermittent bug. Sometimes when two users hit the API at nearly the same time, user A gets user B's permissions, or vice versa. The logging middleware (which calls getCurrentUser()) sometimes logs the wrong user too. I added null checks for the user object — didn't help, the user IS there, it's just the wrong user. I also wrapped the whole getEnrichedUser in a try/catch thinking it was a failed fetch — no errors are thrown, the data is just wrong. This only happens under concurrent load, never in single-user testing.",
+  "assertions": [
+    "Lists at least 2 distinct hypotheses for what could be causing the bug",
+    "Proposes a diagnostic step or experiment before jumping to the final fix",
+    "Explains what evidence confirms the root cause before applying the fix",
+    "Correctly identifies the shared mutable currentUser module-level variable as the race condition",
+    "Fix removes or localizes the module-level state so concurrent calls don't interfere"
+  ]
+}

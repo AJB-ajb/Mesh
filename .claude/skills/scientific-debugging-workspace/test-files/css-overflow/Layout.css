@@ -1,0 +1,17 @@
+.dashboard {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 240px;
+  background: #1a1a2e;
+  color: white;
+  padding: 16px;
+}
+
+.content-area {
+  flex: 1;
+  padding: 24px;
+  overflow: hidden; /* prevents content from causing horizontal scroll */
+}

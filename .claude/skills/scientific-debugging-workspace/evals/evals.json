@@ -1,0 +1,53 @@
+{
+  "skill_name": "scientific-debugging",
+  "evals": [
+    {
+      "id": 1,
+      "name": "stale-closure",
+      "prompt": "This Counter component should increment every second but it's stuck at 1. The console.log shows 'tick, current count: 0' every time. I tried adding `count` to the useEffect dependency array but then it creates a new interval every render and the count jumps by huge amounts. I also tried wrapping the setInterval callback in useCallback and passing count as a dependency — same rapid-fire problem. What's going on and how do I fix this?",
+      "expected_output": "Structured hypothesis-driven analysis identifying stale closure, with functional updater fix",
+      "files": ["test-files/stale-closure/Counter.tsx"],
+      "expectations": [
+        "Lists at least 2 distinct hypotheses for what could be causing the bug",
+        "Proposes a diagnostic step or experiment before jumping to the final fix",
+        "Explains what evidence confirms the root cause before applying the fix",
+        "Correctly identifies stale closure over the count variable as the root cause",
+        "Proposes using the functional updater form (setCount(prev => prev + 1) or equivalent) as the fix"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "css-overflow",
+      "prompt": "My Card component is supposed to have rounded corners (border-radius: 12px is in the CSS) but they're completely square when rendered on the dashboard page. I added border-radius: 12px !important to the .card class — still square. I also tried adding border-radius directly to the Card component as an inline style — no change. The corners are just flat. The weird thing is if I render the Card in isolation (not inside the DashboardLayout), the corners show up fine.",
+      "expected_output": "Structured hypothesis-driven analysis identifying overflow:hidden on parent, with fix to Layout.css",
+      "files": [
+        "test-files/css-overflow/Card.tsx",
+        "test-files/css-overflow/Card.css",
+        "test-files/css-overflow/Layout.tsx",
+        "test-files/css-overflow/Layout.css",
+        "test-files/css-overflow/DashboardPage.tsx"
+      ],
+      "expectations": [
+        "Lists at least 2 distinct hypotheses for what could be causing the bug",
+        "Proposes a diagnostic step or experiment before jumping to the final fix",
+        "Explains what evidence confirms the root cause before applying the fix",
+        "Correctly identifies overflow: hidden on the parent .content-area as the cause of clipped corners",
+        "Fix modifies Layout.css rather than Card.css"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "async-race",
+      "prompt": "Our userService.js has a nasty intermittent bug. Sometimes when two users hit the API at nearly the same time, user A gets user B's permissions, or vice versa. The logging middleware (which calls getCurrentUser()) sometimes logs the wrong user too. I added null checks for the user object — didn't help, the user IS there, it's just the wrong user. I also wrapped the whole getEnrichedUser in a try/catch thinking it was a failed fetch — no errors are thrown, the data is just wrong. This only happens under concurrent load, never in single-user testing.",
+      "expected_output": "Structured hypothesis-driven analysis identifying shared mutable state race condition, with local variable fix",
+      "files": ["test-files/async-race/userService.js"],
+      "expectations": [
+        "Lists at least 2 distinct hypotheses for what could be causing the bug",
+        "Proposes a diagnostic step or experiment before jumping to the final fix",
+        "Explains what evidence confirms the root cause before applying the fix",
+        "Correctly identifies the shared mutable currentUser module-level variable as the race condition",
+        "Fix removes or localizes the module-level state so concurrent calls don't interfere"
+      ]
+    }
+  ]
+}
