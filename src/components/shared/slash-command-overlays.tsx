@@ -17,11 +17,13 @@ import { LocationAutocomplete } from "@/components/location/location-autocomplet
 import type { SelectedPostingSkill } from "@/lib/types/skill";
 import type { GeocodingResult } from "@/lib/geocoding";
 import { useTemplates } from "@/lib/hooks/use-templates";
+import { buildMeshLink } from "@/lib/mesh-links";
 
 // ---------------------------------------------------------------------------
 // Shared overlay props
 // ---------------------------------------------------------------------------
 
+/** @deprecated Overlay results are being replaced by mesh: link strings in v0.6. Kept for backward compat. */
 export interface OverlayResult {
   display: string;
   data?: Record<string, unknown>;
@@ -235,17 +237,16 @@ export function TimePickerOverlay({ onInsert, onClose }: OverlayProps) {
           <Button
             type="button"
             disabled={!canInsert}
-            onClick={() =>
-              onInsert({
-                display: buildText(),
-                data: {
-                  days: Array.from(selectedDays),
-                  times: Array.from(selectedTimes),
-                  customFrom: customFrom || undefined,
-                  customTo: customTo || undefined,
-                },
-              })
-            }
+            onClick={() => {
+              const text = buildText();
+              const params: Record<string, string> = {
+                days: Array.from(selectedDays).join(","),
+                times: Array.from(selectedTimes).join(","),
+              };
+              if (customFrom) params.from = customFrom;
+              if (customTo) params.to = customTo;
+              onInsert(buildMeshLink("time", text, params));
+            }}
           >
             {labels.slashCommands.insertButton}
           </Button>
@@ -289,16 +290,18 @@ export function LocationOverlay({ onInsert, onClose }: OverlayProps) {
           <Button
             type="button"
             disabled={!location.trim()}
-            onClick={() =>
-              onInsert({
-                display: selectedLocation?.displayName ?? location.trim(),
-                data: {
-                  displayName: selectedLocation?.displayName ?? location.trim(),
-                  lat: selectedLocation?.lat,
-                  lng: selectedLocation?.lng,
-                },
-              })
-            }
+            onClick={() => {
+              const displayName =
+                selectedLocation?.displayName ?? location.trim();
+              const params: Record<string, string> = {};
+              if (selectedLocation?.displayName)
+                params.displayName = selectedLocation.displayName;
+              if (selectedLocation?.lat != null)
+                params.lat = String(selectedLocation.lat);
+              if (selectedLocation?.lng != null)
+                params.lng = String(selectedLocation.lng);
+              onInsert(buildMeshLink("location", displayName, params));
+            }}
           >
             {labels.slashCommands.insertButton}
           </Button>
@@ -339,16 +342,16 @@ export function SkillPickerOverlay({ onInsert, onClose }: OverlayProps) {
         : labels.slashCommands.skillsAnyLevel(s.name),
     );
     const display = `${labels.slashCommands.skillsPrefix} ${parts.join(", ")}`;
-    onInsert({
-      display,
-      data: {
-        skills: selectedSkills.map((s) => ({
+    const params: Record<string, string> = {
+      skills: JSON.stringify(
+        selectedSkills.map((s) => ({
           skillId: s.skillId,
           name: s.name,
           levelMin: s.levelMin,
         })),
-      },
-    });
+      ),
+    };
+    onInsert(buildMeshLink("skills", display, params));
   }, [selectedSkills, onInsert]);
 
   const isMac =
