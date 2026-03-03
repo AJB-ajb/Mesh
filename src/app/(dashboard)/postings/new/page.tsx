@@ -29,6 +29,7 @@ import {
 } from "@/components/shared/slash-command-overlays";
 import type { PostingFormState } from "@/components/posting/posting-form-card";
 import { meshLinkExtension } from "@/components/editor/extensions/mesh-link-plugin";
+import { hiddenSyntaxExtension } from "@/components/editor/extensions/hidden-syntax-plugin";
 
 /** Insert text at cursor in a CodeMirror EditorView. */
 function insertAtCursor(view: EditorView, text: string) {
@@ -59,6 +60,7 @@ export default function NewPostingPage() {
   const [extensions] = useState(() => [
     slash.slashExtension,
     ...meshLinkExtension(),
+    ...hiddenSyntaxExtension(),
   ]);
 
   const handleEditorReady = useCallback((view: EditorView) => {
