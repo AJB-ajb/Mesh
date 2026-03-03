@@ -10,7 +10,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  workers: process.env.CI ? 2 : 4,
   reporter: "html",
   use: {
     baseURL: "http://localhost:3000",
@@ -18,9 +18,36 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   projects: [
+    // Login once, save cookies
+    {
+      name: "setup",
+      testMatch: /auth\.setup\.ts/,
+    },
+    // Authed layout tests — reuse saved session
     {
       name: "chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+        ...(process.env.TEST_USER_PASSWORD
+          ? { storageState: "tests/.auth/user.json" }
+          : {}),
+      },
+      dependencies: ["setup"],
+      testMatch: /e2e\/layout\.spec\.ts/,
+    },
+    // Public pages — no auth, no interference, run in parallel
+    {
+      name: "public",
       use: { ...devices["Desktop Chrome"] },
+      testMatch: /e2e\/(home|navigation)\.spec\.ts/,
+    },
+    // Auth-flow tests (login/logout UI) — must run after layout tests
+    // because the logout test invalidates the Supabase session server-side.
+    {
+      name: "auth-flow",
+      use: { ...devices["Desktop Chrome"] },
+      dependencies: ["chromium"],
+      testMatch: /e2e\/auth-feature\.spec\.ts/,
     },
   ],
   webServer: {
