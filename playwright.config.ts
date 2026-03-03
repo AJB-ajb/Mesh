@@ -18,9 +18,28 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   projects: [
+    // Login once, save cookies
+    {
+      name: "setup",
+      testMatch: /auth\.setup\.ts/,
+    },
+    // Authed layout tests — reuse saved session
     {
       name: "chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+        ...(process.env.TEST_USER_PASSWORD
+          ? { storageState: "tests/.auth/user.json" }
+          : {}),
+      },
+      dependencies: ["setup"],
+      testMatch: /e2e\/layout\.spec\.ts/,
+    },
+    // Public + auth-flow tests — fresh browser, no saved state
+    {
+      name: "public",
       use: { ...devices["Desktop Chrome"] },
+      testMatch: /e2e\/(home|navigation|auth-feature)\.spec\.ts/,
     },
   ],
   webServer: {
