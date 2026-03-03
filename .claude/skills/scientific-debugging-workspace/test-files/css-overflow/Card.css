@@ -1,0 +1,19 @@
+.card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 16px;
+}
+
+.card--elevated {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.card__header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.card__body {
+  padding: 20px;
+}

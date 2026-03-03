@@ -1,0 +1,295 @@
+{
+  "metadata": {
+    "skill_name": "scientific-debugging",
+    "skill_path": "/home/ajb/repos/Mesh/.claude/skills/scientific-debugging",
+    "executor_model": "claude-opus-4-6",
+    "analyzer_model": "claude-opus-4-6",
+    "timestamp": "2026-03-02T18:00:00Z",
+    "evals_run": [1, 2, 3],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "eval_name": "stale-closure",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 96.9,
+        "tokens": 23079,
+        "tool_calls": 9,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Lists at least 2 distinct hypotheses for what could be causing the bug",
+          "passed": true,
+          "evidence": "Lists 3 hypotheses: H1 (stale closure), H2 (React strict mode), H3 (isRunning stale closure)"
+        },
+        {
+          "text": "Proposes a diagnostic step or experiment before jumping to the final fix",
+          "passed": true,
+          "evidence": "Designs 2 experiments: functional updater test and log-inside-updater test"
+        },
+        {
+          "text": "Explains what evidence confirms the root cause before applying the fix",
+          "passed": true,
+          "evidence": "Explicit 'Confirmed: H1' section with 6-step chain of causation"
+        },
+        {
+          "text": "Correctly identifies stale closure over the count variable as the root cause",
+          "passed": true,
+          "evidence": "Correctly identifies stale closure"
+        },
+        {
+          "text": "Proposes functional updater form as the fix",
+          "passed": true,
+          "evidence": "Uses setCount(prev => prev + 1)"
+        }
+      ]
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "stale-closure",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.6,
+        "passed": 3,
+        "failed": 2,
+        "total": 5,
+        "time_seconds": 71.1,
+        "tokens": 19098,
+        "tool_calls": 5,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Lists at least 2 distinct hypotheses for what could be causing the bug",
+          "passed": false,
+          "evidence": "Jumps directly to root cause without listing alternatives"
+        },
+        {
+          "text": "Proposes a diagnostic step or experiment before jumping to the final fix",
+          "passed": false,
+          "evidence": "Goes straight from diagnosis to fix"
+        },
+        {
+          "text": "Explains what evidence confirms the root cause before applying the fix",
+          "passed": true,
+          "evidence": "Detailed step-by-step closure mechanics walkthrough"
+        },
+        {
+          "text": "Correctly identifies stale closure over the count variable as the root cause",
+          "passed": true,
+          "evidence": "Correctly identifies stale closure"
+        },
+        {
+          "text": "Proposes functional updater form as the fix",
+          "passed": true,
+          "evidence": "Uses setCount(prev => prev + 1)"
+        }
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "css-overflow",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 95.1,
+        "tokens": 23417,
+        "tool_calls": 10,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Lists at least 2 distinct hypotheses for what could be causing the bug",
+          "passed": true,
+          "evidence": "Lists 4 hypotheses: H1-H4 covering overflow clipping, child overflow, combination, and box-shadow clipping"
+        },
+        {
+          "text": "Proposes a diagnostic step or experiment before jumping to the final fix",
+          "passed": true,
+          "evidence": "Designs 3 experiments with explicit predictions for each hypothesis"
+        },
+        {
+          "text": "Explains what evidence confirms the root cause before applying the fix",
+          "passed": true,
+          "evidence": "CSS specification analysis confirms H2/H3 combination"
+        },
+        {
+          "text": "Correctly identifies overflow:hidden on .content-area as the cause",
+          "passed": true,
+          "evidence": "Identifies overflow:hidden on .content-area as the environmental trigger"
+        },
+        {
+          "text": "Fix modifies Layout.css rather than Card.css",
+          "passed": true,
+          "evidence": "Primary fix changes Layout.css overflow to overflow-x:hidden"
+        }
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "css-overflow",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.6,
+        "passed": 3,
+        "failed": 2,
+        "total": 5,
+        "time_seconds": 68.6,
+        "tokens": 20119,
+        "tool_calls": 9,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Lists at least 2 distinct hypotheses for what could be causing the bug",
+          "passed": false,
+          "evidence": "Jumps directly to root cause without listing alternatives"
+        },
+        {
+          "text": "Proposes a diagnostic step or experiment before jumping to the final fix",
+          "passed": false,
+          "evidence": "Goes straight from diagnosis to fix"
+        },
+        {
+          "text": "Explains what evidence confirms the root cause before applying the fix",
+          "passed": true,
+          "evidence": "Detailed explanation of overflow:hidden clipping mechanism"
+        },
+        {
+          "text": "Correctly identifies overflow:hidden on .content-area as the cause",
+          "passed": true,
+          "evidence": "Correctly identifies overflow:hidden"
+        },
+        {
+          "text": "Fix modifies Layout.css rather than Card.css",
+          "passed": true,
+          "evidence": "Fix changes Layout.css"
+        }
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "async-race",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 98.8,
+        "tokens": 22543,
+        "tool_calls": 9,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Lists at least 2 distinct hypotheses for what could be causing the bug",
+          "passed": true,
+          "evidence": "Lists 3 hypotheses: H1 (shared mutable state), H2 (HTTP cache), H3 (upstream userId bug)"
+        },
+        {
+          "text": "Proposes a diagnostic step or experiment before jumping to the final fix",
+          "passed": true,
+          "evidence": "Detailed timeline walkthrough experiment tracing request interleaving"
+        },
+        {
+          "text": "Explains what evidence confirms the root cause before applying the fix",
+          "passed": true,
+          "evidence": "Explicit 'H1 confirmed with high confidence' with H2/H3 ruled out"
+        },
+        {
+          "text": "Correctly identifies shared mutable currentUser as the race condition",
+          "passed": true,
+          "evidence": "Correctly identifies module-level currentUser as the shared state"
+        },
+        {
+          "text": "Fix removes or localizes module-level state",
+          "passed": true,
+          "evidence": "Uses local const user, removes getCurrentUser()"
+        }
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "async-race",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.6,
+        "passed": 3,
+        "failed": 2,
+        "total": 5,
+        "time_seconds": 87.7,
+        "tokens": 20342,
+        "tool_calls": 8,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Lists at least 2 distinct hypotheses for what could be causing the bug",
+          "passed": false,
+          "evidence": "Jumps directly to root cause without listing alternatives"
+        },
+        {
+          "text": "Proposes a diagnostic step or experiment before jumping to the final fix",
+          "passed": false,
+          "evidence": "Includes timeline table but as analysis, not a proposed experiment"
+        },
+        {
+          "text": "Explains what evidence confirms the root cause before applying the fix",
+          "passed": true,
+          "evidence": "Excellent interleaving timeline demonstrating the race condition"
+        },
+        {
+          "text": "Correctly identifies shared mutable currentUser as the race condition",
+          "passed": true,
+          "evidence": "Correctly identifies the race condition"
+        },
+        {
+          "text": "Fix removes or localizes module-level state",
+          "passed": true,
+          "evidence": "Uses local variable and AsyncLocalStorage"
+        }
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": { "mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0 },
+      "time_seconds": { "mean": 96.9, "stddev": 1.5, "min": 95.1, "max": 98.8 },
+      "tokens": { "mean": 23013, "stddev": 357, "min": 22543, "max": 23417 }
+    },
+    "without_skill": {
+      "pass_rate": { "mean": 0.6, "stddev": 0.0, "min": 0.6, "max": 0.6 },
+      "time_seconds": { "mean": 75.8, "stddev": 8.4, "min": 68.6, "max": 87.7 },
+      "tokens": { "mean": 19853, "stddev": 542, "min": 19098, "max": 20342 }
+    },
+    "delta": {
+      "pass_rate": "+0.40",
+      "time_seconds": "+21.1",
+      "tokens": "+3160"
+    }
+  },
+  "notes": [
+    "The 3 correctness assertions (root cause identification, correct fix, evidence explanation) pass 100% in both configurations -- Claude finds the right bug regardless of skill",
+    "The 2 process assertions (multiple hypotheses, proposed experiments) pass 100% with skill and 0% without -- this is the skill's primary differentiator",
+    "With-skill runs use ~16% more tokens and take ~28% longer, which is the expected overhead of the structured methodology",
+    "For these test cases (medium-difficulty bugs), both configurations reach the correct fix -- the skill's value would be more apparent on harder bugs where the direct approach fails",
+    "The skill consistently produces the 'mode switch announcement' and structured H1/H2/H3 format as instructed"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "eval_id": 1,
+  "eval_name": "stale-closure",
+  "prompt": "This Counter component should increment every second but it's stuck at 1. The console.log shows 'tick, current count: 0' every time. I tried adding `count` to the useEffect dependency array but then it creates a new interval every render and the count jumps by huge amounts. I also tried wrapping the setInterval callback in useCallback and passing count as a dependency — same rapid-fire problem. What's going on and how do I fix this?",
+  "assertions": [
+    "Lists at least 2 distinct hypotheses for what could be causing the bug",
+    "Proposes a diagnostic step or experiment before jumping to the final fix",
+    "Explains what evidence confirms the root cause before applying the fix",
+    "Correctly identifies stale closure over the count variable as the root cause",
+    "Proposes using the functional updater form (setCount(prev => prev + 1) or equivalent) as the fix"
+  ]
+}

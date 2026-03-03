@@ -5,8 +5,8 @@ const config: CapacitorConfig = {
   appName: "Mesh",
   webDir: "dist-cap",
   server: {
-    url: process.env.CAPACITOR_SERVER_URL || "https://meshit.app",
-    allowNavigation: ["meshit.app", "*.supabase.co"],
+    url: process.env.CAPACITOR_SERVER_URL || "https://mesh-it.vercel.app",
+    allowNavigation: ["mesh-it.vercel.app", "*.supabase.co"],
   },
   plugins: {
     SplashScreen: {

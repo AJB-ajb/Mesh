@@ -1,0 +1,12 @@
+{
+  "eval_id": 2,
+  "eval_name": "css-overflow",
+  "prompt": "My Card component is supposed to have rounded corners (border-radius: 12px is in the CSS) but they're completely square when rendered on the dashboard page. I added border-radius: 12px !important to the .card class — still square. I also tried adding border-radius directly to the Card component as an inline style — no change. The corners are just flat. The weird thing is if I render the Card in isolation (not inside the DashboardLayout), the corners show up fine.",
+  "assertions": [
+    "Lists at least 2 distinct hypotheses for what could be causing the bug",
+    "Proposes a diagnostic step or experiment before jumping to the final fix",
+    "Explains what evidence confirms the root cause before applying the fix",
+    "Correctly identifies overflow: hidden on the parent .content-area as the cause of clipped corners",
+    "Fix modifies Layout.css rather than Card.css"
+  ]
+}

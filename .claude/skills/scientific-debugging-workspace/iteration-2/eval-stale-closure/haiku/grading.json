@@ -1,0 +1,35 @@
+{
+  "assertions": [
+    {
+      "number": 1,
+      "text": "Lists at least 2 distinct hypotheses for the root cause",
+      "passed": false,
+      "evidence": "Does not list distinct hypotheses. Goes directly to Root Cause Analysis without enumerating alternatives."
+    },
+    {
+      "number": 2,
+      "text": "Proposes a diagnostic step or experiment before jumping to the final fix",
+      "passed": false,
+      "evidence": "Does not propose any diagnostic experiment or diagnostic step. Jumps directly to root cause identification."
+    },
+    {
+      "number": 3,
+      "text": "Explains what evidence confirms the root cause before applying the fix",
+      "passed": true,
+      "evidence": "Explains closure capture and why the stale closure occurs."
+    },
+    {
+      "number": 4,
+      "text": "Correctly identifies stale closure over the count variable as the root cause",
+      "passed": true,
+      "evidence": "Correctly identifies stale closure as the root cause."
+    },
+    {
+      "number": 5,
+      "text": "Proposes using the functional updater form as the fix",
+      "passed": true,
+      "evidence": "Proposes the correct functional updater pattern."
+    }
+  ],
+  "score": "3/5"
+}

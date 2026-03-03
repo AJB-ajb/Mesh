@@ -1,0 +1,35 @@
+{
+  "expectations": [
+    {
+      "text": "Lists at least 2 distinct hypotheses for what could be causing the bug",
+      "passed": false,
+      "evidence": "Goes directly to 'Root Cause: Stale Closure' without listing alternative hypotheses. No H1/H2/H3 enumeration."
+    },
+    {
+      "text": "Proposes a diagnostic step or experiment before jumping to the final fix",
+      "passed": false,
+      "evidence": "Jumps from root cause identification directly to 'The Fix' section. No experimental verification step proposed."
+    },
+    {
+      "text": "Explains what evidence confirms the root cause before applying the fix",
+      "passed": true,
+      "evidence": "Provides a detailed step-by-step walkthrough of the closure mechanics and explains why console.log always shows 0, effectively confirming the diagnosis with evidence."
+    },
+    {
+      "text": "Correctly identifies stale closure over the count variable as the root cause",
+      "passed": true,
+      "evidence": "Correctly identifies 'The bug is a stale closure -- one of the most common React Hooks pitfalls'"
+    },
+    {
+      "text": "Proposes using the functional updater form (setCount(prev => prev + 1) or equivalent) as the fix",
+      "passed": true,
+      "evidence": "Fix uses setCount(prev => prev + 1) with clear explanation"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 2,
+    "total": 5,
+    "pass_rate": 0.6
+  }
+}

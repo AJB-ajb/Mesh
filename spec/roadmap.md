@@ -139,55 +139,87 @@
 
 ## Milestones
 
-> **Direction**: The text-first rewrite ([text_first_rewrite.md](../.prompts/text_first_rewrite.md)) is the primary driver for v0.5+. Milestones are organized around its phases. Where this roadmap and the text-first spec conflict, the text-first spec takes precedence.
+> **Direction**: The text-first rewrite ([text_first_rewrite.md](../.prompts/todo/text_first_rewrite.md)) is the primary design document. Milestones are organized around its phases. Where this roadmap and the text-first spec conflict, the text-first spec takes precedence.
 
-### v0.6 — Rich Editing & Polish
+### v0.6 — Text-First Rendering & Syntax
 
-| Feature                    | Issue | Effort           | Description                                                                                                    |
-| -------------------------- | ----- | ---------------- | -------------------------------------------------------------------------------------------------------------- |
-| Email + push notifications | #14   | Large            | Email and push delivery (in-app already implemented)                                                           |
-| Daily digest               | —     | Medium           | Cron-based email digest of new relevant postings (Resend)                                                      |
-| ~~Markdown edit mode~~     | —     | ~~Medium-Large~~ | ✅ Tiptap-based inline markdown editor (`MeshEditor`). Shared component for postings and profile bio           |
-| ~~Metadata-linked chips~~  | —     | ~~Medium~~       | ✅ Inline chips for location, time, skills via slash commands. Structured data stored as `chip_metadata` jsonb |
-| Auto-translation           | —     | Medium-Large     | Posts auto-translated based on user language settings. Communication language as matching criterion            |
-| Template library           | —     | Medium           | Pre-built templates for common posting types, accessible via `/template`                                       |
-| Posting images             | #29   | Medium           | Upload and display images on postings                                                                          |
-| Email auth fix (SMTP)      | #37   | Small            | Configure Supabase SMTP for confirmation emails                                                                |
+The editor and rendering system adopt the new markdown syntax (`mesh:` links, `||hidden||`, `||?||`) and the text-first card rendering philosophy. See [text_first_rewrite.md](../.prompts/todo/text_first_rewrite.md) §3a, §3b, §6.
 
-### v0.7 — Mobile (Capacitor, Android)
+| Feature                        | Issue | Effort | Description                                                                                                                          |
+| ------------------------------ | ----- | ------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Unified PostingCard            | —     | Medium | Consolidate PostingCard, PostingDiscoverCard, PostsCard into one component with `full`/`compact` variants. Text is the hero element. |
+| Title as first line            | —     | Small  | Remove separate title field. First line/sentence renders as heading. Auto-extracted title becomes display-only.                      |
+| Match score: Discover only     | —     | Small  | Hide match score badges outside of Discover feed. Score still drives ranking.                                                        |
+| `mesh:` link syntax (editor)   | —     | Medium | CodeMirror decorations for `[📍 text](mesh:location?...)` — render as styled tappable chips, hide URL in edit mode.                  |
+| `mesh:` link syntax (view)     | —     | Small  | MarkdownRenderer strips `mesh:` URLs, renders display text with emoji. Location links may show map widget.                           |
+| Slash commands emit `mesh:`    | —     | Small  | `/time`, `/location`, `/skills` overlays emit `mesh:` link syntax instead of emoji+text. Remove `chipMetadata` sidecar.              |
+| `\|\|hidden\|\|` syntax        | —     | Medium | Editor: dimmed + lock icon. View: placeholder for non-accepted, revealed for accepted. Parser for inline and block forms.            |
+| `/hidden` command              | —     | Small  | Inserts `\|\|...\|\|` block with cursor inside. Added to slash command registry.                                                     |
+| Discover filter by connections | —     | Small  | Toggle in Discover feed to show only postings from connections. Simple query filter + UI toggle.                                     |
+| Remove chips & nudges remnants | —     | Small  | Clean up any remaining quick chip / post-write nudge code (deliberately removed, now spec-deferred).                                 |
 
-Minimal native Android shell wrapping the hosted web app. iOS deferred — PWA covers iOS users. No native push initially; PWA web push serves as the notification channel.
+### v0.7 — Command Palette & Coordination
 
-**Approach:** Hosted URL mode — the Capacitor WebView loads `https://meshit.app`. Web deploys update the app instantly without Play Store review. Native builds only needed for plugin/shell changes. See [mobile_support_capacitor.md](../.prompts/mobile_support_capacitor.md) for UX considerations.
+Expand slash commands into a full command palette. Add link invites and repost for coordination efficiency. See [text_first_rewrite.md](../.prompts/todo/text_first_rewrite.md) §4.
+
+| Feature                         | Issue | Effort    | Description                                                                                                      |
+| ------------------------------- | ----- | --------- | ---------------------------------------------------------------------------------------------------------------- |
+| Tab-complete + inline arguments | —     | Medium    | Tab completes command word, Enter executes. Commands accept inline args (`/visibility public`, `/size 3`).       |
+| Setting commands                | —     | Medium    | `/visibility`, `/size`, `/autoaccept`, `/expire`, `/sequential` — modify posting state, show current value.      |
+| `/invite` command               | —     | Medium    | Inline connection search with autocomplete. Edits invite list. Posting context only.                             |
+| `/link` command + share UI      | —     | Medium    | Generate shareable URL. View-only (default) or direct-join mode. Share button on posting detail page.            |
+| Link invite landing page        | —     | Medium    | `/p/[id]` route: view posting without account, join requires OAuth. Expired links show "posting ended" message.  |
+| `/repost` command + button      | —     | Small-Med | Duplicate past posting into editor with dates reset. LLM suggests new dates. "Repost" button on closed postings. |
+| `/format`, `/clean`, `/preview` | —     | Small     | Action commands: trigger auto-format, auto-clean, or preview rendering. Keyboard shortcut for existing buttons.  |
+| Context-dependent command list  | —     | Small     | Filter available commands by context (posting vs. profile). `/invite`, `/link` only in posting context.          |
+
+### v0.8 — Smart Acceptance & Calendar
+
+LLM-generated acceptance flow that eliminates post-acceptance back-and-forth. See [text_first_rewrite.md](../.prompts/todo/text_first_rewrite.md) §11.
+
+| Feature                         | Issue | Effort       | Description                                                                                                          |
+| ------------------------------- | ----- | ------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `\|\|?\|\|` syntax (editor)     | —     | Small        | Editor rendering: dimmed + question icon + "asked on acceptance" label. Parser for block form.                       |
+| Smart acceptance card           | —     | Large        | LLM reads posting, generates structured acceptance UI: time slot selector, context-aware questions, role pickers.    |
+| Calendar overlap time slots     | #10   | Medium-Large | On acceptance, show mutually available time slots from both parties' calendars. Context-aware filtering.             |
+| `\|\|?\|\|` → interactive forms | —     | Medium       | LLM converts poster's natural-language questions to form elements (selectors, yes/no, free text) on acceptance card. |
+| Post-acceptance summary         | —     | Medium       | Auto-generated confirmation: who/what/when/where. Calendar event export. Poster notification with responses.         |
+| Notify previous participants    | —     | Small        | On repost: optional "Notify previous participants?" sends "Alice is running this again — join?" notification.        |
+
+### v0.9 — Mobile (Capacitor, Android)
+
+Minimal native Android shell wrapping the hosted web app. iOS deferred — PWA covers iOS users.
+
+**Approach:** Hosted URL mode — the Capacitor WebView loads `https://meshit.app`. See [mobile_support_capacitor.md](../.prompts/mobile_support_capacitor.md) for UX considerations.
 
 | Feature                          | Issue | Effort | Description                                                                                       |
 | -------------------------------- | ----- | ------ | ------------------------------------------------------------------------------------------------- |
 | Capacitor init + Android project | —     | Small  | `npx cap init`, add `android/` project, `capacitor.config.ts` pointing at hosted URL              |
-| Splash screen                    | —     | Small  | Native splash screen while WebView loads (`@capacitor/splash-screen`)                             |
-| Status bar theming               | —     | Small  | Match status bar to dark theme (`@capacitor/status-bar`)                                          |
-| Android back button              | —     | Small  | Handle hardware back button navigation (`@capacitor/app`)                                         |
-| App icons + store assets         | —     | Small  | Generate required icon sizes, screenshots, Play Store metadata                                    |
-| Android signing + build          | —     | Small  | Keystore setup, `gradlew bundleRelease`, Play Store listing                                       |
+| Splash screen + status bar       | —     | Small  | Native splash screen, status bar theming (`@capacitor/splash-screen`, `@capacitor/status-bar`)    |
+| Android back button + deep links | —     | Small  | Hardware back nav + universal links (`@capacitor/app`)                                            |
+| App icons + store listing        | —     | Small  | Icon sizes, screenshots, Play Store metadata, keystore, `gradlew bundleRelease`                   |
 | Platform detection utility       | —     | Small  | `Capacitor.isNativePlatform()` helper — suppress PWA install prompt in native shell               |
 | Android push notifications (FCM) | —     | Medium | Firebase Cloud Messaging via `@capacitor/push-notifications`. Replaces web push in native context |
 
 ### v1.0 — Launch
 
-| Feature               | Issue | Effort       | Description                                                                                             |
-| --------------------- | ----- | ------------ | ------------------------------------------------------------------------------------------------------- |
-| Calendar sync         | #10   | Medium-Large | Google Calendar OAuth + iCal sync. Phases 3–5 of [availability-calendar spec](availability-calendar.md) |
-| Channels              | #27   | Medium-Large | Shared posting contexts for hackathons, courses, orgs                                                   |
-| Match pre-computation | #13   | Large        | Background pre-computation for instant match results at scale                                           |
-| LLM cost tiering      | —     | Medium       | Tier models by feature: cheap for chips/format, mid for extraction, high for deep matching              |
-| Production hardening  | —     | Large        | Performance audit, error monitoring, rate limiting, security review                                     |
+| Feature               | Issue | Effort       | Description                                                                          |
+| --------------------- | ----- | ------------ | ------------------------------------------------------------------------------------ |
+| Email + push notifs   | #14   | Large        | Email and push delivery channels (in-app already implemented)                        |
+| Channels              | #27   | Medium-Large | Shared posting contexts for hackathons, courses, orgs                                |
+| Match pre-computation | #13   | Large        | Background pre-computation for instant match results at scale                        |
+| LLM cost tiering      | —     | Medium       | Tier models by feature: cheap for format, mid for extraction, high for deep matching |
+| Production hardening  | —     | Large        | Performance audit, error monitoring, rate limiting, security review                  |
 
 ### v1.1 — Post-Launch
 
-| Feature                      | Issue | Effort | Description                                                                        |
-| ---------------------------- | ----- | ------ | ---------------------------------------------------------------------------------- |
-| Posting images               | #29   | Medium | Upload and display images on postings (Supabase Storage)                           |
-| Ghost text (LLM suggestions) | —     | Medium | Context-aware inline suggestions as user types, including prefilled slash commands |
-| Email auth fix (SMTP)        | #37   | Small  | Configure Supabase SMTP for confirmation emails                                    |
+| Feature                      | Issue | Effort       | Description                                                                        |
+| ---------------------------- | ----- | ------------ | ---------------------------------------------------------------------------------- |
+| Posting images               | #29   | Medium       | Upload and display images on postings (Supabase Storage)                           |
+| Ghost text (LLM suggestions) | —     | Medium       | Context-aware inline suggestions as user types, including prefilled slash commands |
+| Auto-translation             | —     | Medium-Large | Posts auto-translated based on user language settings                              |
+| Recurring postings           | —     | Medium       | `/recur weekly tue` — auto-create posting instances on schedule                    |
+| Daily digest                 | —     | Medium       | Cron-based email digest of new relevant postings (Resend)                          |
 
 ---
 
@@ -199,15 +231,13 @@ These are ideas without a target milestone. They'll be prioritized as the produc
 - Real-time voice upgrade — streaming voice input (OpenAI Realtime, Gemini Live)
 - Auto-generated thumbnails — generate posting thumbnails from text via Gemini
 - Analytics dashboard for posting owners
-- Public posting embed / share links
 - iOS Capacitor build — Apple Developer account, Xcode signing, App Store listing (deferred; PWA covers iOS)
-- Deep links — `meshit.app/postings/123` opens native app via `@capacitor/app` universal links
 - Standardize date formatting across the app (#44)
 - Add skeleton/spinner loading states for slow connections (#48)
 - Configurable matching weights — weight sliders per posting (revisit after deep matching)
-- Email + push notifications (#14) — email and push delivery channels (in-app already implemented)
-- Daily digest — cron-based email digest of new relevant postings (Resend)
-- Auto-translation — posts auto-translated based on user language settings, communication language as matching criterion
+- Quick chips (deferred) — context-sensitive suggestion chips below text field. Revisit when core flow is polished.
+- Post-write nudges (deferred) — LLM suggests missing dimensions. Revisit when core flow is polished.
+- Email auth fix (SMTP) (#37) — configure Supabase SMTP for confirmation emails
 
 ---
 
