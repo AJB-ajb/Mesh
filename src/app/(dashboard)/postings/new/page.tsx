@@ -28,14 +28,7 @@ import {
   type OverlayResult,
 } from "@/components/shared/slash-command-overlays";
 import type { PostingFormState } from "@/components/posting/posting-form-card";
-import type { ChipMetadataMap, ChipMetadataEntry } from "@/lib/types/posting";
-
-/** Emoji prefixes for plain-text chip insertion (replaces TipTap MetadataChip nodes). */
-const CHIP_EMOJI: Record<string, string> = {
-  location: "\uD83D\uDCCD",
-  time: "\uD83D\uDD52",
-  skills: "\uD83D\uDEE0\uFE0F",
-};
+import { meshLinkExtension } from "@/components/editor/extensions/mesh-link-plugin";
 
 /** Insert text at cursor in a CodeMirror EditorView. */
 function insertAtCursor(view: EditorView, text: string) {
@@ -59,19 +52,14 @@ export default function NewPostingPage() {
   const errorRef = useRef<HTMLParagraphElement>(null);
   const { keyboardVisible } = useMobileKeyboard();
 
-  // Chip metadata state
-  const [chipMetadata, setChipMetadata] = useState<ChipMetadataMap>({});
-  const chipCounterRef = useRef<Record<string, number>>({
-    location: 0,
-    time: 0,
-    skills: 0,
-  });
-
   // Slash commands via CodeMirror plugin
   const slash = useEditorSlashCommands();
 
   // CodeMirror extensions (stable reference)
-  const [extensions] = useState(() => [slash.slashExtension]);
+  const [extensions] = useState(() => [
+    slash.slashExtension,
+    ...meshLinkExtension(),
+  ]);
 
   const handleEditorReady = useCallback((view: EditorView) => {
     editorRef.current = view;
@@ -119,8 +107,6 @@ export default function NewPostingPage() {
           description: trimmed,
           sourceText: trimmed,
           hiddenDetails: hiddenDetails.trim() || undefined,
-          chipMetadata:
-            Object.keys(chipMetadata).length > 0 ? chipMetadata : undefined,
         }),
       });
 
@@ -138,58 +124,26 @@ export default function NewPostingPage() {
       setIsSaving(false);
       setError(labels.postingCreation.errorGeneric);
     }
-  }, [text, form, hiddenDetails, chipMetadata, router]);
+  }, [text, form, hiddenDetails, router]);
 
   const handleFormChange = (field: keyof PostingFormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
   /**
-   * Insert a metadata chip as plain text with emoji prefix and store its structured data.
-   */
-  const insertChip = useCallback(
-    (chipType: string, display: string, data: Record<string, unknown>) => {
-      const view = editorRef.current;
-      if (!view) return;
-
-      const count = chipCounterRef.current[chipType] ?? 0;
-      const metadataKey = `${chipType}_${count}`;
-      chipCounterRef.current[chipType] = count + 1;
-
-      const entry: ChipMetadataEntry = {
-        type: chipType as ChipMetadataEntry["type"],
-        display,
-        data,
-      } as ChipMetadataEntry;
-
-      setChipMetadata((prev) => ({ ...prev, [metadataKey]: entry }));
-
-      const emoji = CHIP_EMOJI[chipType] ?? "";
-      insertAtCursor(view, `${emoji} ${display} `);
-    },
-    [],
-  );
-
-  /**
-   * Handle overlay result — either a plain string or structured OverlayResult.
-   * Structured results insert a chip; plain strings insert text.
+   * Handle overlay result — all overlays now return plain mesh: link strings.
    */
   const handleOverlayResult = useCallback(
     (result: string | OverlayResult) => {
-      if (typeof result === "string") {
-        const view = editorRef.current;
-        if (view) {
-          insertAtCursor(view, result);
-        }
-      } else {
-        // Structured result — insert as chip
-        const chipType = slash.activeOverlay ?? "unknown";
-        insertChip(chipType, result.display, result.data ?? {});
+      const text = typeof result === "string" ? result : result.display;
+      const view = editorRef.current;
+      if (view) {
+        insertAtCursor(view, text);
       }
       slash.closeOverlay();
       editorRef.current?.focus();
     },
-    [slash, insertChip],
+    [slash],
   );
 
   return (
