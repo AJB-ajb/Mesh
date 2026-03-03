@@ -7,6 +7,7 @@ import {
   X,
   Bookmark,
   BookmarkCheck,
+  Users,
 } from "lucide-react";
 import { SpeechInput } from "@/components/ai-elements/speech-input";
 import { transcribeAudio } from "@/lib/transcribe";
@@ -73,6 +74,11 @@ interface PostingFiltersProps {
   showSaved?: boolean;
   onToggleSaved?: () => void;
 
+  // Connections toggle (optional — discover only)
+  showConnectionsToggle?: boolean;
+  showConnections?: boolean;
+  onToggleConnections?: () => void;
+
   // Sort (optional — discover only)
   showSort?: boolean;
   sortBy?: SortOption;
@@ -100,6 +106,9 @@ export function PostingFilters({
   showSavedToggle = false,
   showSaved = false,
   onToggleSaved,
+  showConnectionsToggle = false,
+  showConnections = false,
+  onToggleConnections,
   showSort = false,
   sortBy = "recent",
   onSortChange,
@@ -228,8 +237,8 @@ export function PostingFilters({
         <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent sm:hidden" />
       </div>
 
-      {/* Saved toggle + Sort control (discover only) */}
-      {(showSavedToggle || showSort) && (
+      {/* Saved / Connections toggle + Sort control (discover only) */}
+      {(showSavedToggle || showConnectionsToggle || showSort) && (
         <div className="flex items-center gap-3">
           {showSavedToggle && (
             <button
@@ -247,6 +256,21 @@ export function PostingFilters({
                 <Bookmark className="h-3.5 w-3.5" />
               )}
               {labels.discover.savedFilter}
+            </button>
+          )}
+
+          {showConnectionsToggle && (
+            <button
+              onClick={onToggleConnections}
+              aria-pressed={showConnections}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+                showConnections
+                  ? "bg-primary text-primary-foreground ring-2 ring-primary/30 shadow-sm"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+              }`}
+            >
+              <Users className="h-3.5 w-3.5" />
+              {labels.discover.connectionsFilter}
             </button>
           )}
 

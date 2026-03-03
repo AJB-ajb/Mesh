@@ -4,11 +4,15 @@ import type { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import type { Components } from "react-markdown";
+import { isMeshUrl } from "@/lib/mesh-links";
+import { processHiddenContent } from "@/lib/hidden-syntax";
 
 type MarkdownRendererProps = {
   content: string;
   className?: string;
   clamp?: number;
+  /** If true, reveal ||hidden|| content. Default false (show placeholder). */
+  revealHidden?: boolean;
 };
 
 type C = { children?: ReactNode };
@@ -51,16 +55,25 @@ const components: Components = {
       {children}
     </code>
   ),
-  a: ({ href, children }: A) => (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-primary underline underline-offset-2 hover:text-primary/80"
-    >
-      {children}
-    </a>
-  ),
+  a: ({ href, children }: A) => {
+    if (href && isMeshUrl(href)) {
+      return (
+        <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-sm font-medium">
+          {children}
+        </span>
+      );
+    }
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary underline underline-offset-2 hover:text-primary/80"
+      >
+        {children}
+      </a>
+    );
+  },
   // Stripped elements - render children only (no wrapper)
   table: ({ children }: C) => <>{children}</>,
   thead: ({ children }: C) => <>{children}</>,
@@ -78,15 +91,17 @@ export function MarkdownRenderer({
   content,
   className,
   clamp,
+  revealHidden = false,
 }: MarkdownRendererProps) {
   if (!content?.trim()) return null;
 
+  const processed = processHiddenContent(content, revealHidden);
   const clampClass = clamp ? `line-clamp-${clamp}` : "";
 
   return (
     <div className={`markdown-content ${clampClass} ${className ?? ""}`.trim()}>
       <ReactMarkdown remarkPlugins={[remarkBreaks]} components={components}>
-        {content}
+        {processed}
       </ReactMarkdown>
     </div>
   );

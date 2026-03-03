@@ -1114,6 +1114,7 @@ export const labels = {
     noSavedTitle: "No saved postings",
     noSavedDescription:
       "Bookmark postings you're interested in to find them here later.",
+    connectionsFilter: "Connections",
     showBreakdown: "Show breakdown",
     hideBreakdown: "Hide breakdown",
   },
@@ -1306,6 +1307,7 @@ export const labels = {
     location: { label: "Location", description: "Insert a location" },
     skills: { label: "Skills", description: "Insert required skills" },
     template: { label: "Template", description: "Apply a posting template" },
+    hidden: { label: "Hidden", description: "Insert hidden details block" },
     // Time picker overlay
     timePickerTitle: "When are you available?",
     dayLabels: {
