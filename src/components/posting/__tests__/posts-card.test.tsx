@@ -8,9 +8,10 @@ vi.mock("@/components/shared/markdown-renderer", () => ({
   MarkdownRenderer: ({ content }: { content: string }) => <p>{content}</p>,
 }));
 
-// Mock formatDateAgo to return stable output
+// Mock format module to return stable output
 vi.mock("@/lib/format", () => ({
   formatDateAgo: () => "3 days ago",
+  stripTitleMarkdown: (title: string | null | undefined) => title ?? "",
 }));
 
 // Mock next/navigation

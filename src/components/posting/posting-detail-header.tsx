@@ -6,7 +6,7 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { computeWeightedScore, formatScore } from "@/lib/matching/scoring";
 import { labels } from "@/lib/labels";
-import { formatDateAgo } from "@/lib/format";
+import { formatDateAgo, stripTitleMarkdown } from "@/lib/format";
 import type { SaveStatus } from "@/lib/hooks/use-auto-save";
 import { usePostingCoreContext } from "./posting-core-context";
 import { usePostingEditContext } from "./posting-edit-context";
@@ -94,8 +94,11 @@ export function PostingDetailHeader() {
                 className="text-2xl font-bold flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
             ) : (
-              <h1 className="text-3xl font-bold tracking-tight">
-                {posting.title}
+              <h1
+                className="text-3xl font-bold tracking-tight truncate max-w-prose"
+                title={stripTitleMarkdown(posting.title)}
+              >
+                {stripTitleMarkdown(posting.title)}
               </h1>
             )}
             <Badge
