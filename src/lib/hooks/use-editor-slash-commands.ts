@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo } from "react";
 import {
   slashCommandPlugin,
   selectSlashCommand,
+  dispatchCloseSlashMenu,
   type SlashMenuState,
 } from "@/components/editor/extensions/slash-command-plugin";
 import type { SlashCommand } from "@/lib/slash-commands/registry";
@@ -21,6 +22,8 @@ export interface UseEditorSlashCommandsReturn {
   activeOverlay: string | null;
   /** Close the active overlay */
   closeOverlay: () => void;
+  /** Close the CM slash menu state AND reset React state (menu + overlay) */
+  closeMenu: (view: EditorView | null) => void;
   /** Handle overlay result -- inserts text at the editor cursor */
   handleOverlayResult: (view: EditorView, text: string) => void;
 }
@@ -60,6 +63,12 @@ export function useEditorSlashCommands(): UseEditorSlashCommandsReturn {
     setActiveOverlay(null);
   }, []);
 
+  const closeMenu = useCallback((view: EditorView | null) => {
+    if (view) dispatchCloseSlashMenu(view);
+    setMenuState((prev) => ({ ...prev, isOpen: false }));
+    setActiveOverlay(null);
+  }, []);
+
   const handleOverlayResult = useCallback((view: EditorView, text: string) => {
     const pos = view.state.selection.main.head;
     view.dispatch({
@@ -83,6 +92,7 @@ export function useEditorSlashCommands(): UseEditorSlashCommandsReturn {
     selectCommand: selectCommandFromMenu,
     activeOverlay,
     closeOverlay,
+    closeMenu,
     handleOverlayResult,
   };
 }
