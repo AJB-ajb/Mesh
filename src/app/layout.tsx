@@ -7,6 +7,7 @@ import { FeedbackWidget } from "@/components/feedback/feedback-widget";
 import { Toaster } from "sonner";
 import { ServiceWorkerUpdater } from "@/components/pwa/sw-updater";
 import { BackButtonHandler } from "@/components/capacitor/back-button-handler";
+import { OAuthRedirectHandler } from "@/components/capacitor/oauth-redirect-handler";
 import { StatusBarInit } from "@/components/capacitor/status-bar-init";
 import { labels } from "@/lib/labels";
 import "./globals.css";
@@ -105,6 +106,7 @@ export default function RootLayout({
       >
         <ServiceWorkerUpdater />
         <BackButtonHandler />
+        <OAuthRedirectHandler />
         <StatusBarInit />
         <SWRProvider>
           <ThemeProvider>
