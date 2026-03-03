@@ -8,6 +8,7 @@ import { labels } from "@/lib/labels";
 
 import { Button } from "@/components/ui/button";
 import { usePostings } from "@/lib/hooks/use-postings";
+import { useConnections } from "@/lib/hooks/use-connections";
 import type { Posting, QueryFilters } from "@/lib/hooks/use-postings";
 import { useNlFilter } from "@/lib/hooks/use-nl-filter";
 import { useSkillDescendants } from "@/lib/hooks/use-skill-descendants";
@@ -30,6 +31,7 @@ function DiscoverContent() {
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterVisibility, setFilterVisibility] = useState<string>("all");
   const [showSaved, setShowSaved] = useState(initialSavedFilter);
+  const [showConnections, setShowConnections] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("recent");
 
   // Skill filter state — populated when a skill filter UI is added
@@ -82,7 +84,19 @@ function DiscoverContent() {
 
   const { bookmarkedIds, toggleBookmark } = useBookmarks();
 
-  // Apply text search, mode filter, saved filter, and sort
+  const { connections } = useConnections();
+  const connectionUserIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const c of connections) {
+      if (c.friend?.user_id) ids.add(c.friend.user_id);
+      if (c.user?.user_id) ids.add(c.user.user_id);
+    }
+    // Don't include the current user's own ID
+    if (userId) ids.delete(userId);
+    return ids;
+  }, [connections, userId]);
+
+  // Apply text search, mode filter, saved filter, connections filter, and sort
   const filteredPostings = useMemo(() => {
     // Text search and mode filter
     let result = postings.filter((posting: Posting) => {
@@ -118,6 +132,13 @@ function DiscoverContent() {
       );
     }
 
+    // Apply connections filter
+    if (showConnections) {
+      result = result.filter((posting: Posting) =>
+        connectionUserIds.has(posting.creator_id),
+      );
+    }
+
     // Apply sort
     if (sortBy === "match") {
       result = [...result].sort(
@@ -134,6 +155,8 @@ function DiscoverContent() {
     nlFilters,
     showSaved,
     bookmarkedIds,
+    showConnections,
+    connectionUserIds,
     sortBy,
   ]);
 
@@ -178,6 +201,9 @@ function DiscoverContent() {
         showSavedToggle
         showSaved={showSaved}
         onToggleSaved={() => setShowSaved((v) => !v)}
+        showConnectionsToggle
+        showConnections={showConnections}
+        onToggleConnections={() => setShowConnections((v) => !v)}
         showSort
         sortBy={sortBy}
         onSortChange={setSortBy}

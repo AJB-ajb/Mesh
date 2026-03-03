@@ -44,6 +44,13 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     description: labels.slashCommands.template.description,
     type: "action",
   },
+  {
+    name: "hidden",
+    icon: "Lock",
+    label: labels.slashCommands.hidden.label,
+    description: labels.slashCommands.hidden.description,
+    type: "content",
+  },
 ];
 
 /**
