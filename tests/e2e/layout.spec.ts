@@ -19,6 +19,8 @@ import {
   checkElementsDoNotOverlap,
   findHiddenOverflowViolations,
   findViewportExceedingElements,
+  findClippedPositionedElements,
+  checkMinimumSpacing,
 } from "../utils/layout-helpers";
 
 // ---------------------------------------------------------------------------
@@ -418,5 +420,103 @@ test.describe("Layout > Content within viewport bounds", () => {
         ).toEqual([]);
       });
     }
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Group 9: No clipped positioned elements
+//   Catches absolutely/fixed positioned children (badges, indicators, tooltips)
+//   that extend beyond a clipping ancestor and are visually cut off.
+//   This is the gap that let the notification bell badge cutoff slip through —
+//   findHiddenOverflowViolations only checks scrollWidth, but absolute elements
+//   don't affect scrollWidth.
+// ---------------------------------------------------------------------------
+
+// Allowlist for elements that are intentionally clipped by design:
+// - Radix popovers/tooltips manage their own positioning
+// - Dusk mode grain texture overlay (body::before pseudo — not a real element)
+const CLIPPED_ELEMENT_ALLOWLIST = [
+  "[data-radix-popper-content-wrapper]",
+  "[data-radix-scroll-area-viewport]",
+] as const;
+
+test.describe("Layout > No clipped positioned elements", () => {
+  for (const viewport of ALL_VIEWPORTS) {
+    for (const { path, name } of PUBLIC_PAGES) {
+      test(`${name} (${path}) — ${viewport}`, async ({ page }) => {
+        await page.setViewportSize(VIEWPORTS[viewport]);
+        await page.goto(path, { waitUntil: "domcontentloaded" });
+        await page.waitForTimeout(300);
+
+        const violations = await findClippedPositionedElements(
+          page,
+          CLIPPED_ELEMENT_ALLOWLIST,
+        );
+        expect(
+          violations,
+          `Clipped positioned elements on ${path} @ ${viewport}: ${JSON.stringify(violations, null, 2)}`,
+        ).toEqual([]);
+      });
+    }
+
+    for (const { path, name } of AUTHED_PAGES) {
+      test(`${name} (${path}) — ${viewport}`, async ({ page }) => {
+        test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
+        await navigateToPage(page, path, viewport, true);
+
+        const violations = await findClippedPositionedElements(
+          page,
+          CLIPPED_ELEMENT_ALLOWLIST,
+        );
+        expect(
+          violations,
+          `Clipped positioned elements on ${path} @ ${viewport}: ${JSON.stringify(violations, null, 2)}`,
+        ).toEqual([]);
+      });
+    }
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Group 10: Minimum vertical spacing between key layout regions
+//   Catches cramped layouts where the header bar sits too close to page
+//   content, or filter rows sit flush against the first card. Checks the
+//   vertical gap between two elements meets a minimum pixel threshold.
+// ---------------------------------------------------------------------------
+
+test.describe("Layout > Minimum spacing", () => {
+  // Header bar to main content — should have visible breathing room
+  for (const { path, name } of AUTHED_PAGES) {
+    test(`${name} — header to main gap >= 12px (mobile)`, async ({ page }) => {
+      test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
+      await navigateToPage(page, path, "mobile", true);
+
+      const result = await checkMinimumSpacing(
+        page,
+        "header",
+        "main#main-content > *:first-child",
+        12,
+      );
+      expect(
+        result.tooTight,
+        `Header-to-content gap on ${path} (mobile): ${result.gapPx}px < ${result.requiredPx}px — rectA: ${JSON.stringify(result.rectA)}, rectB: ${JSON.stringify(result.rectB)}`,
+      ).toBe(false);
+    });
+
+    test(`${name} — header to main gap >= 16px (desktop)`, async ({ page }) => {
+      test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
+      await navigateToPage(page, path, "desktop", true);
+
+      const result = await checkMinimumSpacing(
+        page,
+        "header",
+        "main#main-content > *:first-child",
+        16,
+      );
+      expect(
+        result.tooTight,
+        `Header-to-content gap on ${path} (desktop): ${result.gapPx}px < ${result.requiredPx}px — rectA: ${JSON.stringify(result.rectA)}, rectB: ${JSON.stringify(result.rectB)}`,
+      ).toBe(false);
+    });
   }
 });

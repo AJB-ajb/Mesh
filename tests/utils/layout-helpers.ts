@@ -69,6 +69,27 @@ export type ViewportExceedingViolation = {
   excessPx: number;
 };
 
+export type ClippedElementViolation = {
+  /** Selector for the clipped child element */
+  childSelector: string;
+  /** Selector for the ancestor that clips it */
+  clipParentSelector: string;
+  /** How many pixels are clipped on each side */
+  clippedPx: { top: number; right: number; bottom: number; left: number };
+};
+
+export type SpacingResult = {
+  /** Whether the measured gap is below the required minimum */
+  tooTight: boolean;
+  /** The measured gap in pixels (negative means overlap) */
+  gapPx: number;
+  /** The required minimum gap */
+  requiredPx: number;
+  /** Bounding rects used for the measurement */
+  rectA: { x: number; y: number; width: number; height: number } | null;
+  rectB: { x: number; y: number; width: number; height: number } | null;
+};
+
 // ---------------------------------------------------------------------------
 // 1. findOverflowViolations
 //    Walks visible elements, finds those with computed overflow: auto|scroll
@@ -567,4 +588,198 @@ export async function findViewportExceedingElements(
       };
     });
   });
+}
+
+// ---------------------------------------------------------------------------
+// 8. findClippedPositionedElements
+//    Finds absolutely/fixed positioned elements whose bounding rect extends
+//    beyond the bounding rect of the nearest ancestor with overflow clipping,
+//    meaning the element is visually cut off. This catches badges, tooltips,
+//    and indicators that poke out of their parent but get clipped.
+//    Unlike findHiddenOverflowViolations (which checks scrollWidth), this
+//    uses bounding rects to catch absolutely-positioned children that don't
+//    affect scrollWidth at all.
+// ---------------------------------------------------------------------------
+
+export async function findClippedPositionedElements(
+  page: Page,
+  allowlist: readonly string[] = [],
+): Promise<ClippedElementViolation[]> {
+  return page.evaluate(
+    ({ allowlist }) => {
+      const buildSelector = new Function(
+        "el",
+        `
+        if (el.id) return el.tagName.toLowerCase() + '#' + el.id;
+        let s = el.tagName.toLowerCase();
+        if (el.className && typeof el.className === 'string') {
+          const classes = el.className.trim().split(/\\s+/).slice(0, 3).join('.');
+          if (classes) s += '.' + classes;
+        }
+        return s;
+        `,
+      ) as (el: Element) => string;
+
+      function isAllowlisted(el: Element): boolean {
+        for (const sel of allowlist) {
+          try {
+            if (el.matches(sel)) return true;
+          } catch {
+            /* invalid selector */
+          }
+        }
+        return false;
+      }
+
+      /**
+       * Walk up from el to find the nearest ancestor that clips overflow
+       * (overflow-x or overflow-y is hidden, auto, or scroll).
+       * Stops at <html>.
+       */
+      function findClipAncestor(el: Element): HTMLElement | null {
+        let parent = el.parentElement;
+        while (parent && parent !== document.documentElement) {
+          const ps = getComputedStyle(parent);
+          const ox = ps.overflowX;
+          const oy = ps.overflowY;
+          if (
+            ox === "hidden" ||
+            ox === "auto" ||
+            ox === "scroll" ||
+            oy === "hidden" ||
+            oy === "auto" ||
+            oy === "scroll"
+          ) {
+            return parent as HTMLElement;
+          }
+          parent = parent.parentElement;
+        }
+        return null;
+      }
+
+      const TOLERANCE = 1; // 1px rounding tolerance
+      const violations: {
+        childSelector: string;
+        clipParentSelector: string;
+        clippedPx: { top: number; right: number; bottom: number; left: number };
+      }[] = [];
+
+      const elements = document.querySelectorAll("*");
+      for (const el of elements) {
+        if (!(el instanceof HTMLElement)) continue;
+        const style = getComputedStyle(el);
+
+        // Only check positioned elements (absolute or fixed)
+        if (style.position !== "absolute" && style.position !== "fixed")
+          continue;
+        // Skip invisible or sr-only
+        if (style.display === "none" || style.visibility === "hidden") continue;
+        if (
+          el.classList.contains("sr-only") ||
+          style.clip === "rect(0px, 0px, 0px, 0px)"
+        )
+          continue;
+
+        const rect = el.getBoundingClientRect();
+        // Skip zero-size elements
+        if (rect.width === 0 || rect.height === 0) continue;
+        // Skip elements offscreen
+        if (
+          rect.bottom < 0 ||
+          rect.top > window.innerHeight ||
+          rect.right < 0 ||
+          rect.left > window.innerWidth
+        )
+          continue;
+
+        if (isAllowlisted(el)) continue;
+
+        const clipAncestor = findClipAncestor(el);
+        if (!clipAncestor) continue;
+
+        const parentRect = clipAncestor.getBoundingClientRect();
+
+        // Calculate how many pixels are clipped on each side
+        const clippedTop = Math.max(0, parentRect.top - rect.top);
+        const clippedRight = Math.max(0, rect.right - parentRect.right);
+        const clippedBottom = Math.max(0, rect.bottom - parentRect.bottom);
+        const clippedLeft = Math.max(0, parentRect.left - rect.left);
+
+        const totalClipped =
+          clippedTop + clippedRight + clippedBottom + clippedLeft;
+
+        if (totalClipped <= TOLERANCE) continue;
+
+        violations.push({
+          childSelector: buildSelector(el),
+          clipParentSelector: buildSelector(clipAncestor),
+          clippedPx: {
+            top: Math.round(clippedTop),
+            right: Math.round(clippedRight),
+            bottom: Math.round(clippedBottom),
+            left: Math.round(clippedLeft),
+          },
+        });
+      }
+
+      return violations;
+    },
+    { allowlist: [...allowlist] },
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 9. checkMinimumSpacing
+//    Measures the vertical gap between two elements (bottom of A to top of B)
+//    and asserts it meets a minimum pixel threshold. Catches tight/zero gaps
+//    between header bars and page content, filter rows and card grids, etc.
+// ---------------------------------------------------------------------------
+
+export async function checkMinimumSpacing(
+  page: Page,
+  selectorA: string,
+  selectorB: string,
+  minGapPx: number,
+): Promise<SpacingResult> {
+  return page.evaluate(
+    ({ selA, selB, minGap }) => {
+      const elA = document.querySelector(selA);
+      const elB = document.querySelector(selB);
+
+      if (!elA || !elB) {
+        return {
+          tooTight: false,
+          gapPx: 0,
+          requiredPx: minGap,
+          rectA: elA
+            ? (() => {
+                const r = elA.getBoundingClientRect();
+                return { x: r.x, y: r.y, width: r.width, height: r.height };
+              })()
+            : null,
+          rectB: elB
+            ? (() => {
+                const r = elB.getBoundingClientRect();
+                return { x: r.x, y: r.y, width: r.width, height: r.height };
+              })()
+            : null,
+        };
+      }
+
+      const a = elA.getBoundingClientRect();
+      const b = elB.getBoundingClientRect();
+
+      // Vertical gap: bottom of A to top of B
+      const gap = b.top - a.bottom;
+
+      return {
+        tooTight: gap < minGap,
+        gapPx: Math.round(gap * 10) / 10,
+        requiredPx: minGap,
+        rectA: { x: a.x, y: a.y, width: a.width, height: a.height },
+        rectB: { x: b.x, y: b.y, width: b.width, height: b.height },
+      };
+    },
+    { selA: selectorA, selB: selectorB, minGap: minGapPx },
+  );
 }
