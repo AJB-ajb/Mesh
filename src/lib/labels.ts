@@ -75,7 +75,7 @@ export const labels = {
   // ---------------------------------------------------------------------------
   landing: {
     loginButton: "Log in",
-    heroBadge: "Idea-first matching",
+    heroBadge: "Activity-first coordination",
     heroTitle: "The right few people make all the difference.",
     heroSubheadline:
       "Describe what you want to do \u2014 a hackathon, a study group, a startup \u2014 and find the people who fit.",
@@ -90,7 +90,8 @@ export const labels = {
     problemMeetupsBody: "Usually built for crowds, not small groups.",
     problemForumsTitle: "Job boards & forums",
     problemForumsBody: "Too formal, too slow.",
-    problemConclusion: "Mesh sits in the gap.",
+    problemConclusion:
+      "Messaging apps are about messages. Mesh is about activities.",
 
     useCaseSectionTitle: "People are looking for all kinds of things",
     useCaseSectionSubtitle:
@@ -108,9 +109,9 @@ export const labels = {
     howItWorksStep3Body:
       "Chat, plan, and do the thing \u2014 whether it\u2019s a hackathon, a tennis match, or a startup launch.",
 
-    featuresSectionTitle: "Built for real connections",
+    featuresSectionTitle: "Built for getting things done",
     featuresSectionSubtitle:
-      "Smart tools that make finding the right people effortless.",
+      "Coordinate quickly, find the right people, and move on with your life.",
     smartMatchingTitle: "Understands what you need",
     smartMatchingBody:
       "Goes beyond keywords \u2014 matches on skills, context, and intent.",
@@ -151,7 +152,7 @@ export const labels = {
     problemTitle: "What exists today doesn\u2019t solve this",
     problemGroupChatsTitle: "Group chats (Slack, Discord, WhatsApp)",
     problemGroupChatsBody:
-      "Great for coordination. Less helpful for finding someone new.",
+      "Built for messages, not activities. 100 people see your post, 5 are interested.",
     problemMeetupsTitle: "Events and meetups",
     problemMeetupsBody:
       "Designed for larger gatherings. Harder to use when you need a team of 3 for a weekend project.",
@@ -159,12 +160,12 @@ export const labels = {
     problemForumsBody:
       "Built for formal, long-term roles. Too much process for a weekend hackathon.",
     problemConclusion:
-      "They rarely start with your idea and find the right people for it.",
+      "None of them start with your activity and find the right people for it.",
 
     howDifferentTitle: "How Mesh is different",
-    howDifferentIdeaFirst: "Idea-first",
-    howDifferentIdeaFirstBody:
-      "Start with what you want to do, not who you know. Post an idea and let the right people find you.",
+    howDifferentActivityFirst: "Activity-first",
+    howDifferentActivityFirstBody:
+      "Start with what you want to do, not who you know. Post an activity and let the right people find you.",
     howDifferentNoSetup: "No setup required",
     howDifferentNoSetupBody:
       "You don\u2019t need a profile to post. Describe your idea, and you\u2019re live in seconds.",
@@ -172,7 +173,7 @@ export const labels = {
     howDifferentSmartMatchingBody:
       "Matching on skills, availability, location, and interests \u2014 not just keywords.",
 
-    speedTitle: "A faster way to go from idea to team",
+    speedTitle: "From idea to team in under a minute",
     speedBody:
       "Describe what you need in 30 seconds. Paste text, speak into the mic, or fill a quick form. Mesh extracts the details and starts matching immediately.",
 
@@ -202,9 +203,9 @@ export const labels = {
   // Site metadata / SEO
   // ---------------------------------------------------------------------------
   meta: {
-    title: "Mesh - Find Your Perfect Match",
+    title: "Mesh \u2014 Coordinate Activities, Find the Right People",
     description:
-      "Find people for hackathons, study groups, side projects, and more. Describe what you want to do and get matched with the right collaborators.",
+      "Activity coordination for small groups. Describe what you want to do \u2014 a hackathon, a study group, a side project \u2014 and find the people who fit.",
     appName: "Mesh",
   },
 
