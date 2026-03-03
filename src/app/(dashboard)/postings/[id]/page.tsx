@@ -224,8 +224,7 @@ function PostingDetailInner() {
     () => ({
       form,
       onFormChange: handleFormChange,
-      // Always-editable for owners
-      isEditing: true,
+      isEditing: isOwner,
       isSaving: false,
       isDeleting,
       isExtending,
@@ -244,6 +243,7 @@ function PostingDetailInner() {
     [
       form,
       handleFormChange,
+      isOwner,
       isDeleting,
       isExtending,
       isReposting,
