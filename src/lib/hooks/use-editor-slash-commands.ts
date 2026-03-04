@@ -7,9 +7,21 @@ import {
   dispatchCloseSlashMenu,
   type SlashMenuState,
 } from "@/components/editor/extensions/slash-command-plugin";
-import type { SlashCommand } from "@/lib/slash-commands/registry";
+import {
+  filterCommandsByContext,
+  type SlashCommand,
+} from "@/lib/slash-commands/registry";
 import type { EditorView } from "@codemirror/view";
 import type { Extension } from "@codemirror/state";
+
+export interface UseEditorSlashCommandsOptions {
+  /** Filter commands by context (e.g. "posting") */
+  context?: "posting" | "profile";
+  /** Called when a setting command is selected (e.g. /visibility) */
+  onSettingChange?: (key: string, value: string) => void;
+  /** Called when an immediate command fires (e.g. /format, /clean) */
+  onImmediateCommand?: (name: string) => void;
+}
 
 export interface UseEditorSlashCommandsReturn {
   /** CodeMirror extension for slash commands */
@@ -18,7 +30,7 @@ export interface UseEditorSlashCommandsReturn {
   menuState: SlashMenuState;
   /** Select a command (for mouse clicks on menu items) */
   selectCommand: (view: EditorView, command: SlashCommand) => void;
-  /** Currently active overlay (e.g. "time", "location") */
+  /** Currently active overlay (e.g. "time", "location", "visibility") */
   activeOverlay: string | null;
   /** Close the active overlay */
   closeOverlay: () => void;
@@ -32,9 +44,14 @@ export interface UseEditorSlashCommandsReturn {
 const CONTENT_INSERTS: Record<string, { text: string; cursorOffset: number }> =
   {
     hidden: { text: "||\n\n||", cursorOffset: 3 },
+    size: { text: "\u{1F465} 3 people", cursorOffset: 10 },
   };
 
-export function useEditorSlashCommands(): UseEditorSlashCommandsReturn {
+export function useEditorSlashCommands(
+  options: UseEditorSlashCommandsOptions = {},
+): UseEditorSlashCommandsReturn {
+  const { context, onImmediateCommand } = options;
+
   const [menuState, setMenuState] = useState<SlashMenuState>({
     isOpen: false,
     query: "",
@@ -50,6 +67,10 @@ export function useEditorSlashCommands(): UseEditorSlashCommandsReturn {
       setMenuState((prev) => ({ ...prev, isOpen: false }));
       if (command.type === "action") {
         setActiveOverlay(command.name);
+      } else if (command.type === "setting") {
+        setActiveOverlay(command.name);
+      } else if (command.type === "immediate") {
+        onImmediateCommand?.(command.name);
       } else if (command.type === "content" && view) {
         const insert = CONTENT_INSERTS[command.name];
         if (insert) {
@@ -62,20 +83,26 @@ export function useEditorSlashCommands(): UseEditorSlashCommandsReturn {
         }
       }
     },
-    [],
+    [onImmediateCommand],
   );
 
   const handleStateChange = useCallback((state: SlashMenuState) => {
     setMenuState(state);
   }, []);
 
+  const contextCommands = useMemo(
+    () => filterCommandsByContext(context),
+    [context],
+  );
+
   const slashExtension = useMemo(
     () =>
       slashCommandPlugin({
         onStateChange: handleStateChange,
         onSelectCommand: handleSelect,
+        commands: contextCommands,
       }),
-    [handleStateChange, handleSelect],
+    [handleStateChange, handleSelect, contextCommands],
   );
 
   const closeOverlay = useCallback(() => {
