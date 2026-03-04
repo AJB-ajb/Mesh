@@ -211,7 +211,7 @@ export function UnifiedPostingCard({
                 {role === "owner" && (
                   <button
                     type="button"
-                    className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                     aria-label="Edit"
                     onClick={(e) => {
                       e.preventDefault();
