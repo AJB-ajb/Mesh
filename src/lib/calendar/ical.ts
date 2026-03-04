@@ -101,14 +101,18 @@ function parseIcalDateTime(line: string): Date | null {
     return parseIcalDateString(value.slice(0, -1));
   }
 
-  // With or without TZID — treat as UTC approximation
-  // A fully correct implementation would resolve TZID, but for busy-block
-  // scoring the small timezone offset is acceptable.
+  // Extract TZID if present (e.g. DTSTART;TZID=Europe/Berlin:20260215T090000)
+  const tzidMatch = line.match(/TZID=([^:;]+)/);
+  if (tzidMatch) {
+    return parseIcalDateStringInTimezone(value, tzidMatch[1]);
+  }
+
+  // Floating time — treat as UTC
   return parseIcalDateString(value);
 }
 
 /**
- * Parse "20260215T090000" into a Date.
+ * Parse "20260215T090000" into a Date (treated as UTC).
  */
 function parseIcalDateString(s: string): Date | null {
   // Expected: YYYYMMDDTHHmmss
@@ -126,4 +130,60 @@ function parseIcalDateString(s: string): Date | null {
       parseInt(second),
     ),
   );
+}
+
+/**
+ * Parse "20260215T090000" with a TZID into a UTC Date.
+ * Uses Intl.DateTimeFormat to compute the timezone offset without depending
+ * on the machine's local timezone.
+ */
+export function parseIcalDateStringInTimezone(
+  s: string,
+  timezone: string,
+): Date | null {
+  const match = s.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})$/);
+  if (!match) return null;
+
+  const [, year, month, day, hour, minute, second] = match;
+
+  // Place local-time digits into a UTC date as a reference point
+  const guess = new Date(
+    Date.UTC(
+      parseInt(year),
+      parseInt(month) - 1,
+      parseInt(day),
+      parseInt(hour),
+      parseInt(minute),
+      parseInt(second),
+    ),
+  );
+
+  // Find what the timezone shows at this UTC instant (machine-tz-independent)
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(guess);
+  const get = (type: string) =>
+    parseInt(parts.find((p) => p.type === type)!.value);
+
+  const hr = get("hour") % 24; // Intl may return 24 for midnight
+  const localAtGuess = Date.UTC(
+    get("year"),
+    get("month") - 1,
+    get("day"),
+    hr,
+    get("minute"),
+    get("second"),
+  );
+
+  // offset = local wall-clock − UTC, so UTC = guess − offset
+  const offsetMs = localAtGuess - guess.getTime();
+  return new Date(guess.getTime() - offsetMs);
 }

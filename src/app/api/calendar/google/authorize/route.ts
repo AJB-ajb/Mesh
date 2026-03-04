@@ -4,12 +4,12 @@
  * Redirects the user to Google's consent screen.
  */
 
-import { NextResponse } from "next/server";
+import { randomBytes } from "crypto";
+import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { buildAuthUrl } from "@/lib/calendar/google";
-import { apiError } from "@/lib/errors";
+import { buildAuthUrl, OAUTH_STATE_COOKIE } from "@/lib/calendar/google";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient();
     const {
@@ -18,18 +18,34 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return apiError("UNAUTHORIZED", "Unauthorized", 401);
+      return NextResponse.redirect(new URL("/login?next=%2Fsettings", req.url));
     }
 
-    // Use user ID as state to verify on callback
-    const authUrl = buildAuthUrl(user.id);
-    return NextResponse.redirect(authUrl);
+    // Build CSRF-safe state: userId:nonce
+    const nonce = randomBytes(16).toString("hex");
+    const state = `${user.id}:${nonce}`;
+
+    const origin = new URL(req.url).origin;
+    const authUrl = buildAuthUrl(state, origin);
+
+    const response = NextResponse.redirect(authUrl);
+
+    // Set httpOnly cookie for CSRF verification in callback
+    response.cookies.set(OAUTH_STATE_COOKIE, state, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/api/calendar/google/callback",
+      maxAge: 600, // 10 minutes
+    });
+
+    return response;
   } catch (error) {
     console.error("Google authorize error:", error);
-    return apiError(
-      "INTERNAL",
-      error instanceof Error ? error.message : "Internal server error",
-      500,
+    const message =
+      error instanceof Error ? error.message : "Internal server error";
+    return NextResponse.redirect(
+      new URL(`/settings?error=${encodeURIComponent(message)}`, req.url),
     );
   }
 }

@@ -41,7 +41,7 @@ function SettingsContent() {
     const msg = searchParams.get("error");
     if (msg) {
       window.history.replaceState({}, "", "/settings");
-      return decodeURIComponent(msg);
+      return msg;
     }
     return null;
   });
@@ -49,7 +49,7 @@ function SettingsContent() {
     const msg = searchParams.get("success");
     if (msg) {
       window.history.replaceState({}, "", "/settings");
-      return decodeURIComponent(msg);
+      return msg;
     }
     return null;
   });

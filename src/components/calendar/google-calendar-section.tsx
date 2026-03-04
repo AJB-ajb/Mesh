@@ -2,9 +2,9 @@
 
 import { Loader2, RefreshCw, Trash2, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { labels } from "@/lib/labels";
 import type { CalendarConnection } from "@/lib/calendar/types";
+import { SyncStatusBadge } from "./sync-status-badge";
 
 type GoogleCalendarSectionProps = {
   googleConnection: CalendarConnection | undefined;
@@ -13,20 +13,6 @@ type GoogleCalendarSectionProps = {
   onSync: (connectionId: string) => void;
   onDisconnect: (conn: CalendarConnection) => void;
 };
-
-function getSyncStatusBadge(conn: CalendarConnection) {
-  const variant =
-    conn.syncStatus === "synced"
-      ? "default"
-      : conn.syncStatus === "error"
-        ? "destructive"
-        : "secondary";
-  return (
-    <Badge variant={variant} className="text-xs">
-      {labels.calendar.syncStatusLabels[conn.syncStatus]}
-    </Badge>
-  );
-}
 
 export function GoogleCalendarSection({
   googleConnection,
@@ -49,7 +35,7 @@ export function GoogleCalendarSection({
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <p className="font-medium">{labels.calendar.googleConnected}</p>
-          {getSyncStatusBadge(googleConnection)}
+          <SyncStatusBadge conn={googleConnection} />
         </div>
         {googleConnection.lastSyncedAt && (
           <p className="text-sm text-muted-foreground">

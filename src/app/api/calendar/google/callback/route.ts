@@ -5,8 +5,18 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { exchangeCode } from "@/lib/calendar/google";
-import { apiError } from "@/lib/errors";
+import { exchangeCode, OAUTH_STATE_COOKIE } from "@/lib/calendar/google";
+
+function settingsRedirect(req: NextRequest, params: Record<string, string>) {
+  const url = new URL("/settings", req.url);
+  for (const [k, v] of Object.entries(params)) {
+    url.searchParams.set(k, v);
+  }
+  const response = NextResponse.redirect(url);
+  // Always clear the OAuth state cookie on exit
+  response.cookies.delete(OAUTH_STATE_COOKIE);
+  return response;
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -16,16 +26,16 @@ export async function GET(req: NextRequest) {
 
   // User denied consent
   if (errorParam) {
-    return NextResponse.redirect(
-      new URL(
-        `/settings?error=${encodeURIComponent("Google Calendar connection was cancelled.")}`,
-        req.url,
-      ),
-    );
+    return settingsRedirect(req, {
+      error: "Google Calendar connection was cancelled.",
+    });
   }
 
+  // Issue 4: redirect instead of JSON error for missing params
   if (!code || !state) {
-    return apiError("VALIDATION", "Missing code or state parameter", 400);
+    return settingsRedirect(req, {
+      error: "Missing authorization parameters. Please try again.",
+    });
   }
 
   try {
@@ -36,68 +46,79 @@ export async function GET(req: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.redirect(
-        new URL(
-          `/login?next=${encodeURIComponent("/settings")}`,
-          req.url,
-        ),
+      const response = NextResponse.redirect(
+        new URL("/login?next=%2Fsettings", req.url),
       );
+      response.cookies.delete(OAUTH_STATE_COOKIE);
+      return response;
     }
 
-    // Verify state matches authenticated user
-    if (state !== user.id) {
-      return NextResponse.redirect(
-        new URL(
-          `/settings?error=${encodeURIComponent("OAuth state mismatch. Please try again.")}`,
-          req.url,
-        ),
-      );
+    // Issue 5: Verify state against httpOnly cookie (CSRF protection)
+    const cookieState = req.cookies.get(OAUTH_STATE_COOKIE)?.value;
+
+    if (!cookieState || cookieState !== state) {
+      return settingsRedirect(req, {
+        error: "OAuth state mismatch. Please try again.",
+      });
+    }
+
+    // Verify the user ID embedded in the state matches the authenticated user
+    const stateUserId = state.split(":")[0];
+    if (stateUserId !== user.id) {
+      return settingsRedirect(req, {
+        error: "OAuth state mismatch. Please try again.",
+      });
     }
 
     // Exchange code for tokens
+    const origin = new URL(req.url).origin;
     const { accessTokenEncrypted, refreshTokenEncrypted, expiresAt } =
-      await exchangeCode(code);
+      await exchangeCode(code, origin);
 
-    // Upsert calendar connection (one Google connection per profile)
-    const { error: upsertError } = await supabase
+    // Issue 1: Use select-then-update/insert instead of upsert (onConflict
+    // "profile_id" is not a unique constraint — there can be multiple
+    // connections per profile for different providers).
+    const { data: existing } = await supabase
       .from("calendar_connections")
-      .upsert(
-        {
+      .select("id")
+      .eq("profile_id", user.id)
+      .eq("provider", "google")
+      .maybeSingle();
+
+    const connectionData = {
+      access_token_encrypted: accessTokenEncrypted.toString("base64"),
+      refresh_token_encrypted: refreshTokenEncrypted.toString("base64"),
+      token_expires_at: expiresAt.toISOString(),
+      sync_status: "pending" as const,
+      sync_error: null,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error: saveError } = existing
+      ? await supabase
+          .from("calendar_connections")
+          .update(connectionData)
+          .eq("id", existing.id)
+      : await supabase.from("calendar_connections").insert({
+          ...connectionData,
           profile_id: user.id,
           provider: "google",
-          access_token_encrypted: accessTokenEncrypted.toString("base64"),
-          refresh_token_encrypted: refreshTokenEncrypted.toString("base64"),
-          token_expires_at: expiresAt.toISOString(),
-          sync_status: "pending",
-          sync_error: null,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "profile_id", ignoreDuplicates: false },
-      );
+        });
 
-    if (upsertError) {
-      console.error("Failed to store calendar connection:", upsertError);
-      return NextResponse.redirect(
-        new URL(
-          `/settings?error=${encodeURIComponent("Failed to save calendar connection.")}`,
-          req.url,
-        ),
-      );
+    if (saveError) {
+      console.error("Failed to store calendar connection:", saveError);
+      return settingsRedirect(req, {
+        error: "Failed to save calendar connection.",
+      });
     }
 
-    return NextResponse.redirect(
-      new URL(
-        `/settings?success=${encodeURIComponent("Google Calendar connected successfully!")}`,
-        req.url,
-      ),
-    );
+    return settingsRedirect(req, {
+      success: "Google Calendar connected successfully!",
+    });
   } catch (error) {
     console.error("Google callback error:", error);
-    return NextResponse.redirect(
-      new URL(
-        `/settings?error=${encodeURIComponent("Failed to connect Google Calendar. Please try again.")}`,
-        req.url,
-      ),
-    );
+    return settingsRedirect(req, {
+      error: "Failed to connect Google Calendar. Please try again.",
+    });
   }
 }
