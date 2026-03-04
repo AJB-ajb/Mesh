@@ -113,6 +113,6 @@ describe("POST /api/extract/profile", () => {
     const body = await res.json();
 
     expect(res.status).toBe(500);
-    expect(body.error.message).toContain("API error");
+    expect(body.error.message).toBe("Internal server error");
   });
 });
