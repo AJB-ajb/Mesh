@@ -11,12 +11,13 @@ See [roadmap.md](roadmap.md) for milestone tracking. See [text_first_rewrite.md]
 
 ## Problem
 
-People coordinate activities through messaging apps, email, and in-person conversations. This doesn't work well:
+Activity coordination through messaging apps means excessive back-and-forth:
 
-- **High friction.** Finding people means messaging connections one by one or scanning Slack/WhatsApp channels — lots of back-and-forth.
-- **Broadcasting is wasteful.** Messaging in large groups shows 100 people a message where only 5 are interested.
-- **Wrong unit of organization.** Messaging apps are about messages. Mesh is about activities. The activity posting is the fundamental unit, not a thread of messages.
-- **Compatibility is invisible.** Skill levels, work style preferences, and scheduling availability are rarely explicit in current tools.
+- **Rounds of messaging.** Explaining what you want, checking interest, negotiating availability, comparing fit — one person at a time, one message at a time. Each round trip takes minutes to hours.
+- **People drop out mid-coordination.** Someone says "maybe" on Monday and ghosts by Wednesday. Momentum dies.
+- **Broadcasting is wasteful.** Posting in a large group shows 100 people a message where only 5 are interested.
+- **Details scatter.** What started as "let's do X" becomes logistics spread across DMs, threads, and group chats.
+- **The root cause:** Messaging apps treat everything as a message. They don't know you're coordinating an activity, so they can't help — they can't check availability, match skills, or manage group formation.
 
 ### Approach
 
@@ -100,11 +101,11 @@ See [ux.md](ux.md).
 
 ## Motivation
 
-- Collaboration is a core human need, but coordinating it is unreasonably hard
+- Coordinating activities is unreasonably hard — back-and-forth messaging is the bottleneck, not finding the activity itself
+- Messaging apps can't help because they treat everything as text — they don't understand the structure of an activity (time, place, skills, team size)
+- Mesh leverages that structure: because a posting is an activity, the platform can automate what messaging can't — check availability, match skills, manage invites, form groups
 - Small teams (2-5) outperform large groups for most tasks — yet current tools serve crowds, not small groups
-- 1:1 and pair coordination is the most common case but the least served by existing tools
-- Current tools (Slack, WhatsApp, email) are built around messages, not activities — they don't scale for matching or coordination
-- Mesh is both a coordination tool (for people you know) and a matching tool (for people you don't yet know), unified under a single activity-first interface
+- Mesh is both a coordination tool (inviting people you know) and a matching tool (finding people you don't yet know), unified under a single activity-first interface
 
 See [vision.md](vision.md) for deeper philosophy, insights, and target audience analysis.
 

@@ -4,11 +4,16 @@ This document captures the high-level product philosophy, motivations, and strat
 
 ## Why Not Messaging Apps?
 
-Messaging apps are about messages. Mesh is about activities.
+Coordinating activities through messaging apps means rounds of back-and-forth: explaining what you want to do, checking who's interested, negotiating availability, comparing people's fit — one message at a time, one person at a time. Each round trip takes minutes to hours. People drop out mid-negotiation. Details scatter across threads and DMs. By the time you've coordinated, the moment may have passed.
 
-When you want to find a tennis partner, organize a study group, or staff a hackathon team, the natural action in messaging apps is to write a message — either to one person (high effort, doesn't scale) or to a large group (wasteful: 100 people see it, 5 care). The activity itself — what you want to do, when, where, what skills are needed — gets buried in a thread of replies.
+The root cause: **messaging apps treat everything as a message.** They don't know you're coordinating an activity, so they can't help with the coordination. The activity itself — what, when, where, how many people, what skills — gets buried in a thread of replies.
 
-Mesh makes the **activity posting** the fundamental unit. You describe what you want to do once, and the platform handles finding compatible people, resolving scheduling, and managing group formation. The conversation happens _after_ the right people are assembled, not before.
+Mesh treats the **activity posting** as the fundamental unit. Because a posting has structure, the platform can act on it: skip unavailable people, match on relevant dimensions, manage group formation, send invites in your preferred order. The back-and-forth is replaced by a single posting.
+
+This serves two scenarios:
+
+- **Finding new people** (matching): describe your activity, get matched with compatible people based on skills, availability, and interests.
+- **Coordinating with people you know** (invites): post your activity, invite connections in order — the platform handles the asking, waiting, and fallback automatically.
 
 ## Effectiveness Over Engagement
 
