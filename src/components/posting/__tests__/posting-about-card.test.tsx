@@ -69,7 +69,6 @@ const baseForm: PostingFormState = {
   availabilityWindows: [],
   specificWindows: [],
   selectedSkills: [],
-  hiddenDetails: "",
 };
 
 const onFormChange = vi.fn();

@@ -11,7 +11,6 @@ import { PostingTeamCard } from "./posting-team-card";
 import { SequentialInviteResponseCard } from "./sequential-invite-response-card";
 import { GroupChatPanel } from "./group-chat-panel";
 import { SkillGapPrompt } from "./skill-gap-prompt";
-import { PostingHiddenDetails } from "./posting-hidden-details";
 
 export function PostingVisitorView() {
   const {
@@ -59,14 +58,6 @@ export function PostingVisitorView() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <PostingAboutCard />
-
-          {currentUserId && !isOwner && (
-            <PostingHiddenDetails
-              postingId={postingId}
-              isAcceptedMember={isAcceptedMember}
-              isOwner={isOwner}
-            />
-          )}
 
           {currentUserId && !isOwner && (
             <SkillGapPrompt
