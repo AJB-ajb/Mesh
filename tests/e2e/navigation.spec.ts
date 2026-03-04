@@ -22,13 +22,15 @@ test.describe("Navigation", () => {
 
     await expect(page.locator("text=How it works")).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Describe what you want to do" }),
+      page.getByRole("heading", { name: "Describe your activity" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Get matched with the right people" }),
+      page.getByRole("heading", {
+        name: "Find or invite the right people",
+      }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Connect and collaborate" }),
+      page.getByRole("heading", { name: "Start doing the thing" }),
     ).toBeVisible();
   });
 

@@ -206,36 +206,42 @@ test.describe("Layout > Touch targets", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("Layout > Viewport containment", () => {
-  test("Landing — header + CTA visible (mobile)", async ({ page }) => {
-    await page.setViewportSize(VIEWPORTS.mobile);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+  // Landing & Login tests need a clean (unauthenticated) context because
+  // authed users are redirected away from these public pages.
+  test.describe("Public pages", () => {
+    test.use({ storageState: { cookies: [], origins: [] } });
 
-    await expect(page.locator("header")).toBeVisible();
-    const cta = page
-      .locator('a[href*="/login"]:has-text("Post something")')
-      .first();
-    await expect(cta).toBeInViewport();
-  });
+    test("Landing — header + CTA visible (mobile)", async ({ page }) => {
+      await page.setViewportSize(VIEWPORTS.mobile);
+      await page.goto("/", { waitUntil: "domcontentloaded" });
 
-  test("Landing — header + CTA visible (desktop)", async ({ page }) => {
-    await page.setViewportSize(VIEWPORTS.desktop);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+      await expect(page.locator("header")).toBeVisible();
+      const cta = page
+        .locator('a[href*="/login"]:has-text("Post something")')
+        .first();
+      await expect(cta).toBeInViewport();
+    });
 
-    await expect(page.locator("header")).toBeVisible();
-    const cta = page
-      .locator('a[href*="/login"]:has-text("Post something")')
-      .first();
-    await expect(cta).toBeInViewport();
-  });
+    test("Landing — header + CTA visible (desktop)", async ({ page }) => {
+      await page.setViewportSize(VIEWPORTS.desktop);
+      await page.goto("/", { waitUntil: "domcontentloaded" });
 
-  test("Login — heading + submit in viewport without scrolling (mobile)", async ({
-    page,
-  }) => {
-    await page.setViewportSize(VIEWPORTS.mobile);
-    await page.goto("/login", { waitUntil: "domcontentloaded" });
+      await expect(page.locator("header")).toBeVisible();
+      const cta = page
+        .locator('a[href*="/login"]:has-text("Post something")')
+        .first();
+      await expect(cta).toBeInViewport();
+    });
 
-    await expect(page.locator("h1")).toBeInViewport();
-    await expect(page.locator('button[type="submit"]')).toBeInViewport();
+    test("Login — heading + submit in viewport without scrolling (mobile)", async ({
+      page,
+    }) => {
+      await page.setViewportSize(VIEWPORTS.mobile);
+      await page.goto("/login", { waitUntil: "domcontentloaded" });
+
+      await expect(page.locator("h1")).toBeInViewport();
+      await expect(page.locator('button[type="submit"]')).toBeInViewport();
+    });
   });
 
   test("Posts — header + bottom bar + page heading visible (mobile)", async ({
