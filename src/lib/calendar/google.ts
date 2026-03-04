@@ -1,7 +1,8 @@
-"use server";
-
 /**
  * Google Calendar integration: OAuth flow + FreeBusy API.
+ *
+ * Server-only module — only import from API routes / server components.
+ * The googleapis package (~171MB) must never be bundled client-side.
  */
 
 import { google } from "googleapis";
