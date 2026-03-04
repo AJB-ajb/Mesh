@@ -36,6 +36,12 @@ const closeSlashMenu = StateEffect.define<void>();
 const selectSlashItem = StateEffect.define<number>();
 
 // ---------------------------------------------------------------------------
+// Available commands (set per-editor-instance; single editor on page)
+// ---------------------------------------------------------------------------
+
+let _availableCommands: SlashCommand[] = SLASH_COMMANDS;
+
+// ---------------------------------------------------------------------------
 // Initial state
 // ---------------------------------------------------------------------------
 
@@ -107,7 +113,10 @@ export const slashMenuState = StateField.define<SlashMenuState>({
       if (ctx) {
         const { from, query } = ctx;
         const to = tr.state.selection.main.head;
-        const commands = query === "" ? SLASH_COMMANDS : filterCommands(query);
+        const commands =
+          query === ""
+            ? _availableCommands
+            : filterCommands(query, _availableCommands);
 
         if (!value.isOpen) {
           // Open the menu
@@ -140,6 +149,11 @@ export interface SlashCommandCallbacks {
   onStateChange: (state: SlashMenuState) => void;
   /** Called when the user selects a command (Enter key or mouse click). */
   onSelectCommand: (command: SlashCommand, view?: EditorView) => void;
+}
+
+export interface SlashCommandPluginOptions extends SlashCommandCallbacks {
+  /** Override which commands are available in this editor instance. */
+  commands?: SlashCommand[];
 }
 
 // ---------------------------------------------------------------------------
@@ -250,12 +264,17 @@ function createSlashListener(callbacks: SlashCommandCallbacks) {
  * directly as `extensions` to the editor.
  */
 export function slashCommandPlugin(
-  callbacks: SlashCommandCallbacks,
+  options: SlashCommandPluginOptions,
 ): Extension {
+  if (options.commands) {
+    _availableCommands = options.commands;
+  } else {
+    _availableCommands = SLASH_COMMANDS;
+  }
   return [
     slashMenuState,
-    createSlashKeymap(callbacks),
-    createSlashListener(callbacks),
+    createSlashKeymap(options),
+    createSlashListener(options),
   ];
 }
 

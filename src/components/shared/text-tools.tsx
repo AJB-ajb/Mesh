@@ -5,6 +5,7 @@ import { Sparkles, Eraser, Loader2, Undo2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { labels } from "@/lib/labels";
+import { autoFormat, autoClean, TextToolError } from "@/lib/text-tools-api";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -26,11 +27,7 @@ const UNDO_TIMEOUT_MS = 8_000;
 // Component
 // ---------------------------------------------------------------------------
 
-export function TextTools({
-  text,
-  onTextChange,
-  disabled,
-}: TextToolsProps) {
+export function TextTools({ text, onTextChange, disabled }: TextToolsProps) {
   const [isFormatting, setIsFormatting] = useState(false);
   const [isCleaning, setIsCleaning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,32 +63,24 @@ export function TextTools({
     setIsFormatting(true);
 
     try {
-      const res = await fetch("/api/format", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
+      const { result, changed } = await autoFormat(text);
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error?.message ?? labels.textTools.errorFormat);
-        return;
-      }
-
-      const data: { formatted: string } = await res.json();
-
-      if (data.formatted === text) {
+      if (!changed) {
         setError(labels.textTools.noChanges);
         return;
       }
 
       const oldText = text;
-      onTextChange(data.formatted);
+      onTextChange(result);
       setPreviousText(oldText);
       setFeedbackMessage(labels.textTools.appliedFormat);
       startUndoTimer();
-    } catch {
-      setError(labels.textTools.errorFormat);
+    } catch (err) {
+      setError(
+        err instanceof TextToolError
+          ? err.message
+          : labels.textTools.errorFormat,
+      );
     } finally {
       setIsFormatting(false);
     }
@@ -103,32 +92,24 @@ export function TextTools({
     setIsCleaning(true);
 
     try {
-      const res = await fetch("/api/clean", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
+      const { result, changed } = await autoClean(text);
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error?.message ?? labels.textTools.errorClean);
-        return;
-      }
-
-      const data: { cleaned: string } = await res.json();
-
-      if (data.cleaned === text) {
+      if (!changed) {
         setError(labels.textTools.noChanges);
         return;
       }
 
       const oldText = text;
-      onTextChange(data.cleaned);
+      onTextChange(result);
       setPreviousText(oldText);
       setFeedbackMessage(labels.textTools.appliedClean);
       startUndoTimer();
-    } catch {
-      setError(labels.textTools.errorClean);
+    } catch (err) {
+      setError(
+        err instanceof TextToolError
+          ? err.message
+          : labels.textTools.errorClean,
+      );
     } finally {
       setIsCleaning(false);
     }
