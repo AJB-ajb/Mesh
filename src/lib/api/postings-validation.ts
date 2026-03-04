@@ -118,7 +118,7 @@ export function buildPostingDbRow(body: PostingBody, mode: "create" | "edit") {
   if (mode === "create") {
     const expiresAt = body.expiresAt
       ? new Date(body.expiresAt + "T23:59:59")
-      : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+      : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
     row.expires_at = expiresAt.toISOString();
 
     if (body.sourceText?.trim()) {

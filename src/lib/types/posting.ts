@@ -80,10 +80,10 @@ export type PostingFormState = {
   selectedSkills: SelectedPostingSkill[];
 };
 
-// Default expiry: 90 days from now
+// Default expiry: 3 days from now
 function defaultExpiresAt(): string {
   const d = new Date();
-  d.setDate(d.getDate() + 90);
+  d.setDate(d.getDate() + 3);
   return d.toISOString().slice(0, 10);
 }
 
