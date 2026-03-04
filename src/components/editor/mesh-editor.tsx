@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import {
   EditorView,
   placeholder as cmPlaceholder,
@@ -26,7 +26,7 @@ export interface MeshEditorProps {
   onBlur?: () => void;
 }
 
-export function MeshEditor({
+export const MeshEditor = memo(function MeshEditor({
   content = "",
   placeholder,
   onChange,
@@ -164,4 +164,4 @@ export function MeshEditor({
   }, [content]);
 
   return <div ref={containerRef} className={cn("relative", className)} />;
-}
+});
