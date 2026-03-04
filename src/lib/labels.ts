@@ -76,38 +76,39 @@ export const labels = {
   landing: {
     loginButton: "Log in",
     heroBadge: "Activity-first coordination",
-    heroTitle: "The right few people make all the difference.",
+    heroTitle: "Stop coordinating through back-and-forth messages.",
     heroSubheadline:
-      "Describe what you want to do \u2014 a hackathon, a study group, a startup \u2014 and find the people who fit.",
+      "Post what you want to do \u2014 a hackathon, a study group, a side project \u2014 and Mesh handles finding the right people.",
     postSomethingButton: "Post something",
     explorePostingsButton: "Explore postings",
     whyMeshButton: "Why Mesh?",
 
-    problemSectionTitle: "Finding the right people is surprisingly hard",
+    problemSectionTitle: "Messaging wasn\u2019t designed for coordination",
     problemGroupChatsTitle: "Group chats",
-    problemGroupChatsBody: "You already need to know who to ask.",
+    problemGroupChatsBody:
+      "100 people see your message, 5 are interested \u2014 and you still have to negotiate one by one.",
     problemMeetupsTitle: "Events & meetups",
-    problemMeetupsBody: "Usually built for crowds, not small groups.",
+    problemMeetupsBody: "Built for crowds, not small teams of 2\u20135.",
     problemForumsTitle: "Job boards & forums",
-    problemForumsBody: "Too formal, too slow.",
+    problemForumsBody: "Too formal, too slow for a weekend hackathon.",
     problemConclusion:
-      "Messaging apps are about messages. Mesh is about activities.",
+      "They all treat your activity as a message. Mesh treats it as a structured posting the platform can act on.",
 
     useCaseSectionTitle: "People are looking for all kinds of things",
     useCaseSectionSubtitle:
       "From study partners to startup co-founders \u2014 post what you want to do and find the right people.",
 
     howItWorksTitle: "How it works",
-    howItWorksSubtitle: "From idea to collaboration in under a minute.",
-    howItWorksStep1Title: "Describe what you want to do",
+    howItWorksSubtitle: "One posting replaces all the back-and-forth.",
+    howItWorksStep1Title: "Describe your activity",
     howItWorksStep1Body:
-      "Paste text, speak, or fill a form \u2014 describe any activity, project, or event you need people for.",
-    howItWorksStep2Title: "Get matched with the right people",
+      "Paste text, speak, or type \u2014 Mesh extracts the structure (time, skills, team size) so the platform can act on it.",
+    howItWorksStep2Title: "Find or invite the right people",
     howItWorksStep2Body:
-      "Matching on skills, availability, location, and interests \u2014 you\u2019ll see who fits best.",
-    howItWorksStep3Title: "Connect and collaborate",
+      "Get matched with compatible people, or invite your connections in order \u2014 no manual back-and-forth.",
+    howItWorksStep3Title: "Start doing the thing",
     howItWorksStep3Body:
-      "Chat, plan, and do the thing \u2014 whether it\u2019s a hackathon, a tennis match, or a startup launch.",
+      "The right people are assembled. Chat, plan, and go \u2014 whether it\u2019s a hackathon, a tennis match, or a startup.",
 
     featuresSectionTitle: "Built for getting things done",
     featuresSectionSubtitle:
@@ -125,8 +126,8 @@ export const labels = {
     smartCompatibilityBody:
       "Skills, availability, location, and interest alignment \u2014 all at a glance.",
 
-    finalCtaTitle: "Ready to find your people?",
-    ctaBody: "Post what you want to do and get matched with the right people.",
+    finalCtaTitle: "Ready to skip the back-and-forth?",
+    ctaBody: "Post your activity and let Mesh handle finding the right people.",
     getStartedButton: "Get started free",
 
     footerCopyright: "\u00a9 2026 Mesh. All rights reserved.",
@@ -139,43 +140,43 @@ export const labels = {
   // Why Mesh page
   // ---------------------------------------------------------------------------
   why: {
-    heroTitle: "Most things worth doing work best with a few people.",
+    heroTitle: "Coordinating activities shouldn\u2019t mean endless messaging.",
     heroSubtitle:
-      "Startups, study groups, hackathon teams, jam sessions \u2014 the magic number is usually 2\u20135. But finding those people is strangely hard.",
+      "Whether it\u2019s a hackathon team, a study group, or a tennis partner \u2014 you shouldn\u2019t have to message people one by one to make it happen.",
 
-    smallGroupTitle: "Why smaller teams work better",
+    smallGroupTitle: "The back-and-forth problem",
     smallGroupBody1:
-      "Communication overhead grows faster than team size. A group of 3 has 3 connections. A group of 5 has 10. A group of 10 has 45. Smaller teams can move faster and spend less time on coordination.",
+      "Coordinating through messages means rounds of explaining, checking interest, negotiating schedules, and comparing fit. Each round trip takes minutes to hours. People drop out. Details scatter across threads.",
     smallGroupBody2:
-      "The most valuable collaboration often happens in groups small enough that everyone knows each other\u2019s strengths. Three well-matched people can accomplish more than a larger team at cross-purposes.",
+      "This gets worse with group size \u2014 but even coordinating 2\u20133 people through DMs is surprisingly tedious. The back-and-forth is the bottleneck, not finding the activity.",
 
-    problemTitle: "What exists today doesn\u2019t solve this",
+    problemTitle: "Why messaging apps can\u2019t solve this",
     problemGroupChatsTitle: "Group chats (Slack, Discord, WhatsApp)",
     problemGroupChatsBody:
-      "Built for messages, not activities. 100 people see your post, 5 are interested.",
+      "They treat your activity as just another message. They can\u2019t check availability, match skills, or manage invites \u2014 so you do it all manually.",
     problemMeetupsTitle: "Events and meetups",
     problemMeetupsBody:
-      "Designed for larger gatherings. Harder to use when you need a team of 3 for a weekend project.",
+      "Designed for large gatherings, not small teams of 2\u20135 that need real coordination.",
     problemForumsTitle: "Job boards and forums",
     problemForumsBody:
-      "Built for formal, long-term roles. Too much process for a weekend hackathon.",
+      "Too formal, too slow. By the time you\u2019ve posted and waited, the weekend is over.",
     problemConclusion:
-      "None of them start with your activity and find the right people for it.",
+      "The root cause: messaging apps don\u2019t know you\u2019re coordinating an activity, so they can\u2019t help.",
 
-    howDifferentTitle: "How Mesh is different",
-    howDifferentActivityFirst: "Activity-first",
+    howDifferentTitle: "How Mesh replaces the back-and-forth",
+    howDifferentActivityFirst: "Structured postings",
     howDifferentActivityFirstBody:
-      "Start with what you want to do, not who you know. Post an activity and let the right people find you.",
+      "Your posting has structure \u2014 time, skills, team size \u2014 so the platform can check availability, match people, and manage invites for you.",
     howDifferentNoSetup: "No setup required",
     howDifferentNoSetupBody:
-      "You don\u2019t need a profile to post. Describe your idea, and you\u2019re live in seconds.",
-    howDifferentSmartMatching: "AI-powered matching",
+      "You don\u2019t need a profile to post. Describe your activity, and you\u2019re live in seconds.",
+    howDifferentSmartMatching: "Find or invite",
     howDifferentSmartMatchingBody:
-      "Matching on skills, availability, location, and interests \u2014 not just keywords.",
+      "Get matched with compatible strangers, or invite people you know in your preferred order \u2014 the platform handles the asking.",
 
-    speedTitle: "From idea to team in under a minute",
+    speedTitle: "From posting to team in under a minute",
     speedBody:
-      "Describe what you need in 30 seconds. Paste text, speak into the mic, or fill a quick form. Mesh extracts the details and starts matching immediately.",
+      "Describe your activity in 30 seconds. Mesh extracts the structure and immediately starts finding or inviting the right people \u2014 no back-and-forth required.",
 
     useCasesTitle: "Use cases",
     useCaseAcademicTitle: "Academic collaboration",
@@ -194,8 +195,8 @@ export const labels = {
     useCaseSpontaneousBody:
       "Concert tonight? Road trip this weekend? Find someone who\u2019s in.",
 
-    ctaTitle: "Ready to find your people?",
-    ctaBody: "Post what you want to do. It takes 30 seconds.",
+    ctaTitle: "Ready to skip the back-and-forth?",
+    ctaBody: "Post your activity. It takes 30 seconds.",
     ctaButton: "Get started free",
   },
 
@@ -203,9 +204,9 @@ export const labels = {
   // Site metadata / SEO
   // ---------------------------------------------------------------------------
   meta: {
-    title: "Mesh \u2014 Coordinate Activities, Find the Right People",
+    title: "Mesh \u2014 Activity Coordination Without the Back-and-Forth",
     description:
-      "Activity coordination for small groups. Describe what you want to do \u2014 a hackathon, a study group, a side project \u2014 and find the people who fit.",
+      "Stop coordinating through endless messages. Post your activity \u2014 a hackathon, a study group, a side project \u2014 and Mesh finds the right people.",
     appName: "Mesh",
   },
 
@@ -214,7 +215,7 @@ export const labels = {
   // ---------------------------------------------------------------------------
   postingCreation: {
     pageTitle: "Create Posting",
-    subtitle: "Describe your posting to find the right collaborators",
+    subtitle: "Describe your activity to find the right people",
     backButton: "Back to postings",
     infoAiMode:
       "Paste your posting description and we\u2019ll extract the details automatically.",
