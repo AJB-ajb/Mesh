@@ -158,9 +158,9 @@ export async function matchProfileToPostings(
       availability_mode: row.availability_mode || "flexible",
       timezone: row.timezone || null,
       embedding: null,
-      status: "open",
+      status: row.status,
       created_at: row.created_at,
-      updated_at: row.created_at,
+      updated_at: row.updated_at,
       expires_at: row.expires_at,
       identified_roles: row.identified_roles ?? null,
     };

@@ -3,6 +3,7 @@
  * Evaluates candidate-posting fit beyond fast-filter similarity.
  */
 
+import * as Sentry from "@sentry/nextjs";
 import { generateStructuredJSON, isGeminiConfigured } from "@/lib/ai/gemini";
 import {
   DEEP_MATCH_SYSTEM_PROMPT,
@@ -115,7 +116,7 @@ export async function deepMatchCandidates(
           distanceKm: candidate.distanceKm,
           semanticScore: candidate.semanticScore,
         }).catch((error) => {
-          console.error("Deep match failed for candidate:", error);
+          Sentry.captureException(error, { tags: { source: "deep-match" } });
           return null;
         }),
       ),
