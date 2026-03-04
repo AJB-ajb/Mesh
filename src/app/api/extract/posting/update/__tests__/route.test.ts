@@ -201,6 +201,6 @@ describe("POST /api/extract/posting/update", () => {
     const body = await res.json();
 
     expect(res.status).toBe(500);
-    expect(body.error.message).toContain("Gemini failed");
+    expect(body.error.message).toBe("Internal server error");
   });
 });

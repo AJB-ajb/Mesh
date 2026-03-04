@@ -91,7 +91,7 @@ function PostsContent() {
         <EmptyState
           icon={<FolderKanban />}
           title={labels.posts.empty[activeFilter]}
-          description={labels.posts.subtitle}
+          description={labels.posts.emptyDescription[activeFilter]}
           action={
             activeFilter === "all"
               ? {

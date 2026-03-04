@@ -1168,6 +1168,13 @@ export const labels = {
       applied: "No pending join requests.",
       completed: "No completed postings yet.",
     } as const,
+    emptyDescription: {
+      all: "Create a posting or browse the discover page to get started.",
+      created: "Create a new posting to find collaborators.",
+      joined: "Browse the discover page to find postings to join.",
+      applied: "Request to join postings you\u2019re interested in.",
+      completed: "Completed projects will appear here.",
+    } as const,
     newPosting: "New Posting",
     discoverCta: "Discover postings",
   },

@@ -222,6 +222,6 @@ describe("POST /api/extract/profile/update", () => {
     const body = await res.json();
 
     expect(res.status).toBe(500);
-    expect(body.error.message).toContain("Gemini API error");
+    expect(body.error.message).toBe("Internal server error");
   });
 });

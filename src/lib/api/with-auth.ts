@@ -52,11 +52,7 @@ export function withAuth(handler: AuthHandler) {
       Sentry.captureException(error, {
         extra: { url: req.url, method: req.method },
       });
-      return apiError(
-        "INTERNAL",
-        error instanceof Error ? error.message : "Internal server error",
-        500,
-      );
+      return apiError("INTERNAL", "Internal server error", 500);
     }
   };
 

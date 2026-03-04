@@ -130,6 +130,6 @@ describe("withAuth", () => {
 
     expect(response.status).toBe(500);
     expect(body.error.code).toBe("INTERNAL");
-    expect(body.error.message).toBe("Database connection failed");
+    expect(body.error.message).toBe("Internal server error");
   });
 });

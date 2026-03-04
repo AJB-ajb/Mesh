@@ -129,6 +129,6 @@ describe("POST /api/filters/translate", () => {
     expect(res.status).toBe(500);
 
     const body = await res.json();
-    expect(body.error.message).toBe("API error");
+    expect(body.error.message).toBe("Failed to translate filters");
   });
 });
