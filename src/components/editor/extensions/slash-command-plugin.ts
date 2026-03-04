@@ -1,6 +1,7 @@
 import { keymap, EditorView } from "@codemirror/view";
 import {
   EditorState,
+  Prec,
   StateField,
   StateEffect,
   type Extension,
@@ -146,73 +147,78 @@ export interface SlashCommandCallbacks {
 // ---------------------------------------------------------------------------
 
 function createSlashKeymap(callbacks: SlashCommandCallbacks) {
-  return keymap.of([
-    {
-      key: "ArrowDown",
-      run(view) {
-        const state = view.state.field(slashMenuState);
-        if (!state.isOpen || state.commands.length === 0) return false;
-        const next = (state.selectedIndex + 1) % state.commands.length;
-        view.dispatch({ effects: selectSlashItem.of(next) });
-        return true;
+  return Prec.highest(
+    keymap.of([
+      {
+        key: "ArrowDown",
+        run(view) {
+          const state = view.state.field(slashMenuState);
+          if (!state.isOpen || state.commands.length === 0) return false;
+          const next = (state.selectedIndex + 1) % state.commands.length;
+          view.dispatch({ effects: selectSlashItem.of(next) });
+          return true;
+        },
       },
-    },
-    {
-      key: "ArrowUp",
-      run(view) {
-        const state = view.state.field(slashMenuState);
-        if (!state.isOpen || state.commands.length === 0) return false;
-        const next =
-          (state.selectedIndex - 1 + state.commands.length) %
-          state.commands.length;
-        view.dispatch({ effects: selectSlashItem.of(next) });
-        return true;
+      {
+        key: "ArrowUp",
+        run(view) {
+          const state = view.state.field(slashMenuState);
+          if (!state.isOpen || state.commands.length === 0) return false;
+          const next =
+            (state.selectedIndex - 1 + state.commands.length) %
+            state.commands.length;
+          view.dispatch({ effects: selectSlashItem.of(next) });
+          return true;
+        },
       },
-    },
-    {
-      key: "Enter",
-      run(view) {
-        const state = view.state.field(slashMenuState);
-        if (!state.isOpen || state.commands.length === 0) return false;
-        const cmd = state.commands[state.selectedIndex];
-        if (!cmd) return false;
+      {
+        key: "Enter",
+        run(view) {
+          const state = view.state.field(slashMenuState);
+          if (!state.isOpen || state.commands.length === 0) return false;
+          const cmd = state.commands[state.selectedIndex];
+          if (!cmd) return false;
 
-        // Delete the /query text
-        view.dispatch({
-          changes: { from: state.from, to: state.to, insert: "" },
-          effects: closeSlashMenu.of(undefined),
-        });
-        callbacks.onSelectCommand(cmd, view);
-        return true;
+          // Delete the /query text
+          view.dispatch({
+            changes: { from: state.from, to: state.to, insert: "" },
+            effects: closeSlashMenu.of(undefined),
+          });
+          callbacks.onSelectCommand(cmd, view);
+          return true;
+        },
       },
-    },
-    {
-      key: "Tab",
-      run(view) {
-        const state = view.state.field(slashMenuState);
-        if (!state.isOpen || state.commands.length === 0) return false;
-        const cmd = state.commands[state.selectedIndex];
-        if (!cmd) return false;
+      {
+        key: "Tab",
+        run(view) {
+          const state = view.state.field(slashMenuState);
+          if (!state.isOpen || state.commands.length === 0) return false;
+          const cmd = state.commands[state.selectedIndex];
+          if (!cmd) return false;
 
-        // Delete the /query text
-        view.dispatch({
-          changes: { from: state.from, to: state.to, insert: "" },
-          effects: closeSlashMenu.of(undefined),
-        });
-        callbacks.onSelectCommand(cmd, view);
-        return true;
+          // If query already matches the command name, no-op
+          if (state.query === cmd.name) return true;
+
+          // Autocomplete: replace `/query` with `/commandName`
+          const completed = `/${cmd.name}`;
+          view.dispatch({
+            changes: { from: state.from, to: state.to, insert: completed },
+            selection: { anchor: state.from + completed.length },
+          });
+          return true;
+        },
       },
-    },
-    {
-      key: "Escape",
-      run(view) {
-        const state = view.state.field(slashMenuState);
-        if (!state.isOpen) return false;
-        view.dispatch({ effects: closeSlashMenu.of(undefined) });
-        return true;
+      {
+        key: "Escape",
+        run(view) {
+          const state = view.state.field(slashMenuState);
+          if (!state.isOpen) return false;
+          view.dispatch({ effects: closeSlashMenu.of(undefined) });
+          return true;
+        },
       },
-    },
-  ]);
+    ]),
+  );
 }
 
 // ---------------------------------------------------------------------------
