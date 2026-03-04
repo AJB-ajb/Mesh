@@ -42,7 +42,7 @@ const isMac =
 function InsertKbd() {
   return (
     <kbd className="ml-1.5 hidden text-[10px] opacity-60 sm:inline">
-      {isMac ? "\u2318" : "Ctrl+"}\u23CE
+      {isMac ? "\u2318\u23CE" : "Ctrl+\u23CE"}
     </kbd>
   );
 }
