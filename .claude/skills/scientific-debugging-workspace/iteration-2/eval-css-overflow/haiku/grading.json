@@ -1,0 +1,35 @@
+{
+  "assertions": [
+    {
+      "number": 1,
+      "text": "Lists at least 2 distinct hypotheses for the root cause",
+      "passed": true,
+      "evidence": "H1, H2, H3 listed in table format. All three hypotheses enumerated."
+    },
+    {
+      "number": 2,
+      "text": "Proposes a diagnostic step or experiment before jumping to the final fix",
+      "passed": false,
+      "evidence": "Lists hypotheses in table but does not propose a diagnostic experiment before jumping to root cause analysis and fix."
+    },
+    {
+      "number": 3,
+      "text": "Explains what evidence confirms the root cause before applying the fix",
+      "passed": true,
+      "evidence": "Explains CSS rules and overflow behavior analysis."
+    },
+    {
+      "number": 4,
+      "text": "Correctly identifies overflow:hidden on .content-area as the cause",
+      "passed": true,
+      "evidence": "Correctly identifies overflow:hidden on .content-area as the root cause."
+    },
+    {
+      "number": 5,
+      "text": "Fix modifies Layout.css rather than Card.css",
+      "passed": true,
+      "evidence": "Proposes fix in Layout.css, the correct location."
+    }
+  ],
+  "score": "4/5"
+}

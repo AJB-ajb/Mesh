@@ -18,6 +18,7 @@
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+tests/.auth/
 
 # next.js
 /.next/
@@ -105,3 +106,8 @@ public/swe-worker*
 test-results/
 unit-test-results/
 junit.xml
+
+# Capacitor
+*.jks
+*.keystore
+keystore.properties

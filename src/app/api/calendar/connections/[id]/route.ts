@@ -29,10 +29,14 @@ export const DELETE = withAuth(async (_req, { user, supabase, params }) => {
   }
 
   // Delete busy blocks first (cascade should handle this, but be explicit)
-  await supabase
+  const { error: blocksError } = await supabase
     .from("calendar_busy_blocks")
     .delete()
     .eq("connection_id", connectionId);
+
+  if (blocksError) {
+    return apiError("INTERNAL", blocksError.message, 500);
+  }
 
   // Delete the connection
   const { error: deleteError } = await supabase

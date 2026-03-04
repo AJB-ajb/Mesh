@@ -1,0 +1,35 @@
+{
+  "expectations": [
+    {
+      "text": "Lists at least 2 distinct hypotheses for what could be causing the bug",
+      "passed": false,
+      "evidence": "Goes directly to 'Root Cause: Shared Mutable Module-Level State + Async Interleaving' without listing alternative hypotheses."
+    },
+    {
+      "text": "Proposes a diagnostic step or experiment before jumping to the final fix",
+      "passed": false,
+      "evidence": "Includes a detailed interleaving timeline table as part of the root cause explanation, but this is presented as analysis rather than a proposed experiment. Goes directly from diagnosis to 'The Fix'."
+    },
+    {
+      "text": "Explains what evidence confirms the root cause before applying the fix",
+      "passed": true,
+      "evidence": "Provides an excellent interleaving timeline table showing exactly how requests A and B interfere, plus explains why null checks and try/catch failed."
+    },
+    {
+      "text": "Correctly identifies the shared mutable currentUser module-level variable as the race condition",
+      "passed": true,
+      "evidence": "Correctly identifies 'The bug is a classic async race condition caused by the module-level variable currentUser being shared across all concurrent callers'"
+    },
+    {
+      "text": "Fix removes or localizes the module-level state so concurrent calls don't interfere",
+      "passed": true,
+      "evidence": "Fix uses local variable and AsyncLocalStorage for request-scoped getCurrentUser()"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 2,
+    "total": 5,
+    "pass_rate": 0.6
+  }
+}

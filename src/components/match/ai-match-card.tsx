@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BadgeList } from "@/components/ui/badge-list";
 import { formatTimeAgo } from "@/lib/format";
+import { labels } from "@/lib/labels";
 import { statusColors, statusLabels } from "@/lib/posting/styles";
 import type {
   MatchResponse,
@@ -32,7 +33,7 @@ export function AiMatchCard({ match, isApplying, onApply }: AiMatchCardProps) {
             <div className="flex items-center gap-3 flex-wrap">
               <CardTitle className="text-xl">
                 <Link href={`/matches/${match.id}`} className="hover:underline">
-                  {posting.title}
+                  {posting.title?.replace(/^#{1,6}\s+/, "")}
                 </Link>
               </CardTitle>
               <span className="rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success">
@@ -55,9 +56,18 @@ export function AiMatchCard({ match, isApplying, onApply }: AiMatchCardProps) {
         {match.explanation && (
           <div className="rounded-lg border border-border bg-muted/30 p-4">
             <p className="text-sm font-medium text-muted-foreground mb-2">
-              Why you matched
+              {labels.deepMatch.explanation}
             </p>
             <p className="text-sm">{match.explanation}</p>
+          </div>
+        )}
+
+        {/* Tier-gated explanation prompt */}
+        {!match.explanation && (
+          <div className="rounded-lg border border-border bg-muted/30 p-4">
+            <p className="text-sm text-muted-foreground">
+              {labels.tier.upgradePrompt}
+            </p>
           </div>
         )}
 

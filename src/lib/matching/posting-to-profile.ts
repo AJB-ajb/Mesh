@@ -5,13 +5,20 @@
 
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, ScoreBreakdown } from "@/lib/supabase/types";
-import { MATCHING } from "@/lib/constants";
+import { MATCHING, DEEP_MATCH } from "@/lib/constants";
+import {
+  deepMatchCandidates,
+  isDeepMatchAvailable,
+  blendScores,
+  type DeepMatchResult,
+} from "@/lib/matching/deep-match";
 
 export interface PostingToProfileMatch {
   profile: Profile;
   score: number; // 0-1 similarity score
   scoreBreakdown: ScoreBreakdown | null;
   matchId?: string; // If match record already exists
+  deepMatchResult?: DeepMatchResult;
 }
 
 /**
@@ -25,6 +32,7 @@ export interface PostingToProfileMatch {
 export async function matchPostingToProfiles(
   postingId: string,
   limit: number = MATCHING.DEFAULT_RESULT_LIMIT,
+  deepMatch: boolean = false,
 ): Promise<PostingToProfileMatch[]> {
   const supabase = await createClient();
 
@@ -92,65 +100,156 @@ export async function matchPostingToProfiles(
 
   const matchMap = new Map(existingMatches?.map((m) => [m.user_id, m]) || []);
 
-  // Transform results into match objects and compute breakdowns
-  const matches: PostingToProfileMatch[] = await Promise.all(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    data.map(async (row: any) => {
-      const profile: Profile = {
-        user_id: row.user_id,
-        full_name: row.full_name,
-        headline: row.headline,
-        bio: row.bio,
-        location: null,
-        location_lat: row.location_lat ?? null,
-        location_lng: row.location_lng ?? null,
-        interests: null,
-        languages: null,
-        portfolio_url: null,
-        github_url: null,
-        location_preference: row.location_preference ?? null,
-        location_mode: row.location_mode ?? null,
-        availability_slots: row.availability_slots || null,
-        source_text: null,
-        previous_source_text: null,
-        previous_profile_snapshot: null,
-        embedding: null,
-        timezone: null,
-        notification_preferences: null,
-        created_at: "",
-        updated_at: "",
-      };
+  // Determine which users need a fresh breakdown computed
+  const usersNeedingBreakdown: string[] = [];
+  const cachedBreakdowns = new Map<string, ScoreBreakdown>();
 
-      const existingMatch = matchMap.get(row.user_id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const row of data as any[]) {
+    const existingMatch = matchMap.get(row.user_id);
+    if (existingMatch?.score_breakdown) {
+      cachedBreakdowns.set(
+        row.user_id,
+        existingMatch.score_breakdown as ScoreBreakdown,
+      );
+    } else {
+      usersNeedingBreakdown.push(row.user_id);
+    }
+  }
 
-      // Compute score breakdown using database function
-      let scoreBreakdown: ScoreBreakdown | null = null;
-      if (existingMatch?.score_breakdown) {
-        // Use existing breakdown if available
-        scoreBreakdown = existingMatch.score_breakdown as ScoreBreakdown;
-      } else {
-        // Compute new breakdown
-        const { data: breakdown, error: breakdownError } = await supabase.rpc(
-          "compute_match_breakdown",
-          {
-            profile_user_id: row.user_id,
-            target_posting_id: postingId,
-          },
+  // Batch-compute breakdowns for all users that need one (single RPC call)
+  const batchBreakdowns = new Map<string, ScoreBreakdown>();
+  if (usersNeedingBreakdown.length > 0) {
+    const { data: batchData, error: batchError } = await supabase.rpc(
+      "compute_match_breakdowns_for_posting",
+      {
+        target_posting_id: postingId,
+        user_ids: usersNeedingBreakdown,
+      },
+    );
+
+    if (!batchError && batchData) {
+      for (const row of batchData as {
+        user_id: string;
+        breakdown: ScoreBreakdown;
+      }[]) {
+        batchBreakdowns.set(row.user_id, row.breakdown);
+      }
+    }
+  }
+
+  // Transform results into match objects using pre-computed breakdowns
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const matches: PostingToProfileMatch[] = (data as any[]).map((row: any) => {
+    const profile: Profile = {
+      user_id: row.user_id,
+      full_name: row.full_name,
+      headline: row.headline,
+      bio: row.bio,
+      location: null,
+      location_lat: row.location_lat ?? null,
+      location_lng: row.location_lng ?? null,
+      interests: null,
+      languages: null,
+      portfolio_url: null,
+      github_url: null,
+      location_preference: row.location_preference ?? null,
+      location_mode: row.location_mode ?? null,
+      availability_slots: row.availability_slots || null,
+      source_text: null,
+      previous_source_text: null,
+      previous_profile_snapshot: null,
+      embedding: null,
+      timezone: null,
+      notification_preferences: null,
+      tier: "free",
+      created_at: "",
+      updated_at: "",
+    };
+
+    const existingMatch = matchMap.get(row.user_id);
+    const scoreBreakdown =
+      cachedBreakdowns.get(row.user_id) ??
+      batchBreakdowns.get(row.user_id) ??
+      null;
+
+    return {
+      profile,
+      score: row.similarity,
+      scoreBreakdown,
+      matchId: existingMatch?.id,
+    };
+  });
+
+  // Deep match: run LLM evaluation on top N candidates if requested
+  if (deepMatch && isDeepMatchAvailable()) {
+    const topN = matches.slice(0, DEEP_MATCH.DEFAULT_TOP_N);
+
+    // Fetch posting source text
+    const { data: postingSource } = await supabase
+      .from("postings")
+      .select("title, source_text, description")
+      .eq("id", postingId)
+      .single();
+
+    const postingTitle = postingSource?.title || "";
+    const postingText =
+      postingSource?.source_text || postingSource?.description || "";
+
+    if (postingText) {
+      // Fetch profile source texts
+      const deepUserIds = topN.map((m) => m.profile.user_id);
+      const { data: profileSources } = await supabase
+        .from("profiles")
+        .select("user_id, source_text, bio, headline")
+        .in("user_id", deepUserIds);
+
+      const profileSourceMap = new Map(
+        profileSources?.map((p) => [p.user_id, p]) ?? [],
+      );
+
+      const candidates = topN
+        .map((m) => {
+          const ps = profileSourceMap.get(m.profile.user_id);
+          const profileText = ps?.source_text || ps?.bio || ps?.headline || "";
+          return {
+            profileText,
+            fastFilterScore: m.score,
+            sharedSkills: [] as string[],
+            availabilityOverlap: m.scoreBreakdown?.availability ?? null,
+            distanceKm: null as number | null,
+            semanticScore: m.scoreBreakdown?.semantic ?? null,
+          };
+        })
+        .filter((c) => c.profileText);
+
+      if (candidates.length > 0) {
+        const deepResults = await deepMatchCandidates(
+          postingTitle,
+          postingText,
+          candidates,
         );
 
-        if (!breakdownError && breakdown) {
-          scoreBreakdown = breakdown as ScoreBreakdown;
-        }
-      }
+        // Attach deep match results and blend scores
+        let resultIdx = 0;
+        topN.forEach((m) => {
+          if (resultIdx < deepResults.length) {
+            const ps = profileSourceMap.get(m.profile.user_id);
+            const profileText =
+              ps?.source_text || ps?.bio || ps?.headline || "";
+            if (profileText) {
+              m.deepMatchResult = deepResults[resultIdx];
+              m.score = blendScores(m.score, deepResults[resultIdx].score);
+              resultIdx++;
+            }
+          }
+        });
 
-      return {
-        profile,
-        score: row.similarity,
-        scoreBreakdown,
-        matchId: existingMatch?.id,
-      };
-    }),
-  );
+        // Re-sort by blended score
+        matches.sort((a, b) => b.score - a.score);
+      }
+    }
+  }
 
   return matches;
 }

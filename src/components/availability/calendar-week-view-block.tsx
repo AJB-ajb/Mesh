@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
+import { labels } from "@/lib/labels";
 import type { RecurringWindow } from "@/lib/types/availability";
 
 const HOUR_HEIGHT = 48; // must match use-calendar-drag.ts
@@ -84,24 +85,29 @@ export function CalendarWeekViewBlock({
         />
       )}
 
-      {/* Content */}
-      <div className="flex items-start justify-between px-1 pt-0.5 overflow-hidden">
-        <span className={`truncate text-[10px] font-medium ${textColor}`}>
-          {formatTime(w.start_minutes)}-{formatTime(w.end_minutes)}
-        </span>
-        {!readOnly && !isPreview && (
-          <button
-            type="button"
-            className="ml-0.5 shrink-0 rounded-sm p-0 text-muted-foreground hover:text-destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete?.(index);
-            }}
-          >
-            <X className="h-3 w-3" />
-          </button>
-        )}
-      </div>
+      {/* Content — conditionally rendered based on block height */}
+      {height >= 20 && (
+        <div className="flex items-start justify-between px-1 pt-0.5 overflow-hidden">
+          <span className={`truncate text-[0.625rem] font-medium ${textColor}`}>
+            {height >= 36
+              ? `${formatTime(w.start_minutes)}-${formatTime(w.end_minutes)}`
+              : formatTime(w.start_minutes)}
+          </span>
+          {!readOnly && !isPreview && height >= 20 && (
+            <button
+              type="button"
+              aria-label={labels.a11y.deleteAvailabilityBlock}
+              className="ml-0.5 shrink-0 rounded-sm p-0 text-muted-foreground hover:text-destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete?.(index);
+              }}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Resize handle: bottom */}
       {!readOnly && !isPreview && (

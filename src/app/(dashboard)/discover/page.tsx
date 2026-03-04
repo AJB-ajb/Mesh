@@ -3,19 +3,22 @@
 import { Suspense, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Bookmark, Search } from "lucide-react";
 import { labels } from "@/lib/labels";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { usePostings } from "@/lib/hooks/use-postings";
-import type { Posting } from "@/lib/hooks/use-postings";
+import { useConnections } from "@/lib/hooks/use-connections";
+import type { Posting, QueryFilters } from "@/lib/hooks/use-postings";
 import { useNlFilter } from "@/lib/hooks/use-nl-filter";
+import { useSkillDescendants } from "@/lib/hooks/use-skill-descendants";
 import { usePostingInterest } from "@/lib/hooks/use-posting-interest";
 import { useBookmarks } from "@/lib/hooks/use-bookmarks";
 import { applyFilters } from "@/lib/filters/apply-filters";
-import { PostingDiscoverCard } from "@/components/posting/posting-discover-card";
+import { UnifiedPostingCard } from "@/components/posting";
+import { stripTitleMarkdown } from "@/lib/format";
 import { PostingFilters } from "@/components/posting/posting-filters";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type SortOption = "recent" | "match";
 
@@ -28,10 +31,24 @@ function DiscoverContent() {
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterVisibility, setFilterVisibility] = useState<string>("all");
   const [showSaved, setShowSaved] = useState(initialSavedFilter);
+  const [showConnections, setShowConnections] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("recent");
 
+  // Skill filter state — populated when a skill filter UI is added
+  const [selectedSkillIds] = useState<string[]>([]);
+
+  // Resolve selected skill node IDs to their tree-expanded descendants
+  const { descendantIds: resolvedSkillIds } =
+    useSkillDescendants(selectedSkillIds);
+
+  // Build query-level filters to pass to usePostings
+  const queryFilters = useMemo<QueryFilters | undefined>(() => {
+    if (resolvedSkillIds.length === 0) return undefined;
+    return { skillNodeIds: resolvedSkillIds };
+  }, [resolvedSkillIds]);
+
   const { postings, userId, interestedPostingIds, isLoading, mutate } =
-    usePostings("discover", filterCategory);
+    usePostings("discover", filterCategory, queryFilters);
 
   const onCategoryChange = useCallback(
     (cat: string | undefined) => setFilterCategory(cat ?? "all"),
@@ -67,7 +84,19 @@ function DiscoverContent() {
 
   const { bookmarkedIds, toggleBookmark } = useBookmarks();
 
-  // Apply text search, mode filter, saved filter, and sort
+  const { connections } = useConnections();
+  const connectionUserIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const c of connections) {
+      if (c.friend?.user_id) ids.add(c.friend.user_id);
+      if (c.user?.user_id) ids.add(c.user.user_id);
+    }
+    // Don't include the current user's own ID
+    if (userId) ids.delete(userId);
+    return ids;
+  }, [connections, userId]);
+
+  // Apply text search, mode filter, saved filter, connections filter, and sort
   const filteredPostings = useMemo(() => {
     // Text search and mode filter
     let result = postings.filter((posting: Posting) => {
@@ -103,6 +132,13 @@ function DiscoverContent() {
       );
     }
 
+    // Apply connections filter
+    if (showConnections) {
+      result = result.filter((posting: Posting) =>
+        connectionUserIds.has(posting.creator_id),
+      );
+    }
+
     // Apply sort
     if (sortBy === "match") {
       result = [...result].sort(
@@ -119,6 +155,8 @@ function DiscoverContent() {
     nlFilters,
     showSaved,
     bookmarkedIds,
+    showConnections,
+    connectionUserIds,
     sortBy,
   ]);
 
@@ -163,6 +201,9 @@ function DiscoverContent() {
         showSavedToggle
         showSaved={showSaved}
         onToggleSaved={() => setShowSaved((v) => !v)}
+        showConnectionsToggle
+        showConnections={showConnections}
+        onToggleConnections={() => setShowConnections((v) => !v)}
         showSort
         sortBy={sortBy}
         onSortChange={setSortBy}
@@ -180,15 +221,19 @@ function DiscoverContent() {
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : filteredPostings.length === 0 ? (
-        <Card>
-          <CardContent className="flex min-h-[200px] flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground">
-              {showSaved
-                ? labels.discover.noSavedPostings
-                : labels.discover.noResults}
-            </p>
-          </CardContent>
-        </Card>
+        showSaved ? (
+          <EmptyState
+            icon={<Bookmark />}
+            title={labels.discover.noSavedTitle}
+            description={labels.discover.noSavedDescription}
+          />
+        ) : (
+          <EmptyState
+            icon={<Search />}
+            title={labels.discover.noResultsTitle}
+            description={labels.discover.noResultsDescription}
+          />
+        )
       ) : (
         /* Postings grid */
         <div className="grid gap-6">
@@ -207,9 +252,32 @@ function DiscoverContent() {
               !isAlreadyInterested;
 
             return (
-              <PostingDiscoverCard
+              <UnifiedPostingCard
                 key={posting.id}
-                posting={posting}
+                variant="full"
+                id={posting.id}
+                title={stripTitleMarkdown(posting.title)}
+                description={posting.description ?? ""}
+                status={posting.status}
+                category={posting.category}
+                createdAt={posting.created_at}
+                creatorId={posting.creator_id}
+                creator={{
+                  name: posting.profiles?.full_name || "Unknown",
+                  userId: posting.profiles?.user_id,
+                }}
+                skills={posting.skills}
+                tags={posting.tags}
+                teamSizeMin={posting.team_size_min}
+                teamSizeMax={posting.team_size_max}
+                estimatedTime={posting.estimated_time}
+                locationMode={posting.location_mode}
+                locationName={posting.location_name}
+                visibility={posting.visibility}
+                mode={posting.mode}
+                contextIdentifier={posting.context_identifier}
+                compatibilityScore={posting.compatibility_score}
+                scoreBreakdown={posting.score_breakdown}
                 isOwner={isOwner}
                 isAlreadyInterested={isAlreadyInterested}
                 isInteresting={isInteresting}

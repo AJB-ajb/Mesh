@@ -6,6 +6,17 @@ import { labels } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import type { PostingFormState } from "@/lib/types/posting";
 
+function clampTeamNumber(
+  value: string,
+  min: number,
+  max: number,
+  fallback: number,
+): string {
+  const n = parseInt(value, 10);
+  if (isNaN(n)) return String(fallback);
+  return String(Math.min(max, Math.max(min, n)));
+}
+
 type PostingFormTeamProps = {
   form: PostingFormState;
   onChange: (field: keyof PostingFormState, value: string) => void;
@@ -65,6 +76,17 @@ export function PostingFormTeam({ form, onChange }: PostingFormTeamProps) {
             max={10}
             value={form.teamSizeMin}
             onChange={(e) => onChange("teamSizeMin", e.target.value)}
+            onBlur={() => {
+              const clamped = clampTeamNumber(form.teamSizeMin, 1, 10, 1);
+              onChange("teamSizeMin", clamped);
+              const lookingForNum = parseInt(form.lookingFor, 10);
+              if (
+                !isNaN(lookingForNum) &&
+                lookingForNum < parseInt(clamped, 10)
+              ) {
+                onChange("lookingFor", clamped);
+              }
+            }}
             placeholder={labels.postingForm.teamSizeMinPlaceholder}
           />
           <p className="text-xs text-muted-foreground">
@@ -82,6 +104,17 @@ export function PostingFormTeam({ form, onChange }: PostingFormTeamProps) {
             max={10}
             value={form.lookingFor}
             onChange={(e) => onChange("lookingFor", e.target.value)}
+            onBlur={() => {
+              const clamped = clampTeamNumber(form.lookingFor, 1, 10, 1);
+              onChange("lookingFor", clamped);
+              const teamSizeMinNum = parseInt(form.teamSizeMin, 10);
+              if (
+                !isNaN(teamSizeMinNum) &&
+                parseInt(clamped, 10) < teamSizeMinNum
+              ) {
+                onChange("lookingFor", form.teamSizeMin);
+              }
+            }}
             placeholder={labels.postingForm.lookingForPlaceholder}
           />
           <p className="text-xs text-muted-foreground">
@@ -97,6 +130,14 @@ export function PostingFormTeam({ form, onChange }: PostingFormTeamProps) {
             type="date"
             value={form.expiresAt}
             onChange={(e) => onChange("expiresAt", e.target.value)}
+            onBlur={() => {
+              if (
+                form.expiresAt &&
+                form.expiresAt < new Date().toISOString().slice(0, 10)
+              ) {
+                onChange("expiresAt", new Date().toISOString().slice(0, 10));
+              }
+            }}
             min={new Date().toISOString().slice(0, 10)}
           />
           <p className="text-xs text-muted-foreground">

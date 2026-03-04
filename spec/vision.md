@@ -2,6 +2,25 @@
 
 This document captures the high-level product philosophy, motivations, and strategic insights behind Mesh. It complements the technical specs ([mesh.md](mesh.md), [ux.md](ux.md), [matching.md](matching.md), [use-cases.md](use-cases.md)) with subjective and motivational reasoning.
 
+## Why Not Messaging Apps?
+
+Coordinating activities through messaging apps means rounds of back-and-forth: explaining what you want to do, checking who's interested, negotiating availability, comparing people's fit — one message at a time, one person at a time. Each round trip takes minutes to hours. People drop out mid-negotiation. Details scatter across threads and DMs. By the time you've coordinated, the moment may have passed.
+
+The root cause: **messaging apps treat everything as a message.** They don't know you're coordinating an activity, so they can't help with the coordination. The activity itself — what, when, where, how many people, what skills — gets buried in a thread of replies.
+
+Mesh treats the **activity posting** as the fundamental unit. Because a posting has structure, the platform can act on it: skip unavailable people, match on relevant dimensions, manage group formation, send invites in your preferred order. The back-and-forth is replaced by a single posting.
+
+This serves two scenarios:
+
+- **Finding new people** (matching): describe your activity, get matched with compatible people based on skills, availability, and interests.
+- **Coordinating with people you know** (invites): post your activity, invite connections in order — the platform handles the asking, waiting, and fallback automatically.
+
+## Effectiveness Over Engagement
+
+Many apps optimize for engagement — time spent in app. Mesh optimizes for effectiveness — getting things done. The app should be pleasant to use, but not addictive. People should be able to coordinate quickly and then move on with their lives.
+
+This belief shapes design decisions: no infinite feeds, no engagement-maximizing notifications, no dark patterns that keep people scrolling.
+
 ## Core Insight: Small Groups
 
 Most useful activities have an optimal number of participants — typically 2 to 5.
@@ -60,6 +79,14 @@ Asking connections for spontaneous activities (e.g., "learn topic X together tod
 - **High adoption is critical.** The product requires network effects to work.
 - **30-second onboarding.** A not-yet-registered user with a written posting description should be able to post in under 30 seconds: click "Post" on hero → OAuth login → paste description → post.
 - **No personal configuration required to post.** Personal profile setup can improve matching quality but must not be a gate.
+
+## Why AI Matching?
+
+Matching people and activities is intelligence-complete. No rigid set of forms, filters, and categories can capture the full space of what makes two people good collaborators for a specific activity.
+
+- Some matchings work perfectly. Some would work with small adaptations. Some don't work at all. You need reasoning to tell which is which.
+- Language models can do this reasoning — and they improve each month.
+- Mesh uses AI not as a gimmick but as the core mechanism that makes multi-dimensional matching feasible at all: evaluating compatibility across skills, work style, availability, location, and the nuances in natural-language descriptions that structured data can't capture.
 
 ## Design Inspiration
 

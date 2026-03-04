@@ -1,5 +1,5 @@
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, apiSuccess, parseBody } from "@/lib/errors";
+import { AppError, apiSuccess, parseBody } from "@/lib/errors";
 
 /**
  * GET /api/bookmarks
@@ -12,7 +12,7 @@ export const GET = withAuth(async (_req, { user, supabase }) => {
     .eq("user_id", user.id);
 
   if (error) {
-    return apiError("INTERNAL", "Failed to fetch bookmarks", 500);
+    throw new AppError("INTERNAL", "Failed to fetch bookmarks", 500);
   }
 
   return apiSuccess({
@@ -29,7 +29,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   const { posting_id } = await parseBody<{ posting_id?: string }>(req);
 
   if (!posting_id || typeof posting_id !== "string") {
-    return apiError("VALIDATION", "posting_id is required", 400);
+    throw new AppError("VALIDATION", "posting_id is required", 400);
   }
 
   // Check if bookmark already exists
@@ -48,7 +48,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
       .eq("id", existing.id);
 
     if (error) {
-      return apiError("INTERNAL", "Failed to remove bookmark", 500);
+      throw new AppError("INTERNAL", "Failed to remove bookmark", 500);
     }
 
     return apiSuccess({ bookmarked: false });
@@ -60,7 +60,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     .insert({ user_id: user.id, posting_id });
 
   if (error) {
-    return apiError("INTERNAL", "Failed to add bookmark", 500);
+    throw new AppError("INTERNAL", "Failed to add bookmark", 500);
   }
 
   return apiSuccess({ bookmarked: true });

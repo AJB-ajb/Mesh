@@ -12,6 +12,9 @@ import {
   Music,
   Briefcase,
   Trophy,
+  MessageCircle,
+  Calendar,
+  FileText,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -92,6 +95,24 @@ const examplePostings = [
   },
 ];
 
+const problemItems = [
+  {
+    icon: MessageCircle,
+    title: labels.landing.problemGroupChatsTitle,
+    body: labels.landing.problemGroupChatsBody,
+  },
+  {
+    icon: Calendar,
+    title: labels.landing.problemMeetupsTitle,
+    body: labels.landing.problemMeetupsBody,
+  },
+  {
+    icon: FileText,
+    title: labels.landing.problemForumsTitle,
+    body: labels.landing.problemForumsBody,
+  },
+];
+
 export default async function LandingPage() {
   // Check if user is already logged in
   const supabase = await createClient();
@@ -101,15 +122,15 @@ export default async function LandingPage() {
 
   // If logged in, redirect to active page
   if (user) {
-    redirect("/active");
+    redirect("/posts");
   }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-border/50 bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:px-8">
+      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-border/50 bg-background/95 px-4 sm:px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:px-8">
         <Logo />
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <ThemeToggle />
           <Button variant="ghost" asChild>
             <Link href="/login">{labels.landing.loginButton}</Link>
@@ -155,15 +176,43 @@ export default async function LandingPage() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" className="px-8" asChild>
-              <Link href="/my-postings">
-                {labels.landing.explorePostingsButton}
-              </Link>
+              <Link href="/why">{labels.landing.whyMeshButton}</Link>
             </Button>
           </div>
         </section>
 
-        {/* Use Case Examples Section */}
+        {/* Problem Section */}
         <section className="border-t border-border bg-muted/30 py-16 lg:py-24">
+          <div className="mx-auto max-w-4xl px-6 lg:px-8">
+            <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
+              {labels.landing.problemSectionTitle}
+            </h2>
+
+            <div className="mt-12 grid gap-6 sm:grid-cols-3">
+              {problemItems.map((item) => (
+                <div
+                  key={item.title}
+                  className="flex flex-col items-center rounded-2xl border border-border bg-card p-6 text-center"
+                >
+                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                    <item.icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="font-semibold">{item.title}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {item.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <p className="mt-10 text-center text-lg font-medium">
+              {labels.landing.problemConclusion}
+            </p>
+          </div>
+        </section>
+
+        {/* Use Case Examples Section */}
+        <section className="py-16 lg:py-24">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
               {labels.landing.useCaseSectionTitle}
@@ -224,7 +273,7 @@ export default async function LandingPage() {
         </section>
 
         {/* How It Works Section */}
-        <section className="py-16 lg:py-24">
+        <section className="border-t border-border bg-muted/30 py-16 lg:py-24">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
               {labels.landing.howItWorksTitle}
@@ -277,7 +326,7 @@ export default async function LandingPage() {
         </section>
 
         {/* Features Section */}
-        <section className="border-t border-border bg-muted/30 py-16 lg:py-24">
+        <section className="py-16 lg:py-24">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
               {labels.landing.featuresSectionTitle}
@@ -339,7 +388,7 @@ export default async function LandingPage() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-16 lg:py-24">
+        <section className="border-t border-border bg-muted/30 py-16 lg:py-24">
           <div className="mx-auto max-w-4xl px-6 text-center lg:px-8">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               {labels.landing.finalCtaTitle}
@@ -366,6 +415,12 @@ export default async function LandingPage() {
             {labels.landing.footerCopyright}
           </p>
           <nav className="flex gap-6">
+            <Link
+              href="/why"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              {labels.landing.whyMeshLink}
+            </Link>
             <Link
               href="/privacy"
               className="text-sm text-muted-foreground hover:text-foreground"

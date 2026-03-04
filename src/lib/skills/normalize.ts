@@ -211,6 +211,24 @@ ${treeText}`,
           .eq("id", parent.id);
       }
 
+      // Log LLM-created skill node to Sentry for admin review.
+      // Dynamic import so this module works in contexts without Sentry.
+      try {
+        const Sentry = await import("@sentry/nextjs");
+        Sentry.captureMessage("LLM created new skill node", {
+          level: "info",
+          tags: { operation: "skill-node-creation" },
+          extra: {
+            nodeName: newNode.name,
+            parentName: llmResult.parent_name,
+            userInput: skill,
+            aliases: llmResult.aliases ?? [],
+          },
+        });
+      } catch {
+        // Sentry not available — skip logging
+      }
+
       return { nodeId: newNode.id, name: newNode.name, created: true };
     }
   } catch {

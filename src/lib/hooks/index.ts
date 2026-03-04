@@ -20,3 +20,4 @@ export { useConnections } from "./use-connections";
 export { useSequentialInvites } from "./use-sequential-invites";
 export { useNlFilter } from "./use-nl-filter";
 export { usePostingInterest } from "./use-posting-interest";
+export { useRovingIndex } from "./use-roving-index";

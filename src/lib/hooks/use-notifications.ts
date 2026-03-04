@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { getInitials } from "@/lib/format";
@@ -59,6 +59,7 @@ async function fetchNotificationData(): Promise<NotificationData> {
 // ---------------------------------------------------------------------------
 
 export function useNotifications() {
+  const supabaseRef = useRef(createClient());
   const { data, error, isLoading, mutate } = useSWR(
     "header-notifications",
     fetchNotificationData,
@@ -68,7 +69,7 @@ export function useNotifications() {
   useEffect(() => {
     if (!data?.userId) return;
 
-    const supabase = createClient();
+    const supabase = supabaseRef.current;
     const channel = supabase
       .channel("header-notifications")
       .on(
@@ -91,7 +92,7 @@ export function useNotifications() {
 
   const markAsRead = useCallback(
     async (id: string) => {
-      const supabase = createClient();
+      const supabase = supabaseRef.current;
       await supabase.from("notifications").update({ read: true }).eq("id", id);
       mutate();
     },
@@ -101,7 +102,7 @@ export function useNotifications() {
   const userId = data?.userId;
   const markAllAsRead = useCallback(async () => {
     if (!userId) return;
-    const supabase = createClient();
+    const supabase = supabaseRef.current;
     await supabase
       .from("notifications")
       .update({ read: true })

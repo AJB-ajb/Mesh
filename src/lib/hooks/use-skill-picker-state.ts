@@ -20,7 +20,7 @@ export function useSkillPickerState(
 ) {
   const [inputValue, setInputValue] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [isBrowseMode, setIsBrowseMode] = useState(false);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -71,7 +71,7 @@ export function useSkillPickerState(
   // Input change handler
   const handleInputChange = (value: string) => {
     setInputValue(value);
-    setSelectedIndex(-1);
+    setSelectedIndex(0);
     if (value.trim()) {
       setIsBrowseMode(false);
       search(value);
@@ -108,7 +108,7 @@ export function useSkillPickerState(
 
       setInputValue("");
       clearResults();
-      setSelectedIndex(-1);
+      setSelectedIndex(0);
       setShowDropdown(false);
       inputRef.current?.focus();
     },
@@ -118,7 +118,7 @@ export function useSkillPickerState(
   // Browse into a category
   const handleBrowseInto = useCallback(
     (nodeId: string) => {
-      setSelectedIndex(-1);
+      setSelectedIndex(0);
       browseChildren(nodeId);
     },
     [browseChildren],
@@ -126,7 +126,7 @@ export function useSkillPickerState(
 
   // Navigate back in browse tree
   const handleBrowseBack = useCallback(() => {
-    setSelectedIndex(-1);
+    setSelectedIndex(0);
     browseChildren(null);
   }, [browseChildren]);
 
@@ -165,7 +165,7 @@ export function useSkillPickerState(
       }
 
       setInputValue("");
-      setSelectedIndex(-1);
+      setSelectedIndex(0);
       inputRef.current?.focus();
     },
     [mode, onAdd, selectedIds, browsePath],
@@ -192,14 +192,24 @@ export function useSkillPickerState(
         break;
       case "ArrowUp":
         e.preventDefault();
-        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+        break;
+      case "Tab":
+        if (totalItems > 0) {
+          e.preventDefault();
+          if (e.shiftKey) {
+            setSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev));
+          } else {
+            setSelectedIndex((prev) =>
+              prev < totalItems - 1 ? prev + 1 : prev,
+            );
+          }
+        }
         break;
       case "Enter": {
         e.preventDefault();
-        const effectiveIndex =
-          selectedIndex === -1 && dropdownItems.length > 0 ? 0 : selectedIndex;
-        if (effectiveIndex >= 0 && effectiveIndex < dropdownItems.length) {
-          const item = dropdownItems[effectiveIndex];
+        if (selectedIndex >= 0 && selectedIndex < dropdownItems.length) {
+          const item = dropdownItems[selectedIndex];
           if (showSearchResults) {
             handleSelectSkill(item as SkillNode);
           } else {
@@ -212,8 +222,7 @@ export function useSkillPickerState(
           }
         } else if (
           hasAddCustom &&
-          (selectedIndex === dropdownItems.length ||
-            (selectedIndex === -1 && dropdownItems.length === 0))
+          selectedIndex === dropdownItems.length
         ) {
           handleAddCustom();
         }
@@ -221,7 +230,7 @@ export function useSkillPickerState(
       }
       case "Escape":
         setShowDropdown(false);
-        setSelectedIndex(-1);
+        setSelectedIndex(0);
         break;
     }
   };
@@ -243,7 +252,7 @@ export function useSkillPickerState(
         !wrapperRef.current.contains(event.target as Node)
       ) {
         setShowDropdown(false);
-        setSelectedIndex(-1);
+        setSelectedIndex(0);
       }
     }
 

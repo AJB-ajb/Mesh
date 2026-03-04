@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Search, Check, X, QrCode, Share2, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { OnlineStatusBadge } from "@/components/ui/online-status";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
+import { useRovingIndex } from "@/lib/hooks/use-roving-index";
 import { getInitials } from "@/lib/format";
 import { usePresenceContext } from "@/components/providers/presence-provider";
 import type { MergedConnection } from "@/lib/hooks/use-connections-page";
@@ -31,7 +32,11 @@ const formatRelativeTime = (dateString: string) => {
 
 type PendingConnection = {
   friendshipId: string;
-  otherUser: { user_id: string; full_name: string | null; headline: string | null };
+  otherUser: {
+    user_id: string;
+    full_name: string | null;
+    headline: string | null;
+  };
 };
 
 type ConnectionsLeftPanelProps = {
@@ -64,10 +69,25 @@ export function ConnectionsLeftPanel({
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const filtered = connections.filter((c) =>
-    (c.otherUser.full_name ?? "")
-      .toLowerCase()
-      .includes(search.toLowerCase()),
+    (c.otherUser.full_name ?? "").toLowerCase().includes(search.toLowerCase()),
   );
+
+  const onActivate = useCallback(
+    (index: number) => {
+      if (filtered[index]) onSelect(filtered[index].otherUser.user_id);
+    },
+    [filtered, onSelect],
+  );
+
+  const roving = useRovingIndex({
+    itemCount: filtered.length,
+    onActivate,
+  });
+
+  // Reset to 0 when filter changes
+  useEffect(() => {
+    roving.setActiveIndex(0);
+  }, [search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleAccept(friendshipId: string) {
     setLoadingId(friendshipId);
@@ -103,13 +123,14 @@ export function ConnectionsLeftPanel({
       </div>
 
       {/* Scrollable list */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" {...roving.getContainerProps()}>
         {/* Pending requests section */}
         {pendingIncoming.length > 0 && (
           <section className="border-b border-border">
             <div className="px-3 py-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                {labels.connectionsPage.pendingRequestsTitle} ({pendingIncoming.length})
+                {labels.connectionsPage.pendingRequestsTitle} (
+                {pendingIncoming.length})
               </p>
             </div>
             {pendingIncoming.map((p) => (
@@ -172,13 +193,17 @@ export function ConnectionsLeftPanel({
             )}
           </div>
         ) : (
-          filtered.map((conn) => {
+          filtered.map((conn, i) => {
             const isSelected = selectedUserId === conn.otherUser.user_id;
             const isOnline = isUserOnline(conn.otherUser.user_id);
+            const itemProps = roving.getItemProps(i);
 
             return (
               <button
                 key={conn.friendshipId}
+                tabIndex={itemProps.tabIndex}
+                data-active={itemProps["data-active"]}
+                onFocus={itemProps.onFocus}
                 onClick={() => onSelect(conn.otherUser.user_id)}
                 className={cn(
                   "w-full flex items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-muted/50 border-b border-border/50 last:border-b-0",

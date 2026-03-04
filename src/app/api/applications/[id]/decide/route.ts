@@ -1,9 +1,7 @@
 import { withAuth } from "@/lib/api/with-auth";
+import { notifyIfPreferred } from "@/lib/api/notify-if-preferred";
+import { markPostingFilledIfFull } from "@/lib/api/posting-fulfillment";
 import { apiSuccess, parseBody, AppError } from "@/lib/errors";
-import {
-  type NotificationPreferences,
-  shouldNotify,
-} from "@/lib/notifications/preferences";
 
 interface DecideBody {
   status: "accepted" | "rejected";
@@ -71,45 +69,27 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
       ? ("application_accepted" as const)
       : ("application_rejected" as const);
 
-  const { data: recipientProfile } = await supabase
-    .from("profiles")
-    .select("notification_preferences")
-    .eq("user_id", application.applicant_id)
-    .single();
-
-  const recipientPrefs =
-    recipientProfile?.notification_preferences as NotificationPreferences | null;
-
-  if (shouldNotify(recipientPrefs, notifType, "in_app")) {
-    await supabase.from("notifications").insert({
-      user_id: application.applicant_id,
-      type: notifType,
-      title:
-        body.status === "accepted" ? "Request Accepted!" : "Request Update",
-      body:
-        body.status === "accepted"
-          ? `Your request to join "${posting.title}" has been accepted!`
-          : `Your request to join "${posting.title}" was not selected.`,
-      related_posting_id: posting.id,
-      related_application_id: applicationId,
-      related_user_id: posting.creator_id,
-    });
-  }
+  notifyIfPreferred(supabase, application.applicant_id, notifType, {
+    userId: application.applicant_id,
+    type: notifType,
+    title: body.status === "accepted" ? "Request Accepted!" : "Request Update",
+    body:
+      body.status === "accepted"
+        ? `Your request to join "${posting.title}" has been accepted!`
+        : `Your request to join "${posting.title}" was not selected.`,
+    relatedPostingId: posting.id,
+    relatedApplicationId: applicationId,
+    relatedUserId: posting.creator_id,
+  });
 
   // If accepting, check if team is now full
   if (body.status === "accepted") {
-    const { count } = await supabase
-      .from("applications")
-      .select("*", { count: "exact", head: true })
-      .eq("posting_id", posting.id)
-      .eq("status", "accepted");
-
-    if (count && count >= posting.team_size_max) {
-      await supabase
-        .from("postings")
-        .update({ status: "filled" })
-        .eq("id", posting.id);
-    }
+    await markPostingFilledIfFull(
+      supabase,
+      posting.id,
+      "applications",
+      "posting_id",
+    );
   }
 
   return apiSuccess({ application: { ...application, status: body.status } });

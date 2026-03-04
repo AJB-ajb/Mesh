@@ -2,14 +2,7 @@
 
 import { Loader2, ChevronRight, Plus, FolderTree } from "lucide-react";
 import { labels } from "@/lib/labels";
-import type { SkillNode } from "@/lib/types/skill";
-
-type BrowseNode = {
-  id: string;
-  name: string;
-  isLeaf: boolean;
-  childCount?: number;
-};
+import type { SkillNode, BrowseNode } from "@/lib/types/skill";
 
 type SkillPickerDropdownProps = {
   showSearchResults: boolean;
@@ -79,13 +72,15 @@ export function SkillPickerDropdown({
         </div>
       )}
 
-      <div className="max-h-60 overflow-y-auto p-1">
+      <div className="max-h-60 overflow-y-auto p-1" role="listbox">
         {/* Search results */}
         {showSearchResults &&
           filteredResults.map((result, index) => (
             <button
               key={result.id}
               type="button"
+              role="option"
+              aria-selected={index === selectedIndex}
               onClick={() => onSelectSkill(result)}
               className={`flex w-full items-start gap-2 rounded-sm px-3 py-2 text-left text-sm transition-colors ${
                 index === selectedIndex
@@ -110,6 +105,8 @@ export function SkillPickerDropdown({
             <button
               key={node.id}
               type="button"
+              role="option"
+              aria-selected={index === selectedIndex}
               onClick={() => {
                 if (node.isLeaf) {
                   onBrowseSelect(node.id, node.name);
@@ -181,6 +178,7 @@ export function SkillPickerDropdown({
       {totalItems > 0 && (
         <div className="border-t px-3 py-1.5 text-[10px] text-muted-foreground">
           <kbd className="rounded border px-1">↑↓</kbd>{" "}
+          <kbd className="rounded border px-1">Tab</kbd>{" "}
           {labels.skill.kbdNavigate}{" "}
           <kbd className="rounded border px-1">↵</kbd> {labels.skill.kbdSelect}{" "}
           <kbd className="rounded border px-1">esc</kbd> {labels.skill.kbdClose}

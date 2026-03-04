@@ -26,6 +26,24 @@ vi.mock("@/lib/transcribe", () => ({
   transcribeAudio: vi.fn(),
 }));
 
+// Mock MeshEditor - render as a textarea to preserve existing test behavior
+vi.mock("@/components/editor/mesh-editor", () => ({
+  MeshEditor: (props: {
+    content?: string;
+    placeholder?: string;
+    onChange?: (md: string) => void;
+    className?: string;
+  }) => (
+    <textarea
+      data-testid="mesh-editor"
+      value={props.content ?? ""}
+      placeholder={props.placeholder}
+      onChange={(e) => props.onChange?.(e.target.value)}
+      aria-label="Description"
+    />
+  ),
+}));
+
 // Mock next/link
 vi.mock("next/link", () => ({
   __esModule: true,
@@ -202,10 +220,10 @@ describe("PostingFormCard", () => {
     expect(submitBtn).toBeDisabled();
   });
 
-  it("renders Cancel link to /my-postings", () => {
+  it("renders Cancel link to /posts", () => {
     renderCard();
     const cancelLink = screen.getByText("Cancel");
-    expect(cancelLink.closest("a")).toHaveAttribute("href", "/my-postings");
+    expect(cancelLink.closest("a")).toHaveAttribute("href", "/posts");
   });
 
   it("calls onSubmit when form is submitted", () => {

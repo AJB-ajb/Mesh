@@ -13,7 +13,12 @@ import {
 
 export const POST = withAuth(async (req, { user, supabase }) => {
   const body = await parseBody<{ url?: string }>(req);
-  const url = body.url?.trim();
+  let url = body.url?.trim();
+
+  // Normalize webcal:// to https:// (webcal is just https with a different scheme)
+  if (url?.startsWith("webcal://")) {
+    url = url.replace(/^webcal:\/\//, "https://");
+  }
 
   if (!url || (!url.startsWith("http://") && !url.startsWith("https://"))) {
     return apiError("VALIDATION", "Invalid iCal URL", 400);

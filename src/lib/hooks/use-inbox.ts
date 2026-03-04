@@ -44,69 +44,58 @@ type InboxData = {
 async function fetchInboxData(): Promise<InboxData> {
   const { supabase, user } = await getUserOrThrow();
 
-  // Fetch notifications and conversations in parallel
+  // Fetch notifications and enriched conversations in parallel
   const [{ data: notificationsData }, { data: conversationsData }] =
     await Promise.all([
       supabase
         .from("notifications")
         .select("*")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("conversations")
-        .select("*")
-        .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
-        .order("updated_at", { ascending: false }),
+        .order("created_at", { ascending: false })
+        .limit(50),
+      supabase.rpc("get_inbox_conversations", { p_user_id: user.id }),
     ]);
 
-  // Enrich conversations with other user info and last message
-  const enrichedConversations = await Promise.all(
-    (conversationsData || []).map(async (conv) => {
-      const otherUserId =
-        conv.participant_1 === user.id
-          ? conv.participant_2
-          : conv.participant_1;
-
-      const [
-        { data: profile },
-        postingResult,
-        { data: lastMessageData },
-        { count },
-      ] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("full_name, headline, user_id")
-          .eq("user_id", otherUserId)
-          .maybeSingle(),
-        conv.posting_id
-          ? supabase
-              .from("postings")
-              .select("title")
-              .eq("id", conv.posting_id)
-              .maybeSingle()
-          : Promise.resolve({ data: null }),
-        supabase
-          .from("messages")
-          .select("content, created_at, sender_id")
-          .eq("conversation_id", conv.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-        supabase
-          .from("messages")
-          .select("*", { count: "exact", head: true })
-          .eq("conversation_id", conv.id)
-          .eq("read", false)
-          .neq("sender_id", user.id),
-      ]);
-
-      return {
-        ...conv,
-        other_user: profile || undefined,
-        posting: postingResult.data || undefined,
-        last_message: lastMessageData || undefined,
-        unread_count: count || 0,
-      };
+  // Map RPC rows to the Conversation shape expected by the UI
+  const enrichedConversations: Conversation[] = (conversationsData || []).map(
+    (row: {
+      id: string;
+      participant_1: string;
+      participant_2: string;
+      posting_id: string | null;
+      created_at: string;
+      updated_at: string;
+      other_user_id: string;
+      other_user_full_name: string | null;
+      other_user_headline: string | null;
+      posting_title: string | null;
+      last_message_content: string | null;
+      last_message_created_at: string | null;
+      last_message_sender_id: string | null;
+      unread_count: number;
+    }) => ({
+      id: row.id,
+      participant_1: row.participant_1,
+      participant_2: row.participant_2,
+      posting_id: row.posting_id,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      other_user: row.other_user_id
+        ? {
+            full_name: row.other_user_full_name,
+            headline: row.other_user_headline,
+            user_id: row.other_user_id,
+          }
+        : undefined,
+      posting: row.posting_title ? { title: row.posting_title } : undefined,
+      last_message: row.last_message_content
+        ? {
+            content: row.last_message_content,
+            created_at: row.last_message_created_at!,
+            sender_id: row.last_message_sender_id!,
+          }
+        : undefined,
+      unread_count: row.unread_count ?? 0,
     }),
   );
 
@@ -136,9 +125,10 @@ async function fetchConversationMessages(key: string): Promise<Message[]> {
 
   const { data: messagesData, error: messagesError } = await supabase
     .from("messages")
-    .select("*")
+    .select("id, conversation_id, sender_id, content, read, created_at")
     .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .limit(200);
 
   if (messagesError) {
     console.error("Error fetching messages:", messagesError);

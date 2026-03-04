@@ -12,7 +12,7 @@ Merge a completed worktree branch into `dev`, push to remote, and clean up.
 
 If `$ARGUMENTS` is provided, use it as the branch name. Otherwise:
 
-1. Check if cwd is inside a worktree (not the main repo at `/home/ajb/repos/MeshIt`):
+1. Check if cwd is inside a worktree (not the main repo at `/home/ajb/repos/Mesh`):
    ```
    git rev-parse --show-toplevel
    ```
@@ -33,7 +33,7 @@ Before merging, confirm:
 
 ## 3. Merge to dev
 
-1. `cd` to the main repo: `/home/ajb/repos/MeshIt`
+1. `cd` to the main repo: `/home/ajb/repos/Mesh`
 2. Ensure the main repo is on `dev`:
    ```
    git checkout dev
@@ -71,7 +71,35 @@ If push fails, report the error and stop.
    git fetch --prune origin
    ```
 
-## 6. Confirm
+## 6. Housekeeping
+
+### Clean up orphaned worktree-agent branches
+
+List all local branches matching `worktree-agent-*`:
+
+```
+git branch --list 'worktree-agent-*'
+```
+
+Cross-reference against active worktrees (`git worktree list`). Delete any `worktree-agent-*` branch that has **no** active worktree:
+
+```
+git branch -D <branch>
+```
+
+Report how many were deleted, or "none found" if clean.
+
+### Stash overview
+
+Run `git stash list --format='%gd | %ci | %s'`. If there are stashes:
+
+1. Show a table with: index, date, age (days), source branch, and brief description.
+2. For each stash, check whether its changes are **superseded** — i.e. the files it touches have already been modified on `dev` after the stash date (`git log --since="<stash-date>" --oneline -- <files>`). Mark each stash as **Superseded**, **Likely superseded**, or **May have unique changes**.
+3. Do NOT auto-drop stashes. Just present the overview so the user can decide.
+
+If there are no stashes, report "No stashes."
+
+## 7. Confirm
 
 Report what was done:
 
@@ -80,3 +108,5 @@ Report what was done:
 - Worktree removed
 - Local branch deleted
 - Remote branch deleted
+- Orphaned worktree-agent branches cleaned (count)
+- Stash overview (if any)

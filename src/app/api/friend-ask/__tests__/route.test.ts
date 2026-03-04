@@ -210,4 +210,80 @@ describe("POST /api/friend-ask", () => {
     expect(res.status).toBe(201);
     expect(body.friend_ask.ordered_friend_list).toEqual(["u2", "u3"]);
   });
+
+  it("creates a friend-ask with concurrent_invites: 3", async () => {
+    authedUser();
+    const posting = { id: "p1", creator_id: "user-1" };
+    const newFA = {
+      id: "fa-new",
+      posting_id: "p1",
+      creator_id: "user-1",
+      ordered_friend_list: ["u2", "u3", "u4", "u5"],
+      current_request_index: 0,
+      concurrent_invites: 3,
+      status: "pending",
+    };
+
+    let callCount = 0;
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return chain({ data: posting, error: null });
+      if (callCount === 2) return chain({ data: null, error: null });
+      return chain({ data: newFA, error: null });
+    });
+
+    const res = await POST(
+      makeReq("/api/friend-ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          posting_id: "p1",
+          ordered_friend_list: ["u2", "u3", "u4", "u5"],
+          concurrent_invites: 3,
+        }),
+      }),
+      routeCtx,
+    );
+    const body = await res.json();
+    expect(res.status).toBe(201);
+    expect(body.friend_ask.concurrent_invites).toBe(3);
+  });
+
+  it("returns 400 when concurrent_invites exceeds list length", async () => {
+    authedUser();
+    const res = await POST(
+      makeReq("/api/friend-ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          posting_id: "p1",
+          ordered_friend_list: ["u2", "u3"],
+          concurrent_invites: 5,
+        }),
+      }),
+      routeCtx,
+    );
+    const body = await res.json();
+    expect(res.status).toBe(400);
+    expect(body.error.code).toBe("VALIDATION");
+  });
+
+  it("returns 400 when concurrent_invites is 0", async () => {
+    authedUser();
+    const res = await POST(
+      makeReq("/api/friend-ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          posting_id: "p1",
+          ordered_friend_list: ["u2", "u3"],
+          concurrent_invites: 0,
+        }),
+      }),
+      routeCtx,
+    );
+    const body = await res.json();
+    expect(res.status).toBe(400);
+    expect(body.error.code).toBe("VALIDATION");
+  });
 });

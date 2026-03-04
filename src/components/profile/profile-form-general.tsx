@@ -1,9 +1,13 @@
 "use client";
 
+import { useCallback, useRef } from "react";
 import { Loader2, MapPin, Search } from "lucide-react";
+import type { EditorView } from "@codemirror/view";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { MeshEditor } from "@/components/editor/mesh-editor";
+import { SpeechInput } from "@/components/ai-elements/speech-input";
+import { transcribeAudio } from "@/lib/transcribe";
 import { LocationAutocomplete } from "@/components/location/location-autocomplete";
 import { labels } from "@/lib/labels";
 import type { ProfileFormState } from "@/lib/types/profile";
@@ -28,6 +32,12 @@ export function ProfileFormGeneral({
   onChange,
   location,
 }: ProfileFormGeneralProps) {
+  const bioEditorRef = useRef<EditorView | null>(null);
+
+  const handleBioEditorReady = useCallback((view: EditorView) => {
+    bioEditorRef.current = view;
+  }, []);
+
   return (
     <>
       <div className="grid gap-4 md:grid-cols-2">
@@ -59,17 +69,32 @@ export function ProfileFormGeneral({
         <label htmlFor="bio" className="text-sm font-medium">
           {labels.profileForm.bioLabel}
         </label>
-        <Textarea
-          id="bio"
-          rows={4}
-          value={form.bio}
-          onChange={(e) => onChange("bio", e.target.value)}
-          placeholder={labels.profileForm.bioPlaceholder}
-          enableMic
-          onTranscriptionChange={(text) =>
-            onChange("bio", form.bio ? form.bio + " " + text : text)
-          }
-        />
+        <div className="relative">
+          <MeshEditor
+            content={form.bio}
+            placeholder={labels.profileForm.bioPlaceholder}
+            onChange={(md) => onChange("bio", md)}
+            className="min-h-[100px] pr-9"
+            onEditorReady={handleBioEditorReady}
+          />
+          <SpeechInput
+            className="absolute right-1.5 top-1.5 h-7 w-7 shrink-0 p-0"
+            size="icon"
+            variant="ghost"
+            type="button"
+            onAudioRecorded={transcribeAudio}
+            onTranscriptionChange={(text) => {
+              const view = bioEditorRef.current;
+              if (view) {
+                const pos = view.state.selection.main.head;
+                view.dispatch({
+                  changes: { from: pos, to: pos, insert: text },
+                });
+                view.focus();
+              }
+            }}
+          />
+        </div>
       </div>
 
       {/* Location Section */}

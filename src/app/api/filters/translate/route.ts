@@ -122,10 +122,6 @@ Rules:
     });
   } catch (error) {
     console.error("Filter translation error:", error);
-    return apiError(
-      "INTERNAL",
-      error instanceof Error ? error.message : "Failed to translate filters",
-      500,
-    );
+    return apiError("INTERNAL", "Failed to translate filters", 500);
   }
 }

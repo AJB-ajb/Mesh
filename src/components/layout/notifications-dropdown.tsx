@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
+import { useRovingIndex } from "@/lib/hooks/use-roving-index";
 import { useNotifications } from "@/lib/hooks/use-notifications";
 import { formatTimeAgoShort } from "@/lib/format";
 import type { Notification } from "@/lib/supabase/realtime";
@@ -29,16 +30,16 @@ function getNotificationIcon(type: string) {
     case "application_received":
     case "application_accepted":
     case "application_rejected":
-      return <FolderKanban className="h-4 w-4" />;
+      return <FolderKanban className="size-4" />;
     case "new_message":
     case "new_group_message":
-      return <MessageSquare className="h-4 w-4" />;
+      return <MessageSquare className="size-4" />;
     case "sequential_invite":
-      return <ListOrdered className="h-4 w-4" />;
+      return <ListOrdered className="size-4" />;
     case "friend_request":
-      return <Users className="h-4 w-4" />;
+      return <Users className="size-4" />;
     default:
-      return <Bell className="h-4 w-4" />;
+      return <Bell className="size-4" />;
   }
 }
 
@@ -69,7 +70,7 @@ function isActionableInvite(notification: Notification) {
 // Component
 // ---------------------------------------------------------------------------
 
-export function NotificationsDropdown() {
+export function NotificationsDropdown({ className }: { className?: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
@@ -77,6 +78,43 @@ export function NotificationsDropdown() {
 
   const { unreadCount, notifications, markAsRead, markAllAsRead } =
     useNotifications();
+
+  const handleNotificationClick = useCallback(
+    (notification: Notification) => {
+      if (!notification.read) {
+        markAsRead(notification.id);
+      }
+      if (notification.type === "friend_request") {
+        router.push("/connections");
+      } else if (
+        notification.type === "new_message" &&
+        notification.related_user_id
+      ) {
+        router.push(`/connections?user=${notification.related_user_id}`);
+      } else if (
+        notification.type === "new_group_message" &&
+        notification.related_posting_id
+      ) {
+        router.push(`/postings/${notification.related_posting_id}?tab=project`);
+      } else if (notification.related_posting_id) {
+        router.push(`/postings/${notification.related_posting_id}`);
+      }
+      setOpen(false);
+    },
+    [markAsRead, router],
+  );
+
+  const onActivateNotification = useCallback(
+    (index: number) => {
+      if (notifications[index]) handleNotificationClick(notifications[index]);
+    },
+    [notifications, handleNotificationClick],
+  );
+
+  const roving = useRovingIndex({
+    itemCount: notifications.length,
+    onActivate: onActivateNotification,
+  });
 
   // Close on outside click
   useEffect(() => {
@@ -106,31 +144,6 @@ export function NotificationsDropdown() {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open]);
-
-  const handleNotificationClick = useCallback(
-    (notification: Notification) => {
-      if (!notification.read) {
-        markAsRead(notification.id);
-      }
-      if (notification.type === "friend_request") {
-        router.push("/connections");
-      } else if (
-        notification.type === "new_message" &&
-        notification.related_user_id
-      ) {
-        router.push(`/connections?user=${notification.related_user_id}`);
-      } else if (
-        notification.type === "new_group_message" &&
-        notification.related_posting_id
-      ) {
-        router.push(`/postings/${notification.related_posting_id}?tab=project`);
-      } else if (notification.related_posting_id) {
-        router.push(`/postings/${notification.related_posting_id}`);
-      }
-      setOpen(false);
-    },
-    [markAsRead, router],
-  );
 
   const handleInviteResponse = useCallback(
     async (notification: Notification, action: "accept" | "decline") => {
@@ -163,15 +176,15 @@ export function NotificationsDropdown() {
       <Button
         variant="ghost"
         size="icon"
-        className="relative"
+        className={cn("relative", className)}
         onClick={() => setOpen(!open)}
         aria-expanded={open}
         aria-haspopup="true"
       >
-        <Bell className="h-5 w-5" />
+        <Bell className="size-5" />
         <span className="sr-only">{labels.nav.notifications}</span>
         {unreadCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs font-medium text-destructive-foreground">
+          <span className="absolute -right-0.5 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs font-medium text-destructive-foreground">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
@@ -192,7 +205,7 @@ export function NotificationsDropdown() {
                 className="h-auto px-2 py-1 text-xs"
                 onClick={() => markAllAsRead()}
               >
-                <CheckCheck className="mr-1 h-3 w-3" />
+                <CheckCheck className="mr-1 size-3" />
                 {labels.notification.markAllRead}
               </Button>
             )}
@@ -202,27 +215,41 @@ export function NotificationsDropdown() {
           <div className="max-h-96 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                <Bell className="h-8 w-8 opacity-50" />
+                <Bell className="size-8 opacity-50" />
                 <p className="mt-2 text-sm">{labels.notification.empty}</p>
               </div>
             ) : (
-              <div className="divide-y divide-border">
-                {notifications.map((notification) => {
+              <div
+                className="divide-y divide-border"
+                {...roving.getContainerProps()}
+              >
+                {notifications.map((notification, i) => {
                   const isResponding = respondingTo === notification.id;
                   const showInviteActions = isActionableInvite(notification);
+                  const itemProps = roving.getItemProps(i);
 
                   return (
                     <div
                       key={notification.id}
+                      role="button"
+                      tabIndex={itemProps.tabIndex}
+                      data-active={itemProps["data-active"]}
+                      onFocus={itemProps.onFocus}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleNotificationClick(notification);
+                        }
+                      }}
                       className={cn(
-                        "flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/50 cursor-pointer",
+                        "flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                         !notification.read && "bg-primary/5",
                       )}
                       onClick={() => handleNotificationClick(notification)}
                     >
                       <div
                         className={cn(
-                          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+                          "flex size-8 shrink-0 items-center justify-center rounded-full",
                           getIconColor(notification.type),
                         )}
                       >
@@ -261,9 +288,9 @@ export function NotificationsDropdown() {
                               }
                             >
                               {isResponding ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
+                                <Loader2 className="size-3 animate-spin" />
                               ) : (
-                                <Check className="h-3 w-3" />
+                                <Check className="size-3" />
                               )}
                               {labels.inbox.joinAction}
                             </Button>
@@ -282,7 +309,7 @@ export function NotificationsDropdown() {
                         )}
                       </div>
                       {!notification.read && (
-                        <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                        <div className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
                       )}
                     </div>
                   );

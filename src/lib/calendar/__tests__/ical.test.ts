@@ -48,7 +48,8 @@ END:VCALENDAR`;
   });
 
   it("handles CRLF line endings", () => {
-    const ics = "BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nDTSTART:20260215T090000Z\r\nDTEND:20260215T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n";
+    const ics =
+      "BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nDTSTART:20260215T090000Z\r\nDTEND:20260215T100000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n";
 
     const blocks = parseIcal(ics);
     expect(blocks).toHaveLength(1);
@@ -68,7 +69,7 @@ END:VCALENDAR`;
     expect(blocks[0].start).toEqual(new Date("2026-02-15T09:00:00Z"));
   });
 
-  it("parses DTSTART with TZID parameter", () => {
+  it("parses DTSTART with TZID parameter (CET winter)", () => {
     const ics = `BEGIN:VCALENDAR
 BEGIN:VEVENT
 DTSTART;TZID=Europe/Berlin:20260215T090000
@@ -78,8 +79,39 @@ END:VCALENDAR`;
 
     const blocks = parseIcal(ics);
     expect(blocks).toHaveLength(1);
-    // Treated as UTC approximation
-    expect(blocks[0].start).toEqual(new Date("2026-02-15T09:00:00Z"));
+    // Feb = CET (UTC+1), so 09:00 Berlin = 08:00 UTC
+    expect(blocks[0].start).toEqual(new Date("2026-02-15T08:00:00Z"));
+    expect(blocks[0].end).toEqual(new Date("2026-02-15T09:00:00Z"));
+  });
+
+  it("parses DTSTART with TZID parameter (CEST summer)", () => {
+    const ics = `BEGIN:VCALENDAR
+BEGIN:VEVENT
+DTSTART;TZID=Europe/Berlin:20260715T140000
+DTEND;TZID=Europe/Berlin:20260715T150000
+END:VEVENT
+END:VCALENDAR`;
+
+    const blocks = parseIcal(ics);
+    expect(blocks).toHaveLength(1);
+    // Jul = CEST (UTC+2), so 14:00 Berlin = 12:00 UTC
+    expect(blocks[0].start).toEqual(new Date("2026-07-15T12:00:00Z"));
+    expect(blocks[0].end).toEqual(new Date("2026-07-15T13:00:00Z"));
+  });
+
+  it("parses DTSTART with US timezone TZID", () => {
+    const ics = `BEGIN:VCALENDAR
+BEGIN:VEVENT
+DTSTART;TZID=America/New_York:20260115T090000
+DTEND;TZID=America/New_York:20260115T100000
+END:VEVENT
+END:VCALENDAR`;
+
+    const blocks = parseIcal(ics);
+    expect(blocks).toHaveLength(1);
+    // Jan = EST (UTC-5), so 09:00 NY = 14:00 UTC
+    expect(blocks[0].start).toEqual(new Date("2026-01-15T14:00:00Z"));
+    expect(blocks[0].end).toEqual(new Date("2026-01-15T15:00:00Z"));
   });
 
   it("skips events where end <= start", () => {

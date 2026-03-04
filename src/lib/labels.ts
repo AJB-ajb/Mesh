@@ -75,61 +75,138 @@ export const labels = {
   // ---------------------------------------------------------------------------
   landing: {
     loginButton: "Log in",
-    heroBadge: "Activity matching platform",
-    heroTitle: "Find people to do things with.",
+    heroBadge: "Activity-first coordination",
+    heroTitle: "Stop coordinating through back-and-forth messages.",
     heroSubheadline:
-      "Hackathons, study groups, sports, concerts, side projects, startups \u2014 describe what you want to do, and we\u2019ll match you with the right people.",
+      "Post what you want to do \u2014 a hackathon, a study group, a side project \u2014 and Mesh handles finding the right people.",
     postSomethingButton: "Post something",
     explorePostingsButton: "Explore postings",
+    whyMeshButton: "Why Mesh?",
+
+    problemSectionTitle: "Messaging wasn\u2019t designed for coordination",
+    problemGroupChatsTitle: "Group chats",
+    problemGroupChatsBody:
+      "100 people see your message, 5 are interested \u2014 and you still have to negotiate one by one.",
+    problemMeetupsTitle: "Events & meetups",
+    problemMeetupsBody: "Built for crowds, not small teams of 2\u20135.",
+    problemForumsTitle: "Job boards & forums",
+    problemForumsBody: "Too formal, too slow for a weekend hackathon.",
+    problemConclusion:
+      "They all treat your activity as a message. Mesh treats it as a structured posting the platform can act on.",
 
     useCaseSectionTitle: "People are looking for all kinds of things",
     useCaseSectionSubtitle:
       "From study partners to startup co-founders \u2014 post what you want to do and find the right people.",
 
     howItWorksTitle: "How it works",
-    howItWorksSubtitle: "From idea to collaboration in under a minute.",
-    howItWorksStep1Title: "Describe what you want to do",
+    howItWorksSubtitle: "One posting replaces all the back-and-forth.",
+    howItWorksStep1Title: "Describe your activity",
     howItWorksStep1Body:
-      "Paste text, speak, or fill a form \u2014 describe any activity, project, or event you need people for.",
-    howItWorksStep2Title: "Get matched with the right people",
+      "Paste text, speak, or type \u2014 Mesh extracts the structure (time, skills, team size) so the platform can act on it.",
+    howItWorksStep2Title: "Find or invite the right people",
     howItWorksStep2Body:
-      "Matching on skills, availability, location, and interests \u2014 you\u2019ll see who fits best.",
-    howItWorksStep3Title: "Connect and collaborate",
+      "Get matched with compatible people, or invite your connections in order \u2014 no manual back-and-forth.",
+    howItWorksStep3Title: "Start doing the thing",
     howItWorksStep3Body:
-      "Chat, plan, and do the thing \u2014 whether it\u2019s a hackathon, a tennis match, or a startup launch.",
+      "The right people are assembled. Chat, plan, and go \u2014 whether it\u2019s a hackathon, a tennis match, or a startup.",
 
-    featuresSectionTitle: "Built for real connections",
+    featuresSectionTitle: "Built for getting things done",
     featuresSectionSubtitle:
-      "Smart tools that make finding the right people effortless.",
-    smartMatchingTitle: "Smart Matching",
+      "Coordinate quickly, find the right people, and move on with your life.",
+    smartMatchingTitle: "Understands what you need",
     smartMatchingBody:
-      "Understands what you need and who fits \u2014 not just keyword matching.",
-    voiceTextInputTitle: "Voice & Text Input",
+      "Goes beyond keywords \u2014 matches on skills, context, and intent.",
+    voiceTextInputTitle: "Just describe it",
     voiceTextInputBody:
-      "Describe what you\u2019re looking for in your own words \u2014 type it out or just speak.",
-    realtimeMessagingTitle: "Real-Time Messaging",
+      "Paste, type, or speak \u2014 no forms required to get started.",
+    realtimeMessagingTitle: "Connect right away",
     realtimeMessagingBody:
-      "Connect instantly with your matches and start planning together right away.",
-    smartCompatibilityTitle: "Smart Compatibility",
+      "Start planning together the moment you find a match.",
+    smartCompatibilityTitle: "See why they fit",
     smartCompatibilityBody:
-      "See why someone is a good match \u2014 skills, availability, location, and interest alignment.",
+      "Skills, availability, location, and interest alignment \u2014 all at a glance.",
 
-    finalCtaTitle: "Ready to find your people?",
-    ctaBody: "Post what you want to do and get matched with the right people.",
+    finalCtaTitle: "Ready to skip the back-and-forth?",
+    ctaBody: "Post your activity and let Mesh handle finding the right people.",
     getStartedButton: "Get started free",
 
     footerCopyright: "\u00a9 2026 Mesh. All rights reserved.",
     privacyLink: "Privacy",
     termsLink: "Terms",
+    whyMeshLink: "Why Mesh?",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Why Mesh page
+  // ---------------------------------------------------------------------------
+  why: {
+    heroTitle: "Coordinating activities shouldn\u2019t mean endless messaging.",
+    heroSubtitle:
+      "Whether it\u2019s a hackathon team, a study group, or a tennis partner \u2014 you shouldn\u2019t have to message people one by one to make it happen.",
+
+    smallGroupTitle: "The back-and-forth problem",
+    smallGroupBody1:
+      "Coordinating through messages means rounds of explaining, checking interest, negotiating schedules, and comparing fit. Each round trip takes minutes to hours. People drop out. Details scatter across threads.",
+    smallGroupBody2:
+      "This gets worse with group size \u2014 but even coordinating 2\u20133 people through DMs is surprisingly tedious. The back-and-forth is the bottleneck, not finding the activity.",
+
+    problemTitle: "Why messaging apps can\u2019t solve this",
+    problemGroupChatsTitle: "Group chats (Slack, Discord, WhatsApp)",
+    problemGroupChatsBody:
+      "They treat your activity as just another message. They can\u2019t check availability, match skills, or manage invites \u2014 so you do it all manually.",
+    problemMeetupsTitle: "Events and meetups",
+    problemMeetupsBody:
+      "Designed for large gatherings, not small teams of 2\u20135 that need real coordination.",
+    problemForumsTitle: "Job boards and forums",
+    problemForumsBody:
+      "Too formal, too slow. By the time you\u2019ve posted and waited, the weekend is over.",
+    problemConclusion:
+      "The root cause: messaging apps don\u2019t know you\u2019re coordinating an activity, so they can\u2019t help.",
+
+    howDifferentTitle: "How Mesh replaces the back-and-forth",
+    howDifferentActivityFirst: "Structured postings",
+    howDifferentActivityFirstBody:
+      "Your posting has structure \u2014 time, skills, team size \u2014 so the platform can check availability, match people, and manage invites for you.",
+    howDifferentNoSetup: "No setup required",
+    howDifferentNoSetupBody:
+      "You don\u2019t need a profile to post. Describe your activity, and you\u2019re live in seconds.",
+    howDifferentSmartMatching: "Find or invite",
+    howDifferentSmartMatchingBody:
+      "Get matched with compatible strangers, or invite people you know in your preferred order \u2014 the platform handles the asking.",
+
+    speedTitle: "From posting to team in under a minute",
+    speedBody:
+      "Describe your activity in 30 seconds. Mesh extracts the structure and immediately starts finding or inviting the right people \u2014 no back-and-forth required.",
+
+    useCasesTitle: "Use cases",
+    useCaseAcademicTitle: "Academic collaboration",
+    useCaseAcademicBody:
+      "Find study partners, lab mates, or research collaborators at your university.",
+    useCaseHackathonTitle: "Hackathons",
+    useCaseHackathonBody:
+      "Assemble a balanced team with the right skills before the event starts.",
+    useCaseProfessionalTitle: "Professional & mentorship",
+    useCaseProfessionalBody:
+      "Find a co-founder, an advisor, or someone to pair-program with.",
+    useCaseHobbiesTitle: "Hobbies & sports",
+    useCaseHobbiesBody:
+      "Find a tennis partner, a band member, or someone to train with.",
+    useCaseSpontaneousTitle: "Spontaneous activities",
+    useCaseSpontaneousBody:
+      "Concert tonight? Road trip this weekend? Find someone who\u2019s in.",
+
+    ctaTitle: "Ready to skip the back-and-forth?",
+    ctaBody: "Post your activity. It takes 30 seconds.",
+    ctaButton: "Get started free",
   },
 
   // ---------------------------------------------------------------------------
   // Site metadata / SEO
   // ---------------------------------------------------------------------------
   meta: {
-    title: "Mesh - Find Your Perfect Match",
+    title: "Mesh \u2014 Activity Coordination Without the Back-and-Forth",
     description:
-      "Find people for hackathons, study groups, side projects, and more. Describe what you want to do and get matched with the right collaborators.",
+      "Stop coordinating through endless messages. Post your activity \u2014 a hackathon, a study group, a side project \u2014 and Mesh finds the right people.",
     appName: "Mesh",
   },
 
@@ -138,7 +215,7 @@ export const labels = {
   // ---------------------------------------------------------------------------
   postingCreation: {
     pageTitle: "Create Posting",
-    subtitle: "Describe your posting to find the right collaborators",
+    subtitle: "Describe your activity to find the right people",
     backButton: "Back to postings",
     infoAiMode:
       "Paste your posting description and we\u2019ll extract the details automatically.",
@@ -159,6 +236,14 @@ export const labels = {
     errorInvalidData: (msg: string) => `Invalid posting data: ${msg}`,
     errorWithReason: (msg: string) => `Failed to create posting: ${msg}`,
     errorGeneric: "Failed to create posting. Please try again.",
+
+    // Text-first posting
+    textPlaceholder: "What are you looking for?\nType / for commands",
+    errorEmptyPosting: "Please write a description before posting.",
+    postButton: "Post",
+    editDetailsToggle: "Edit details manually",
+    editDetailsHint:
+      "Fine-tune category, skills, team size, and other settings.",
   },
 
   // ---------------------------------------------------------------------------
@@ -186,6 +271,46 @@ export const labels = {
     switchToFormButton: "Switch to Form",
     formHint:
       "Skills, team size, and timeline will be extracted from your description.",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Extraction review (post-creation review card)
+  // ---------------------------------------------------------------------------
+  extractionReview: {
+    title: "Extracted Details",
+    accept: "Accept",
+    applied: "AI filled in some details",
+    undo: "Undo",
+    appliedDismiss: "Dismiss extraction summary",
+    retry: "Retry",
+    extracting: "Extracting details from your text...",
+    error: "Failed to extract details.",
+    fieldLabels: {
+      category: "Category",
+      skills: "Skills",
+      teamSize: "Team Size",
+      estimatedTime: "Time Commitment",
+      tags: "Tags",
+    } as const,
+  },
+
+  // ---------------------------------------------------------------------------
+  // NL input panel (unified NL + form layout)
+  // ---------------------------------------------------------------------------
+  nlInput: {
+    postingTitle: "Describe Your Posting",
+    postingDescription:
+      "Paste from Slack, Discord, a README, or use the mic. Details will be extracted into the form below.",
+    profileTitle: "Describe Yourself",
+    profileDescription:
+      "Paste your GitHub README, LinkedIn bio, resume, or use the mic. Your profile fields will be populated below.",
+    extractButton: "Extract",
+    extractingButton: "Extracting...",
+    extractedButton: "Extracted!",
+    updateButton: "Update Fields",
+    updatingButton: "Updating...",
+    helpText:
+      "Type or paste natural language and click Extract to populate the form fields below.",
   },
 
   // ---------------------------------------------------------------------------
@@ -223,7 +348,7 @@ export const labels = {
     visibilityLabel: "Visibility",
     visibilityHelp: "Public = discoverable by everyone. Private = invite only.",
     expiresOnLabel: "Expires on",
-    expiresOnHelp: "Default: 90 days from today",
+    expiresOnHelp: "Default: 3 days from today",
     autoAcceptLabel: "Auto-accept",
     autoAcceptHelp: "Instantly accept anyone who joins (no manual review)",
     createButton: "Create Posting",
@@ -383,6 +508,7 @@ export const labels = {
     cancel: "Cancel",
     save: "Save",
     saving: "Saving...",
+    saved: "Saved",
     saveChanges: "Save changes",
     loading: "Loading...",
     signIn: "Sign in",
@@ -414,6 +540,9 @@ export const labels = {
     connected: "Connected",
     notConnected: "Not connected",
     expired: "Expired",
+    themeLight: "Light",
+    themeDark: "Dark",
+    themeDusk: "Dusk",
   } as const,
 
   // ---------------------------------------------------------------------------
@@ -426,6 +555,8 @@ export const labels = {
     errorIdPrefix: "Error ID: ",
     tryAgain: "Try again",
     goHome: "Go home",
+    goToPosts: "Go to posts",
+    backToLogin: "Back to login",
   },
 
   // ---------------------------------------------------------------------------
@@ -494,62 +625,6 @@ export const labels = {
       errorPasswordMismatch: "Passwords do not match.",
       errorPasswordLength: "Password must be at least 6 characters.",
     },
-  },
-
-  // ---------------------------------------------------------------------------
-  // Dashboard page
-  // ---------------------------------------------------------------------------
-  dashboard: {
-    title: "Dashboard",
-    subtitle:
-      "Welcome back! Here\u2019s what\u2019s happening with your postings.",
-    recentActivity: "Recent Activity",
-    recentActivityDescription:
-      "Your latest matches, join requests, and messages",
-    signInToSeeActivity: "Sign in to see your recent activity",
-  },
-
-  // ---------------------------------------------------------------------------
-  // Quick actions
-  // ---------------------------------------------------------------------------
-  quickActions: {
-    title: "Quick Actions",
-    subtitle: "Common tasks to get started",
-    createPosting: "Create Posting",
-    createPostingDescription: "Find collaborators for your idea",
-    reviewMatches: "Review Matches",
-    reviewMatchesDescription: "See postings that match your profile",
-    browsePostings: "Browse Postings",
-    browsePostingsDescription: "Discover postings looking for people like you",
-  },
-
-  // ---------------------------------------------------------------------------
-  // Matches page
-  // ---------------------------------------------------------------------------
-  matches: {
-    title: "Matches",
-    subtitle: "Postings that match your skills and interests",
-    profileIncomplete: "Profile Incomplete",
-    unableToFindMatches: "Unable to Find Matches",
-    profileIncompleteHint:
-      "Add a description and skills to your profile so we can find relevant matches for you.",
-    emptyTitle: "No matches yet",
-    emptyDescription:
-      "Complete your profile to start seeing matches that align with your skills and interests.",
-    completeProfile: "Complete Profile",
-    failedToLoadMatches: "Failed to load matches",
-  },
-
-  // ---------------------------------------------------------------------------
-  // Bookmarks page
-  // ---------------------------------------------------------------------------
-  bookmarks: {
-    title: "Bookmarks",
-    subtitle: "Postings you\u2019ve saved for later",
-    emptyTitle: "No bookmarks yet",
-    emptyDescription:
-      "Browse postings and bookmark ones you\u2019re interested in.",
-    browsePostings: "Browse Postings",
   },
 
   // ---------------------------------------------------------------------------
@@ -802,10 +877,7 @@ export const labels = {
   // Navigation (header + sidebar)
   // ---------------------------------------------------------------------------
   nav: {
-    dashboard: "Dashboard",
     postings: "Postings",
-    matches: "Matches",
-    bookmarks: "Bookmarks",
     inbox: "Inbox",
     discover: "Discover",
     myPostings: "My Postings",
@@ -819,6 +891,11 @@ export const labels = {
     mainNavigation: "Main navigation",
     secondaryNavigation: "Secondary navigation",
     copyright: "\u00a9 2026 Mesh",
+    posts: "Posts",
+    bottomBar: "Tab navigation",
+    collapseSidebar: "Collapse sidebar",
+    expandSidebar: "Expand sidebar",
+    clearSearch: "Clear search",
   },
 
   // ---------------------------------------------------------------------------
@@ -889,6 +966,10 @@ export const labels = {
       `${current} of ${total} \u2014 waiting for response`,
     parallelWaitingSummary: (responded: number, total: number) =>
       `${responded} of ${total} responded \u2014 waiting for others`,
+    concurrentLabel: "Ask at once",
+    concurrentHelp: "Number of people to invite simultaneously",
+    concurrentWaitingSummary: (pending: number, total: number) =>
+      `Waiting on ${pending} of ${total} connections`,
   },
 
   // ---------------------------------------------------------------------------
@@ -953,22 +1034,24 @@ export const labels = {
       title: "Quick Update",
       description:
         "Describe what changed and your profile fields will update automatically.",
-      sourceLabel: "Profile description",
+      sourceLabel: "Your current description",
+      sourceHint: "Edit this if you want to update your base description too.",
       sourcePlaceholder:
         "Paste or type your profile description here (e.g., a short bio, your skills, what you\u2019re looking for)...",
-      instructionLabel: "What changed?",
+      instructionLabel: "Tell the AI what to change",
       instructionPlaceholder:
-        "e.g., I also know Python now and am available 20 hours/week",
+        "e.g. Make it sound more professional and highlight my Python experience",
     },
     posting: {
       title: "Quick Update",
       description:
         "Describe what changed and your posting fields will update automatically.",
-      sourceLabel: "Posting description",
+      sourceLabel: "Your current description",
+      sourceHint: "Edit this if you want to update your base description too.",
       sourcePlaceholder: "Paste or type your posting description here...",
-      instructionLabel: "What changed?",
+      instructionLabel: "Tell the AI what to change",
       instructionPlaceholder:
-        "e.g., change the title to X and add Python to skills",
+        "e.g. Emphasize that we need a backend developer with Python experience",
     },
     applyButton: "Apply Update",
     applyingButton: "Applying...",
@@ -982,6 +1065,38 @@ export const labels = {
   a11y: {
     skipToMainContent: "Skip to main content",
     toggleTheme: "Toggle theme",
+    deleteAvailabilityBlock: "Delete availability block",
+    shortcuts: {
+      openSearch: "Open search / command palette",
+      showHelp: "Show keyboard shortcuts",
+      escape: "Close dialog or panel",
+      arrowKeys: "Navigate within lists",
+      enter: "Select or activate",
+      tab: "Move between sections",
+    },
+  },
+
+  // ---------------------------------------------------------------------------
+  // Command palette (global search actions)
+  // ---------------------------------------------------------------------------
+  commandPalette: {
+    actionsHeading: "Quick Actions",
+    goToDiscover: "Go to Discover",
+    goToDiscoverDesc: "Browse and find postings",
+    goToPosts: "Go to Posts",
+    goToPostsDesc: "View your postings and projects",
+    goToConnections: "Go to Connections",
+    goToConnectionsDesc: "Your network and messages",
+    goToProfile: "Go to Profile",
+    goToProfileDesc: "View and edit your profile",
+    goToSettings: "Go to Settings",
+    goToSettingsDesc: "App preferences and account",
+    createPosting: "Create New Posting",
+    createPostingDesc: "Start a new posting",
+    toggleTheme: "Toggle Theme",
+    toggleThemeDesc: "Switch between light, dark, and dusk",
+    keyboardShortcuts: "Keyboard Shortcuts",
+    keyboardShortcutsTitle: "Keyboard Shortcuts",
   },
 
   // ---------------------------------------------------------------------------
@@ -996,6 +1111,14 @@ export const labels = {
     noResults: "No postings found.",
     noSavedPostings:
       "No saved postings yet. Express interest in postings to save them here.",
+    noResultsTitle: "No postings found",
+    noResultsDescription: "Try a different search or adjust your filters.",
+    noSavedTitle: "No saved postings",
+    noSavedDescription:
+      "Bookmark postings you're interested in to find them here later.",
+    connectionsFilter: "Connections",
+    showBreakdown: "Show breakdown",
+    hideBreakdown: "Hide breakdown",
   },
 
   // ---------------------------------------------------------------------------
@@ -1003,7 +1126,7 @@ export const labels = {
   // ---------------------------------------------------------------------------
   myPostings: {
     title: "My Postings",
-    subtitle: "Manage your postings and track applicants",
+    subtitle: "Manage your postings and track join requests",
     pendingRequests: (n: number) => `${n} pending request${n !== 1 ? "s" : ""}`,
     noPostings: "You haven\u2019t created any postings yet.",
     createFirst: "Create your first posting",
@@ -1022,6 +1145,37 @@ export const labels = {
       "Postings appear here once the minimum team size is reached.",
     discoverCta: "Discover postings",
     unreadMessages: (n: number) => `${n} unread message${n !== 1 ? "s" : ""}`,
+  },
+
+  // ---------------------------------------------------------------------------
+  // Posts page (unified postings hub)
+  // ---------------------------------------------------------------------------
+  posts: {
+    title: "Posts",
+    subtitle: "Your postings and active projects",
+    filters: {
+      all: "All",
+      created: "Created",
+      joined: "Joined",
+      applied: "Requested",
+      completed: "Completed",
+    } as const,
+    empty: {
+      all: "No posts yet",
+      created: "You haven\u2019t created any postings yet.",
+      joined: "You haven\u2019t joined any postings yet.",
+      applied: "No pending join requests.",
+      completed: "No completed postings yet.",
+    } as const,
+    emptyDescription: {
+      all: "Create a posting or browse the discover page to get started.",
+      created: "Create a new posting to find collaborators.",
+      joined: "Browse the discover page to find postings to join.",
+      applied: "Request to join postings you\u2019re interested in.",
+      completed: "Completed projects will appear here.",
+    } as const,
+    newPosting: "New Posting",
+    discoverCta: "Discover postings",
   },
 
   // ---------------------------------------------------------------------------
@@ -1148,7 +1302,83 @@ export const labels = {
     noConnections: "No calendars connected yet.",
     errorGeneric: "Something went wrong. Please try again.",
     errorInvalidIcalUrl:
-      "Please enter a valid iCal URL (must start with http:// or https://).",
+      "Please enter a valid iCal URL (must start with http://, https://, or webcal://).",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Slash commands
+  // ---------------------------------------------------------------------------
+  slashCommands: {
+    /** Displayed when no commands match the query */
+    noResults: "No commands found",
+    /** Command names and descriptions (used by registry + menu) */
+    time: { label: "Time", description: "Insert a time window" },
+    location: { label: "Location", description: "Insert a location" },
+    skills: { label: "Skills", description: "Insert required skills" },
+    template: { label: "Template", description: "Apply a posting template" },
+    hidden: { label: "Hidden", description: "Insert hidden details block" },
+    size: { label: "Size", description: "Insert team size" },
+    visibility: {
+      label: "Visibility",
+      description: "Set who can see this posting",
+    },
+    expire: { label: "Expire", description: "Set when this posting expires" },
+    autoaccept: {
+      label: "Auto-accept",
+      description: "Auto-accept join requests",
+    },
+    invite: {
+      label: "Invite",
+      description: "Invite connections to this posting",
+    },
+    format: { label: "Format", description: "Auto-format with markdown" },
+    clean: { label: "Clean", description: "Fix grammar and spelling" },
+    // Setting applied toasts
+    settingApplied: {
+      visibility: (v: string) => `Visibility set to ${v}`,
+      expire: (v: string) => `Expiry set to ${v}`,
+      autoaccept: (v: string) => `Auto-accept ${v}`,
+    },
+    // Time picker overlay
+    timePickerTitle: "When are you available?",
+    dayLabels: {
+      mon: "Mon",
+      tue: "Tue",
+      wed: "Wed",
+      thu: "Thu",
+      fri: "Fri",
+      sat: "Sat",
+      sun: "Sun",
+      weekdays: "Weekdays",
+      weekends: "Weekends",
+    } as const,
+    timeOfDay: {
+      morning: "Morning (6am\u201312pm)",
+      afternoon: "Afternoon (12\u20135pm)",
+      evening: "Evening (5\u201310pm)",
+    } as const,
+    customTimeLabel: "Custom time range",
+    insertButton: "Insert",
+    cancelButton: "Cancel",
+    // Location overlay
+    locationTitle: "Where?",
+    locationPlaceholder: "e.g., Berlin, Germany or Remote",
+    // Skills overlay
+    skillsTitle: "What skills are needed?",
+    skillsPlaceholder: "e.g., React, Python, Machine Learning",
+    skillsPrefix: "Skills:",
+    skillsMinLevel: (name: string, level: number) =>
+      `${name} (min: ${level}/10)`,
+    skillsAnyLevel: (name: string) => `${name} (any level)`,
+    // Template overlay
+    templateTitle: "Choose a template",
+    templates: {
+      studyGroup: "Study Group",
+      hackathonTeam: "Hackathon Team",
+      sideProject: "Side Project",
+      mentorship: "Mentorship",
+      social: "Social Activity",
+    } as const,
   },
 
   // ---------------------------------------------------------------------------
@@ -1175,5 +1405,193 @@ export const labels = {
     exportIcs: "Download .ics",
     respondedCount: (n: number, total: number) => `${n} of ${total} responded`,
     dragToSelectHint: "Drag on the calendar to select a meeting time.",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Profile text-first
+  // ---------------------------------------------------------------------------
+  profileTextFirst: {
+    textPlaceholder:
+      "I'm a backend developer with 3 years of Python experience, looking to learn React and find project partners...",
+    saveButton: "Save Profile",
+    savingButton: "Saving...",
+    editDetailsToggle: "Edit details manually",
+    editDetailsHint: "Fine-tune individual fields",
+    extractionReviewTitle: "We extracted these details from your text",
+    extractionReviewDescription:
+      "Review and accept the fields below, or dismiss to keep your current profile.",
+    acceptAll: "Accept All",
+    dismiss: "Dismiss",
+    retry: "Retry",
+    errorExtraction: "Failed to extract profile details. Try again?",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Guided prompts (new user onboarding)
+  // ---------------------------------------------------------------------------
+  guidedPrompts: {
+    title: "Let's build your profile",
+    subtitle: "Answer a few questions and we'll create your profile for you.",
+    step1Question: "What are you good at?",
+    step1Placeholder:
+      "e.g., I've been doing Python backend development for 3 years, comfortable with Django and FastAPI...",
+    step2Question: "What do you want to learn or work on?",
+    step2Placeholder:
+      "e.g., I want to learn React and build full-stack apps. Also interested in AI/ML projects...",
+    step3Question: "Describe a recent project or collaboration",
+    step3Placeholder:
+      "e.g., Last month I built a REST API for a student hackathon project with two friends...",
+    nextButton: "Next",
+    backButton: "Back",
+    reviewButton: "Review",
+    reviewTitle: "Here's your profile draft",
+    reviewDescription: "Edit anything you'd like, then save.",
+    saveButton: "Save Profile",
+    skipButton: "Skip for now",
+    stepIndicator: (current: number, total: number) => `${current} of ${total}`,
+    aboutMeHeading: "About Me",
+    interestsHeading: "Interests & Goals",
+    projectsHeading: "Recent Projects",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Markdown toolbar (mobile)
+  // ---------------------------------------------------------------------------
+  markdownToolbar: {
+    slashCommand: "/",
+    heading: "#",
+    bold: "B",
+    list: "-",
+    code: "`",
+    slashTooltip: "Slash command",
+    headingTooltip: "Heading",
+    boldTooltip: "Bold",
+    listTooltip: "List item",
+    codeTooltip: "Code",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Skill gap prompt
+  // ---------------------------------------------------------------------------
+  skillGap: {
+    title: (skills: string[]) => {
+      if (skills.length === 1)
+        return `This posting needs **${skills[0]}** experience`;
+      if (skills.length === 2)
+        return `This posting needs **${skills[0]}** and **${skills[1]}** experience`;
+      return `This posting needs **${skills[0]}**, **${skills[1]}**, and ${skills.length - 2} more skill${skills.length - 2 !== 1 ? "s" : ""}`;
+    },
+    description: "Describe your experience to improve your match.",
+    placeholder:
+      "e.g., I've been learning Machine Learning through online courses and built a simple image classifier...",
+    addToProfile: "Add to Profile",
+    adding: "Adding...",
+    success: "Skills added to your profile!",
+    dismissAriaLabel: "Dismiss skill gap prompt",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Text tools (auto-format, auto-clean)
+  // ---------------------------------------------------------------------------
+  textTools: {
+    formatButton: "Auto-format",
+    formatTooltip: "Add markdown structure (headings, bullets, bold)",
+    cleanButton: "Auto-clean",
+    cleanTooltip: "Fix grammar, spelling, and punctuation",
+    formatting: "Formatting...",
+    cleaning: "Cleaning...",
+    errorFormat: "Failed to format text. Please try again.",
+    errorClean: "Failed to clean text. Please try again.",
+    noChanges: "No changes needed — your text looks good!",
+    undoButton: "Undo",
+    appliedFormat: "Formatted!",
+    appliedClean: "Cleaned!",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Suggestion chips
+  // ---------------------------------------------------------------------------
+  suggestions: {
+    time: {
+      weekdayEvenings: "weekday evenings",
+      flexibleSchedule: "flexible schedule",
+      weekendsOnly: "weekends only",
+      fewHoursPerWeek: "a few hours per week",
+    } as const,
+    location: {
+      remote: "remote",
+      inPerson: "in-person",
+      flexibleLocation: "flexible location",
+    } as const,
+    teamSize: {
+      onePerson: "looking for 1 person",
+      smallTeam: "small team (2-3)",
+      openSize: "open to any size",
+    } as const,
+    level: {
+      beginnerFriendly: "beginner-friendly",
+      intermediate: "intermediate level",
+      anyExperience: "any experience level",
+    } as const,
+    dismissAriaLabel: "Dismiss suggestions",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Post-write nudges
+  // ---------------------------------------------------------------------------
+  nudges: {
+    timeMessage: "You haven\u2019t mentioned when \u2014 add timing?",
+    locationMessage: "No location mentioned \u2014 add where?",
+    skillsMessage: "Consider mentioning specific skills needed.",
+    teamSizeMessage: "How many people are you looking for?",
+    levelMessage: "What experience level works best?",
+    dismissAriaLabel: "Dismiss nudge",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Toast notifications
+  // ---------------------------------------------------------------------------
+  toasts: {
+    bookmarkAdded: "Posting saved",
+    bookmarkRemoved: "Posting unsaved",
+    bookmarkError: "Could not update bookmark",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Tier / Premium
+  // ---------------------------------------------------------------------------
+  tier: {
+    upgradePrompt: "Upgrade to see why you matched",
+    premiumBadge: "Premium",
+    freeBadge: "Free",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Deep Match / Explanations
+  // ---------------------------------------------------------------------------
+  deepMatch: {
+    explanation: "Why you matched",
+    concerns: "Things to consider",
+    role: "Best matching role",
+    generating: "Analyzing match...",
+    unavailable: "Deep analysis unavailable",
+    requestExplanation: "Get AI explanation",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Distance
+  // ---------------------------------------------------------------------------
+  distance: {
+    away: (km: number) => `~${km} km away`,
+  },
+
+  // ---------------------------------------------------------------------------
+  // Posting card (unified)
+  // ---------------------------------------------------------------------------
+  postingCard: {
+    moreDetails: "More details",
+    lessDetails: "Less details",
+    postedByYou: "Posted by you",
+    postedBy: "Posted by",
   },
 } as const;

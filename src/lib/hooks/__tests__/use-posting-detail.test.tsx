@@ -261,7 +261,14 @@ describe("usePostingDetail", () => {
       return mockQuery({ data: null, error: null });
     });
 
-    mockRpc.mockResolvedValue({ data: fakeBreakdown, error: null });
+    // Batch RPC returns array of { user_id, breakdown }
+    mockRpc.mockResolvedValue({
+      data: [
+        { user_id: "user-1", breakdown: fakeBreakdown },
+        { user_id: "user-2", breakdown: fakeBreakdown },
+      ],
+      error: null,
+    });
 
     const { result } = renderHook(() => usePostingDetail("posting-1"), {
       wrapper,

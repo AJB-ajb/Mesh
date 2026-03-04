@@ -98,7 +98,7 @@ export function FeedbackWidget() {
         <Button
           variant="default"
           size="icon"
-          className="fixed right-4 bottom-4 z-50 size-12 rounded-full shadow-lg"
+          className="fixed left-4 md:left-auto md:right-4 bottom-20 md:bottom-4 z-50 size-12 rounded-full shadow-lg"
           aria-label={labels.feedback.buttonAriaLabel}
         >
           <MessageSquarePlus className="size-5" />

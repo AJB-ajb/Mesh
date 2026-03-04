@@ -5,6 +5,51 @@ import type {
   SpecificWindow,
 } from "@/lib/types/availability";
 
+// ---------------------------------------------------------------------------
+// Chip metadata — structured data for inline metadata chips
+// ---------------------------------------------------------------------------
+
+/** @deprecated Chip metadata is being replaced by mesh: link syntax in v0.6. Kept for DB compatibility. */
+export interface ChipMetadataLocation {
+  type: "location";
+  display: string;
+  data: {
+    displayName: string;
+    lat?: number;
+    lng?: number;
+  };
+}
+
+/** @deprecated Chip metadata is being replaced by mesh: link syntax in v0.6. Kept for DB compatibility. */
+export interface ChipMetadataTime {
+  type: "time";
+  display: string;
+  data: {
+    days: string[];
+    times: string[];
+    customFrom?: string;
+    customTo?: string;
+  };
+}
+
+/** @deprecated Chip metadata is being replaced by mesh: link syntax in v0.6. Kept for DB compatibility. */
+export interface ChipMetadataSkills {
+  type: "skills";
+  display: string;
+  data: {
+    skills: { skillId: string; name: string; levelMin: number | null }[];
+  };
+}
+
+/** @deprecated Chip metadata is being replaced by mesh: link syntax in v0.6. Kept for DB compatibility. */
+export type ChipMetadataEntry =
+  | ChipMetadataLocation
+  | ChipMetadataTime
+  | ChipMetadataSkills;
+
+/** @deprecated Chip metadata is being replaced by mesh: link syntax in v0.6. Kept for DB compatibility. */
+export type ChipMetadataMap = Record<string, ChipMetadataEntry>;
+
 export type PostingFormState = {
   title: string;
   description: string;
@@ -35,10 +80,10 @@ export type PostingFormState = {
   selectedSkills: SelectedPostingSkill[];
 };
 
-// Default expiry: 90 days from now
+// Default expiry: 3 days from now
 function defaultExpiresAt(): string {
   const d = new Date();
-  d.setDate(d.getDate() + 90);
+  d.setDate(d.getDate() + 3);
   return d.toISOString().slice(0, 10);
 }
 

@@ -46,7 +46,8 @@ export function projectToCanonicalWeek(
       const dt = new Date(ms);
       const dayOfWeek = getIsoDayOfWeek(dt); // 0=Mon..6=Sun
       const minuteOfDay = dt.getHours() * 60 + dt.getMinutes();
-      const slotIndex = dayOfWeek * SLOTS_PER_DAY + Math.floor(minuteOfDay / SLOT_SIZE);
+      const slotIndex =
+        dayOfWeek * SLOTS_PER_DAY + Math.floor(minuteOfDay / SLOT_SIZE);
 
       if (slotIndex < 0 || slotIndex >= TOTAL_SLOTS) continue;
 
@@ -75,10 +76,7 @@ export function projectToCanonicalWeek(
 /**
  * Convert sorted busy slot indices into merged int4range strings.
  */
-function mergeToCanonicalRanges(
-  slots: number[],
-  slotSize: number,
-): string[] {
+function mergeToCanonicalRanges(slots: number[], slotSize: number): string[] {
   if (slots.length === 0) return [];
 
   const SLOTS_PER_DAY = 1440 / slotSize;
@@ -142,13 +140,16 @@ export async function storeBusyBlocks(
   // Compute canonical ranges
   const canonicalRanges = projectToCanonicalWeek(blocks, timezone);
 
-  // Insert new blocks
-  const rows = blocks.map((block) => ({
+  // Insert new blocks — store canonical_ranges only on the first row to avoid
+  // duplicating the (potentially large) array across every busy-block row.
+  // The hook (use-calendar-busy-blocks.ts) deduplicates via Set<string>.
+  const canonicalValue = canonicalRanges.length > 0 ? canonicalRanges : null;
+  const rows = blocks.map((block, index) => ({
     connection_id: connectionId,
     profile_id: profileId,
     start_time: block.start.toISOString(),
     end_time: block.end.toISOString(),
-    canonical_ranges: canonicalRanges.length > 0 ? canonicalRanges : null,
+    canonical_ranges: index === 0 ? canonicalValue : null,
   }));
 
   // Batch insert (Supabase supports arrays)
@@ -210,7 +211,9 @@ function getIsoDayOfWeek(date: Date): number {
  * Get ISO week number from a date.
  */
 function getIsoWeekNumber(date: Date): number {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const d = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+  );
   d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);

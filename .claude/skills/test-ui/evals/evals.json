@@ -1,0 +1,20 @@
+[
+  {
+    "name": "full-test-both-viewports",
+    "description": "Run the complete test suite (flows + visual) at both viewports",
+    "arguments": "",
+    "expected_behavior": "Parses as scope=full, viewport=both, target=all. Runs all 10 flows and visual tests on all discovered pages at both 1440x900 and 375x812. Produces a report at .reports/browser-test-YYYY-MM-DD.md with flow results, visual results, bug list, and cleanup log."
+  },
+  {
+    "name": "flows-only",
+    "description": "Run only flow tests with default viewports",
+    "arguments": "flows",
+    "expected_behavior": "Parses as scope=flows, viewport=both, target=all. Runs all 10 flow test scripts from references/flows.md. Skips visual page scanning entirely. Report contains flow results table but no pages-tested table."
+  },
+  {
+    "name": "visual-mobile-profile",
+    "description": "Run visual tests on the profile page at mobile viewport only",
+    "arguments": "visual mobile /profile",
+    "expected_behavior": "Parses as scope=visual, viewport=mobile, target=/profile. Discovers the profile route via glob. Resizes to 375x812 only (skips desktop). Applies 10-point visual checklist. Report contains only the profile page in the pages-tested table."
+  }
+]

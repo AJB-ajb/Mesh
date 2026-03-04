@@ -1,5 +1,5 @@
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, apiSuccess, parseBody } from "@/lib/errors";
+import { AppError, apiSuccess, parseBody } from "@/lib/errors";
 import { sendNotification } from "@/lib/notifications/create";
 
 /**
@@ -14,7 +14,7 @@ export const GET = withAuth(async (_req, { user, supabase }) => {
     )
     .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
 
-  if (error) return apiError("INTERNAL", error.message, 500);
+  if (error) throw new AppError("INTERNAL", error.message, 500);
 
   return apiSuccess({ friendships: data });
 });
@@ -27,11 +27,11 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   const { friend_id } = await parseBody<{ friend_id?: string }>(req);
 
   if (!friend_id) {
-    return apiError("VALIDATION", "friend_id is required", 400);
+    throw new AppError("VALIDATION", "friend_id is required", 400);
   }
 
   if (friend_id === user.id) {
-    return apiError(
+    throw new AppError(
       "VALIDATION",
       "Cannot send a connection request to yourself",
       400,
@@ -49,7 +49,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     .maybeSingle();
 
   if (existing) {
-    return apiError(
+    throw new AppError(
       "CONFLICT",
       `Connection already exists (status: ${existing.status})`,
       409,
@@ -62,7 +62,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     .select()
     .single();
 
-  if (error) return apiError("INTERNAL", error.message, 500);
+  if (error) throw new AppError("INTERNAL", error.message, 500);
 
   // Create a friend_request notification for the recipient (fire-and-forget)
   const { data: senderProfile } = await supabase
