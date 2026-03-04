@@ -555,6 +555,8 @@ export const labels = {
     errorIdPrefix: "Error ID: ",
     tryAgain: "Try again",
     goHome: "Go home",
+    goToPosts: "Go to posts",
+    backToLogin: "Back to login",
   },
 
   // ---------------------------------------------------------------------------
