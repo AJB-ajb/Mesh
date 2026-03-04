@@ -88,7 +88,7 @@ describe("POST /api/embeddings/process", () => {
     vi.unstubAllEnvs();
   });
 
-  it("returns 401 without auth header or internal call header", async () => {
+  it("returns 401 without auth header", async () => {
     const req = makeRequest();
     const response = await POST(req);
     const body = await response.json();
@@ -106,7 +106,9 @@ describe("POST /api/embeddings/process", () => {
     expect(body.error.code).toBe("UNAUTHORIZED");
   });
 
-  it("allows internal calls with x-internal-call header", async () => {
+  it("allows calls with valid EMBEDDINGS_API_KEY", async () => {
+    vi.stubEnv("EMBEDDINGS_API_KEY", "test-embeddings-key");
+
     const profilesQuery = mockQuery({ data: [], error: null });
     const postingsQuery = mockQuery({ data: [], error: null });
 
@@ -116,7 +118,7 @@ describe("POST /api/embeddings/process", () => {
       return callCount === 1 ? profilesQuery : postingsQuery;
     });
 
-    const req = makeRequest({ "x-internal-call": "true" });
+    const req = makeRequest({ authorization: "Bearer test-embeddings-key" });
     const response = await POST(req);
     const body = await response.json();
 
@@ -154,7 +156,7 @@ describe("POST /api/embeddings/process", () => {
       return callCount === 1 ? profilesQuery : postingsQuery;
     });
 
-    const req = makeRequest({ "x-internal-call": "true" });
+    const req = makeRequest({ authorization: "Bearer test-service-key" });
     const response = await POST(req);
     const body = await response.json();
 
@@ -211,7 +213,7 @@ describe("POST /api/embeddings/process", () => {
     ];
     mockGenerateEmbeddingsBatch.mockResolvedValueOnce(mockEmbeddings);
 
-    const req = makeRequest({ "x-internal-call": "true" });
+    const req = makeRequest({ authorization: "Bearer test-service-key" });
     const response = await POST(req);
     const body = await response.json();
 
@@ -275,7 +277,7 @@ describe("POST /api/embeddings/process", () => {
     ];
     mockGenerateEmbeddingsBatch.mockResolvedValueOnce(mockEmbeddings);
 
-    const req = makeRequest({ "x-internal-call": "true" });
+    const req = makeRequest({ authorization: "Bearer test-service-key" });
     const response = await POST(req);
     const body = await response.json();
 
@@ -317,7 +319,7 @@ describe("POST /api/embeddings/process", () => {
       new Error("OpenAI API error: 500"),
     );
 
-    const req = makeRequest({ "x-internal-call": "true" });
+    const req = makeRequest({ authorization: "Bearer test-service-key" });
     const response = await POST(req);
     const body = await response.json();
 
@@ -358,7 +360,7 @@ describe("POST /api/embeddings/process", () => {
       return mockUpdateQuery({ data: null, error: null });
     });
 
-    const req = makeRequest({ "x-internal-call": "true" });
+    const req = makeRequest({ authorization: "Bearer test-service-key" });
     const response = await POST(req);
     const body = await response.json();
 
@@ -408,7 +410,7 @@ describe("POST /api/embeddings/process", () => {
       new Array(1536).fill(0.1),
     ]);
 
-    const req = makeRequest({ "x-internal-call": "true" });
+    const req = makeRequest({ authorization: "Bearer test-service-key" });
     const response = await POST(req);
     const body = await response.json();
 

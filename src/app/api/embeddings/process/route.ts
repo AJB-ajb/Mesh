@@ -87,10 +87,7 @@ async function withRetry<T>(
 }
 
 export async function POST(req: Request) {
-  // Allow internal calls (fire-and-forget from save flows) without auth
-  // by checking for a special header, or require API key for external calls
-  const isInternalCall = req.headers.get("x-internal-call") === "true";
-  if (!isInternalCall && !verifyAuth(req)) {
+  if (!verifyAuth(req)) {
     return apiError("UNAUTHORIZED", "Invalid or missing API key", 401);
   }
 

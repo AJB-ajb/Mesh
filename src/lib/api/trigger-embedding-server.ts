@@ -25,7 +25,9 @@ export async function triggerEmbeddingGenerationServer(
     try {
       const response = await fetch(url, {
         method: "POST",
-        headers: { "x-internal-call": "true" },
+        headers: {
+          Authorization: `Bearer ${process.env.EMBEDDINGS_API_KEY || process.env.SUPABASE_SECRET_KEY}`,
+        },
       });
       if (response.ok) return;
     } catch {
