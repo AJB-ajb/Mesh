@@ -3,97 +3,21 @@ import Link from "next/link";
 import {
   ArrowRight,
   Users,
-  MessageSquare,
-  Mic,
-  Zap,
-  Search,
-  BookOpen,
+  GraduationCap,
   Code,
-  Music,
-  Briefcase,
   Trophy,
+  Zap,
   MessageCircle,
   Calendar,
   FileText,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/layout/logo";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ScenarioSection } from "@/components/landing/scenario-comparison";
 import { createClient } from "@/lib/supabase/server";
 import { labels } from "@/lib/labels";
-
-const examplePostings = [
-  {
-    icon: BookOpen,
-    title: "Linear Algebra study group for finals",
-    description:
-      "Looking for 2-3 people to study for the Linear Algebra final together. Meet twice a week at the library.",
-    skills: ["Linear Algebra", "Math"],
-    category: "Study",
-    teamSize: "2-3 people",
-    creator: { name: "Sarah K.", initials: "SK" },
-  },
-  {
-    icon: Code,
-    title: "Need 2 frontend devs for AI hackathon",
-    description:
-      "Building an AI-powered accessibility tool this weekend at HackMIT. Looking for React/Next.js experience.",
-    skills: ["React", "Next.js", "AI/ML"],
-    category: "Hackathon",
-    teamSize: "3 people",
-    creator: { name: "James R.", initials: "JR" },
-  },
-  {
-    icon: Music,
-    title: "Coldplay concert — March 15",
-    description:
-      "Anyone want to go to the Coldplay concert on March 15? Have an extra ticket, looking for someone to go with.",
-    skills: ["Music", "Live Events"],
-    category: "Social",
-    teamSize: "1 person",
-    creator: { name: "Mia L.", initials: "ML" },
-  },
-  {
-    icon: Code,
-    title: "Recipe app — need React + API help",
-    description:
-      "Building a recipe sharing app as a side project. Need someone with React and REST API experience to collaborate.",
-    skills: ["React", "REST APIs", "Node.js"],
-    category: "Side Project",
-    teamSize: "1-2 people",
-    creator: { name: "Alex T.", initials: "AT" },
-  },
-  {
-    icon: Briefcase,
-    title: "Co-founder for EdTech startup",
-    description:
-      "Seeking a co-founder with business development skills for an EdTech startup. Technical MVP is ready.",
-    skills: ["Business Dev", "EdTech", "Strategy"],
-    category: "Professional",
-    teamSize: "1 person",
-    creator: { name: "Priya N.", initials: "PN" },
-  },
-  {
-    icon: Trophy,
-    title: "Tennis doubles partner — weekday evenings",
-    description:
-      "Looking for an intermediate-level tennis partner for doubles. Available weekday evenings in the Hamburg area.",
-    skills: ["Tennis", "Intermediate"],
-    category: "Sports",
-    teamSize: "1 person",
-    creator: { name: "Tom W.", initials: "TW" },
-  },
-];
 
 const problemItems = [
   {
@@ -110,6 +34,29 @@ const problemItems = [
     icon: FileText,
     title: labels.landing.problemForumsTitle,
     body: labels.landing.problemForumsBody,
+  },
+];
+
+const useCaseItems = [
+  {
+    icon: GraduationCap,
+    title: "Academic",
+    body: "Study groups, lab partners, research collaborators.",
+  },
+  {
+    icon: Code,
+    title: "Hackathons",
+    body: "Assemble a balanced team before the event starts.",
+  },
+  {
+    icon: Trophy,
+    title: "Hobbies & Sports",
+    body: "Tennis partner, band member, running buddy.",
+  },
+  {
+    icon: Zap,
+    title: "Spontaneous",
+    body: "Concert tonight? Road trip this weekend? Find someone who\u2019s in.",
   },
 ];
 
@@ -144,7 +91,7 @@ export default async function LandingPage() {
           {/* Badge */}
           <div className="mb-8 animate-fade-in">
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-4 py-1.5 text-sm">
-              <Users className="h-4 w-4 text-blue-500" />
+              <Users className="size-4 text-blue-500" />
               <span className="text-muted-foreground">
                 {labels.landing.heroBadge}
               </span>
@@ -172,7 +119,7 @@ export default async function LandingPage() {
             <Button size="lg" className="gap-2 px-8" asChild>
               <Link href="/login?next=/postings/new">
                 {labels.landing.postSomethingButton}
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="size-4" />
               </Link>
             </Button>
             <Button size="lg" variant="outline" className="px-8" asChild>
@@ -194,8 +141,8 @@ export default async function LandingPage() {
                   key={item.title}
                   className="flex flex-col items-center rounded-2xl border border-border bg-card p-6 text-center"
                 >
-                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                    <item.icon className="h-5 w-5" />
+                  <div className="mb-4 flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                    <item.icon className="size-5" />
                   </div>
                   <h3 className="font-semibold">{item.title}</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
@@ -211,66 +158,13 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        {/* Use Case Examples Section */}
-        <section className="py-16 lg:py-24">
-          <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
-              {labels.landing.useCaseSectionTitle}
-            </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
-              {labels.landing.useCaseSectionSubtitle}
-            </p>
-
-            <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {examplePostings.map((posting) => (
-                <Card
-                  key={posting.title}
-                  className="overflow-hidden transition-all hover:shadow-lg"
-                >
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <posting.icon className="h-5 w-5" />
-                      </div>
-                      <div className="space-y-1">
-                        <Badge variant="secondary">{posting.category}</Badge>
-                        <CardTitle className="text-base">
-                          {posting.title}
-                        </CardTitle>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <CardDescription className="text-sm line-clamp-2">
-                      {posting.description}
-                    </CardDescription>
-                    <div className="flex flex-wrap gap-1.5">
-                      {posting.skills.map((skill) => (
-                        <Badge key={skill} variant="outline">
-                          {skill}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex items-center justify-between border-t border-border pt-3 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1.5">
-                        <Users className="h-4 w-4" />
-                        {posting.teamSize}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
-                          <AvatarFallback className="text-[10px]">
-                            {posting.creator.initials}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span>{posting.creator.name}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* Scenario Comparisons */}
+        <ScenarioSection
+          scenarios={[
+            labels.landing.scenarios.quickCall,
+            labels.landing.scenarios.groupDinner,
+          ]}
+        />
 
         {/* How It Works Section */}
         <section className="border-t border-border bg-muted/30 py-16 lg:py-24">
@@ -285,7 +179,7 @@ export default async function LandingPage() {
             <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
               {/* Step 1 */}
               <div className="group relative rounded-2xl border border-border bg-card p-8 transition-all hover:border-border/80 hover:shadow-lg">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-2xl font-bold text-primary-foreground">
+                <div className="mb-4 flex size-12 items-center justify-center rounded-xl bg-primary text-2xl font-bold text-primary-foreground">
                   1
                 </div>
                 <h3 className="text-xl font-semibold">
@@ -298,7 +192,7 @@ export default async function LandingPage() {
 
               {/* Step 2 */}
               <div className="group relative rounded-2xl border border-border bg-card p-8 transition-all hover:border-border/80 hover:shadow-lg">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-2xl font-bold text-primary-foreground">
+                <div className="mb-4 flex size-12 items-center justify-center rounded-xl bg-primary text-2xl font-bold text-primary-foreground">
                   2
                 </div>
                 <h3 className="text-xl font-semibold">
@@ -311,7 +205,7 @@ export default async function LandingPage() {
 
               {/* Step 3 */}
               <div className="group relative rounded-2xl border border-border bg-card p-8 transition-all hover:border-border/80 hover:shadow-lg sm:col-span-2 lg:col-span-1">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-2xl font-bold text-primary-foreground">
+                <div className="mb-4 flex size-12 items-center justify-center rounded-xl bg-primary text-2xl font-bold text-primary-foreground">
                   3
                 </div>
                 <h3 className="text-xl font-semibold">
@@ -325,64 +219,31 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        {/* Features Section */}
+        {/* Use Cases Grid */}
         <section className="py-16 lg:py-24">
-          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="mx-auto max-w-4xl px-6 lg:px-8">
             <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
-              {labels.landing.featuresSectionTitle}
+              {labels.landing.useCaseSectionTitle}
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
-              {labels.landing.featuresSectionSubtitle}
+              {labels.landing.useCaseSectionSubtitle}
             </p>
 
-            <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="flex flex-col items-center text-center">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Search className="h-6 w-6" />
+            <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {useCaseItems.map((item) => (
+                <div
+                  key={item.title}
+                  className="flex flex-col items-center rounded-2xl border border-border bg-card p-6 text-center"
+                >
+                  <div className="mb-4 flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <item.icon className="size-5" />
+                  </div>
+                  <h3 className="font-semibold">{item.title}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {item.body}
+                  </p>
                 </div>
-                <h3 className="font-semibold">
-                  {labels.landing.smartMatchingTitle}
-                </h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {labels.landing.smartMatchingBody}
-                </p>
-              </div>
-
-              <div className="flex flex-col items-center text-center">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Mic className="h-6 w-6" />
-                </div>
-                <h3 className="font-semibold">
-                  {labels.landing.voiceTextInputTitle}
-                </h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {labels.landing.voiceTextInputBody}
-                </p>
-              </div>
-
-              <div className="flex flex-col items-center text-center">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <MessageSquare className="h-6 w-6" />
-                </div>
-                <h3 className="font-semibold">
-                  {labels.landing.realtimeMessagingTitle}
-                </h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {labels.landing.realtimeMessagingBody}
-                </p>
-              </div>
-
-              <div className="flex flex-col items-center text-center">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Zap className="h-6 w-6" />
-                </div>
-                <h3 className="font-semibold">
-                  {labels.landing.smartCompatibilityTitle}
-                </h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {labels.landing.smartCompatibilityBody}
-                </p>
-              </div>
+              ))}
             </div>
           </div>
         </section>
@@ -400,7 +261,7 @@ export default async function LandingPage() {
               <Button size="lg" className="gap-2 px-8" asChild>
                 <Link href="/login">
                   {labels.landing.getStartedButton}
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="size-4" />
                 </Link>
               </Button>
             </div>
