@@ -1,3 +1,5 @@
+"use server";
+
 /**
  * Google Calendar integration: OAuth flow + FreeBusy API.
  */

@@ -19,7 +19,7 @@ export type PersonaState =
   | "speaking"
   | "asleep";
 
-interface PersonaProps {
+export interface PersonaProps {
   state: PersonaState;
   onLoad?: RiveParameters["onLoad"];
   onLoadError?: RiveParameters["onLoadError"];
