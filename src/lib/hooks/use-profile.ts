@@ -33,13 +33,11 @@ export function useProfile() {
     null,
   );
 
-  // When editing, use local draft; otherwise use fetched data
-  const availabilityWindows: RecurringWindow[] = profileForm.isEditing
-    ? (localWindows ??
-      data?.recurringWindows ??
-      gridToWindows(profileForm.form.availabilitySlots))
-    : (data?.recurringWindows ??
-      gridToWindows(profileForm.form.availabilitySlots));
+  // Use local draft when available, otherwise fetched data
+  const availabilityWindows: RecurringWindow[] =
+    localWindows ??
+    data?.recurringWindows ??
+    gridToWindows(profileForm.form.availabilitySlots);
 
   const handleAvailabilityWindowsChange = useCallback(
     (windows: RecurringWindow[]) => {
