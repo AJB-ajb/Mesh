@@ -88,15 +88,124 @@ export const labels = {
     problemGroupChatsBody:
       "100 people see your message, 5 are interested \u2014 and you still have to negotiate one by one.",
     problemMeetupsTitle: "Events & meetups",
-    problemMeetupsBody: "Built for crowds, not small teams of 2\u20135.",
+    problemMeetupsBody:
+      "Designed for larger gatherings, not the small teams of 2\u20135 where most coordination happens.",
     problemForumsTitle: "Job boards & forums",
-    problemForumsBody: "Too formal, too slow for a weekend hackathon.",
+    problemForumsBody:
+      "Often too formal and slow for a weekend hackathon or a spontaneous idea.",
     problemConclusion:
-      "They all treat your activity as a message. Mesh treats it as a structured posting the platform can act on.",
+      "They mostly treat your activity as just another message. Mesh treats it as a structured posting the platform can act on.",
 
-    useCaseSectionTitle: "People are looking for all kinds of things",
+    useCaseSectionTitle: "Works for any kind of activity",
     useCaseSectionSubtitle:
       "From study partners to startup co-founders \u2014 post what you want to do and find the right people.",
+
+    // Scenario comparison section
+    scenarioSectionTitle: "See the difference",
+    scenarioSectionSubtitle: "Side by side: the old way vs. the Mesh way.",
+    scenarioWithoutMesh: "Without Mesh",
+    scenarioWithMesh: "With Mesh",
+
+    scenarios: {
+      quickCall: {
+        title: "Quick Call",
+        emoji: "\u{1F4DE}",
+        subtitle: "\u201CCan we talk for 15 minutes?\u201D",
+        without: [
+          { sender: "Alex", text: "Quick call about the API redesign?" },
+          { sender: "Kim", text: "Sure, when?" },
+          { sender: "Alex", text: "How about now?" },
+          { sender: "Kim", text: "In a meeting until 14:30." },
+          { sender: "Alex", text: "14:30 works. Phone or video?" },
+          { sender: "Kim", text: "Phone. My number is +49\u2026" },
+          { sender: "Alex", text: "Actually 14:45 is better." },
+        ],
+        withMeshSteps: [
+          "Alex posts: \u201CQuick call about API redesign, 15 min\u201D",
+          "Kim sees time slots that fit both calendars: 14:45 \u2022 15:00 \u2022 15:30",
+          "Kim taps 14:45 \u2014 done.",
+        ],
+        statsBefore: { messages: "7 messages", time: "~20 min" },
+        statsAfter: { messages: "1 tap", time: "~30 sec" },
+      },
+      groupDinner: {
+        title: "Group Dinner",
+        emoji: "\u{1F35D}",
+        subtitle: "\u201CFriday dinner with 4 people\u201D",
+        without: [
+          { sender: "Alex", text: "Dinner Friday? Somewhere central?" },
+          { sender: "Lena", text: "Sure! What time?" },
+          { sender: "Kai", text: "Sounds good, where?" },
+          {
+            sender: "Priya",
+            text: "Depends on time, I\u2019m in Garching until late.",
+          },
+          { sender: "Alex", text: "19:00? Osteria Italiana?" },
+          { sender: "Priya", text: "19:00 is tight, 19:30 earliest." },
+          { sender: "Lena", text: "19:30 works." },
+          { sender: "Kai", text: "Either works." },
+          { sender: "Priya", text: "Can we do 20:00 actually?" },
+          { sender: "Alex", text: "Lena/Kai, is 20:00 ok?" },
+          { sender: "Lena", text: "I need to leave by 21:30." },
+          { sender: "Alex", text: "Let\u2019s keep 19:30." },
+        ],
+        withMeshSteps: [
+          "Alex posts: \u201CFriday dinner, Italian place, central Munich, 3 spots\u201D",
+          "Mesh checks calendars \u2014 skips Marco (busy), finds best overlap: 19:30",
+          "Each invitee gets a one-tap acceptance card with the time and place.",
+        ],
+        statsBefore: { messages: "12+ messages", time: "hours" },
+        statsAfter: { messages: "3 taps", time: "~2 min" },
+      },
+      tennis: {
+        title: "Tennis Partner",
+        emoji: "\u{1F3BE}",
+        subtitle: "\u201CTennis this afternoon?\u201D",
+        without: [
+          { sender: "Alex", text: "Tennis this afternoon? Near Ostbahnhof?" },
+          { sender: "Kai", text: "Sorry, meetings until 5." },
+          { sender: "Alex", text: "Tennis this afternoon?" },
+          { sender: "Marco", text: "(no reply for 40 min)" },
+          { sender: "Alex", text: "Tennis? Near Ostbahnhof?" },
+          { sender: "Priya", text: "What time?" },
+          { sender: "Alex", text: "Like 3:30?" },
+          { sender: "Priya", text: "I can do 4. Which courts?" },
+        ],
+        withMeshSteps: [
+          "Alex posts: \u201CTennis this afternoon, intermediate, near Ostbahnhof\u201D",
+          "Mesh auto-skips Kai (busy) and moves to the next available person.",
+          "Priya gets a one-tap acceptance card with smart time slots.",
+        ],
+        statsBefore: { messages: "8+ messages", time: "40+ min" },
+        statsAfter: { messages: "1 tap", time: "< 2 min" },
+      },
+      hackathon: {
+        title: "Hackathon Team",
+        emoji: "\u{1F4BB}",
+        subtitle: "\u201CNeed 2 frontend devs for Saturday\u201D",
+        without: [
+          {
+            sender: "You",
+            text: "Frontend dev, React. Looking for an AI team.",
+          },
+          { sender: "Person A", text: "What stack?" },
+          {
+            sender: "You",
+            text: "React/Next.js, interested in accessibility.",
+          },
+          { sender: "Person B", text: "DM\u2019d you, I do ML." },
+          { sender: "Person A", text: "Time commitment?" },
+          { sender: "You", text: "Full weekend." },
+        ],
+        withMeshSteps: [
+          "Post your skills and what you\u2019re looking for in the hackathon channel.",
+          "Mesh matches you with complementary skills: ML + Design + Backend.",
+          "One-tap join \u2014 team assembled before the event starts.",
+        ],
+        statsBefore: { messages: "6+ DMs each", time: "1\u20132 hours" },
+        statsAfter: { messages: "1 tap", time: "< 1 min" },
+      },
+    },
 
     howItWorksTitle: "How it works",
     howItWorksSubtitle: "One posting replaces all the back-and-forth.",
@@ -150,18 +259,18 @@ export const labels = {
     smallGroupBody2:
       "This gets worse with group size \u2014 but even coordinating 2\u20133 people through DMs is surprisingly tedious. The back-and-forth is the bottleneck, not finding the activity.",
 
-    problemTitle: "Why messaging apps can\u2019t solve this",
+    problemTitle: "Why messaging apps struggle with this",
     problemGroupChatsTitle: "Group chats (Slack, Discord, WhatsApp)",
     problemGroupChatsBody:
-      "They treat your activity as just another message. They can\u2019t check availability, match skills, or manage invites \u2014 so you do it all manually.",
+      "They treat your activity as just another message. They can\u2019t check availability, match skills, or manage invites \u2014 so you end up doing it all manually.",
     problemMeetupsTitle: "Events and meetups",
     problemMeetupsBody:
-      "Designed for large gatherings, not small teams of 2\u20135 that need real coordination.",
+      "Designed for larger gatherings, not the small teams of 2\u20135 that need real coordination.",
     problemForumsTitle: "Job boards and forums",
     problemForumsBody:
-      "Too formal, too slow. By the time you\u2019ve posted and waited, the weekend is over.",
+      "Often too formal and slow. By the time you\u2019ve posted and waited, the weekend is over.",
     problemConclusion:
-      "The root cause: messaging apps don\u2019t know you\u2019re coordinating an activity, so they can\u2019t help.",
+      "The root cause: messaging apps don\u2019t know you\u2019re coordinating an activity, so they can\u2019t help you do it.",
 
     howDifferentTitle: "How Mesh replaces the back-and-forth",
     howDifferentActivityFirst: "Structured postings",
