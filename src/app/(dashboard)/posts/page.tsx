@@ -50,10 +50,12 @@ function PostsContent() {
       {/* Page header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
             {labels.posts.title}
           </h1>
-          <p className="mt-1 text-muted-foreground">{labels.posts.subtitle}</p>
+          <p className="mt-1 hidden md:block text-muted-foreground">
+            {labels.posts.subtitle}
+          </p>
         </div>
         <Button asChild className="hidden md:inline-flex">
           <Link href="/postings/new">

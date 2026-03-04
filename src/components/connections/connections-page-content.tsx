@@ -79,10 +79,10 @@ function ConnectionsPageInner() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
           {labels.connectionsPage.title}
         </h1>
-        <p className="mt-1 text-muted-foreground">
+        <p className="mt-1 hidden md:block text-muted-foreground">
           {labels.connectionsPage.subtitle}
         </p>
         {copiedLink && (
