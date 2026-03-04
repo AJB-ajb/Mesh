@@ -685,6 +685,8 @@ export const labels = {
     profileDescription: "View and edit your profile details",
     dangerZoneTitle: "Danger Zone",
     dangerZoneDescription: "Irreversible account actions",
+    deleteAccountPlaceholder:
+      "Account deletion is not yet available. Contact support if you need to delete your account.",
     signOutDescription: "Sign out of your account on this device",
     disconnectDialogTitle: (provider: string) => `Disconnect ${provider}?`,
     disconnectDialogDescription: (provider: string) =>
@@ -1362,6 +1364,18 @@ export const labels = {
     },
     format: { label: "Format", description: "Auto-format with markdown" },
     clean: { label: "Clean", description: "Fix grammar and spelling" },
+    availability: {
+      label: "Availability",
+      description: "Edit your availability windows",
+    },
+    calendar: {
+      label: "Calendar",
+      description: "Connect or manage your calendar",
+    },
+    update: {
+      label: "Update",
+      description: "Describe a change in natural language",
+    },
     // Setting applied toasts
     settingApplied: {
       visibility: (v: string) => `Visibility set to ${v}`,
@@ -1408,6 +1422,33 @@ export const labels = {
       mentorship: "Mentorship",
       social: "Social Activity",
     } as const,
+  },
+
+  // ---------------------------------------------------------------------------
+  // Profile editor (redesigned)
+  // ---------------------------------------------------------------------------
+  profileEditor: {
+    placeholder:
+      "Describe yourself — your skills, interests, what you're looking for.\nType / for commands",
+    saveButton: "Save",
+    saving: "Saving...",
+    saved: "Profile saved",
+    availabilityTitle: "Availability & Calendar",
+    updateOverlayTitle: "Describe your change",
+    updateOverlayPlaceholder:
+      "e.g. Add Python to my skills and mention I'm available on weekends",
+    updateOverlayApply: "Apply",
+    updateOverlayApplying: "Applying...",
+    calendarOverlayTitle: "Calendar",
+    availabilityOverlayTitle: "Availability",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Mobile command sheet
+  // ---------------------------------------------------------------------------
+  mobileCommandSheet: {
+    title: "Commands",
+    triggerLabel: "Open commands",
   },
 
   // ---------------------------------------------------------------------------

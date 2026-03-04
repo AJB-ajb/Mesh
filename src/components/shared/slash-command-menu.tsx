@@ -50,16 +50,17 @@ export function SlashCommandMenu({
 }: SlashCommandMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Auto-close on outside click
+  // Auto-close on outside click (pointerdown for touch + mouse)
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
+    function handleClickOutside(e: PointerEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         onClose?.();
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("pointerdown", handleClickOutside);
+    return () =>
+      document.removeEventListener("pointerdown", handleClickOutside);
   }, [onClose]);
 
   // Scroll selected item into view
@@ -96,8 +97,8 @@ export function SlashCommandMenu({
                 ? "bg-accent text-accent-foreground"
                 : "hover:bg-accent/50"
             }`}
-            onMouseDown={(e) => {
-              // Prevent blur on textarea
+            onPointerDown={(e) => {
+              // Prevent blur on textarea (works for touch + mouse)
               e.preventDefault();
               onSelect(command);
             }}

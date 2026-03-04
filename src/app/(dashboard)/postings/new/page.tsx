@@ -20,6 +20,8 @@ import { transcribeAudio } from "@/lib/transcribe";
 import { useEditorSlashCommands } from "@/lib/hooks/use-editor-slash-commands";
 import { useMobileKeyboard } from "@/lib/hooks/use-mobile-keyboard";
 import { SlashCommandMenu } from "@/components/shared/slash-command-menu";
+import { MobileCommandSheet } from "@/components/shared/mobile-command-sheet";
+import { SlashTriggerButton } from "@/components/shared/slash-trigger-button";
 import { MarkdownToolbar } from "@/components/shared/markdown-toolbar";
 import {
   TimePickerOverlay,
@@ -86,6 +88,7 @@ export default function NewPostingPage() {
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [editorFocused, setEditorFocused] = useState(false);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [invitedUsers, setInvitedUsers] = useState<InvitedUser[]>([]);
   const editorRef = useRef<EditorView | null>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
@@ -538,6 +541,21 @@ export default function NewPostingPage() {
         // eslint-disable-next-line react-hooks/refs -- stable ref passed as prop
         editor={editorRef.current}
         visible={keyboardVisible && editorFocused}
+      />
+
+      {/* Mobile command sheet + trigger button */}
+      <SlashTriggerButton onClick={() => setMobileSheetOpen(true)} />
+      <MobileCommandSheet
+        open={mobileSheetOpen}
+        commands={slash.contextCommands}
+        onSelect={(cmd) => {
+          setMobileSheetOpen(false);
+          const view = editorRef.current;
+          if (view) {
+            slash.selectCommand(view, cmd);
+          }
+        }}
+        onClose={() => setMobileSheetOpen(false)}
       />
     </div>
   );
