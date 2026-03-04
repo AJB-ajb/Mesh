@@ -34,6 +34,19 @@ interface OverlayProps {
   onClose: () => void;
 }
 
+const isMac =
+  typeof navigator !== "undefined" &&
+  /Mac|iPhone|iPad/.test(navigator.userAgent);
+
+/** Shared kbd hint for the Cmd/Ctrl+Enter shortcut on Insert buttons. */
+function InsertKbd() {
+  return (
+    <kbd className="ml-1.5 hidden text-[10px] opacity-60 sm:inline">
+      {isMac ? "\u2318" : "Ctrl+"}\u23CE
+    </kbd>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Time Picker Overlay
 // ---------------------------------------------------------------------------
@@ -142,9 +155,30 @@ export function TimePickerOverlay({ onInsert, onClose }: OverlayProps) {
 
   const canInsert = selectedDays.size > 0 || customFrom || customTo;
 
+  const handleInsert = useCallback(() => {
+    if (!canInsert) return;
+    const text = buildText();
+    const params: Record<string, string> = {
+      days: Array.from(selectedDays).join(","),
+      times: Array.from(selectedTimes).join(","),
+    };
+    if (customFrom) params.from = customFrom;
+    if (customTo) params.to = customTo;
+    onInsert(buildMeshLink("time", text, params));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- buildText reads from the same state deps listed here
+  }, [canInsert, selectedDays, selectedTimes, customFrom, customTo, onInsert]);
+
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        onKeyDown={(e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+            e.preventDefault();
+            handleInsert();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{labels.slashCommands.timePickerTitle}</DialogTitle>
         </DialogHeader>
@@ -234,21 +268,8 @@ export function TimePickerOverlay({ onInsert, onClose }: OverlayProps) {
           <Button type="button" variant="outline" onClick={onClose}>
             {labels.slashCommands.cancelButton}
           </Button>
-          <Button
-            type="button"
-            disabled={!canInsert}
-            onClick={() => {
-              const text = buildText();
-              const params: Record<string, string> = {
-                days: Array.from(selectedDays).join(","),
-                times: Array.from(selectedTimes).join(","),
-              };
-              if (customFrom) params.from = customFrom;
-              if (customTo) params.to = customTo;
-              onInsert(buildMeshLink("time", text, params));
-            }}
-          >
-            {labels.slashCommands.insertButton}
+          <Button type="button" disabled={!canInsert} onClick={handleInsert}>
+            {labels.slashCommands.insertButton} <InsertKbd />
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -265,9 +286,30 @@ export function LocationOverlay({ onInsert, onClose }: OverlayProps) {
   const [selectedLocation, setSelectedLocation] =
     useState<GeocodingResult | null>(null);
 
+  const handleInsert = useCallback(() => {
+    if (!location.trim()) return;
+    const displayName = selectedLocation?.displayName ?? location.trim();
+    const params: Record<string, string> = {};
+    if (selectedLocation?.displayName)
+      params.displayName = selectedLocation.displayName;
+    if (selectedLocation?.lat != null)
+      params.lat = String(selectedLocation.lat);
+    if (selectedLocation?.lng != null)
+      params.lng = String(selectedLocation.lng);
+    onInsert(buildMeshLink("location", displayName, params));
+  }, [location, selectedLocation, onInsert]);
+
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        onKeyDown={(e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+            e.preventDefault();
+            handleInsert();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{labels.slashCommands.locationTitle}</DialogTitle>
         </DialogHeader>
@@ -290,20 +332,9 @@ export function LocationOverlay({ onInsert, onClose }: OverlayProps) {
           <Button
             type="button"
             disabled={!location.trim()}
-            onClick={() => {
-              const displayName =
-                selectedLocation?.displayName ?? location.trim();
-              const params: Record<string, string> = {};
-              if (selectedLocation?.displayName)
-                params.displayName = selectedLocation.displayName;
-              if (selectedLocation?.lat != null)
-                params.lat = String(selectedLocation.lat);
-              if (selectedLocation?.lng != null)
-                params.lng = String(selectedLocation.lng);
-              onInsert(buildMeshLink("location", displayName, params));
-            }}
+            onClick={handleInsert}
           >
-            {labels.slashCommands.insertButton}
+            {labels.slashCommands.insertButton} <InsertKbd />
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -354,10 +385,6 @@ export function SkillPickerOverlay({ onInsert, onClose }: OverlayProps) {
     onInsert(buildMeshLink("skills", display, params));
   }, [selectedSkills, onInsert]);
 
-  const isMac =
-    typeof navigator !== "undefined" &&
-    /Mac|iPhone|iPad/.test(navigator.userAgent);
-
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent
@@ -391,10 +418,7 @@ export function SkillPickerOverlay({ onInsert, onClose }: OverlayProps) {
             disabled={selectedSkills.length === 0}
             onClick={handleInsert}
           >
-            {labels.slashCommands.insertButton}{" "}
-            <kbd className="ml-1.5 hidden text-[10px] opacity-60 sm:inline">
-              {isMac ? "\u2318" : "Ctrl+"}\u23CE
-            </kbd>
+            {labels.slashCommands.insertButton} <InsertKbd />
           </Button>
         </DialogFooter>
       </DialogContent>

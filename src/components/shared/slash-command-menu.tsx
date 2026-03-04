@@ -2,7 +2,20 @@
 
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Clock, MapPin, Wrench, FileText } from "lucide-react";
+import {
+  Clock,
+  MapPin,
+  Wrench,
+  FileText,
+  Lock,
+  Users,
+  Eye,
+  CalendarClock,
+  CheckCircle,
+  UserPlus,
+  Sparkles,
+  Eraser,
+} from "lucide-react";
 import type { SlashCommand } from "@/lib/slash-commands/registry";
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -10,6 +23,14 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   MapPin,
   Wrench,
   FileText,
+  Lock,
+  Users,
+  Eye,
+  CalendarClock,
+  CheckCircle,
+  UserPlus,
+  Sparkles,
+  Eraser,
 };
 
 interface SlashCommandMenuProps {

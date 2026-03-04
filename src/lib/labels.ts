@@ -238,8 +238,7 @@ export const labels = {
     errorGeneric: "Failed to create posting. Please try again.",
 
     // Text-first posting
-    textPlaceholder:
-      "Describe what you're looking for...\n\nExample: Looking for 2 people to practice Spanish conversation twice a week. I'm intermediate level and want to improve my fluency.",
+    textPlaceholder: "What are you looking for?\nType / for commands",
     errorEmptyPosting: "Please write a description before posting.",
     postButton: "Post",
     editDetailsToggle: "Edit details manually",
@@ -1318,6 +1317,28 @@ export const labels = {
     skills: { label: "Skills", description: "Insert required skills" },
     template: { label: "Template", description: "Apply a posting template" },
     hidden: { label: "Hidden", description: "Insert hidden details block" },
+    size: { label: "Size", description: "Insert team size" },
+    visibility: {
+      label: "Visibility",
+      description: "Set who can see this posting",
+    },
+    expire: { label: "Expire", description: "Set when this posting expires" },
+    autoaccept: {
+      label: "Auto-accept",
+      description: "Auto-accept join requests",
+    },
+    invite: {
+      label: "Invite",
+      description: "Invite connections to this posting",
+    },
+    format: { label: "Format", description: "Auto-format with markdown" },
+    clean: { label: "Clean", description: "Fix grammar and spelling" },
+    // Setting applied toasts
+    settingApplied: {
+      visibility: (v: string) => `Visibility set to ${v}`,
+      expire: (v: string) => `Expiry set to ${v}`,
+      autoaccept: (v: string) => `Auto-accept ${v}`,
+    },
     // Time picker overlay
     timePickerTitle: "When are you available?",
     dayLabels: {

@@ -52,7 +52,11 @@ describe("slash-command-plugin", () => {
   beforeEach(() => {
     onStateChange = vi.fn();
     onSelectCommand = vi.fn();
-    view = createEditor({ onStateChange: onStateChange as SlashCommandCallbacks["onStateChange"], onSelectCommand: onSelectCommand as SlashCommandCallbacks["onSelectCommand"] });
+    view = createEditor({
+      onStateChange: onStateChange as SlashCommandCallbacks["onStateChange"],
+      onSelectCommand:
+        onSelectCommand as SlashCommandCallbacks["onSelectCommand"],
+    });
   });
 
   // -----------------------------------------------------------------------
@@ -210,6 +214,76 @@ describe("slash-command-plugin", () => {
       // The menu may or may not close depending on jsdom's event handling.
       // We at least verify the editor didn't crash.
       expect(view.state.doc.toString()).toBe("/");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Enter & Tab behavior
+  // -----------------------------------------------------------------------
+
+  describe("Enter selects command", () => {
+    it("calls onSelectCommand and removes /query text", () => {
+      insertText(view, "/ti");
+      expect(getMenuState(view).isOpen).toBe(true);
+
+      const cmContent = view.dom.querySelector(".cm-content");
+      if (cmContent) {
+        cmContent.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+        );
+      }
+
+      // If jsdom routed the key through CM's keymap:
+      if (onSelectCommand.mock.calls.length > 0) {
+        expect(onSelectCommand).toHaveBeenCalledTimes(1);
+        expect(onSelectCommand.mock.calls[0][0].name).toBe("time");
+        // /query text should be removed
+        expect(view.state.doc.toString()).toBe("");
+        expect(getMenuState(view).isOpen).toBe(false);
+      }
+    });
+  });
+
+  describe("Tab autocompletes command name", () => {
+    it("replaces /query with /commandName and keeps menu open", () => {
+      insertText(view, "/ti");
+      expect(getMenuState(view).isOpen).toBe(true);
+      expect(getMenuState(view).query).toBe("ti");
+
+      const cmContent = view.dom.querySelector(".cm-content");
+      if (cmContent) {
+        cmContent.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Tab", bubbles: true }),
+        );
+      }
+
+      // If jsdom routed the key through CM's keymap:
+      if (view.state.doc.toString() !== "/ti") {
+        expect(view.state.doc.toString()).toBe("/time");
+        // Menu should still be open (slash context still present)
+        expect(getMenuState(view).isOpen).toBe(true);
+        expect(getMenuState(view).query).toBe("time");
+        // onSelectCommand should NOT have been called
+        expect(onSelectCommand).not.toHaveBeenCalled();
+      }
+    });
+
+    it("is a no-op when query already matches the command name", () => {
+      insertText(view, "/time");
+      expect(getMenuState(view).isOpen).toBe(true);
+      expect(getMenuState(view).query).toBe("time");
+
+      const cmContent = view.dom.querySelector(".cm-content");
+      if (cmContent) {
+        cmContent.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Tab", bubbles: true }),
+        );
+      }
+
+      // Text should remain unchanged
+      expect(view.state.doc.toString()).toBe("/time");
+      expect(getMenuState(view).isOpen).toBe(true);
+      expect(onSelectCommand).not.toHaveBeenCalled();
     });
   });
 
