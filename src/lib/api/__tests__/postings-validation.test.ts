@@ -100,13 +100,13 @@ describe("buildPostingDbRow", () => {
     expect(row.mode).toBe("open");
   });
 
-  it("defaults expires_at to 90 days from now in create mode", () => {
+  it("defaults expires_at to 3 days from now in create mode", () => {
     const row = buildPostingDbRow({}, "create");
     const expires = new Date(row.expires_at as string);
     const diff = expires.getTime() - Date.now();
-    // Should be approximately 90 days (allow 1 day tolerance)
-    expect(diff).toBeGreaterThan(89 * 24 * 60 * 60 * 1000);
-    expect(diff).toBeLessThan(91 * 24 * 60 * 60 * 1000);
+    // Should be approximately 3 days (allow 1 day tolerance)
+    expect(diff).toBeGreaterThan(2 * 24 * 60 * 60 * 1000);
+    expect(diff).toBeLessThan(4 * 24 * 60 * 60 * 1000);
   });
 
   it("parses expiresAt in create mode", () => {

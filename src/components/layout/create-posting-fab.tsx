@@ -22,7 +22,7 @@ export function CreatePostingFab() {
   return (
     <Link
       href="/postings/new"
-      className="fixed right-4 bottom-24 z-40 md:hidden flex items-center justify-center size-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors pb-[env(safe-area-inset-bottom,0px)]"
+      className="fixed right-4 bottom-24 z-40 md:hidden flex items-center justify-center size-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
       aria-label={labels.common.newPosting}
     >
       <Plus className="size-6" />

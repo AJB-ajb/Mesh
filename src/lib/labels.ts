@@ -349,7 +349,7 @@ export const labels = {
     visibilityLabel: "Visibility",
     visibilityHelp: "Public = discoverable by everyone. Private = invite only.",
     expiresOnLabel: "Expires on",
-    expiresOnHelp: "Default: 90 days from today",
+    expiresOnHelp: "Default: 3 days from today",
     autoAcceptLabel: "Auto-accept",
     autoAcceptHelp: "Instantly accept anyone who joins (no manual review)",
     createButton: "Create Posting",
