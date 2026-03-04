@@ -66,14 +66,14 @@ function PostsContent() {
       </div>
 
       {/* Filter chips */}
-      <div className="flex gap-2 overflow-x-auto pb-1 -mb-1 scrollbar-none">
+      <div className="flex gap-3 overflow-x-auto scrollbar-none">
         {FILTERS.map((filter) => (
           <button
             key={filter}
             type="button"
             onClick={() => handleFilterChange(filter)}
             className={cn(
-              "inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+              "inline-flex items-center whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors",
               activeFilter === filter
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground hover:bg-muted/80",
