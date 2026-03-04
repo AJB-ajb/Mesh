@@ -1303,7 +1303,7 @@ export const labels = {
     noConnections: "No calendars connected yet.",
     errorGeneric: "Something went wrong. Please try again.",
     errorInvalidIcalUrl:
-      "Please enter a valid iCal URL (must start with http:// or https://).",
+      "Please enter a valid iCal URL (must start with http://, https://, or webcal://).",
   },
 
   // ---------------------------------------------------------------------------

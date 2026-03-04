@@ -109,10 +109,10 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createClient();
 
+  // Sync all connections including errored ones (they may recover on retry)
   const { data: connections, error: fetchError } = await supabase
     .from("calendar_connections")
-    .select("*")
-    .neq("sync_status", "error");
+    .select("*");
 
   if (fetchError || !connections) {
     return apiError("INTERNAL", fetchError?.message ?? "No connections", 500);
