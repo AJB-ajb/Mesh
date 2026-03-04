@@ -10,13 +10,14 @@ argument-hint: "[flows|visual|full] [mobile|desktop] [route-or-flow-name]"
 
 Parse `$ARGUMENTS` along three dimensions:
 
-| Dimension | Values | Default |
-|-----------|--------|---------|
-| **Scope** | `flows`, `visual`, `full` | `full` (run both) |
-| **Viewport** | `mobile`, `desktop` | both |
-| **Target** | route path or flow name (e.g. `/discover`, `authentication`) | all |
+| Dimension    | Values                                                       | Default           |
+| ------------ | ------------------------------------------------------------ | ----------------- |
+| **Scope**    | `flows`, `visual`, `full`                                    | `full` (run both) |
+| **Viewport** | `mobile`, `desktop`                                          | both              |
+| **Target**   | route path or flow name (e.g. `/discover`, `authentication`) | all               |
 
 Examples:
+
 - `flows mobile` — flow tests at mobile viewport only
 - `visual /profile` — visual tests on the profile page only
 - `full desktop connections` — all tests, desktop only, focused on connections flow/page
@@ -27,13 +28,14 @@ Examples:
 Before starting, verify each of these. If any fails, report it and stop.
 
 1. **Dev server running** at `http://localhost:3000` — navigate and confirm the page loads.
-   *Why*: All tests run against the local dev instance; without it nothing works.
+   _Why_: All tests run against the local dev instance; without it nothing works.
+   **Caveat**: Slash commands (`/commands`) only work against a production build (`pnpm build && pnpm start`), not the dev server (`pnpm dev`). If testing slash command features, use a production build.
 
 2. **Browser automation available** — Claude-in-Chrome MCP tools respond.
-   *Why*: The skill drives the browser programmatically via MCP.
+   _Why_: The skill drives the browser programmatically via MCP.
 
 3. **Test password available** — `.env` contains `TEST_USER_PASSWORD`.
-   *Why*: Both test accounts share this password for login.
+   _Why_: Both test accounts share this password for login.
 
 ```
 Grep pattern="TEST_USER_PASSWORD" path=".env"
@@ -45,7 +47,7 @@ Grep pattern="TEST_USER_PASSWORD" path=".env"
 2. Create a new tab with `tabs_create_mcp`.
 3. Read `TEST_USER_PASSWORD` from `.env`.
 4. Initialize a **test-data tracking list** — an in-memory list to record IDs of any entities created during testing (posting IDs, bookmarks, connection requests, etc.). This list drives the cleanup phase at the end.
-   *Why*: The dev database is disposable, so we exercise full CRUD, but we clean up after ourselves to leave the database in a known state.
+   _Why_: The dev database is disposable, so we exercise full CRUD, but we clean up after ourselves to leave the database in a known state.
 5. Store credentials for both test users:
    - **User 1** (primary/UI): `ajb60721@gmail.com`
    - **User 2** (secondary/API): `ajb60722@gmail.com`
@@ -63,7 +65,7 @@ Parse the Next.js App Router directory structure to build a route table. The `(g
 
 Read `references/pages.md` (in this skill directory) for guidance on interpreting the directory layout, which route groups exist, and what to look for on each type of page.
 
-*Why*: Routes change as the app evolves. Dynamic discovery ensures the skill always tests the actual current routes rather than a stale list.
+_Why_: Routes change as the app evolves. Dynamic discovery ensures the skill always tests the actual current routes rather than a stale list.
 
 ## 5. Login Helper
 
@@ -84,6 +86,7 @@ If login fails, report it as a critical bug and stop.
 ### Switching Users
 
 To switch from User 1 to User 2 (or vice versa):
+
 1. Sign out via the avatar dropdown → "Sign out"
 2. Run the login helper with the other user's email
 
@@ -102,11 +105,12 @@ Use `javascript_tool` to make fetch calls against the app's API routes with User
 2. **Make API calls**: Use `javascript_tool` with `fetch()` against `localhost:3000/api/...` routes, passing User 2's auth credentials.
 
 Read `spec/testing.md` for the full list of multi-user scenarios. Key patterns:
+
 - User 1 creates posting → User 2 requests to join → User 1 accepts → conversation opens
 - User 1 sends connection request → User 2 accepts
 - Sequential invite: User 1 creates posting → selects User 2 → User 2 responds
 
-*Why*: Real usage involves multiple users. Testing only single-user flows misses interaction bugs like notification delivery, permission checks, and state transitions between users.
+_Why_: Real usage involves multiple users. Testing only single-user flows misses interaction bugs like notification delivery, permission checks, and state transitions between users.
 
 ## 7. Flow Tests
 
@@ -126,10 +130,12 @@ Read `references/flows.md` (in this skill directory) for the 10 flow test script
 10. **Sign Out** — sign out, verify session cleared
 
 Multi-user steps are woven into the flows:
+
 - Flow 5: User 2 requests to join User 1's test posting (via API)
 - Flow 7: User 2 sends connection request to User 1 (via API)
 
 For each flow:
+
 - Follow the steps in `references/flows.md`
 - Take screenshots at key verification points
 - Record result as PASS or FAIL
@@ -149,7 +155,7 @@ Use the route table from step 4 (dynamic route discovery). For each discovered p
 3. **Mobile check** (skip if viewport is `desktop` only) — resize to 375×812, take screenshot, apply the 10-point visual checklist
 4. Record any issues found as bugs
 
-*Why both viewports*: Mesh is a PWA targeting both desktop and mobile users. Responsive breakpoints frequently cause layout regressions that only show at specific widths.
+_Why both viewports_: Mesh is a PWA targeting both desktop and mobile users. Responsive breakpoints frequently cause layout regressions that only show at specific widths.
 
 If **target** was specified, only test the matching page.
 
@@ -177,7 +183,7 @@ The dev database is disposable — exercise full CRUD operations.
 - **Types to track**: posting IDs, bookmark IDs, connection request IDs, profile field changes, settings changes
 - After all tests, the cleanup protocol (section 12) reverses these changes
 
-*Why*: Read-only testing misses entire categories of bugs — form validation, submission flows, data persistence, state transitions. The `[TEST]` prefix and cleanup protocol keep the database tidy.
+_Why_: Read-only testing misses entire categories of bugs — form validation, submission flows, data persistence, state transitions. The `[TEST]` prefix and cleanup protocol keep the database tidy.
 
 ## 10. Report Generation
 
@@ -235,26 +241,26 @@ After all tests complete, generate a report file:
 
 ## Flow Tests
 
-| # | Flow | Status | Notes |
-|---|------|--------|-------|
-| 1 | Authentication | PASS/FAIL | |
-| 2 | Navigation | PASS/FAIL | |
-| ... | ... | ... | ... |
+| #   | Flow           | Status    | Notes |
+| --- | -------------- | --------- | ----- |
+| 1   | Authentication | PASS/FAIL |       |
+| 2   | Navigation     | PASS/FAIL |       |
+| ... | ...            | ...       | ...   |
 
 ## Pages Tested
 
-| Page | Route | Desktop | Mobile | Notes |
-|------|-------|---------|--------|-------|
-| Discover | /discover | PASS/FAIL | PASS/FAIL | |
-| ... | ... | ... | ... | ... |
+| Page     | Route     | Desktop   | Mobile    | Notes |
+| -------- | --------- | --------- | --------- | ----- |
+| Discover | /discover | PASS/FAIL | PASS/FAIL |       |
+| ...      | ...       | ...       | ...       | ...   |
 
 ## Cleanup
 
-| Entity | ID | Action | Result |
-|--------|----|--------|--------|
-| Posting | abc-123 | Deleted | Success |
-| Profile field | bio | Reverted | Success |
-| ... | ... | ... | ... |
+| Entity        | ID      | Action   | Result  |
+| ------------- | ------- | -------- | ------- |
+| Posting       | abc-123 | Deleted  | Success |
+| Profile field | bio     | Reverted | Success |
+| ...           | ...     | ...      | ...     |
 
 ## Test Environment
 
@@ -267,12 +273,12 @@ After writing the report, tell the user the file path and give a brief summary o
 
 ## 11. Severity Guide
 
-| Level | Meaning | Examples |
-|-------|---------|----------|
-| **Critical** | Feature is broken or unusable, blocks core workflows | Login fails, page crashes, data loss, posting creation errors |
-| **High** | Feature works but with significant issues affecting usability | Form doesn't validate, navigation broken on mobile, incorrect data displayed |
-| **Medium** | Noticeable issue that doesn't block functionality | Layout overflow at certain widths, inconsistent spacing, missing loading states |
-| **Low** | Minor cosmetic or polish issue | Slight alignment off, icon slightly wrong size, non-ideal empty state text |
+| Level        | Meaning                                                       | Examples                                                                        |
+| ------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| **Critical** | Feature is broken or unusable, blocks core workflows          | Login fails, page crashes, data loss, posting creation errors                   |
+| **High**     | Feature works but with significant issues affecting usability | Form doesn't validate, navigation broken on mobile, incorrect data displayed    |
+| **Medium**   | Noticeable issue that doesn't block functionality             | Layout overflow at certain widths, inconsistent spacing, missing loading states |
+| **Low**      | Minor cosmetic or polish issue                                | Slight alignment off, icon slightly wrong size, non-ideal empty state text      |
 
 ## 12. Cleanup Protocol
 
@@ -285,7 +291,7 @@ After all tests complete, reverse test data using the tracking list:
 5. **Revert settings changes** — restore any toggled settings to their original values
 6. **Log cleanup results** in the report's Cleanup section
 
-*Why*: Even though the dev database is disposable, cleaning up prevents test data from accumulating across multiple test runs and confusing future tests.
+_Why_: Even though the dev database is disposable, cleaning up prevents test data from accumulating across multiple test runs and confusing future tests.
 
 If cleanup fails for any entity, log it as a warning in the report (not a bug).
 
