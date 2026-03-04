@@ -874,6 +874,33 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
+  // Owner actions (overflow menu)
+  // ---------------------------------------------------------------------------
+  ownerActions: {
+    menuLabel: "Posting actions",
+    deletePosting: "Delete Posting",
+    deleteTitle: "Delete this posting?",
+    deleteConfirmAction: "Delete",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Matched profiles
+  // ---------------------------------------------------------------------------
+  matchedProfiles: {
+    viewProfile: "View Profile",
+    message: "Message",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Posting edit tab
+  // ---------------------------------------------------------------------------
+  postingEdit: {
+    editManuallyToggle: "Edit details manually",
+    editManuallyHint:
+      "Use the form below to fine-tune individual fields directly.",
+  },
+
+  // ---------------------------------------------------------------------------
   // Navigation (header + sidebar)
   // ---------------------------------------------------------------------------
   nav: {
@@ -970,6 +997,8 @@ export const labels = {
     concurrentHelp: "Number of people to invite simultaneously",
     concurrentWaitingSummary: (pending: number, total: number) =>
       `Waiting on ${pending} of ${total} connections`,
+    modeInfoLabel: "How invite modes work",
+    advancedSettings: "Advanced settings",
   },
 
   // ---------------------------------------------------------------------------
@@ -1593,5 +1622,8 @@ export const labels = {
     lessDetails: "Less details",
     postedByYou: "Posted by you",
     postedBy: "Posted by",
+    lookingFor: (n: number) =>
+      `Looking for ${n} ${n === 1 ? "person" : "people"}`,
+    lookingForShort: (n: number) => `${n} ${n === 1 ? "person" : "people"}`,
   },
 } as const;
