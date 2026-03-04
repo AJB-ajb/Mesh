@@ -19,7 +19,7 @@ export function AppShell({ children, className }: AppShellProps) {
       <div className="flex h-dvh">
         <SkipLink />
         <Sidebar />
-        <div className="flex flex-1 flex-col min-w-0 overflow-x-hidden overflow-y-auto">
+        <div className="flex flex-1 flex-col min-w-0 overflow-x-hidden overflow-y-auto [scrollbar-gutter:stable]">
           <TestModeBanner />
           <Header />
           <main
