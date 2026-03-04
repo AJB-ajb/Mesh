@@ -46,9 +46,9 @@ describe("NewPostingPage", () => {
     vi.clearAllMocks();
   });
 
-  it("renders the page title and editor", () => {
+  it("renders the editor and back link", () => {
     render(<NewPostingPage />);
-    expect(screen.getByText("Create Posting")).toBeInTheDocument();
+    expect(screen.getByText("Back to postings")).toBeInTheDocument();
     expect(screen.getByTestId("mock-editor")).toBeInTheDocument();
   });
 
