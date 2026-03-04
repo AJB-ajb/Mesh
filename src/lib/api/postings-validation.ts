@@ -33,7 +33,6 @@ export interface PostingBody {
     end_minutes: number;
   }[];
   sourceText?: string;
-  hiddenDetails?: string;
   /** @deprecated Chip metadata is replaced by mesh: link syntax in v0.6. Kept for backward compat. */
   chipMetadata?: ChipMetadataMap;
 }
@@ -103,10 +102,6 @@ export function buildPostingDbRow(body: PostingBody, mode: "create" | "edit") {
     availability_mode: body.availabilityMode || "flexible",
     timezone: body.timezone || null,
   };
-
-  if (body.hiddenDetails !== undefined) {
-    row.hidden_details = body.hiddenDetails?.trim() || null;
-  }
 
   // chipMetadata is deprecated in v0.6 — structured data now lives in mesh: link syntax
   // within the description text itself. The field is kept in PostingBody for backward

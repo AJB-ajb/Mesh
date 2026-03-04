@@ -1565,20 +1565,4 @@ export const labels = {
     postedByYou: "Posted by you",
     postedBy: "Posted by",
   },
-
-  // ---------------------------------------------------------------------------
-  // Hidden details (post-accept reveal)
-  // ---------------------------------------------------------------------------
-  hiddenDetails: {
-    lockedTitle: "Private Details",
-    lockedDescription:
-      "This posting has private details that will be revealed after your request is accepted.",
-    revealedTitle: "Private Details",
-    loadError: "Failed to load private details",
-    fieldLabel: "Private details (revealed after acceptance)",
-    fieldHelp:
-      "This information will only be shown to accepted team members. Use it for meeting locations, contact info, or links.",
-    fieldPlaceholder:
-      "e.g., Meeting point: Building A, Room 204\nDiscord: discord.gg/...",
-  },
 } as const;
