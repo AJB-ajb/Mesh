@@ -15,7 +15,10 @@ import {
   LinkedInIcon,
   LoaderIcon,
 } from "@/components/icons/auth-icons";
-import { useOAuthSignIn } from "@/lib/hooks/use-oauth-sign-in";
+import {
+  useOAuthSignIn,
+  getOAuthCallbackUrl,
+} from "@/lib/hooks/use-oauth-sign-in";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -26,12 +29,7 @@ function LoginForm() {
   const [formError, setFormError] = useState<string | null>(null);
   const error = searchParams.get("error");
   const next = searchParams.get("next");
-  const getCallbackUrl = () => {
-    const origin = window.location.origin;
-    return next
-      ? `${origin}/callback?next=${encodeURIComponent(next)}`
-      : `${origin}/callback`;
-  };
+  const getCallbackUrl = () => getOAuthCallbackUrl(next);
   const { loadingProvider, signIn, isOAuthLoading } =
     useOAuthSignIn(getCallbackUrl);
 
@@ -50,7 +48,7 @@ function LoginForm() {
       setFormError(signInError.message);
       setIsLoading(false);
     } else {
-      router.push(next || "/active");
+      router.push(next || "/posts");
     }
   };
 
@@ -85,6 +83,7 @@ function LoginForm() {
             id="email"
             type="email"
             placeholder="you@example.com"
+            className="h-11 sm:h-9"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -98,7 +97,7 @@ function LoginForm() {
             </label>
             <Link
               href="/forgot-password"
-              className="text-sm text-primary hover:underline"
+              className="text-sm text-primary hover:underline py-1 -my-1"
             >
               {labels.auth.login.forgotPassword}
             </Link>
@@ -107,6 +106,7 @@ function LoginForm() {
             id="password"
             type="password"
             placeholder="••••••••"
+            className="h-11 sm:h-9"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -115,7 +115,7 @@ function LoginForm() {
         </div>
         <Button
           type="submit"
-          className="w-full"
+          className="w-full h-11 sm:h-9"
           disabled={isLoading || isOAuthLoading}
         >
           {isLoading ? labels.auth.login.signingIn : labels.common.signIn}
@@ -137,7 +137,7 @@ function LoginForm() {
         <Button
           type="button"
           variant="outline"
-          className="flex-1"
+          className="flex-1 h-11 sm:h-9"
           onClick={() => signIn("google")}
           disabled={isLoading || isOAuthLoading}
         >
@@ -150,7 +150,7 @@ function LoginForm() {
         <Button
           type="button"
           variant="outline"
-          className="flex-1"
+          className="flex-1 h-11 sm:h-9"
           onClick={() => signIn("github")}
           disabled={isLoading || isOAuthLoading}
         >
@@ -163,7 +163,7 @@ function LoginForm() {
         <Button
           type="button"
           variant="outline"
-          className="flex-1"
+          className="flex-1 h-11 sm:h-9"
           onClick={() => signIn("linkedin")}
           disabled={isLoading || isOAuthLoading}
         >

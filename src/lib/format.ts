@@ -88,8 +88,17 @@ export function formatDateAgo(date: string | Date): string {
   if (diffDays === 0) return "Today";
   if (diffDays === 1) return "Yesterday";
   if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+  const weeks = Math.floor(diffDays / 7);
+  if (diffDays < 30) return `${weeks} ${weeks === 1 ? "week" : "weeks"} ago`;
   return d.toLocaleDateString();
+}
+
+/**
+ * Strip leading markdown heading syntax (e.g. "## Title" → "Title").
+ */
+export function stripTitleMarkdown(title: string | null | undefined): string {
+  if (!title) return "";
+  return title.replace(/^#{1,6}\s+/, "");
 }
 
 /**
@@ -97,6 +106,20 @@ export function formatDateAgo(date: string | Date): string {
  * Style convention: lowercase "s" in "specified".
  */
 export const NOT_SPECIFIED = "Not specified";
+
+/**
+ * Extract a title from a description string.
+ * Takes the first sentence (up to first period, question mark, exclamation mark, or newline),
+ * capped at 100 characters.
+ */
+export function extractTitleFromDescription(desc: string): string {
+  if (!desc) return "";
+  // First line or first sentence
+  const firstLine = desc.split(/\n/)[0] ?? "";
+  const firstSentence = firstLine.match(/^[^.!?]*/)?.[0] ?? firstLine;
+  const result = firstSentence.trim();
+  return result.length > 100 ? result.slice(0, 97) + "..." : result;
+}
 
 /**
  * Get up to 2 uppercase initials from a full name.

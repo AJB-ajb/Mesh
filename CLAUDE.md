@@ -10,6 +10,11 @@
 To avoid permission prompts from compound commands:
 
 - **Never chain commands with `&&`, `||`, or `;`** — make separate sequential Bash tool calls instead
+  - **Particularly never chain with git commands**, e.g. `cd <worktree> && git …`
 - **Never use `for`/`while` loops or process substitution `<()`** in Bash — use dedicated tools (Grep, Glob, Read) or multiple sequential calls
 - **Never pipe commands** (`|`) — use dedicated tools or capture output across calls
 - One simple command per Bash tool call. This is more transparent and avoids permission issues.
+
+## Parallel Subagents
+
+For larger features, prefer splitting independent work into parallel subagent sessions (via the `Task` tool) when it gives a significant total advantage — e.g. cutting wall-clock time or keeping the main context focused. Use `isolation: "worktree"` when the subagent needs to write code (gives it its own branch and working copy); skip isolation for read-only research or exploration. Don't parallelise for the sake of it — only when the tasks are genuinely independent and the overhead is worth it.

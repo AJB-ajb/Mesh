@@ -1,4 +1,4 @@
-# MeshIt UI Test Report - 2026-02-18
+# Mesh UI Test Report - 2026-02-18
 
 ## Summary
 

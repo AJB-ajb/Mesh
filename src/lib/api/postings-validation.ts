@@ -3,6 +3,7 @@
  */
 
 import { AppError } from "@/lib/errors";
+import type { ChipMetadataMap } from "@/lib/types/posting";
 
 export interface PostingBody {
   title?: string;
@@ -31,6 +32,9 @@ export interface PostingBody {
     start_minutes: number;
     end_minutes: number;
   }[];
+  sourceText?: string;
+  /** @deprecated Chip metadata is replaced by mesh: link syntax in v0.6. Kept for backward compat. */
+  chipMetadata?: ChipMetadataMap;
 }
 
 /**
@@ -99,6 +103,10 @@ export function buildPostingDbRow(body: PostingBody, mode: "create" | "edit") {
     timezone: body.timezone || null,
   };
 
+  // chipMetadata is deprecated in v0.6 — structured data now lives in mesh: link syntax
+  // within the description text itself. The field is kept in PostingBody for backward
+  // compat but is no longer written to new rows.
+
   if (mode === "edit") {
     row.status = body.status || undefined;
     if (body.expiresAt) {
@@ -110,8 +118,12 @@ export function buildPostingDbRow(body: PostingBody, mode: "create" | "edit") {
   if (mode === "create") {
     const expiresAt = body.expiresAt
       ? new Date(body.expiresAt + "T23:59:59")
-      : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+      : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
     row.expires_at = expiresAt.toISOString();
+
+    if (body.sourceText?.trim()) {
+      row.source_text = body.sourceText.trim();
+    }
   }
 
   return row;

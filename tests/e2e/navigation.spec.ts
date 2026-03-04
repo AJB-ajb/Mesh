@@ -8,12 +8,12 @@ test.describe("Navigation", () => {
     const loginLink = page.locator('header a[href="/login"]');
     await expect(loginLink).toBeVisible();
 
-    // CTA buttons link to login and postings
+    // CTA buttons link to login and why page
     await expect(
       page.locator('a[href*="/login"]:has-text("Post something")').first(),
     ).toBeVisible();
     await expect(
-      page.locator('a[href="/my-postings"]:has-text("Explore postings")'),
+      page.locator('a[href="/why"]:has-text("Why Mesh?")').first(),
     ).toBeVisible();
   });
 
@@ -22,13 +22,15 @@ test.describe("Navigation", () => {
 
     await expect(page.locator("text=How it works")).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Describe what you want to do" }),
+      page.getByRole("heading", { name: "Describe your activity" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Get matched with the right people" }),
+      page.getByRole("heading", {
+        name: "Find or invite the right people",
+      }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Connect and collaborate" }),
+      page.getByRole("heading", { name: "Start doing the thing" }),
     ).toBeVisible();
   });
 
@@ -81,7 +83,7 @@ test.describe("Navigation", () => {
   }) => {
     await page.context().clearCookies();
 
-    await page.goto("/active");
+    await page.goto("/posts");
     await page.waitForURL(/\/login/, { timeout: 10000 });
     expect(page.url()).toContain("/login");
   });

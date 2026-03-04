@@ -1,5 +1,8 @@
 /**
  * Google Calendar integration: OAuth flow + FreeBusy API.
+ *
+ * Server-only module — only import from API routes / server components.
+ * The googleapis package (~171MB) must never be bundled client-side.
  */
 
 import { google } from "googleapis";
@@ -8,10 +11,32 @@ import type { BusyBlock, GoogleTokens } from "./types";
 import { CALENDAR_SYNC } from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/** Cookie name used to store OAuth CSRF state nonce. */
+export const OAUTH_STATE_COOKIE = "calendar_oauth_state";
+
+// ---------------------------------------------------------------------------
+// Base URL helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve the application base URL for OAuth redirect URIs.
+ * Checks env vars in priority order, falling back to localhost.
+ */
+export function getCalendarBaseUrl(origin?: string): string {
+  if (origin) return origin;
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+}
+
+// ---------------------------------------------------------------------------
 // OAuth client factory
 // ---------------------------------------------------------------------------
 
-function getOAuthClient() {
+function getOAuthClient(origin?: string) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
@@ -19,10 +44,12 @@ function getOAuthClient() {
     throw new Error("Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET");
   }
 
+  const baseUrl = getCalendarBaseUrl(origin);
+
   return new google.auth.OAuth2(
     clientId,
     clientSecret,
-    `${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/api/calendar/google/callback`,
+    `${baseUrl}/api/calendar/google/callback`,
   );
 }
 
@@ -34,8 +61,8 @@ function getOAuthClient() {
  * Build Google OAuth consent URL for calendar.freebusy scope.
  * Uses `access_type=offline` and `prompt=consent` to always get a refresh token.
  */
-export function buildAuthUrl(state: string): string {
-  const client = getOAuthClient();
+export function buildAuthUrl(state: string, origin?: string): string {
+  const client = getOAuthClient(origin);
   return client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
@@ -52,12 +79,15 @@ export function buildAuthUrl(state: string): string {
  * Exchange an authorization code for tokens.
  * Returns encrypted token buffers ready for DB storage.
  */
-export async function exchangeCode(code: string): Promise<{
+export async function exchangeCode(
+  code: string,
+  origin?: string,
+): Promise<{
   accessTokenEncrypted: Buffer;
   refreshTokenEncrypted: Buffer;
   expiresAt: Date;
 }> {
-  const client = getOAuthClient();
+  const client = getOAuthClient(origin);
   const { tokens } = await client.getToken(code);
 
   if (!tokens.access_token || !tokens.refresh_token) {

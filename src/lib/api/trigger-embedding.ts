@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/nextjs";
+
 const MAX_RETRIES = 2;
 
 /**
@@ -11,7 +13,9 @@ export async function triggerEmbeddingGeneration(
     try {
       const response = await fetch("/api/embeddings/process", {
         method: "POST",
-        headers: { "x-internal-call": "true" },
+        headers: {
+          Authorization: `Bearer ${process.env.EMBEDDINGS_API_KEY || process.env.SUPABASE_SECRET_KEY}`,
+        },
       });
       if (response.ok) return;
     } catch {
@@ -23,5 +27,12 @@ export async function triggerEmbeddingGeneration(
   }
   console.warn(
     "[embeddings] Failed to trigger embedding generation after retries",
+  );
+  Sentry.captureMessage(
+    "Failed to trigger embedding generation after retries",
+    {
+      level: "warning",
+      tags: { source: "fire-and-forget", operation: "embedding" },
+    },
   );
 }

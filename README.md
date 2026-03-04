@@ -1,7 +1,7 @@
 # Mesh
 
-[![CI](https://github.com/AJB-ajb/MeshIt/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AJB-ajb/MeshIt/actions/workflows/ci.yml)
-![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/AJB-ajb/25026facb8b1395138a5ab1a48d9c5f0/raw/meshit-coverage.json)
+[![CI](https://github.com/AJB-ajb/Mesh/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AJB-ajb/Mesh/actions/workflows/ci.yml)
+![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/AJB-ajb/25026facb8b1395138a5ab1a48d9c5f0/raw/mesh-coverage.json)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.17-brightgreen)
 ![pnpm](https://img.shields.io/badge/pnpm-10.x-orange)
 
@@ -37,8 +37,8 @@ corepack prepare pnpm@latest --activate
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-team/meshit.git
-cd meshit
+git clone https://github.com/AJB-ajb/Mesh.git
+cd Mesh
 
 # Install dependencies
 pnpm install
@@ -92,7 +92,7 @@ Copy `.env.example` to `.env.local` and configure the following:
 ### Project Structure
 
 ```
-meshit/
+mesh/
 ├── src/
 │   ├── app/                    # Next.js App Router
 │   │   ├── (auth)/            # Auth routes (login, callback)

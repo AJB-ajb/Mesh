@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import type { ProfileFormState } from "@/lib/types/profile";
 import {
   parseList,
@@ -53,33 +54,35 @@ export function ProfileView({
               <p className="text-sm text-muted-foreground">Full name</p>
               <p className="font-medium">{form.fullName || "Not provided"}</p>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Headline</p>
-              <p className="font-medium">{form.headline || "Not provided"}</p>
-            </div>
+            {form.headline && (
+              <div>
+                <p className="text-sm text-muted-foreground">Headline</p>
+                <p className="font-medium">{form.headline}</p>
+              </div>
+            )}
           </div>
-
           <div>
             <p className="text-sm text-muted-foreground">About</p>
-            <p className="font-medium">{form.bio || "Not provided"}</p>
+            {form.bio ? (
+              <MarkdownRenderer content={form.bio} className="font-medium" />
+            ) : (
+              <p className="font-medium">Not provided</p>
+            )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <p className="text-sm text-muted-foreground">Location</p>
-              <p className="font-medium">
-                {form.location || "Not provided"}
-                {form.locationLat && form.locationLng && (
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    ({form.locationLat}, {form.locationLng})
-                  </span>
-                )}
-              </p>
+              <p className="font-medium">{form.location || "Not provided"}</p>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Spoken languages</p>
-              <p className="font-medium">{form.languages || "Not provided"}</p>
-            </div>
+            {form.languages && (
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Spoken languages
+                </p>
+                <p className="font-medium">{form.languages}</p>
+              </div>
+            )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -166,39 +169,36 @@ export function ProfileView({
               </div>
             </div>
           )}
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <p className="text-sm text-muted-foreground">Portfolio</p>
-              {form.portfolioUrl ? (
-                <a
-                  href={form.portfolioUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-primary hover:underline"
-                >
-                  {form.portfolioUrl}
-                </a>
-              ) : (
-                <p className="font-medium">Not provided</p>
+          {(form.portfolioUrl || form.githubUrl) && (
+            <div className="grid gap-4 md:grid-cols-2">
+              {form.portfolioUrl && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Portfolio</p>
+                  <a
+                    href={form.portfolioUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-primary hover:underline"
+                  >
+                    {form.portfolioUrl}
+                  </a>
+                </div>
+              )}
+              {form.githubUrl && (
+                <div>
+                  <p className="text-sm text-muted-foreground">GitHub</p>
+                  <a
+                    href={form.githubUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-primary hover:underline"
+                  >
+                    {form.githubUrl}
+                  </a>
+                </div>
               )}
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">GitHub</p>
-              {form.githubUrl ? (
-                <a
-                  href={form.githubUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-primary hover:underline"
-                >
-                  {form.githubUrl}
-                </a>
-              ) : (
-                <p className="font-medium">Not provided</p>
-              )}
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 

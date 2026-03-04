@@ -229,6 +229,83 @@ describe("matchProfileToPostings", () => {
       expect.objectContaining({ match_limit: 5 }),
     );
   });
+
+  it("maps row.status and row.updated_at from RPC response (not hardcoded)", async () => {
+    const userEmbedding = new Array(1536).fill(0.1);
+    const { mockClient, mockFrom, mockRpc } = createMockSupabase();
+
+    // Mock profile fetch
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: { embedding: userEmbedding },
+            error: null,
+          }),
+        }),
+      }),
+    });
+
+    // Mock RPC call with status: "filled" and a distinct updated_at
+    mockRpc.mockResolvedValue({
+      data: [
+        {
+          posting_id: "post-1",
+          similarity: 0.85,
+          title: "AI Project",
+          description: "Build an AI app",
+          team_size_min: 2,
+          team_size_max: 5,
+          category: "professional",
+          tags: ["ai", "web"],
+          mode: "open",
+          location_preference: 0.5,
+          estimated_time: "1_month",
+          context_identifier: null,
+          natural_language_criteria: null,
+          creator_id: "user-2",
+          status: "filled",
+          created_at: "2024-01-01",
+          updated_at: "2024-06-15",
+          expires_at: "2024-02-01",
+        },
+      ],
+      error: null,
+    });
+
+    // Mock existing matches check (need two mockFrom calls: one for profile, one for matches)
+    mockFrom.mockReturnValueOnce({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: { embedding: userEmbedding },
+            error: null,
+          }),
+        }),
+      }),
+    });
+
+    mockFrom.mockReturnValueOnce({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue({
+            data: [],
+            error: null,
+          }),
+        }),
+      }),
+    });
+
+    vi.mocked(createClient).mockResolvedValue(
+      mockClient as unknown as Awaited<ReturnType<typeof createClient>>,
+    );
+
+    const matches = await matchProfileToPostings("user-1");
+
+    expect(matches).toHaveLength(1);
+    expect(matches[0].posting.status).toBe("filled");
+    expect(matches[0].posting.updated_at).toBe("2024-06-15");
+  });
 });
 
 describe("matchPostingToProfiles", () => {
@@ -405,6 +482,7 @@ describe("createMatchRecords", () => {
           natural_language_criteria: null,
           embedding: null,
           status: "open",
+          identified_roles: null,
 
           created_at: "",
           updated_at: "",
@@ -465,6 +543,7 @@ describe("createMatchRecords", () => {
           natural_language_criteria: null,
           embedding: null,
           status: "open",
+          identified_roles: null,
 
           created_at: "",
           updated_at: "",
@@ -538,6 +617,7 @@ describe("createMatchRecordsForPosting", () => {
           embedding: null,
           timezone: null,
           notification_preferences: null,
+          tier: "free",
 
           created_at: "",
           updated_at: "",

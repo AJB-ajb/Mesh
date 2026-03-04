@@ -10,7 +10,7 @@ import { apiError, apiSuccess } from "@/lib/errors";
  * GET /api/matches/for-posting/[id]
  * Returns profiles matching a specific posting (posting creator only)
  */
-export const GET = withAuth(async (_req, { user, supabase, params }) => {
+export const GET = withAuth(async (req, { user, supabase, params }) => {
   const postingId = params.id;
 
   // Verify user is the posting creator
@@ -28,8 +28,12 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
     return apiError("FORBIDDEN", "Only posting creators can view matches", 403);
   }
 
+  // Parse deep match flag
+  const { searchParams } = new URL(req.url);
+  const deepMatchEnabled = searchParams.get("deep") === "true";
+
   // Find matching profiles
-  const matches = await matchPostingToProfiles(postingId, 10);
+  const matches = await matchPostingToProfiles(postingId, 10, deepMatchEnabled);
 
   // Create match records in database if they don't exist
   await createMatchRecordsForPosting(postingId, matches);
@@ -43,6 +47,10 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
     score_breakdown: match.scoreBreakdown,
     status: "pending",
     created_at: new Date().toISOString(),
+    deep_match_score: match.deepMatchResult?.score ?? null,
+    deep_match_explanation: match.deepMatchResult?.explanation ?? null,
+    deep_match_concerns: match.deepMatchResult?.concerns ?? null,
+    deep_match_role: match.deepMatchResult?.matchedRole ?? null,
   }));
 
   return apiSuccess({ matches: response });

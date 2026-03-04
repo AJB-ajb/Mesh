@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useMemo, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
@@ -14,6 +14,18 @@ import { useApplicationActions } from "@/lib/hooks/use-application-actions";
 import { useConversationStart } from "@/lib/hooks/use-conversation-start";
 import { PostingVisitorView } from "@/components/posting/posting-visitor-view";
 import { PostingOwnerView } from "@/components/posting/posting-owner-view";
+import {
+  PostingCoreProvider,
+  type PostingCoreContextValue,
+} from "@/components/posting/posting-core-context";
+import {
+  PostingApplicationProvider,
+  type PostingApplicationContextValue,
+} from "@/components/posting/posting-application-context";
+import {
+  PostingEditProvider,
+  type PostingEditContextValue,
+} from "@/components/posting/posting-edit-context";
 
 // ---------------------------------------------------------------------------
 // Inner component that uses useSearchParams (needs Suspense boundary)
@@ -50,29 +62,25 @@ function PostingDetailInner() {
 
   // Context-aware back navigation
   const fromParam = searchParams.get("from");
-  const backHref = fromParam === "discover" ? "/discover" : "/my-postings";
+  const backHref = fromParam === "discover" ? "/discover" : "/posts";
   const backLabel =
     fromParam === "discover"
       ? labels.common.backToDiscover
       : labels.common.backToPostings;
 
-  // Owner-side editing/mutation logic
+  // Owner-side editing/mutation logic (always-editable)
   const {
-    isEditing,
-    setIsEditing,
-    isSaving,
     isDeleting,
     isExtending,
     isReposting,
     error,
     setError,
     form,
+    saveStatus,
     isApplyingUpdate,
     applyFreeFormUpdate,
     undoLastUpdate,
     handleFormChange,
-    handleStartEdit,
-    handleSave,
     handleDelete,
     handleExtendDeadline,
     handleRepost,
@@ -126,6 +134,131 @@ function PostingDetailInner() {
   const projectEnabled =
     posting != null && acceptedCount >= posting.team_size_min;
 
+  // --- Build context values ---
+
+  const coreValue: PostingCoreContextValue | null = useMemo(
+    () =>
+      posting
+        ? {
+            posting,
+            postingId,
+            isOwner,
+            currentUserId,
+            currentUserProfile,
+            currentUserName: currentUserProfile?.full_name ?? null,
+            matchBreakdown,
+            backHref,
+            backLabel,
+            activeTab,
+            onTabChange: setActiveTab,
+            onContactCreator: handleContactCreator,
+            onStartConversation: handleStartConversation,
+            error,
+            onMutate: mutate,
+            isAcceptedMember: isAcceptedMember ?? false,
+            projectEnabled,
+            acceptedCount,
+          }
+        : null,
+    [
+      posting,
+      postingId,
+      isOwner,
+      currentUserId,
+      currentUserProfile,
+      matchBreakdown,
+      backHref,
+      backLabel,
+      activeTab,
+      handleContactCreator,
+      handleStartConversation,
+      error,
+      mutate,
+      isAcceptedMember,
+      projectEnabled,
+      acceptedCount,
+    ],
+  );
+
+  const applicationValue: PostingApplicationContextValue = useMemo(
+    () => ({
+      effectiveApplications,
+      matchedProfiles,
+      myApplication,
+      hasApplied,
+      waitlistPosition,
+      showApplyForm,
+      coverMessage,
+      isApplying,
+      onShowApplyForm: () => setShowApplyForm(true),
+      onHideApplyForm: () => {
+        setShowApplyForm(false);
+        setError(null);
+      },
+      onCoverMessageChange: setCoverMessage,
+      onApply: handleApply,
+      onWithdraw: handleWithdrawApplication,
+      isUpdatingApplication,
+      onUpdateStatus: handleUpdateApplicationStatus,
+      isLoading,
+    }),
+    [
+      effectiveApplications,
+      matchedProfiles,
+      myApplication,
+      hasApplied,
+      waitlistPosition,
+      showApplyForm,
+      coverMessage,
+      isApplying,
+      setShowApplyForm,
+      setError,
+      setCoverMessage,
+      handleApply,
+      handleWithdrawApplication,
+      isUpdatingApplication,
+      handleUpdateApplicationStatus,
+      isLoading,
+    ],
+  );
+
+  const editValue: PostingEditContextValue = useMemo(
+    () => ({
+      form,
+      onFormChange: handleFormChange,
+      isEditing: isOwner,
+      isSaving: false,
+      isDeleting,
+      isExtending,
+      isReposting,
+      saveStatus,
+      onStartEdit: () => {},
+      onCancelEdit: () => {},
+      onSave: () => {},
+      onDelete: handleDelete,
+      onExtendDeadline: handleExtendDeadline,
+      onRepost: handleRepost,
+      isApplyingUpdate,
+      onApplyUpdate: applyFreeFormUpdate,
+      onUndoUpdate: undoLastUpdate,
+    }),
+    [
+      form,
+      handleFormChange,
+      isOwner,
+      isDeleting,
+      isExtending,
+      isReposting,
+      saveStatus,
+      handleDelete,
+      handleExtendDeadline,
+      handleRepost,
+      isApplyingUpdate,
+      applyFreeFormUpdate,
+      undoLastUpdate,
+    ],
+  );
+
   // --- Render ---
 
   if (isLoading) {
@@ -136,7 +269,7 @@ function PostingDetailInner() {
     );
   }
 
-  if (!posting) {
+  if (!posting || !coreValue) {
     return (
       <div className="space-y-6">
         <Link
@@ -149,7 +282,7 @@ function PostingDetailInner() {
           <CardContent className="flex min-h-[200px] flex-col items-center justify-center py-12">
             <p className="text-muted-foreground">Posting not found.</p>
             <Button asChild className="mt-4">
-              <Link href="/my-postings">Browse Postings</Link>
+              <Link href="/posts">Browse Postings</Link>
             </Button>
           </CardContent>
         </Card>
@@ -157,96 +290,14 @@ function PostingDetailInner() {
     );
   }
 
-  // Non-owner view: flat layout (no tabs) — unless accepted member who sees Project
-  if (!isOwner) {
-    return (
-      <PostingVisitorView
-        posting={posting}
-        postingId={postingId}
-        isOwner={isOwner}
-        currentUserId={currentUserId}
-        currentUserProfile={currentUserProfile}
-        matchBreakdown={matchBreakdown}
-        form={form}
-        onFormChange={handleFormChange}
-        hasApplied={hasApplied}
-        myApplication={myApplication}
-        waitlistPosition={waitlistPosition}
-        showApplyForm={showApplyForm}
-        coverMessage={coverMessage}
-        isApplying={isApplying}
-        onShowApplyForm={() => setShowApplyForm(true)}
-        onHideApplyForm={() => {
-          setShowApplyForm(false);
-          setError(null);
-        }}
-        onCoverMessageChange={setCoverMessage}
-        onApply={handleApply}
-        onWithdraw={handleWithdrawApplication}
-        error={error}
-        effectiveApplications={effectiveApplications}
-        isAcceptedMember={isAcceptedMember}
-        projectEnabled={projectEnabled}
-        onContactCreator={handleContactCreator}
-        backHref={backHref}
-        backLabel={backLabel}
-      />
-    );
-  }
-
-  // Owner view: tabbed layout
   return (
-    <PostingOwnerView
-      posting={posting}
-      postingId={postingId}
-      isOwner={isOwner}
-      currentUserId={currentUserId}
-      currentUserName={currentUserProfile?.full_name ?? null}
-      matchBreakdown={matchBreakdown}
-      isEditing={isEditing}
-      isSaving={isSaving}
-      isDeleting={isDeleting}
-      isExtending={isExtending}
-      isReposting={isReposting}
-      form={form}
-      onFormChange={handleFormChange}
-      onSave={handleSave}
-      onCancelEdit={() => setIsEditing(false)}
-      onStartEdit={handleStartEdit}
-      onDelete={handleDelete}
-      onExtendDeadline={handleExtendDeadline}
-      onRepost={handleRepost}
-      hasApplied={hasApplied}
-      myApplication={myApplication}
-      waitlistPosition={waitlistPosition}
-      showApplyForm={showApplyForm}
-      coverMessage={coverMessage}
-      isApplying={isApplying}
-      onShowApplyForm={() => setShowApplyForm(true)}
-      onHideApplyForm={() => {
-        setShowApplyForm(false);
-        setError(null);
-      }}
-      onCoverMessageChange={setCoverMessage}
-      onApply={handleApply}
-      onWithdraw={handleWithdrawApplication}
-      error={error}
-      effectiveApplications={effectiveApplications}
-      matchedProfiles={matchedProfiles}
-      isLoading={isLoading}
-      isUpdatingApplication={isUpdatingApplication}
-      onUpdateStatus={handleUpdateApplicationStatus}
-      onStartConversation={handleStartConversation}
-      onContactCreator={handleContactCreator}
-      isApplyingUpdate={isApplyingUpdate}
-      onApplyUpdate={applyFreeFormUpdate}
-      onUndoUpdate={undoLastUpdate}
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
-      projectEnabled={projectEnabled}
-      backHref={backHref}
-      backLabel={backLabel}
-    />
+    <PostingCoreProvider value={coreValue}>
+      <PostingApplicationProvider value={applicationValue}>
+        <PostingEditProvider value={editValue}>
+          {isOwner ? <PostingOwnerView /> : <PostingVisitorView />}
+        </PostingEditProvider>
+      </PostingApplicationProvider>
+    </PostingCoreProvider>
   );
 }
 

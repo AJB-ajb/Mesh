@@ -6,12 +6,10 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { computeWeightedScore, formatScore } from "@/lib/matching/scoring";
 import { labels } from "@/lib/labels";
-import type {
-  PostingDetail,
-  Application,
-} from "@/lib/hooks/use-posting-detail";
-import { formatDateAgo } from "@/lib/format";
-import type { ScoreBreakdown } from "@/lib/supabase/types";
+import { formatDateAgo, stripTitleMarkdown } from "@/lib/format";
+import type { SaveStatus } from "@/lib/hooks/use-auto-save";
+import { usePostingCoreContext } from "./posting-core-context";
+import { usePostingEditContext } from "./posting-edit-context";
 import { OwnerActions } from "./owner-actions";
 import { ApplySection } from "./apply-section";
 
@@ -36,82 +34,44 @@ const formatExpiry = (expiresAt: string | null) => {
   return `Expires ${date.toLocaleDateString()}`;
 };
 
-type PostingDetailHeaderProps = {
-  posting: PostingDetail;
-  isOwner: boolean;
-  matchBreakdown: ScoreBreakdown | null;
-  isEditing: boolean;
-  isSaving: boolean;
-  isDeleting: boolean;
-  isExtending: boolean;
-  isReposting: boolean;
-  editTitle: string;
-  onEditTitleChange: (value: string) => void;
-  onSave: () => void;
-  onCancelEdit: () => void;
-  onStartEdit: () => void;
-  onDelete: () => void;
-  onExtendDeadline: (days: number) => void;
-  onRepost: () => void;
-  // Apply props (non-owner)
-  hasApplied: boolean;
-  myApplication: Application | null;
-  waitlistPosition: number | null;
-  showApplyForm: boolean;
-  coverMessage: string;
-  isApplying: boolean;
-  onShowApplyForm: () => void;
-  onHideApplyForm: () => void;
-  onCoverMessageChange: (value: string) => void;
-  onApply: () => void;
-  onWithdraw: () => void;
-  error: string | null;
-  hideApplySection?: boolean;
-  hideEditButton?: boolean;
-  backHref?: string;
-  backLabel?: string;
-};
+function SaveStatusIndicator({ status }: { status: SaveStatus }) {
+  if (status === "idle") return null;
+  return (
+    <span
+      className={`text-xs ${
+        status === "saving"
+          ? "text-muted-foreground"
+          : status === "saved"
+            ? "text-green-600 dark:text-green-400"
+            : "text-destructive"
+      }`}
+    >
+      {status === "saving"
+        ? labels.common.saving
+        : status === "saved"
+          ? (labels.common.saved ?? "Saved")
+          : "Save failed"}
+    </span>
+  );
+}
 
-export function PostingDetailHeader({
-  posting,
-  isOwner,
-  matchBreakdown,
-  isEditing,
-  isSaving,
-  isDeleting,
-  isExtending,
-  isReposting,
-  editTitle,
-  onEditTitleChange,
-  onSave,
-  onCancelEdit,
-  onStartEdit,
-  onDelete,
-  onExtendDeadline,
-  onRepost,
-  hasApplied,
-  myApplication,
-  waitlistPosition,
-  showApplyForm,
-  coverMessage,
-  isApplying,
-  onShowApplyForm,
-  onHideApplyForm,
-  onCoverMessageChange,
-  onApply,
-  onWithdraw,
-  error,
-  hideApplySection,
-  hideEditButton,
-  backHref,
-  backLabel,
-}: PostingDetailHeaderProps) {
+export function PostingDetailHeader() {
+  const { posting, isOwner, matchBreakdown, error, backHref, backLabel } =
+    usePostingCoreContext();
+  const { form, onFormChange, saveStatus } = usePostingEditContext();
+
   const creatorName = posting.profiles?.full_name || "Unknown";
+
+  // Determine whether to hide the apply section (private postings for visitors)
+  const hideApplySection =
+    !isOwner &&
+    (posting.visibility ??
+      (posting.mode === "friend_ask" ? "private" : "public")) === "private";
 
   return (
     <>
       <Link
-        href={backHref ?? "/my-postings"}
+        href={backHref ?? "/posts"}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -127,15 +87,15 @@ export function PostingDetailHeader({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-2">
           <div className="flex items-center gap-3 flex-wrap">
-            {isEditing ? (
+            {isOwner ? (
               <input
-                value={editTitle}
-                onChange={(e) => onEditTitleChange(e.target.value)}
+                value={form.title}
+                onChange={(e) => onFormChange("title", e.target.value)}
                 className="text-2xl font-bold flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
             ) : (
               <h1 className="text-3xl font-bold tracking-tight">
-                {posting.title}
+                {stripTitleMarkdown(posting.title)}
               </h1>
             )}
             <Badge
@@ -174,6 +134,7 @@ export function PostingDetailHeader({
                 {labels.postingDetail.match}
               </Badge>
             )}
+            {isOwner && <SaveStatusIndicator status={saveStatus} />}
           </div>
           <p className="text-muted-foreground">
             {labels.postingDetail.postedBy}{" "}
@@ -188,38 +149,11 @@ export function PostingDetailHeader({
         </div>
 
         {isOwner ? (
-          <OwnerActions
-            posting={posting}
-            isEditing={isEditing}
-            isSaving={isSaving}
-            isDeleting={isDeleting}
-            isExtending={isExtending}
-            isReposting={isReposting}
-            onSave={onSave}
-            onCancelEdit={onCancelEdit}
-            onStartEdit={onStartEdit}
-            onDelete={onDelete}
-            onExtendDeadline={onExtendDeadline}
-            onRepost={onRepost}
-            hideEditButton={hideEditButton}
-          />
+          <OwnerActions />
         ) : (
           !hideApplySection && (
             <div className="flex flex-wrap gap-2">
-              <ApplySection
-                posting={posting}
-                hasApplied={hasApplied}
-                myApplication={myApplication}
-                waitlistPosition={waitlistPosition}
-                showApplyForm={showApplyForm}
-                coverMessage={coverMessage}
-                isApplying={isApplying}
-                onShowApplyForm={onShowApplyForm}
-                onHideApplyForm={onHideApplyForm}
-                onCoverMessageChange={onCoverMessageChange}
-                onApply={onApply}
-                onWithdraw={onWithdraw}
-              />
+              <ApplySection />
             </div>
           )
         )}

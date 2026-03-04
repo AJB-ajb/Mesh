@@ -5,40 +5,25 @@ import { Clock, Loader2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { labels } from "@/lib/labels";
-import type {
-  PostingDetail,
-  Application,
-} from "@/lib/hooks/use-posting-detail";
+import { usePostingCoreContext } from "./posting-core-context";
+import { usePostingApplicationContext } from "./posting-application-context";
 
-export type ApplySectionProps = {
-  posting: PostingDetail;
-  hasApplied: boolean;
-  myApplication: Application | null;
-  waitlistPosition: number | null;
-  showApplyForm: boolean;
-  coverMessage: string;
-  isApplying: boolean;
-  onShowApplyForm: () => void;
-  onHideApplyForm: () => void;
-  onCoverMessageChange: (value: string) => void;
-  onApply: () => void;
-  onWithdraw: () => void;
-};
+export function ApplySection() {
+  const { posting } = usePostingCoreContext();
+  const {
+    hasApplied,
+    myApplication,
+    waitlistPosition,
+    showApplyForm,
+    coverMessage,
+    isApplying,
+    onShowApplyForm,
+    onHideApplyForm,
+    onCoverMessageChange,
+    onApply,
+    onWithdraw,
+  } = usePostingApplicationContext();
 
-export function ApplySection({
-  posting,
-  hasApplied,
-  myApplication,
-  waitlistPosition,
-  showApplyForm,
-  coverMessage,
-  isApplying,
-  onShowApplyForm,
-  onHideApplyForm,
-  onCoverMessageChange,
-  onApply,
-  onWithdraw,
-}: ApplySectionProps) {
   if (hasApplied) {
     return (
       <div className="flex items-center gap-2">

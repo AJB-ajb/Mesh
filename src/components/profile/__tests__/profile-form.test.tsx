@@ -45,6 +45,34 @@ vi.mock("@/components/skill/skill-picker", () => ({
   ),
 }));
 
+// Mock SpeechInput
+vi.mock("@/components/ai-elements/speech-input", () => ({
+  SpeechInput: () => <button data-testid="speech-input">Speech</button>,
+}));
+
+// Mock MeshEditor - render as a textarea to preserve existing test behavior
+vi.mock("@/components/editor/mesh-editor", () => ({
+  MeshEditor: (props: {
+    content?: string;
+    placeholder?: string;
+    onChange?: (md: string) => void;
+    className?: string;
+  }) => (
+    <textarea
+      data-testid="mesh-editor"
+      value={props.content ?? ""}
+      placeholder={props.placeholder}
+      onChange={(e) => props.onChange?.(e.target.value)}
+      aria-label="Bio"
+    />
+  ),
+}));
+
+// Mock transcribeAudio
+vi.mock("@/lib/transcribe", () => ({
+  transcribeAudio: vi.fn(),
+}));
+
 function buildForm(
   overrides: Partial<ProfileFormState> = {},
 ): ProfileFormState {

@@ -73,7 +73,7 @@ Extract as much relevant information as possible from the provided text, which c
 Be thorough in extracting skills - look for programming languages, frameworks, tools, and technologies.
 Categorize the posting as study, hackathon, personal, professional, or social based on context.
 Infer team size range from context if not explicitly stated.
-Create a clear, concise title if one isn't provided.
+Create a clear, concise title if one isn't provided. Titles must be plain text — never include markdown syntax like heading prefixes (##).
 
 For visibility:
 - Default to "public" unless the poster explicitly mentions wanting to invite specific people or keep it private.

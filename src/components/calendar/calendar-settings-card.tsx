@@ -55,7 +55,7 @@ export function CalendarSettingsCard({
       supabase
         .from("profiles")
         .select("calendar_visibility")
-        .eq("id", user.id)
+        .eq("user_id", user.id)
         .single()
         .then(({ data }) => {
           if (!cancelled && data?.calendar_visibility) {
@@ -85,7 +85,7 @@ export function CalendarSettingsCard({
         const { error } = await supabase
           .from("profiles")
           .update({ calendar_visibility: value })
-          .eq("id", user.id);
+          .eq("user_id", user.id);
         if (error) {
           onError(labels.calendar.errorGeneric);
         } else {
@@ -146,7 +146,12 @@ export function CalendarSettingsCard({
     }
   };
 
-  const handleAddIcal = async (url: string) => {
+  const handleAddIcal = async (rawUrl: string) => {
+    // Normalize webcal:// to https:// before validation
+    const url = rawUrl.startsWith("webcal://")
+      ? rawUrl.replace(/^webcal:\/\//, "https://")
+      : rawUrl;
+
     if (!url.startsWith("http://") && !url.startsWith("https://")) {
       onError(labels.calendar.errorInvalidIcalUrl);
       return;

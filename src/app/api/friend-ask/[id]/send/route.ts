@@ -99,11 +99,38 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
     });
   }
 
-  // Sequential: notify only the current connection
+  // Sequential: notify up to N connections concurrently (N = concurrent_invites)
   const currentIndex = friendAsk.current_request_index;
+  const concurrentInvites = friendAsk.concurrent_invites ?? 1;
+  const pendingInvitees: string[] = friendAsk.pending_invitees ?? [];
+  const declinedSet = new Set(friendAsk.declined_list ?? []);
 
-  // If we've exhausted the list, mark as completed
-  if (currentIndex >= friendAsk.ordered_friend_list.length) {
+  // Calculate how many slots are available
+  const slotsAvailable = concurrentInvites - pendingInvitees.length;
+
+  if (slotsAvailable <= 0 && pendingInvitees.length > 0) {
+    // Already at capacity — nothing to send
+    return apiSuccess({
+      friend_ask: friendAsk,
+      message: "All concurrent invite slots are filled.",
+    });
+  }
+
+  // Pick the next slotsAvailable people from the ordered list starting at current_request_index
+  // who are NOT already in pending_invitees and NOT in declined_list
+  const newInvitees: string[] = [];
+  let newIndex = currentIndex;
+  for (let i = currentIndex; i < friendAsk.ordered_friend_list.length; i++) {
+    if (newInvitees.length >= slotsAvailable) break;
+    const candidateId = friendAsk.ordered_friend_list[i];
+    if (pendingInvitees.includes(candidateId)) continue;
+    if (declinedSet.has(candidateId)) continue;
+    newInvitees.push(candidateId);
+    newIndex = i + 1;
+  }
+
+  if (newInvitees.length === 0 && pendingInvitees.length === 0) {
+    // No more people to send to — mark as completed
     const { data, error } = await supabase
       .from("friend_asks")
       .update({ status: "completed" })
@@ -119,11 +146,26 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
     });
   }
 
-  const currentFriendId = friendAsk.ordered_friend_list[currentIndex];
-  await notifyConnection(currentFriendId);
+  // Notify each new invitee
+  await Promise.all(newInvitees.map(notifyConnection));
+
+  // Update pending_invitees and current_request_index
+  const updatedPendingInvitees = [...pendingInvitees, ...newInvitees];
+  const { data, error } = await supabase
+    .from("friend_asks")
+    .update({
+      pending_invitees: updatedPendingInvitees,
+      current_request_index: newIndex,
+    })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) return apiError("INTERNAL", error.message, 500);
 
   return apiSuccess({
-    friend_ask: friendAsk,
-    current_friend_id: currentFriendId,
+    friend_ask: data,
+    notified: newInvitees,
+    notified_count: newInvitees.length,
   });
 });

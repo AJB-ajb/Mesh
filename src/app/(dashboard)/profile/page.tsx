@@ -1,26 +1,28 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { labels } from "@/lib/labels";
 
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/lib/hooks/use-profile";
-import { useGithubSync } from "@/lib/hooks/use-github-sync";
 import { useLocation } from "@/lib/hooks/use-location";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { ProfileView } from "@/components/profile/profile-view";
-import { GitHubIntegrationCard } from "@/components/profile/github-integration-card";
 import { IntegrationsSection } from "@/components/profile/integrations-section";
 import { FreeFormUpdate } from "@/components/shared/free-form-update";
-import { InputModeToggle } from "@/components/posting/input-mode-toggle";
-import { AiExtractionCard } from "@/components/posting/ai-extraction-card";
-import type { InputMode } from "@/components/posting/input-mode-toggle";
+import { NlInputPanel } from "@/components/shared/nl-input-panel";
 import { mapExtractedToFormState } from "@/lib/types/profile";
 import { useCalendarBusyBlocks } from "@/lib/hooks/use-calendar-busy-blocks";
+import { useProfileExtractionReview } from "@/lib/hooks/use-profile-extraction-review";
+import { ProfileExtractionReviewCard } from "@/components/profile/profile-extraction-review-card";
 
-export default function ProfilePage() {
+function ProfilePageContent() {
+  const searchParams = useSearchParams();
+  const shouldExtract = searchParams.get("extraction") === "pending";
+
   const {
     profileId,
     form,
@@ -33,7 +35,6 @@ export default function ProfilePage() {
     setIsEditing,
     userEmail,
     connectedProviders,
-    isGithubProvider,
     handleChange,
     handleSubmit,
     handleLinkProvider,
@@ -48,22 +49,19 @@ export default function ProfilePage() {
 
   const { busyWindows } = useCalendarBusyBlocks(profileId);
 
-  const {
-    githubSync,
-    isGithubSyncing,
-    githubSyncError,
-    fetchGithubSyncStatus,
-    handleGithubSync,
-    applySuggestion,
-  } = useGithubSync(setForm, setIsEditing);
-
   const location = useLocation(setForm, () => {});
 
   // AI extraction state
-  const [inputMode, setInputMode] = useState<InputMode>("form");
   const [aiText, setAiText] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionSuccess, setExtractionSuccess] = useState(false);
+
+  // Profile extraction review (triggered after text-first onboarding)
+  const extractionReview = useProfileExtractionReview({
+    profileId: profileId ?? null,
+    sourceText: form.bio || sourceText || "",
+    shouldExtract,
+  });
 
   const handleAiExtract = async () => {
     if (!aiText.trim()) {
@@ -91,7 +89,6 @@ export default function ProfilePage() {
 
       setExtractionSuccess(true);
       setTimeout(() => {
-        setInputMode("form");
         setExtractionSuccess(false);
       }, 1500);
     } catch {
@@ -100,13 +97,6 @@ export default function ProfilePage() {
       setIsExtracting(false);
     }
   };
-
-  // Fetch GitHub sync status once we know the user has a GitHub provider
-  useEffect(() => {
-    if (isGithubProvider) {
-      fetchGithubSyncStatus();
-    }
-  }, [isGithubProvider, fetchGithubSyncStatus]);
 
   if (isLoading) {
     return (
@@ -120,7 +110,7 @@ export default function ProfilePage() {
     <div className="mx-auto max-w-3xl space-y-6">
       {/* Back link */}
       <Link
-        href="/active"
+        href="/posts"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -161,50 +151,49 @@ export default function ProfilePage() {
 
       {isEditing ? (
         <>
-          <InputModeToggle inputMode={inputMode} onModeChange={setInputMode} />
+          {/* NL input — always visible on top when editing */}
+          <NlInputPanel
+            nlText={aiText}
+            onNlTextChange={setAiText}
+            isExtracting={isExtracting}
+            extractionSuccess={extractionSuccess}
+            onExtract={handleAiExtract}
+            variant="profile"
+          />
 
-          {inputMode === "ai" ? (
-            <AiExtractionCard
-              aiText={aiText}
-              onAiTextChange={setAiText}
-              isExtracting={isExtracting}
-              extractionSuccess={extractionSuccess}
-              onExtract={handleAiExtract}
-              onSwitchToForm={() => setInputMode("form")}
-              variant="profile"
-            />
-          ) : (
-            <>
-              <ProfileForm
-                form={form}
-                setForm={setForm}
-                isSaving={isSaving}
-                onSubmit={handleSubmit}
-                onChange={handleChange}
-                onCancel={() => setIsEditing(false)}
-                location={location}
-                availabilityWindows={availabilityWindows}
-                onAvailabilityWindowsChange={onAvailabilityWindowsChange}
-                busyBlocks={busyWindows}
-              />
-              <IntegrationsSection
-                connectedProviders={connectedProviders}
-                isEditing={true}
-                onLinkProvider={handleLinkProvider}
-              />
-            </>
-          )}
+          {/* Form — always visible below */}
+          <ProfileForm
+            form={form}
+            setForm={setForm}
+            isSaving={isSaving}
+            onSubmit={handleSubmit}
+            onChange={handleChange}
+            onCancel={() => setIsEditing(false)}
+            location={location}
+            availabilityWindows={availabilityWindows}
+            onAvailabilityWindowsChange={onAvailabilityWindowsChange}
+            busyBlocks={busyWindows}
+          />
+          <IntegrationsSection
+            connectedProviders={connectedProviders}
+            isEditing={true}
+            onLinkProvider={handleLinkProvider}
+          />
         </>
       ) : (
         <>
-          <GitHubIntegrationCard
-            isGithubProvider={isGithubProvider}
-            githubSync={githubSync}
-            isGithubSyncing={isGithubSyncing}
-            githubSyncError={githubSyncError}
-            onSync={handleGithubSync}
-            onApplySuggestion={applySuggestion}
-          />
+          {/* Extraction review card (shown after text-first onboarding) */}
+          {extractionReview.status !== "idle" && (
+            <ProfileExtractionReviewCard
+              status={extractionReview.status}
+              extracted={extractionReview.extracted}
+              acceptAll={extractionReview.acceptAll}
+              acceptField={extractionReview.acceptField}
+              dismiss={extractionReview.dismiss}
+              retry={extractionReview.retry}
+            />
+          )}
+
           <FreeFormUpdate
             entityType="profile"
             sourceText={sourceText}
@@ -212,6 +201,7 @@ export default function ProfilePage() {
             isApplying={isApplyingUpdate}
             onUpdate={applyFreeFormUpdate}
             onUndo={undoLastUpdate}
+            currentFormState={form as unknown as Record<string, unknown>}
           />
           <ProfileView
             form={form}
@@ -226,5 +216,19 @@ export default function ProfilePage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <ProfilePageContent />
+    </Suspense>
   );
 }

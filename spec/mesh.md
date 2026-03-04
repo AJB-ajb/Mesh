@@ -1,26 +1,29 @@
 # Mesh
 
-Idea-based social platform for quickly finding people to do things with — projects, activities, and spontaneous plans.
+Platform for effective activity coordination in small groups — finding the right people for projects, activities, and spontaneous plans.
 
 ## Status
 
-- [x] #5 Redesign phase 1
-- [x] #6 Redesign phase 2
-- [x] #7 Redesign phase 3
-- [x] #8 Redesign phase 4
-- [ ] #9 Redesign phase 5 (in progress)
+- **Current**: v0.5 — deep matching, multi-role matching, match explanations
+- **Next**: v0.6 — engagement & polish (ghost text, markdown edit mode, N-sequential invites, auto-translation)
 
-See [roadmap.md](roadmap.md) for full milestone tracking.
+See [roadmap.md](roadmap.md) for milestone tracking. See [text_first_rewrite.md](../.prompts/text_first_rewrite.md) for the text-first spec that drives v0.3+.
 
 ## Problem
 
-- Finding people to do things with requires high effort (scanning Slack/WhatsApp channels, messaging connections one by one)
-- Large communities don't scale for individual matching
-- Skill levels and personal compatibility are rarely explicit
+Activity coordination through messaging apps means excessive back-and-forth:
 
-- Idea first approach
-- Fast setup first approach
-- Natural language interface
+- **Rounds of messaging.** Explaining what you want, checking interest, negotiating availability, comparing fit — one person at a time, one message at a time. Each round trip takes minutes to hours.
+- **People drop out mid-coordination.** Someone says "maybe" on Monday and ghosts by Wednesday. Momentum dies.
+- **Broadcasting is wasteful.** Posting in a large group shows 100 people a message where only 5 are interested.
+- **Details scatter.** What started as "let's do X" becomes logistics spread across DMs, threads, and group chats.
+- **The root cause:** Messaging apps treat everything as a message. They don't know you're coordinating an activity, so they can't help — they can't check availability, match skills, or manage group formation.
+
+### Approach
+
+- Activity-first: start with what you want to do, then find people
+- Fast setup: post in 30 seconds, no profile required
+- Natural language: describe your activity like you would in a chat message; AI extracts structure
 
 ### Key Issues
 
@@ -81,20 +84,16 @@ See [matching.md](matching.md) for the matching algorithm.
 
 ### Future
 
-- Calendar integration (auto-suggest time slots / auto update availability)
-- Location suggestions
-- Verification (GitHub, LinkedIn for professional postings)
-- Rating system (objective phrasing, no visible aggregate scores, honest feedback for growth)
-- AI-based user interface
-  - Navigate, search and filter via natural language
-  - Automatically translates to UI actions
-- Mentor / mentee matching
-- Channels (shared context for hackathons, courses, communities — with setup defaults like expiry and category)
-- QR code and share link generation for channels and postings
-- Project images
-- Markdown-first interface (markdown input/output, copy as markdown, auto-format, handoff document export)
-- AI agent integration via markdown interface
-- Test / staging database environment for user research
+See [roadmap.md](roadmap.md) for the full milestone plan. Key upcoming features:
+
+- **Text-first posting & profiles** (v0.3) — single text field replaces multi-step forms
+- **Smart input** (v0.4) — slash commands, quick chips, auto-format/clean, post-write nudges
+- **LLM deep matching** (v0.5) — Stage 2 matching with full-text evaluation and match explanations
+- **Auto-translation** (v0.6) — multilingual posting support
+- Calendar sync (v1.0) — Google Calendar / iCal integration
+- Channels (v1.0) — shared posting contexts for hackathons, courses, communities
+- Verification — GitHub, LinkedIn profile linking and badges
+- Rating system — objective phrasing, no visible aggregate scores
 
 ## Design Principles
 
@@ -102,11 +101,11 @@ See [ux.md](ux.md).
 
 ## Motivation
 
-- Collaboration is a core human need
-- 1:1 coordination is common but poorly served by current tools
-- Small teams (2-4) outperform large groups for most tasks
-- Current tools (Slack, WhatsApp) don't scale for matching
-- Pair work is undervalued and underutilized
+- Coordinating activities is unreasonably hard — back-and-forth messaging is the bottleneck, not finding the activity itself
+- Messaging apps can't help because they treat everything as text — they don't understand the structure of an activity (time, place, skills, team size)
+- Mesh leverages that structure: because a posting is an activity, the platform can automate what messaging can't — check availability, match skills, manage invites, form groups
+- Small teams (2-5) outperform large groups for most tasks — yet current tools serve crowds, not small groups
+- Mesh is both a coordination tool (inviting people you know) and a matching tool (finding people you don't yet know), unified under a single activity-first interface
 
 See [vision.md](vision.md) for deeper philosophy, insights, and target audience analysis.
 
@@ -116,9 +115,11 @@ See [vision.md](vision.md) for deeper philosophy, insights, and target audience 
 
 ## Monetization
 
-- Free tier (full functionality)
-- Business tier (company usage)
-- Premium: analytics, internal rating access
+LLM invocations are a real cost. Tiered access keeps the product viable. See [text_first_rewrite.md](../.prompts/text_first_rewrite.md) §9 for detail.
+
+- **Free tier**: full posting, fast-filter matching, deep match for top N matches, standard LLM model
+- **Premium**: unlimited deep matching, full match explanations, priority placement, LLM-assisted logistics
+- **LLM cost tiering**: cheap models for ghost text/chips, mid-tier for extraction/formatting, high-tier for deep matching
 
 ## Tech Stack
 
