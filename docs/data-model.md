@@ -304,6 +304,20 @@ Posting templates for quick-start content creation.
 
 ---
 
+### skill_normalization_cache
+
+Caches the result of skill string normalization to avoid repeated LLM calls. When a user-typed skill string is resolved to a `skill_nodes` row (via exact match, alias match, or LLM), the mapping is stored here. Subsequent lookups for the same string skip all resolution steps and return directly from cache.
+
+| Field           | Type        | Nullable | Default | Description                                    |
+| --------------- | ----------- | -------- | ------- | ---------------------------------------------- |
+| `input_lower`   | text        | NO       | -       | Primary key. Lowercased input string           |
+| `skill_node_id` | uuid FK     | NO       | -       | References `skill_nodes(id)` ON DELETE CASCADE |
+| `created_at`    | timestamptz | YES      | now()   | When the cache entry was created               |
+
+**Stale entry handling:** On cache hit, the referenced `skill_nodes` row is verified to still exist. If the node was deleted (CASCADE will also remove the cache row, but a race is possible), the stale cache entry is deleted and resolution continues normally.
+
+---
+
 ## JSONB Structures
 
 ### availability_slots (profiles)
