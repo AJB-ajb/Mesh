@@ -1,4 +1,5 @@
 import useSWR from "swr";
+import { cacheKeys } from "@/lib/swr/keys";
 import { getUserOrThrow } from "@/lib/supabase/auth";
 import { apiFetcher } from "@/lib/swr/fetchers";
 
@@ -60,7 +61,10 @@ async function fetchSettings(): Promise<SettingsData> {
 }
 
 export function useSettings() {
-  const { data, error, isLoading, mutate } = useSWR("settings", fetchSettings);
+  const { data, error, isLoading, mutate } = useSWR(
+    cacheKeys.settings(),
+    fetchSettings,
+  );
 
   const githubConnected = data?.providers.find(
     (p) => p.provider === "github",
@@ -68,7 +72,7 @@ export function useSettings() {
 
   const { data: githubSyncStatus, mutate: mutateGithubSync } =
     useSWR<GithubSyncStatus>(
-      githubConnected ? "/api/github/sync" : null,
+      githubConnected ? cacheKeys.githubSync() : null,
       apiFetcher,
     );
 

@@ -28,6 +28,7 @@ export const POST = withAuth(async (req) => {
     userPrompt: text,
     schema: cleanSchema,
     temperature: 0.3,
+    tier: "fast",
   });
 
   return apiSuccess(result);

@@ -11,33 +11,9 @@ vi.mock("@/lib/supabase/server", () => ({
   })),
 }));
 
+import { buildChain, authedUser } from "tests/utils/supabase-mock";
+
 import { POST } from "../[id]/respond/route";
-
-const MOCK_USER = { id: "user-1", email: "a@b.com" };
-
-function chain(finalValue: { data: unknown; error: unknown }) {
-  const self: Record<string, unknown> = {};
-  const methods = [
-    "select",
-    "insert",
-    "update",
-    "delete",
-    "eq",
-    "or",
-    "in",
-    "limit",
-    "order",
-    "single",
-    "maybeSingle",
-  ];
-  for (const m of methods) {
-    self[m] = vi.fn(() => self);
-  }
-  self.single = vi.fn(() => Promise.resolve(finalValue));
-  self.maybeSingle = vi.fn(() => Promise.resolve(finalValue));
-  self.then = (resolve: (v: unknown) => void) => resolve(finalValue);
-  return self;
-}
 
 /** Chain that records inserted data for later assertions */
 function trackingChain(insertLog: unknown[]) {
@@ -68,10 +44,6 @@ function trackingChain(insertLog: unknown[]) {
   return self;
 }
 
-function authedUser() {
-  mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
-}
-
 function makeReq(url: string, init?: RequestInit) {
   return new Request(`http://localhost${url}`, init);
 }
@@ -82,7 +54,7 @@ describe("POST /api/friend-ask/[id]/respond", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("returns 400 for invalid action", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const res = await POST(
       makeReq("/api/friend-ask/fa1/respond", {
         method: "POST",
@@ -97,9 +69,9 @@ describe("POST /api/friend-ask/[id]/respond", () => {
   });
 
   it("returns 404 when friend-ask not found", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
-      chain({ data: null, error: { message: "not found" } }),
+      buildChain({ data: null, error: { message: "not found" } }),
     );
 
     const res = await POST(
@@ -114,7 +86,7 @@ describe("POST /api/friend-ask/[id]/respond", () => {
   });
 
   it("returns 403 when user is not in pending_invitees", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const fa = {
       id: "fa1",
       creator_id: "creator",
@@ -126,7 +98,7 @@ describe("POST /api/friend-ask/[id]/respond", () => {
       concurrent_invites: 1,
       status: "pending",
     };
-    mockFrom.mockReturnValue(chain({ data: fa, error: null }));
+    mockFrom.mockReturnValue(buildChain({ data: fa, error: null }));
 
     const res = await POST(
       makeReq("/api/friend-ask/fa1/respond", {
@@ -142,7 +114,7 @@ describe("POST /api/friend-ask/[id]/respond", () => {
   });
 
   it("accepts the friend-ask and notifies creator", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const fa = {
       id: "fa1",
       creator_id: "creator",
@@ -163,8 +135,8 @@ describe("POST /api/friend-ask/[id]/respond", () => {
       if (table === "notifications") {
         return trackingChain(notificationInserts);
       }
-      if (callCount === 1) return chain({ data: fa, error: null });
-      return chain({ data: updated, error: null });
+      if (callCount === 1) return buildChain({ data: fa, error: null });
+      return buildChain({ data: updated, error: null });
     });
 
     const res = await POST(
@@ -189,7 +161,7 @@ describe("POST /api/friend-ask/[id]/respond", () => {
   });
 
   it("declines, notifies creator, and auto-sends to next friend (backfill)", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const fa = {
       id: "fa1",
       creator_id: "creator",
@@ -215,8 +187,8 @@ describe("POST /api/friend-ask/[id]/respond", () => {
       if (table === "notifications") {
         return trackingChain(notificationInserts);
       }
-      if (callCount === 1) return chain({ data: fa, error: null });
-      return chain({ data: updated, error: null });
+      if (callCount === 1) return buildChain({ data: fa, error: null });
+      return buildChain({ data: updated, error: null });
     });
 
     const res = await POST(
@@ -250,7 +222,7 @@ describe("POST /api/friend-ask/[id]/respond", () => {
   });
 
   it("declines and completes when last friend in list", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const fa = {
       id: "fa1",
       creator_id: "creator",
@@ -275,8 +247,8 @@ describe("POST /api/friend-ask/[id]/respond", () => {
       if (table === "notifications") {
         return trackingChain([]);
       }
-      if (callCount === 1) return chain({ data: fa, error: null });
-      return chain({ data: updated, error: null });
+      if (callCount === 1) return buildChain({ data: fa, error: null });
+      return buildChain({ data: updated, error: null });
     });
 
     const res = await POST(
@@ -294,7 +266,7 @@ describe("POST /api/friend-ask/[id]/respond", () => {
   });
 
   it("returns 400 when friend-ask is not pending", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const fa = {
       id: "fa1",
       creator_id: "creator",
@@ -306,7 +278,7 @@ describe("POST /api/friend-ask/[id]/respond", () => {
       concurrent_invites: 1,
       status: "accepted",
     };
-    mockFrom.mockReturnValue(chain({ data: fa, error: null }));
+    mockFrom.mockReturnValue(buildChain({ data: fa, error: null }));
 
     const res = await POST(
       makeReq("/api/friend-ask/fa1/respond", {
@@ -320,7 +292,7 @@ describe("POST /api/friend-ask/[id]/respond", () => {
   });
 
   it("decline triggers backfill from remaining list", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     // concurrent_invites=2, two people pending, user-1 declines, u4 should be backfilled
     const fa = {
       id: "fa1",
@@ -347,8 +319,8 @@ describe("POST /api/friend-ask/[id]/respond", () => {
       if (table === "notifications") {
         return trackingChain(notificationInserts);
       }
-      if (callCount === 1) return chain({ data: fa, error: null });
-      return chain({ data: updated, error: null });
+      if (callCount === 1) return buildChain({ data: fa, error: null });
+      return buildChain({ data: updated, error: null });
     });
 
     const res = await POST(
@@ -373,7 +345,7 @@ describe("POST /api/friend-ask/[id]/respond", () => {
   });
 
   it("accept with multiple pending clears all pending_invitees", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const fa = {
       id: "fa1",
       creator_id: "creator",
@@ -394,8 +366,8 @@ describe("POST /api/friend-ask/[id]/respond", () => {
       if (table === "notifications") {
         return trackingChain(notificationInserts);
       }
-      if (callCount === 1) return chain({ data: fa, error: null });
-      return chain({ data: updated, error: null });
+      if (callCount === 1) return buildChain({ data: fa, error: null });
+      return buildChain({ data: updated, error: null });
     });
 
     const res = await POST(

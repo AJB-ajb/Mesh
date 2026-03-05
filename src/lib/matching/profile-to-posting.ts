@@ -17,6 +17,7 @@ import {
 export interface MatchFilters {
   category?: string;
   context?: string;
+  parentPostingId?: string;
   locationMode?: string;
   maxDistanceKm?: number;
 }
@@ -80,6 +81,8 @@ export async function matchProfileToPostings(
 
   if (filters?.category) rpcParams.category_filter = filters.category;
   if (filters?.context) rpcParams.context_filter = filters.context;
+  if (filters?.parentPostingId)
+    rpcParams.parent_posting_id_filter = filters.parentPostingId;
   if (filters?.locationMode || profile.location_mode) {
     rpcParams.location_mode_filter =
       filters?.locationMode ?? profile.location_mode;
@@ -148,6 +151,7 @@ export async function matchProfileToPostings(
       team_size_max: row.team_size_max || 1,
       category: row.category || null,
       context_identifier: row.context_identifier || null,
+      parent_posting_id: row.parent_posting_id || null,
       tags: row.tags || [],
       visibility: row.visibility ?? "public",
       mode: "open",

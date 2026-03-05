@@ -1,5 +1,5 @@
 import { withAuth } from "@/lib/api/with-auth";
-import { verifyPostingOwnership } from "@/lib/api/ownership";
+import { verifyPostingOwnership } from "@/lib/api/guards";
 import { syncJoinTableRows } from "@/lib/api/sync-join-table";
 import {
   validatePostingBody,

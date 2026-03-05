@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { buildChain, authedUser } from "tests/utils/supabase-mock";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -14,22 +15,8 @@ vi.mock("@/lib/supabase/server", () => ({
 
 const { PATCH } = await import("@/app/api/applications/[id]/decide/route");
 
+// This test uses a different user ID for the posting owner
 const MOCK_USER = { id: "owner-1", email: "a@b.com" };
-
-function authedUser() {
-  mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
-}
-
-function buildChain(resolveValue: { data: unknown; error: unknown }) {
-  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
-  chain.select = vi.fn().mockReturnValue(chain);
-  chain.update = vi.fn().mockReturnValue(chain);
-  chain.insert = vi.fn().mockResolvedValue(resolveValue);
-  chain.delete = vi.fn().mockReturnValue(chain);
-  chain.eq = vi.fn().mockReturnValue(chain);
-  chain.single = vi.fn().mockResolvedValue(resolveValue);
-  return chain;
-}
 
 function makeReq(body?: Record<string, unknown>) {
   return new Request("http://localhost/api/applications/app-1/decide", {
@@ -54,15 +41,18 @@ describe("PATCH /api/applications/[id]/decide", () => {
   });
 
   it("returns 400 for invalid status", async () => {
-    authedUser();
+    authedUser(mockGetUser, MOCK_USER);
     const res = await PATCH(makeReq({ status: "invalid" }), routeCtx);
     expect(res.status).toBe(400);
   });
 
   it("returns 404 when application not found", async () => {
-    authedUser();
+    authedUser(mockGetUser, MOCK_USER);
     mockFrom.mockReturnValue(
-      buildChain({ data: null, error: { message: "not found" } }),
+      buildChain({
+        data: null,
+        error: { code: "PGRST116", message: "not found" },
+      }),
     );
 
     const res = await PATCH(makeReq(), routeCtx);
@@ -70,7 +60,7 @@ describe("PATCH /api/applications/[id]/decide", () => {
   });
 
   it("returns 403 when user is not the posting creator", async () => {
-    authedUser();
+    authedUser(mockGetUser, MOCK_USER);
 
     const appChain = buildChain({
       data: {
@@ -104,7 +94,7 @@ describe("PATCH /api/applications/[id]/decide", () => {
   });
 
   it("accepts application and notifies applicant", async () => {
-    authedUser();
+    authedUser(mockGetUser, MOCK_USER);
 
     const appChain = buildChain({
       data: {
@@ -158,7 +148,7 @@ describe("PATCH /api/applications/[id]/decide", () => {
   });
 
   it("rejects application and notifies applicant", async () => {
-    authedUser();
+    authedUser(mockGetUser, MOCK_USER);
 
     const appChain = buildChain({
       data: {

@@ -56,8 +56,15 @@ function SaveStatusIndicator({ status }: { status: SaveStatus }) {
 }
 
 export function PostingDetailHeader() {
-  const { posting, isOwner, matchBreakdown, error, backHref, backLabel } =
-    usePostingCoreContext();
+  const {
+    posting,
+    isOwner,
+    matchBreakdown,
+    error,
+    backHref,
+    backLabel,
+    parentPosting,
+  } = usePostingCoreContext();
   const { form, onFormChange, saveStatus } = usePostingEditContext();
 
   const creatorName = posting.profiles?.full_name || "Unknown";
@@ -77,6 +84,21 @@ export function PostingDetailHeader() {
         <ArrowLeft className="h-4 w-4" />
         {backLabel ?? labels.common.backToPostings}
       </Link>
+
+      {parentPosting && (
+        <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Link
+            href={`/postings/${parentPosting.id}`}
+            className="hover:text-foreground hover:underline transition-colors"
+          >
+            {stripTitleMarkdown(parentPosting.title)}
+          </Link>
+          <span>&gt;</span>
+          <span className="text-foreground font-medium">
+            {stripTitleMarkdown(posting.title)}
+          </span>
+        </nav>
+      )}
 
       {error && (
         <p className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">

@@ -12,37 +12,9 @@ vi.mock("@/lib/supabase/server", () => ({
   })),
 }));
 
+import { buildChain, authedUser } from "tests/utils/supabase-mock";
+
 import { GET, POST } from "../route";
-
-const MOCK_USER = { id: "user-1", email: "a@b.com" };
-
-function chain(finalValue: { data: unknown; error: unknown }) {
-  const self: Record<string, unknown> = {};
-  const methods = [
-    "select",
-    "insert",
-    "update",
-    "delete",
-    "eq",
-    "or",
-    "in",
-    "limit",
-    "order",
-    "single",
-    "maybeSingle",
-  ];
-  for (const m of methods) {
-    self[m] = vi.fn(() => self);
-  }
-  self.single = vi.fn(() => Promise.resolve(finalValue));
-  self.maybeSingle = vi.fn(() => Promise.resolve(finalValue));
-  self.then = (resolve: (v: unknown) => void) => resolve(finalValue);
-  return self;
-}
-
-function authedUser() {
-  mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
-}
 
 function makeReq(url: string, init?: RequestInit) {
   return new Request(`http://localhost${url}`, init);
@@ -63,11 +35,11 @@ describe("GET /api/friend-ask", () => {
   });
 
   it("returns friend-asks for the authenticated user", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const friendAsks = [
       { id: "fa1", creator_id: "user-1", posting_id: "p1", status: "pending" },
     ];
-    const q = chain({ data: friendAsks, error: null });
+    const q = buildChain({ data: friendAsks, error: null });
     mockFrom.mockReturnValue(q);
 
     const res = await GET(makeReq("/api/friend-ask"), routeCtx);
@@ -82,7 +54,7 @@ describe("POST /api/friend-ask", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("returns 400 when posting_id is missing", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const res = await POST(
       makeReq("/api/friend-ask", {
         method: "POST",
@@ -97,7 +69,7 @@ describe("POST /api/friend-ask", () => {
   });
 
   it("returns 400 when ordered_friend_list is empty", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const res = await POST(
       makeReq("/api/friend-ask", {
         method: "POST",
@@ -112,9 +84,9 @@ describe("POST /api/friend-ask", () => {
   });
 
   it("returns 404 when posting not found", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
-      chain({ data: null, error: { message: "not found" } }),
+      buildChain({ data: null, error: { message: "not found" } }),
     );
 
     const res = await POST(
@@ -132,9 +104,9 @@ describe("POST /api/friend-ask", () => {
   });
 
   it("returns 403 when posting belongs to another user", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const posting = { id: "p1", creator_id: "other-user", mode: "open" };
-    mockFrom.mockReturnValue(chain({ data: posting, error: null }));
+    mockFrom.mockReturnValue(buildChain({ data: posting, error: null }));
 
     const res = await POST(
       makeReq("/api/friend-ask", {
@@ -150,16 +122,16 @@ describe("POST /api/friend-ask", () => {
   });
 
   it("returns 409 when active friend-ask already exists", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const posting = { id: "p1", creator_id: "user-1", mode: "friend_ask" };
     const existingFA = { id: "fa-existing" };
 
     let callCount = 0;
     mockFrom.mockImplementation(() => {
       callCount++;
-      if (callCount === 1) return chain({ data: posting, error: null }); // posting check
-      if (callCount === 2) return chain({ data: existingFA, error: null }); // existing check
-      return chain({ data: null, error: null });
+      if (callCount === 1) return buildChain({ data: posting, error: null }); // posting check
+      if (callCount === 2) return buildChain({ data: existingFA, error: null }); // existing check
+      return buildChain({ data: null, error: null });
     });
 
     const res = await POST(
@@ -176,7 +148,7 @@ describe("POST /api/friend-ask", () => {
   });
 
   it("creates a friend-ask on success", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const posting = { id: "p1", creator_id: "user-1" };
     const newFA = {
       id: "fa-new",
@@ -190,9 +162,9 @@ describe("POST /api/friend-ask", () => {
     let callCount = 0;
     mockFrom.mockImplementation(() => {
       callCount++;
-      if (callCount === 1) return chain({ data: posting, error: null }); // posting check
-      if (callCount === 2) return chain({ data: null, error: null }); // existing check → not found
-      return chain({ data: newFA, error: null }); // insert
+      if (callCount === 1) return buildChain({ data: posting, error: null }); // posting check
+      if (callCount === 2) return buildChain({ data: null, error: null }); // existing check → not found
+      return buildChain({ data: newFA, error: null }); // insert
     });
 
     const res = await POST(
@@ -212,7 +184,7 @@ describe("POST /api/friend-ask", () => {
   });
 
   it("creates a friend-ask with concurrent_invites: 3", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const posting = { id: "p1", creator_id: "user-1" };
     const newFA = {
       id: "fa-new",
@@ -227,9 +199,9 @@ describe("POST /api/friend-ask", () => {
     let callCount = 0;
     mockFrom.mockImplementation(() => {
       callCount++;
-      if (callCount === 1) return chain({ data: posting, error: null });
-      if (callCount === 2) return chain({ data: null, error: null });
-      return chain({ data: newFA, error: null });
+      if (callCount === 1) return buildChain({ data: posting, error: null });
+      if (callCount === 2) return buildChain({ data: null, error: null });
+      return buildChain({ data: newFA, error: null });
     });
 
     const res = await POST(
@@ -250,7 +222,7 @@ describe("POST /api/friend-ask", () => {
   });
 
   it("returns 400 when concurrent_invites exceeds list length", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const res = await POST(
       makeReq("/api/friend-ask", {
         method: "POST",
@@ -269,7 +241,7 @@ describe("POST /api/friend-ask", () => {
   });
 
   it("returns 400 when concurrent_invites is 0", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const res = await POST(
       makeReq("/api/friend-ask", {
         method: "POST",

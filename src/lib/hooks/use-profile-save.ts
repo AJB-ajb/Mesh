@@ -1,19 +1,18 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import type { KeyedMutator } from "swr";
+import { useSWRConfig } from "swr";
+import { cacheKeys } from "@/lib/swr/keys";
+import { apiMutate } from "@/lib/swr/api-mutate";
 import type { ProfileFormState } from "@/lib/types/profile";
 import type { RecurringWindow } from "@/lib/types/availability";
-import type { ProfileFetchResult } from "./use-profile-data";
 
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
 
-export function useProfileSave(
-  mutate: KeyedMutator<ProfileFetchResult>,
-  onSuccess: () => void,
-) {
+export function useProfileSave(onSuccess: () => void) {
+  const { mutate } = useSWRConfig();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -30,32 +29,24 @@ export function useProfileSave(
       setIsSaving(true);
 
       try {
-        const res = await fetch("/api/profiles", {
+        await apiMutate("/api/profiles", {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...form,
-            availabilityWindows,
-          }),
+          body: { ...form, availabilityWindows },
+          successToast: "profileSaved",
+          errorFallback: "We couldn't save your profile. Please try again.",
         });
-
-        if (!res.ok) {
-          const data = await res.json();
-          setIsSaving(false);
-          setError(
-            data.error?.message ||
-              "We couldn't save your profile. Please try again.",
-          );
-          return;
-        }
 
         setIsSaving(false);
         setSuccess(true);
         onSuccess();
-        await mutate();
-      } catch {
+        await mutate(cacheKeys.profile());
+      } catch (err) {
         setIsSaving(false);
-        setError("We couldn't save your profile. Please try again.");
+        setError(
+          err instanceof Error
+            ? err.message
+            : "We couldn't save your profile. Please try again.",
+        );
       }
     },
     [mutate, onSuccess],

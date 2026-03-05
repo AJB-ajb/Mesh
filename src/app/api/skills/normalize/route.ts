@@ -1,16 +1,16 @@
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthContext } from "@/lib/api/with-auth";
 import { apiError, apiSuccess } from "@/lib/errors";
 import { SchemaType, type Schema } from "@google/generative-ai";
 import { generateStructuredJSON, isGeminiConfigured } from "@/lib/ai/gemini";
-import * as Sentry from "@sentry/nextjs";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * POST /api/skills/normalize
  *
  * Normalizes a user-typed skill string to a tree node.
- * 1. Exact name match (case-insensitive) → return existing node
- * 2. Alias match → return existing node
- * 3. LLM auto-adding → create new node or map to existing
+ * 1. Exact name match (case-insensitive) -> return existing node
+ * 2. Alias match -> return existing node
+ * 3. LLM auto-adding -> create new node or map to existing
  */
 
 const llmResponseSchema: Schema = {
@@ -48,19 +48,10 @@ const llmResponseSchema: Schema = {
   required: ["action"],
 };
 
-export async function POST(request: Request) {
-  const supabase = await createClient();
+export const POST = withAuth(async (req: Request, ctx: AuthContext) => {
+  const { user, supabase } = ctx;
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return apiError("UNAUTHORIZED", "Unauthorized", 401);
-  }
-
-  const body = await request.json();
+  const body = await req.json();
   const skill = (body.skill as string)?.trim();
 
   if (!skill || skill.length < 1) {
@@ -159,6 +150,7 @@ Current skill tree:
 ${treeText}`,
     schema: llmResponseSchema,
     temperature: 0.2,
+    tier: "fast",
   });
 
   if (llmResult.action === "map" && llmResult.existing_node_name) {
@@ -253,19 +245,6 @@ ${treeText}`,
         .eq("id", parent.id);
     }
 
-    // Log LLM-created skill node to Sentry for admin review
-    Sentry.captureMessage("LLM created new skill node", {
-      level: "info",
-      tags: { operation: "skill-node-creation" },
-      extra: {
-        nodeName: newNode.name,
-        parentName: llmResult.parent_name,
-        userInput: skill,
-        aliases: llmResult.aliases ?? [],
-        userId: user.id,
-      },
-    });
-
     const path = await buildNodePath(supabase, newNode);
     return apiSuccess({
       node: {
@@ -280,10 +259,10 @@ ${treeText}`,
   }
 
   return apiError("VALIDATION", "LLM could not classify this skill", 400);
-}
+});
 
 async function buildNodePath(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: SupabaseClient,
   node: { id: string; parent_id: string | null },
 ): Promise<string[]> {
   const path: string[] = [];

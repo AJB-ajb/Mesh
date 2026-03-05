@@ -20,6 +20,9 @@ export async function triggerEmbeddingGenerationServer(
   retries = MAX_RETRIES,
 ): Promise<void> {
   const url = `${getBaseUrl()}/api/embeddings/process`;
+  let lastStatus: number | null = null;
+  let lastBody: string | null = null;
+  let lastError: unknown = null;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
@@ -30,21 +33,37 @@ export async function triggerEmbeddingGenerationServer(
         },
       });
       if (response.ok) return;
-    } catch {
-      // Network error — retry
+      lastStatus = response.status;
+      lastBody = await response.text().catch(() => null);
+      lastError = null;
+    } catch (err) {
+      lastStatus = null;
+      lastBody = null;
+      lastError = err;
     }
     if (attempt < retries) {
       await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
     }
   }
+
+  const errorDetail = lastError
+    ? `network error: ${lastError instanceof Error ? lastError.message : String(lastError)}`
+    : `HTTP ${lastStatus}: ${lastBody?.slice(0, 300) ?? "(no body)"}`;
+
   console.warn(
-    "[embeddings] Failed to trigger server-side embedding generation after retries",
+    `[embeddings] Failed to trigger embedding generation after retries — url=${url} ${errorDetail}`,
   );
   Sentry.captureMessage(
     "Failed to trigger server-side embedding generation after retries",
     {
       level: "warning",
       tags: { source: "fire-and-forget", operation: "embedding" },
+      extra: {
+        url,
+        lastStatus,
+        lastBody: lastBody?.slice(0, 500),
+        lastError: lastError instanceof Error ? lastError.message : lastError,
+      },
     },
   );
 }

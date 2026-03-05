@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { SchemaType } from "@google/generative-ai";
+import { GEMINI_MODELS } from "@/lib/constants";
 
 // Mock the @google/generative-ai module
 const mockGenerateContent = vi.fn();
@@ -81,7 +82,41 @@ describe("gemini fallback", () => {
       expect(mockGenerateContent).toHaveBeenCalledTimes(2);
     });
 
-    it("throws immediately on non-429 error", async () => {
+    it("falls back on 503 UNAVAILABLE (high demand)", async () => {
+      const { generateStructuredJSON } = await importFresh();
+      mockGenerateContent
+        .mockRejectedValueOnce(
+          new Error(
+            "503 UNAVAILABLE: This model is currently experiencing high demand",
+          ),
+        )
+        .mockResolvedValueOnce({
+          response: { text: () => '{"result": "ok"}' },
+        });
+
+      const result = await generateStructuredJSON(opts);
+
+      expect(result).toEqual({ result: "ok" });
+      expect(mockGenerateContent).toHaveBeenCalledTimes(2);
+    });
+
+    it("falls back on timeout error", async () => {
+      const { generateStructuredJSON } = await importFresh();
+      mockGenerateContent
+        .mockRejectedValueOnce(
+          new Error("Gemini generateContent timed out after 15000ms"),
+        )
+        .mockResolvedValueOnce({
+          response: { text: () => '{"result": "ok"}' },
+        });
+
+      const result = await generateStructuredJSON(opts);
+
+      expect(result).toEqual({ result: "ok" });
+      expect(mockGenerateContent).toHaveBeenCalledTimes(2);
+    });
+
+    it("throws immediately on non-transient error", async () => {
       const { generateStructuredJSON } = await importFresh();
       mockGenerateContent.mockRejectedValueOnce(new Error("Invalid API key"));
 
@@ -93,16 +128,46 @@ describe("gemini fallback", () => {
 
     it("throws last error when all models exhausted", async () => {
       const { generateStructuredJSON } = await importFresh();
-      mockGenerateContent
-        .mockRejectedValueOnce(new Error("429 Too Many Requests"))
-        .mockRejectedValueOnce(new Error("429 Too Many Requests"))
-        .mockRejectedValueOnce(new Error("429 Too Many Requests"))
-        .mockRejectedValueOnce(new Error("429 Too Many Requests - last"));
+      const standardModelCount = GEMINI_MODELS.standard.length;
+      for (let i = 0; i < standardModelCount - 1; i++) {
+        mockGenerateContent.mockRejectedValueOnce(
+          new Error("429 Too Many Requests"),
+        );
+      }
+      mockGenerateContent.mockRejectedValueOnce(
+        new Error("429 Too Many Requests - last"),
+      );
 
       await expect(generateStructuredJSON(opts)).rejects.toThrow(
         "429 Too Many Requests - last",
       );
-      expect(mockGenerateContent).toHaveBeenCalledTimes(4);
+      expect(mockGenerateContent).toHaveBeenCalledTimes(standardModelCount);
+    });
+
+    it("uses fast tier when specified", async () => {
+      const { generateStructuredJSON } = await importFresh();
+      mockGenerateContent.mockResolvedValueOnce({
+        response: { text: () => '{"result": "ok"}' },
+      });
+
+      await generateStructuredJSON({ ...opts, tier: "fast" });
+
+      expect(mockGetGenerativeModel).toHaveBeenCalledWith({
+        model: "gemini-3.1-flash-lite-preview",
+      });
+    });
+
+    it("uses standard tier by default", async () => {
+      const { generateStructuredJSON } = await importFresh();
+      mockGenerateContent.mockResolvedValueOnce({
+        response: { text: () => '{"result": "ok"}' },
+      });
+
+      await generateStructuredJSON(opts);
+
+      expect(mockGetGenerativeModel).toHaveBeenCalledWith({
+        model: "gemini-3-flash-preview",
+      });
     });
   });
 
@@ -136,7 +201,23 @@ describe("gemini fallback", () => {
       expect(mockGenerateContent).toHaveBeenCalledTimes(2);
     });
 
-    it("throws immediately on non-rate-limit error", async () => {
+    it("falls back on 503 and timeout errors", async () => {
+      const { generateContentWithFallback } = await importFresh();
+      const mockResult = { response: { text: () => "ok" } };
+      mockGenerateContent
+        .mockRejectedValueOnce(new Error("503 UNAVAILABLE"))
+        .mockRejectedValueOnce(
+          new Error("Gemini generateContent timed out after 15000ms"),
+        )
+        .mockResolvedValueOnce(mockResult);
+
+      const result = await generateContentWithFallback(opts);
+
+      expect(result).toBe(mockResult);
+      expect(mockGenerateContent).toHaveBeenCalledTimes(3);
+    });
+
+    it("throws immediately on non-transient error", async () => {
       const { generateContentWithFallback } = await importFresh();
       mockGenerateContent.mockRejectedValueOnce(new Error("Server error"));
 
@@ -146,18 +227,18 @@ describe("gemini fallback", () => {
       expect(mockGenerateContent).toHaveBeenCalledTimes(1);
     });
 
-    it("throws when all models are rate-limited", async () => {
+    it("throws when all models exhausted", async () => {
       const { generateContentWithFallback } = await importFresh();
-      mockGenerateContent
-        .mockRejectedValueOnce(new Error("429"))
-        .mockRejectedValueOnce(new Error("429"))
-        .mockRejectedValueOnce(new Error("429"))
-        .mockRejectedValueOnce(new Error("429 final"));
+      const standardModelCount = GEMINI_MODELS.standard.length;
+      for (let i = 0; i < standardModelCount - 1; i++) {
+        mockGenerateContent.mockRejectedValueOnce(new Error("429"));
+      }
+      mockGenerateContent.mockRejectedValueOnce(new Error("429 final"));
 
       await expect(generateContentWithFallback(opts)).rejects.toThrow(
         "429 final",
       );
-      expect(mockGenerateContent).toHaveBeenCalledTimes(4);
+      expect(mockGenerateContent).toHaveBeenCalledTimes(standardModelCount);
     });
   });
 });

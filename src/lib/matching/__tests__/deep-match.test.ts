@@ -86,7 +86,8 @@ describe("deepMatchCandidates", () => {
       concerns: "",
     });
 
-    const candidates = Array.from({ length: 7 }, (_, i) => ({
+    const candidateCount = 7;
+    const candidates = Array.from({ length: candidateCount }, (_, i) => ({
       profileText: `Profile ${i}`,
       fastFilterScore: 0.5 + i * 0.05,
       sharedSkills: ["JS"],
@@ -95,16 +96,16 @@ describe("deepMatchCandidates", () => {
       semanticScore: null,
     }));
 
+    const concurrency = 3;
     const results = await deepMatchCandidates(
       "Test Posting",
       "Build something",
       candidates,
-      { concurrency: 3 },
+      { concurrency },
     );
 
-    expect(results).toHaveLength(7);
-    // 3 batches: 3, 3, 1
-    expect(generateStructuredJSON).toHaveBeenCalledTimes(7);
+    expect(results).toHaveLength(candidateCount);
+    expect(generateStructuredJSON).toHaveBeenCalledTimes(candidateCount);
   });
 
   it("handles individual failures gracefully", async () => {

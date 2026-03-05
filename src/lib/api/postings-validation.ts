@@ -23,6 +23,7 @@ export interface PostingBody {
   maxDistanceKm?: string | number;
   tags?: string;
   contextIdentifier?: string;
+  parentPostingId?: string;
   autoAccept?: string | boolean;
   availabilityMode?: string;
   timezone?: string;
@@ -98,6 +99,7 @@ export function buildPostingDbRow(body: PostingBody, mode: "create" | "edit") {
         : null,
     tags,
     context_identifier: (body.contextIdentifier ?? "").trim() || null,
+    parent_posting_id: (body.parentPostingId ?? "").trim() || null,
     auto_accept: autoAccept,
     availability_mode: body.availabilityMode || "flexible",
     timezone: body.timezone || null,

@@ -8,7 +8,7 @@
  * Usage:
  *   pnpm tsx scripts/migrate-test-data.ts [--dry-run]
  *
- * Requires both .env (dev) and .env.production (prod) to be present.
+ * Requires both .env (dev) and .env.prod (prod) to be present.
  */
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
@@ -24,10 +24,10 @@ const devUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const devSecretKey =
   process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Production project from .env.production
+// Production project from .env.prod
 const prodEnv: Record<string, string> = {};
 try {
-  const raw = readFileSync(resolve(process.cwd(), ".env.production"), "utf-8");
+  const raw = readFileSync(resolve(process.cwd(), ".env.prod"), "utf-8");
   for (const line of raw.split("\n")) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) continue;
@@ -36,7 +36,7 @@ try {
     prodEnv[trimmed.slice(0, eqIdx)] = trimmed.slice(eqIdx + 1);
   }
 } catch {
-  console.error("Could not read .env.production");
+  console.error("Could not read .env.prod");
   process.exit(1);
 }
 
@@ -49,7 +49,7 @@ if (!devUrl || !devSecretKey) {
   process.exit(1);
 }
 if (!prodUrl || !prodSecretKey) {
-  console.error("Missing prod Supabase credentials in .env.production");
+  console.error("Missing prod Supabase credentials in .env.prod");
   process.exit(1);
 }
 if (prodUrl === devUrl) {

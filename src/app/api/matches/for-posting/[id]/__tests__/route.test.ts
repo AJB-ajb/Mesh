@@ -23,33 +23,10 @@ vi.mock("@/lib/matching/posting-to-profile", () => ({
     mockCreateMatchRecordsForPosting(...args),
 }));
 
+import { buildChain, authedUser } from "tests/utils/supabase-mock";
+
 // Dynamic import for [id] path
 const { GET } = await import("@/app/api/matches/for-posting/[id]/route");
-
-const MOCK_USER = { id: "user-1", email: "a@b.com" };
-
-function authedUser() {
-  mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
-}
-
-/** Chainable Supabase query mock */
-function chain(finalValue: { data: unknown; error: unknown }) {
-  const self: Record<string, unknown> = {};
-  for (const m of [
-    "select",
-    "insert",
-    "update",
-    "delete",
-    "eq",
-    "single",
-    "maybeSingle",
-  ]) {
-    self[m] = vi.fn(() => self);
-  }
-  self.single = vi.fn(() => Promise.resolve(finalValue));
-  self.then = (resolve: (v: unknown) => void) => resolve(finalValue);
-  return self;
-}
 
 const makeReq = () =>
   new Request("http://localhost/api/matches/for-posting/posting-1");
@@ -68,9 +45,9 @@ describe("GET /api/matches/for-posting/[id]", () => {
   });
 
   it("returns 404 when posting not found", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
-      chain({ data: null, error: { message: "not found" } }),
+      buildChain({ data: null, error: { message: "not found" } }),
     );
 
     const res = await GET(makeReq(), routeCtx);
@@ -81,9 +58,9 @@ describe("GET /api/matches/for-posting/[id]", () => {
   });
 
   it("returns 403 when user is not the posting creator", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
-      chain({ data: { creator_id: "other-user" }, error: null }),
+      buildChain({ data: { creator_id: "other-user" }, error: null }),
     );
 
     const res = await GET(makeReq(), routeCtx);
@@ -94,9 +71,9 @@ describe("GET /api/matches/for-posting/[id]", () => {
   });
 
   it("returns matches successfully", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
-      chain({ data: { creator_id: "user-1" }, error: null }),
+      buildChain({ data: { creator_id: "user-1" }, error: null }),
     );
 
     const matches = [

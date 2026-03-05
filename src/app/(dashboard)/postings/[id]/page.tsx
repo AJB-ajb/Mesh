@@ -48,6 +48,7 @@ function PostingDetailInner() {
     hasApplied: fetchedHasApplied,
     waitlistPosition: fetchedWaitlistPosition,
     acceptedCount: fetchedAcceptedCount,
+    parentPosting,
     isLoading,
     mutate,
   } = usePostingDetail(postingId);
@@ -84,7 +85,7 @@ function PostingDetailInner() {
     handleDelete,
     handleExtendDeadline,
     handleRepost,
-  } = usePostingActions(postingId, posting, mutate);
+  } = usePostingActions(postingId, posting);
 
   // Application management logic
   const {
@@ -108,7 +109,6 @@ function PostingDetailInner() {
     fetchedMyApplication,
     fetchedWaitlistPosition,
     applications,
-    mutate,
     setError,
   );
 
@@ -158,6 +158,7 @@ function PostingDetailInner() {
             isAcceptedMember: isAcceptedMember ?? false,
             projectEnabled,
             acceptedCount,
+            parentPosting,
           }
         : null,
     [
@@ -177,6 +178,7 @@ function PostingDetailInner() {
       isAcceptedMember,
       projectEnabled,
       acceptedCount,
+      parentPosting,
     ],
   );
 
