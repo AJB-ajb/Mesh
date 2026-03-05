@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { labels } from "@/lib/labels";
 import { usePostingCoreContext } from "./posting-core-context";
 import { usePostingApplicationContext } from "./posting-application-context";
 import { PostingTeamCard } from "./posting-team-card";
@@ -32,6 +35,14 @@ export function PostingActivityTab() {
     <div className="grid gap-6 lg:grid-cols-3 mt-6">
       <div className="space-y-6 lg:col-span-2">
         <PostingTeamCard />
+
+        <Link
+          href={`/discover?context=${postingId}`}
+          className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+        >
+          {labels.coordination.browsePostings}
+          <ArrowRight className="h-4 w-4" />
+        </Link>
 
         {currentUserId && (
           <TeamSchedulingSection
