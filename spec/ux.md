@@ -62,6 +62,15 @@ Active tab is highlighted. Badge counts for unread items per tab. Hidden when th
 
 A "+" button fixed above the bottom bar (right side) linking to `/postings/new`. Hidden when keyboard is open.
 
+### Mobile Command Palette
+
+On mobile, slash commands are accessed via a **"/" button** near the editor (not the FAB "+"). Tapping it opens a **bottom sheet** with the full command list. This replaces the cursor-position dropdown used on desktop, which has viewport/keyboard positioning issues on mobile.
+
+- **"/" button** — positioned near the editor toolbar. Visually distinct from the FAB "+" (which creates new postings). Self-documenting: it hints that slash commands are available.
+- **Bottom sheet** — slides up from the bottom of the screen. Shows all available commands for the current context (posting vs. profile). Tapping a command executes it (opens overlay, inserts text, etc.). Dismissible by swiping down or tapping outside.
+- **Desktop** — typing "/" inline in the editor still triggers the cursor-position dropdown as before. The bottom sheet is mobile-only.
+- **Touch handling** — all interactive elements in the command system use `onPointerDown` (not `onMouseDown`) for cross-device compatibility. Menu items have minimum 44px touch targets.
+
 ### Simplified Mobile Header
 
 On mobile, the header shows only:
@@ -80,24 +89,24 @@ Unchanged from current behavior — collapsible sidebar with all navigation item
 
 ### Routes
 
-| Page                   | Route                   | Description                                                                            |
-| ---------------------- | ----------------------- | -------------------------------------------------------------------------------------- |
-| Landing                | `/`                     | Hero, features, CTA                                                                    |
-| Login                  | `/login`                | Email/password + OAuth (Google, GitHub, LinkedIn)                                      |
-| Sign up                | `/signup`               | Registration                                                                           |
-| Forgot password        | `/forgot-password`      | Recovery email                                                                         |
-| Reset password         | `/reset-password`       | Reset form                                                                             |
-| Onboarding             | `/onboarding`           | Persona selection (developer / posting creator)                                        |
-| Onboarding — profile   | `/onboarding/developer` | Voice/text profile setup                                                               |
-| Discover               | `/discover`             | Single feed of all postings, sorted by match score, with saved filter                  |
-| Posts                  | `/posts`                | Merged view: user's created, joined, applied, and completed postings with filter chips |
-| Create posting         | `/postings/new`         | Free-form input + AI extraction                                                        |
-| Posting detail         | `/postings/[id]`        | Tabbed view: Edit · Manage · Project                                                   |
-| Connections            | `/connections`          | Connections list with DMs, requests, add/QR                                            |
-| My Postings (redirect) | `/my-postings`          | Redirects to `/posts?filter=created`                                                   |
-| Active (redirect)      | `/active`               | Redirects to `/posts?filter=joined`                                                    |
-| Profile                | `/profile`              | User profile                                                                           |
-| Settings               | `/settings`             | User settings                                                                          |
+| Page                   | Route                   | Description                                                                                |
+| ---------------------- | ----------------------- | ------------------------------------------------------------------------------------------ |
+| Landing                | `/`                     | Hero, features, CTA                                                                        |
+| Login                  | `/login`                | Email/password + OAuth (Google, GitHub, LinkedIn)                                          |
+| Sign up                | `/signup`               | Registration                                                                               |
+| Forgot password        | `/forgot-password`      | Recovery email                                                                             |
+| Reset password         | `/reset-password`       | Reset form                                                                                 |
+| Onboarding             | `/onboarding`           | Persona selection (developer / posting creator)                                            |
+| Onboarding — profile   | `/onboarding/developer` | Voice/text profile setup                                                                   |
+| Discover               | `/discover`             | Single feed of all postings, sorted by match score, with saved filter                      |
+| Posts                  | `/posts`                | Merged view: user's created, joined, applied, and completed postings with filter chips     |
+| Create posting         | `/postings/new`         | Free-form input + AI extraction                                                            |
+| Posting detail         | `/postings/[id]`        | Tabbed view: Edit · Manage · Project                                                       |
+| Connections            | `/connections`          | Connections list with DMs, requests, add/QR                                                |
+| My Postings (redirect) | `/my-postings`          | Redirects to `/posts?filter=created`                                                       |
+| Active (redirect)      | `/active`               | Redirects to `/posts?filter=joined`                                                        |
+| Profile                | `/profile`              | Text-first profile editor with slash commands, extracted metadata, availability + calendar |
+| Settings               | `/settings`             | Connected accounts, notification preferences, sign out, danger zone (delete account)       |
 
 ### Removed pages
 
@@ -205,6 +214,51 @@ Chat-like split layout for the user's people network. Replaces Inbox.
   - **Actions:** + Add (search by name/email), QR Code (show/scan), Share profile link
 - **Right panel:** chat with selected connection (1:1 DMs only; project group chat lives in Active)
 
+### Profile (`/profile`)
+
+Text-first profile editor. Mirrors the posting creation paradigm: the primary input is a text field, structure is extracted.
+
+**Page structure:**
+
+1. **Header** — avatar + name + headline. Inline-editable (tap to edit).
+2. **Profile editor** — MeshEditor (same as posting creation). The user's bio/description is the primary content. Slash commands available for structured input. Speech input supported.
+3. **Extracted metadata** — displayed below the editor as read-only badges/tags. Skills (badges with level), location, languages, interests. These are derived from the profile text via LLM extraction, not inputted through forms. Tapping a badge opens the relevant picker for manual correction.
+4. **Availability + Calendar** — the one remaining interactive section. Shows the availability grid/calendar week view, with a "Connect calendar" button inline. Busy blocks from connected calendars overlay on the availability display. This section is always visible (not collapsed) because it's inherently visual and not text-derivable.
+5. **Connected accounts** — at the bottom. Shows linked OAuth providers (Google, GitHub, LinkedIn) with connect/disconnect.
+
+**No view/edit toggle.** The profile is always in an editable state. There is no separate "view mode" — the editor is the profile.
+
+**Profile slash commands:**
+
+| Command         | Type         | Description                                                                                                                                        |
+| --------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/skills`       | overlay      | Opens skill picker for structured skill selection with levels                                                                                      |
+| `/location`     | overlay      | Location search with geocoding                                                                                                                     |
+| `/availability` | overlay      | Opens availability editor (quick grid or detailed calendar)                                                                                        |
+| `/calendar`     | action       | Connect or manage calendar integrations (Google Calendar, iCal feeds)                                                                              |
+| `/update`       | inline input | NL instruction for AI-driven profile changes (e.g., `/update add Python at expert level`). LLM applies changes to profile text + extracted fields. |
+| `/format`       | immediate    | Auto-format profile text (markdown structure)                                                                                                      |
+| `/clean`        | immediate    | Auto-correct grammar and spelling                                                                                                                  |
+
+**Skills are text-derived.** Unlike the current form-based skill picker, skills are primarily extracted from the profile text. The `/skills` command and skill picker remain available for precision (adding specific skills, setting levels), but the default path is: write about yourself → skills are extracted. The structured skill data exists for matching but is not a form the user manages.
+
+**Calendar promotion.** Calendar connect is surfaced directly in the profile's availability section — not buried in Settings. When a calendar is connected, busy blocks appear as an overlay on the availability display. Calendar visibility settings (match_only, team_visible) are accessible here.
+
+### Settings (`/settings`)
+
+Slimmed down to configuration-only concerns. Calendar and profile-related features moved to Profile.
+
+- **Connected accounts** — OAuth providers (Google, GitHub, LinkedIn) with connect/disconnect/primary indicators
+- **GitHub sync** — sync status and extracted data (shown only when GitHub is connected)
+- **Notification preferences** — per-type, per-channel toggles
+- **Sign out** — regular action button (not in danger zone)
+- **Danger zone** — destructive actions only: delete account
+
+**Removed from Settings:**
+
+- Calendar settings → moved to Profile (availability + calendar section)
+- Account info display (email, persona) → moved to Profile header or kept minimal
+
 ### Notifications
 
 Not a page — lives in the **header bell icon** as a dropdown.
@@ -240,6 +294,9 @@ The posting and profile input paradigm is text-first. See [text_first_rewrite.md
 - **`mesh:` link syntax** for optional precision — `[📍 location](mesh:location?lat=...&lng=...)` embeds structured metadata in the text. Slash commands insert these; plain text is always fine too.
 - **`||hidden||` content** — text wrapped in `||` markers is hidden until acceptance. Solves the "send me the details" back-and-forth.
 - **`||?||` prompts** — questions wrapped in `||?` markers become interactive form elements on acceptance (LLM converts natural language to UI).
-- **Slash commands** as a command palette — content commands (`/time`, `/location`, `/skills`, `/template`, `/hidden`), setting commands (`/visibility`, `/size`, `/autoaccept`), and action commands (`/invite`, `/link`, `/repost`, `/format`, `/clean`). Tab completes, Enter executes.
+- **Slash commands** as a command palette — content commands (`/time`, `/location`, `/skills`, `/template`, `/hidden`), setting commands (`/visibility`, `/size`, `/autoaccept`), and action commands (`/invite`, `/link`, `/repost`, `/format`, `/clean`). Tab completes, Enter executes. On mobile, accessed via a "/" button that opens a bottom sheet (see [Mobile Command Palette](#mobile-command-palette)).
 - **Text tools**: Auto-format (✨) adds markdown structure, Auto-clean (🧹) corrects grammar/spelling. Both apply directly with inline undo.
+- **`/update` command** (profile context) — takes an NL instruction as inline argument (e.g., `/update add Python at expert level`) or opens an inline text input. LLM applies changes to the profile text and re-extracts structured fields.
 - **Quick chips and post-write nudges**: Deferred — focus on core flow first. Revisit when base editor and commands are polished.
+
+**Profile text-first parity.** The profile uses the same text-first paradigm as postings. The user's bio/description is the single source of truth — skills, location, languages, and interests are extracted from it. Form-based profile fields (fullName, headline, bio form, skills form, interests input, etc.) are deprecated in favor of the unified text editor with slash commands. Availability remains as an explicit interactive section because it is inherently visual.
