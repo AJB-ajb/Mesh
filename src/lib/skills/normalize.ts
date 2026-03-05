@@ -1,6 +1,7 @@
 /**
  * Shared skill normalization utility
  * Resolves a user-typed skill string to a tree node via:
+ * 0. Cache lookup (DB-backed, avoids repeated resolution)
  * 1. Exact name match (case-insensitive)
  * 2. Alias match
  * 3. LLM auto-add (optional, requires Gemini)
@@ -18,6 +19,23 @@ export type NormalizeResult = {
 };
 
 /**
+ * Writes a normalization result to the DB-backed cache.
+ * Uses upsert so repeated writes for the same input are idempotent.
+ */
+async function cacheNormalization(
+  supabase: SupabaseClient,
+  inputLower: string,
+  skillNodeId: string,
+): Promise<void> {
+  await supabase
+    .from("skill_normalization_cache")
+    .upsert(
+      { input_lower: inputLower, skill_node_id: skillNodeId },
+      { onConflict: "input_lower" },
+    );
+}
+
+/**
  * Normalizes a skill string to a skill_nodes row.
  * Returns null if the skill cannot be resolved (LLM not configured or LLM fails).
  *
@@ -33,7 +51,33 @@ export async function normalizeSkillString(
   const trimmed = skill.trim();
   if (!trimmed) return null;
 
+  const lowerInput = trimmed.toLowerCase();
   const { useLLM = true } = options;
+
+  // Step 0: Check normalization cache
+  const { data: cached } = await supabase
+    .from("skill_normalization_cache")
+    .select("skill_node_id")
+    .eq("input_lower", lowerInput)
+    .maybeSingle();
+
+  if (cached) {
+    // Verify the cached node still exists
+    const { data: node } = await supabase
+      .from("skill_nodes")
+      .select("id, name")
+      .eq("id", cached.skill_node_id)
+      .maybeSingle();
+
+    if (node) {
+      return { nodeId: node.id, name: node.name, created: false };
+    }
+    // Cached entry points to deleted node — delete stale cache entry and continue
+    await supabase
+      .from("skill_normalization_cache")
+      .delete()
+      .eq("input_lower", lowerInput);
+  }
 
   // Step 1: Exact name match (case-insensitive)
   const { data: nameMatch } = await supabase
@@ -44,6 +88,7 @@ export async function normalizeSkillString(
     .maybeSingle();
 
   if (nameMatch) {
+    await cacheNormalization(supabase, lowerInput, nameMatch.id);
     return { nodeId: nameMatch.id, name: nameMatch.name, created: false };
   }
 
@@ -60,6 +105,7 @@ export async function normalizeSkillString(
       ),
     );
     if (aliasMatch) {
+      await cacheNormalization(supabase, lowerInput, aliasMatch.id);
       return {
         nodeId: aliasMatch.id,
         name: aliasMatch.name,
@@ -176,6 +222,7 @@ ${treeText}`,
           }
         }
 
+        await cacheNormalization(supabase, lowerInput, mapped.id);
         return { nodeId: mapped.id, name: mapped.name, created: false };
       }
     }
@@ -229,6 +276,7 @@ ${treeText}`,
         // Sentry not available — skip logging
       }
 
+      await cacheNormalization(supabase, lowerInput, newNode.id);
       return { nodeId: newNode.id, name: newNode.name, created: true };
     }
   } catch {

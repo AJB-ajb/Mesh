@@ -1,8 +1,15 @@
+"use client";
+
+import { useEffect } from "react";
 import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { computeWeightedScore, formatScore } from "@/lib/matching/scoring";
 import type { ScoreBreakdown } from "@/lib/supabase/types";
 import { deriveSkillNames } from "@/lib/skills/derive";
+import {
+  subscribeToPostings,
+  unsubscribeChannel,
+} from "@/lib/supabase/realtime";
 
 type Posting = {
   id: string;
@@ -54,6 +61,14 @@ export interface QueryFilters {
   contextIdentifier?: string;
   /** Parent posting ID — scoped discover within a parent context. */
   parentPostingId?: string;
+  /** Text search query — matched against title and description via ilike. */
+  searchQuery?: string;
+  /** Visibility filter: "public", "private", or omit/"all" for no filter. */
+  visibility?: string;
+  /** Minimum team size — filters postings whose team_size_max >= this value. */
+  teamSizeMin?: number;
+  /** Maximum team size — filters postings whose team_size_min <= this value. */
+  teamSizeMax?: number;
 }
 
 type PostingsResult = {
@@ -142,6 +157,25 @@ async function fetchPostings(key: string): Promise<PostingsResult> {
     } else {
       query = query.is("parent_posting_id", null);
     }
+  }
+
+  // Text search filter — ilike on title and description
+  if (queryFilters.searchQuery) {
+    const q = `%${queryFilters.searchQuery}%`;
+    query = query.or(`title.ilike.${q},description.ilike.${q}`);
+  }
+
+  // Visibility filter at query level
+  if (queryFilters.visibility && queryFilters.visibility !== "all") {
+    query = query.eq("visibility", queryFilters.visibility);
+  }
+
+  // Team size range filters (cross-match: posting overlaps requested range)
+  if (queryFilters.teamSizeMin != null) {
+    query = query.gte("team_size_max", queryFilters.teamSizeMin);
+  }
+  if (queryFilters.teamSizeMax != null) {
+    query = query.lte("team_size_min", queryFilters.teamSizeMax);
   }
 
   const { data, error } = await query;
@@ -238,6 +272,17 @@ export function usePostings(
   const { data, error, isLoading, mutate } = useSWR(key, fetchPostings, {
     keepPreviousData: true,
   });
+
+  // Subscribe to real-time posting changes and invalidate SWR cache
+  useEffect(() => {
+    const channel = subscribeToPostings(() => {
+      mutate();
+    });
+
+    return () => {
+      unsubscribeChannel(channel);
+    };
+  }, [mutate]);
 
   return {
     postings: data?.postings ?? [],

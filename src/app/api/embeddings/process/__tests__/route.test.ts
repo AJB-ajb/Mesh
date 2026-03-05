@@ -11,6 +11,13 @@ vi.mock("@supabase/supabase-js", () => ({
   createClient: () => mockCreateClient(),
 }));
 
+// Mock supabase server client (used by withAuth cron mode)
+vi.mock("@/lib/supabase/server", () => ({
+  createClient: vi.fn(async () => ({
+    auth: { getUser: vi.fn() },
+  })),
+}));
+
 // Mock embeddings
 const mockGenerateEmbeddingsBatch = vi.fn();
 vi.mock("@/lib/ai/embeddings", () => ({
@@ -76,11 +83,14 @@ function makeRequest(headers: Record<string, string> = {}) {
   });
 }
 
+const routeContext = { params: Promise.resolve({}) };
+
 describe("POST /api/embeddings/process", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://localhost:54321");
     vi.stubEnv("SUPABASE_SECRET_KEY", "test-service-key");
+    vi.stubEnv("EMBEDDINGS_API_KEY", "test-embeddings-key");
     vi.stubEnv("OPENAI_API_KEY", "test-openai-key");
   });
 
@@ -90,7 +100,7 @@ describe("POST /api/embeddings/process", () => {
 
   it("returns 401 without auth header", async () => {
     const req = makeRequest();
-    const response = await POST(req);
+    const response = await POST(req, routeContext);
     const body = await response.json();
 
     expect(response.status).toBe(401);
@@ -99,7 +109,7 @@ describe("POST /api/embeddings/process", () => {
 
   it("returns 401 with invalid bearer token", async () => {
     const req = makeRequest({ authorization: "Bearer wrong-key" });
-    const response = await POST(req);
+    const response = await POST(req, routeContext);
     const body = await response.json();
 
     expect(response.status).toBe(401);
@@ -107,8 +117,6 @@ describe("POST /api/embeddings/process", () => {
   });
 
   it("allows calls with valid EMBEDDINGS_API_KEY", async () => {
-    vi.stubEnv("EMBEDDINGS_API_KEY", "test-embeddings-key");
-
     const profilesQuery = mockQuery({ data: [], error: null });
     const postingsQuery = mockQuery({ data: [], error: null });
 
@@ -119,31 +127,22 @@ describe("POST /api/embeddings/process", () => {
     });
 
     const req = makeRequest({ authorization: "Bearer test-embeddings-key" });
-    const response = await POST(req);
+    const response = await POST(req, routeContext);
     const body = await response.json();
 
     expect(response.status).toBe(200);
     expect(body.processed).toEqual({ profiles: 0, postings: 0 });
   });
 
-  it("allows calls with valid service role key", async () => {
-    const profilesQuery = mockQuery({ data: [], error: null });
-    const postingsQuery = mockQuery({ data: [], error: null });
-
-    let callCount = 0;
-    mockFrom.mockImplementation(() => {
-      callCount++;
-      return callCount === 1 ? profilesQuery : postingsQuery;
-    });
-
+  it("rejects calls with service role key (only EMBEDDINGS_API_KEY is accepted)", async () => {
     const req = makeRequest({
       authorization: "Bearer test-service-key",
     });
-    const response = await POST(req);
+    const response = await POST(req, routeContext);
     const body = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(body.processed).toEqual({ profiles: 0, postings: 0 });
+    expect(response.status).toBe(401);
+    expect(body.error.code).toBe("UNAUTHORIZED");
   });
 
   it("returns empty result when no pending items", async () => {
@@ -156,8 +155,8 @@ describe("POST /api/embeddings/process", () => {
       return callCount === 1 ? profilesQuery : postingsQuery;
     });
 
-    const req = makeRequest({ authorization: "Bearer test-service-key" });
-    const response = await POST(req);
+    const req = makeRequest({ authorization: "Bearer test-embeddings-key" });
+    const response = await POST(req, routeContext);
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -213,8 +212,8 @@ describe("POST /api/embeddings/process", () => {
     ];
     mockGenerateEmbeddingsBatch.mockResolvedValueOnce(mockEmbeddings);
 
-    const req = makeRequest({ authorization: "Bearer test-service-key" });
-    const response = await POST(req);
+    const req = makeRequest({ authorization: "Bearer test-embeddings-key" });
+    const response = await POST(req, routeContext);
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -277,8 +276,8 @@ describe("POST /api/embeddings/process", () => {
     ];
     mockGenerateEmbeddingsBatch.mockResolvedValueOnce(mockEmbeddings);
 
-    const req = makeRequest({ authorization: "Bearer test-service-key" });
-    const response = await POST(req);
+    const req = makeRequest({ authorization: "Bearer test-embeddings-key" });
+    const response = await POST(req, routeContext);
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -319,8 +318,8 @@ describe("POST /api/embeddings/process", () => {
       new Error("OpenAI API error: 500"),
     );
 
-    const req = makeRequest({ authorization: "Bearer test-service-key" });
-    const response = await POST(req);
+    const req = makeRequest({ authorization: "Bearer test-embeddings-key" });
+    const response = await POST(req, routeContext);
     const body = await response.json();
 
     expect(response.status).toBe(500);
@@ -360,8 +359,8 @@ describe("POST /api/embeddings/process", () => {
       return mockUpdateQuery({ data: null, error: null });
     });
 
-    const req = makeRequest({ authorization: "Bearer test-service-key" });
-    const response = await POST(req);
+    const req = makeRequest({ authorization: "Bearer test-embeddings-key" });
+    const response = await POST(req, routeContext);
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -410,8 +409,8 @@ describe("POST /api/embeddings/process", () => {
       new Array(1536).fill(0.1),
     ]);
 
-    const req = makeRequest({ authorization: "Bearer test-service-key" });
-    const response = await POST(req);
+    const req = makeRequest({ authorization: "Bearer test-embeddings-key" });
+    const response = await POST(req, routeContext);
     const body = await response.json();
 
     expect(response.status).toBe(200);
