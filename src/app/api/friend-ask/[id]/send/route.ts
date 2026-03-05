@@ -5,6 +5,7 @@ import {
   shouldNotify,
 } from "@/lib/notifications/preferences";
 import { sendNotification } from "@/lib/notifications/create";
+import { INVITE_RECEIVED } from "@/lib/notifications/events";
 
 /**
  * POST /api/friend-ask/[id]/send
@@ -74,7 +75,7 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
         {
           userId: friendId,
           type: "sequential_invite",
-          title: "Invite Received",
+          title: INVITE_RECEIVED.title,
           body: `${senderName} wants you to join "${postingTitle}"`,
           relatedPostingId: friendAsk.posting_id,
           relatedUserId: user.id,
