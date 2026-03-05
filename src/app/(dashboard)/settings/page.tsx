@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, AlertCircle, Check } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { labels } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/client";
 import { useSettings } from "@/lib/hooks/use-settings";
@@ -14,7 +15,6 @@ import type {
   NotificationChannel,
   NotificationPreferences,
 } from "@/lib/notifications/preferences";
-import { CalendarSettingsCard } from "@/components/calendar/calendar-settings-card";
 import { AccountInfoCard } from "@/components/settings/account-info-card";
 import { ConnectedAccountsCard } from "@/components/settings/connected-accounts-card";
 import { GithubSyncCard } from "@/components/settings/github-sync-card";
@@ -152,23 +152,18 @@ function SettingsContent() {
         />
       )}
 
-      <CalendarSettingsCard
-        onError={(msg) => {
-          setError(msg);
-          setSuccess(null);
-        }}
-        onSuccess={(msg) => {
-          setSuccess(msg);
-          setError(null);
-        }}
-      />
-
       <NotificationPreferencesCard
         preferences={notifPrefs}
         onToggle={handleToggleNotification}
       />
 
-      <DangerZoneCard onSignOut={handleSignOut} />
+      <div className="flex justify-end">
+        <Button variant="outline" onClick={handleSignOut}>
+          {labels.common.signOut}
+        </Button>
+      </div>
+
+      <DangerZoneCard />
     </div>
   );
 }

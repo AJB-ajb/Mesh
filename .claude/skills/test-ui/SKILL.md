@@ -1,6 +1,6 @@
 ---
 name: test-ui
-description: "Browser-based UI testing for Mesh. Runs user-flow tests, visual/responsive checks, and multi-user scenarios against the dev server, producing structured bug reports. Use whenever someone says 'test the UI', 'run browser tests', 'QA the app', 'check the pages', 'visual regression', 'test mobile layout', 'run flow tests', or 'test the posting flow'."
+description: "Browser-based UI testing for Mesh. Runs user-flow tests, visual/responsive checks, and multi-user scenarios against a local server (production build by default), producing structured bug reports. Use whenever someone says 'test the UI', 'run browser tests', 'QA the app', 'check the pages', 'visual regression', 'test mobile layout', 'run flow tests', or 'test the posting flow'."
 argument-hint: "[flows|visual|full] [mobile|desktop] [route-or-flow-name]"
 ---
 
@@ -8,28 +8,47 @@ argument-hint: "[flows|visual|full] [mobile|desktop] [route-or-flow-name]"
 
 ## 1. Mode Selection
 
-Parse `$ARGUMENTS` along three dimensions:
+Parse `$ARGUMENTS` along four dimensions:
 
-| Dimension    | Values                                                       | Default           |
-| ------------ | ------------------------------------------------------------ | ----------------- |
-| **Scope**    | `flows`, `visual`, `full`                                    | `full` (run both) |
-| **Viewport** | `mobile`, `desktop`                                          | both              |
-| **Target**   | route path or flow name (e.g. `/discover`, `authentication`) | all               |
+| Dimension    | Values                                                       | Default                   |
+| ------------ | ------------------------------------------------------------ | ------------------------- |
+| **Scope**    | `flows`, `visual`, `full`                                    | `full` (run both)         |
+| **Viewport** | `mobile`, `desktop`                                          | both                      |
+| **Target**   | route path or flow name (e.g. `/discover`, `authentication`) | all                       |
+| **Server**   | `dev`, `prod`                                                | `prod` (production build) |
 
 Examples:
 
-- `flows mobile` — flow tests at mobile viewport only
+- `flows mobile` — flow tests at mobile viewport only (production build)
 - `visual /profile` — visual tests on the profile page only
 - `full desktop connections` — all tests, desktop only, focused on connections flow/page
-- (empty) — full test suite, both viewports, all pages and flows
+- `dev flows` — flow tests using dev server instead of production build
+- (empty) — full test suite, both viewports, all pages and flows, production build
 
 ## 2. Prerequisites
 
 Before starting, verify each of these. If any fails, report it and stop.
 
-1. **Dev server running** at `http://localhost:3000` — navigate and confirm the page loads.
-   _Why_: All tests run against the local dev instance; without it nothing works.
-   **Caveat**: Slash commands (`/commands`) only work against a production build (`pnpm build && pnpm start`), not the dev server (`pnpm dev`). If testing slash command features, use a production build.
+1. **Server running** at `http://localhost:3000` — start it if needed, then navigate and confirm the page loads.
+
+   **Production mode (default):** Run a production build and start the server. This is faster, more stable, and representative of what users experience. Dev mode suffers from slow on-demand compilation, React development warnings, and broken slash commands — all of which degrade automated testing.
+
+   ```bash
+   # Build (takes ~30–60s, one-time per session)
+   pnpm build
+   # Start production server in background
+   pnpm start &
+   ```
+
+   **Dev mode (when `dev` flag is set):** Use `pnpm dev` instead. Only use this when you specifically need to test dev-mode behavior (HMR, dev warnings, etc.).
+
+   ```bash
+   pnpm dev &
+   ```
+
+   **If a server is already running on port 3000:** Check whether it's a dev or production server. If it matches the requested mode, reuse it. Otherwise, inform the user and ask whether to restart.
+
+   _Why_: Production builds load 3–5x faster, produce no compilation delays, and avoid React StrictMode double-renders that confuse element detection. This makes automated test sessions significantly more reliable.
 
 2. **Browser automation available** — Claude-in-Chrome MCP tools respond.
    _Why_: The skill drives the browser programmatically via MCP.
@@ -265,7 +284,7 @@ After all tests complete, generate a report file:
 ## Test Environment
 
 - **Browser**: Chrome (via Claude-in-Chrome)
-- **Dev server**: localhost:3000
+- **Server**: production build | dev server (localhost:3000)
 - **Date**: YYYY-MM-DD
 ```
 

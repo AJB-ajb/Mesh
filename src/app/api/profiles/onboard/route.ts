@@ -32,13 +32,9 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     return apiError("INTERNAL", "Failed to save profile", 500);
   }
 
-  const { error: authUpdateError } = await supabase.auth.updateUser({
+  await supabase.auth.updateUser({
     data: { profile_completed: true },
   });
-
-  if (authUpdateError) {
-    console.error("Failed to mark profile as completed:", authUpdateError);
-  }
 
   return apiSuccess({ success: true }, 201);
 });

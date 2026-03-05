@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthContext } from "@/lib/api/with-auth";
 import { apiError, apiSuccess } from "@/lib/errors";
 
 /**
@@ -10,19 +10,10 @@ import { apiError, apiSuccess } from "@/lib/errors";
  * Performance: uses a single aggregated query for child counts instead of
  * N individual COUNT queries (one per non-leaf child).
  */
-export async function GET(request: Request) {
-  const supabase = await createClient();
+export const GET = withAuth(async (req: Request, ctx: AuthContext) => {
+  const { supabase } = ctx;
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return apiError("UNAUTHORIZED", "Unauthorized", 401);
-  }
-
-  const { searchParams } = new URL(request.url);
+  const { searchParams } = new URL(req.url);
   const parentId = searchParams.get("parentId");
 
   // Fetch direct children
@@ -97,4 +88,4 @@ export async function GET(request: Request) {
   }
 
   return apiSuccess({ children: results, parentPath });
-}
+});

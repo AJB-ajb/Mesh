@@ -50,10 +50,12 @@ function PostsContent() {
       {/* Page header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
             {labels.posts.title}
           </h1>
-          <p className="mt-1 text-muted-foreground">{labels.posts.subtitle}</p>
+          <p className="mt-1 hidden md:block text-muted-foreground">
+            {labels.posts.subtitle}
+          </p>
         </div>
         <Button asChild className="hidden md:inline-flex">
           <Link href="/postings/new">
@@ -64,14 +66,14 @@ function PostsContent() {
       </div>
 
       {/* Filter chips */}
-      <div className="flex gap-2 overflow-x-auto pb-1 -mb-1 scrollbar-none">
+      <div className="flex gap-3 overflow-x-auto scrollbar-none">
         {FILTERS.map((filter) => (
           <button
             key={filter}
             type="button"
             onClick={() => handleFilterChange(filter)}
             className={cn(
-              "inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+              "inline-flex items-center whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors",
               activeFilter === filter
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground hover:bg-muted/80",

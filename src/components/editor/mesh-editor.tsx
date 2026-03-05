@@ -40,6 +40,7 @@ export const MeshEditor = memo(function MeshEditor({
 }: MeshEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const isSyncingRef = useRef(false);
 
   // Stable callback refs (avoid re-creating the editor on callback changes)
   const onChangeRef = useRef(onChange);
@@ -99,7 +100,7 @@ export const MeshEditor = memo(function MeshEditor({
     });
 
     const updateListener = EditorView.updateListener.of((update) => {
-      if (update.docChanged) {
+      if (update.docChanged && !isSyncingRef.current) {
         const md = update.state.doc.toString();
         onChangeRef.current?.(md);
       }
@@ -156,9 +157,11 @@ export const MeshEditor = memo(function MeshEditor({
       lastExternalContent.current = content;
       const currentDoc = view.state.doc.toString();
       if (content !== currentDoc) {
+        isSyncingRef.current = true;
         view.dispatch({
           changes: { from: 0, to: view.state.doc.length, insert: content },
         });
+        isSyncingRef.current = false;
       }
     }
   }, [content]);

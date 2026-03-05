@@ -2,16 +2,17 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import type { KeyedMutator } from "swr";
+import { useSWRConfig } from "swr";
 
 import { createClient } from "@/lib/supabase/client";
 import type {
   PostingDetail,
   PostingFormState,
-  PostingDetailData,
 } from "@/lib/hooks/use-posting-detail";
 import { usePostingAiUpdate } from "@/lib/hooks/use-posting-ai-update";
 import { useAutoSave } from "@/lib/hooks/use-auto-save";
+import { apiMutate } from "@/lib/swr/api-mutate";
+import { cacheKeys } from "@/lib/swr/keys";
 import type { RecurringWindow } from "@/lib/types/availability";
 
 /**
@@ -43,6 +44,7 @@ function postingToForm(
     maxDistanceKm: posting.max_distance_km?.toString() || "",
     tags: posting.tags?.join(", ") || "",
     contextIdentifier: posting.context_identifier || "",
+    parentPostingId: "",
     skillLevelMin: "",
     autoAccept: posting.auto_accept ? "true" : "false",
     availabilityMode:
@@ -58,9 +60,9 @@ function postingToForm(
 export function usePostingActions(
   postingId: string,
   posting: PostingDetail | null,
-  mutate: KeyedMutator<PostingDetailData>,
 ) {
   const router = useRouter();
+  const { mutate } = useSWRConfig();
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExtending, setIsExtending] = useState(false);
@@ -86,6 +88,7 @@ export function usePostingActions(
     maxDistanceKm: "",
     tags: "",
     contextIdentifier: "",
+    parentPostingId: "",
     skillLevelMin: "",
     autoAccept: "false",
     availabilityMode: "flexible",
@@ -124,27 +127,22 @@ export function usePostingActions(
   }, [posting, postingId]);
 
   const { isApplyingUpdate, applyFreeFormUpdate, undoLastUpdate } =
-    usePostingAiUpdate(postingId, form, posting?.source_text ?? null, mutate);
+    usePostingAiUpdate(postingId, form, posting?.source_text ?? null);
 
   const handleFormChange = (field: keyof PostingFormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     triggerSave();
   };
 
-  // Auto-save via PATCH
+  // Auto-save via PATCH — uses apiMutate but re-throws for useAutoSave error handling
   const saveFn = useCallback(async () => {
-    const res = await fetch(`/api/postings/${postingId}`, {
+    await apiMutate(`/api/postings/${postingId}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: form,
+      errorFallback: "Failed to update posting.",
     });
 
-    if (!res.ok) {
-      const body = await res.json();
-      throw new Error(body.error?.message || "Failed to update posting.");
-    }
-
-    mutate();
+    mutate(cacheKeys.posting(postingId));
   }, [postingId, form, mutate]);
 
   const { saveStatus, triggerSave } = useAutoSave({ saveFn });
@@ -160,20 +158,17 @@ export function usePostingActions(
     setIsDeleting(true);
 
     try {
-      const res = await fetch(`/api/postings/${postingId}`, {
+      await apiMutate(`/api/postings/${postingId}`, {
         method: "DELETE",
+        successToast: "postingDeleted",
+        errorFallback: "Failed to delete posting.",
       });
 
-      if (!res.ok) {
-        const body = await res.json();
-        setError(body.error?.message || "Failed to delete posting.");
-        setIsDeleting(false);
-        return;
-      }
-
       router.push("/posts");
-    } catch {
-      setError("Failed to delete posting. Please try again.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to delete posting.",
+      );
       setIsDeleting(false);
     }
   };
@@ -183,23 +178,19 @@ export function usePostingActions(
     setError(null);
 
     try {
-      const res = await fetch(`/api/postings/${postingId}/extend-deadline`, {
+      await apiMutate(`/api/postings/${postingId}/extend-deadline`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ days }),
+        body: { days },
+        successToast: "postingExtended",
+        errorFallback: "Failed to extend deadline.",
       });
 
-      if (!res.ok) {
-        const body = await res.json();
-        setError(body.error?.message || "Failed to extend deadline.");
-        setIsExtending(false);
-        return;
-      }
-
       setIsExtending(false);
-      mutate();
-    } catch {
-      setError("Failed to extend deadline. Please try again.");
+      mutate(cacheKeys.posting(postingId));
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to extend deadline.",
+      );
       setIsExtending(false);
     }
   };
@@ -209,23 +200,17 @@ export function usePostingActions(
     setError(null);
 
     try {
-      const res = await fetch(`/api/postings/${postingId}/repost`, {
+      await apiMutate(`/api/postings/${postingId}/repost`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ days: 7 }),
+        body: { days: 7 },
+        successToast: "postingReposted",
+        errorFallback: "Failed to repost.",
       });
 
-      if (!res.ok) {
-        const body = await res.json();
-        setError(body.error?.message || "Failed to repost.");
-        setIsReposting(false);
-        return;
-      }
-
       setIsReposting(false);
-      mutate();
-    } catch {
-      setError("Failed to repost. Please try again.");
+      mutate(cacheKeys.posting(postingId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to repost.");
       setIsReposting(false);
     }
   };

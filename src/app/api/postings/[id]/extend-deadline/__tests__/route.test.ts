@@ -12,23 +12,9 @@ vi.mock("@/lib/supabase/server", () => ({
   })),
 }));
 
+import { buildChain, authedUser } from "tests/utils/supabase-mock";
+
 const { PATCH } = await import("@/app/api/postings/[id]/extend-deadline/route");
-
-const MOCK_USER = { id: "user-1", email: "a@b.com" };
-
-function authedUser() {
-  mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
-}
-
-/** Chainable Supabase query mock */
-function buildChain(resolveValue: { data: unknown; error: unknown }) {
-  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
-  chain.select = vi.fn().mockReturnValue(chain);
-  chain.update = vi.fn().mockReturnValue(chain);
-  chain.eq = vi.fn().mockReturnValue(chain);
-  chain.single = vi.fn().mockResolvedValue(resolveValue);
-  return chain;
-}
 
 function makeReq(body?: Record<string, unknown>) {
   return new Request(
@@ -56,7 +42,7 @@ describe("PATCH /api/postings/[id]/extend-deadline", () => {
   });
 
   it("returns 404 when posting not found", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
       buildChain({ data: null, error: { message: "not found" } }),
     );
@@ -69,7 +55,7 @@ describe("PATCH /api/postings/[id]/extend-deadline", () => {
   });
 
   it("returns 403 when user is not the creator", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
       buildChain({
         data: {
@@ -90,7 +76,7 @@ describe("PATCH /api/postings/[id]/extend-deadline", () => {
   });
 
   it("returns 400 when posting is not expired", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
       buildChain({
         data: {
@@ -111,7 +97,7 @@ describe("PATCH /api/postings/[id]/extend-deadline", () => {
   });
 
   it("extends deadline of an expired posting successfully", async () => {
-    authedUser();
+    authedUser(mockGetUser);
 
     const expiredPosting = {
       id: "posting-1",
@@ -141,7 +127,7 @@ describe("PATCH /api/postings/[id]/extend-deadline", () => {
   });
 
   it("returns 500 when update fails", async () => {
-    authedUser();
+    authedUser(mockGetUser);
 
     const expiredPosting = {
       id: "posting-1",

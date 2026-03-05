@@ -38,12 +38,17 @@ export interface UseEditorSlashCommandsReturn {
   closeMenu: (view: EditorView | null) => void;
   /** Handle overlay result -- inserts text at the editor cursor */
   handleOverlayResult: (view: EditorView, text: string) => void;
+  /** Open the command menu programmatically (e.g. from "/" trigger button) */
+  openMenu: () => void;
+  /** All commands available for the current context */
+  contextCommands: SlashCommand[];
 }
 
 /** Map of content command names to the text they insert at cursor. */
 const CONTENT_INSERTS: Record<string, { text: string; cursorOffset: number }> =
   {
     hidden: { text: "||\n\n||", cursorOffset: 3 },
+    question: { text: "||? \n||", cursorOffset: 4 },
     size: { text: "\u{1F465} 3 people", cursorOffset: 10 },
   };
 
@@ -124,6 +129,17 @@ export function useEditorSlashCommands(
     setActiveOverlay(null);
   }, []);
 
+  const openMenu = useCallback(() => {
+    setMenuState({
+      isOpen: true,
+      query: "",
+      commands: contextCommands,
+      selectedIndex: 0,
+      from: 0,
+      to: 0,
+    });
+  }, [contextCommands]);
+
   const selectCommandFromMenu = useCallback(
     (view: EditorView, command: SlashCommand) => {
       selectSlashCommand(view);
@@ -140,5 +156,7 @@ export function useEditorSlashCommands(
     closeOverlay,
     closeMenu,
     handleOverlayResult,
+    openMenu,
+    contextCommands,
   };
 }

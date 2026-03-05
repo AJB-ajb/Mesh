@@ -1,8 +1,11 @@
-import { test as setup } from "@playwright/test";
+import { test as setup, expect } from "@playwright/test";
 
 const authFile = "tests/.auth/user.json";
 
 setup("authenticate as test user", async ({ page }) => {
+  // Allow extra time for cold dev-server compilation
+  setup.setTimeout(60_000);
+
   const password = process.env.TEST_USER_PASSWORD;
   if (!password) {
     setup.skip();
@@ -10,9 +13,9 @@ setup("authenticate as test user", async ({ page }) => {
   }
 
   await page.goto("/login");
-  await page.fill('input[type="email"]', "ajb60721@gmail.com");
-  await page.fill('input[type="password"]', password);
-  await page.click('button[type="submit"]');
+  await page.locator('input[type="email"]').fill("ajb60721@gmail.com");
+  await page.locator('input[type="password"]').fill(password);
+  await page.locator('button[type="submit"]').click();
   await page.waitForURL("**/posts", {
     timeout: 30000,
     waitUntil: "domcontentloaded",

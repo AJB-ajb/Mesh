@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useEffect, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import useSWR from "swr";
 import { ArrowLeft, ChevronDown, X } from "lucide-react";
 import { toast } from "sonner";
 import type { EditorView } from "@codemirror/view";
@@ -20,6 +21,8 @@ import { transcribeAudio } from "@/lib/transcribe";
 import { useEditorSlashCommands } from "@/lib/hooks/use-editor-slash-commands";
 import { useMobileKeyboard } from "@/lib/hooks/use-mobile-keyboard";
 import { SlashCommandMenu } from "@/components/shared/slash-command-menu";
+import { MobileCommandSheet } from "@/components/shared/mobile-command-sheet";
+import { SlashTriggerButton } from "@/components/shared/slash-trigger-button";
 import { MarkdownToolbar } from "@/components/shared/markdown-toolbar";
 import {
   TimePickerOverlay,
@@ -79,17 +82,46 @@ function daysFromNow(days: number): string {
 }
 
 export default function NewPostingPage() {
+  return (
+    <Suspense>
+      <NewPostingPageInner />
+    </Suspense>
+  );
+}
+
+/** Fetch parent posting title for display */
+async function fetchParentTitle(key: string): Promise<string | null> {
+  const id = key.split("/").pop();
+  const res = await fetch(`/api/postings/${id}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.posting?.title ?? null;
+}
+
+function NewPostingPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const parentId = searchParams.get("parent") ?? "";
   const [text, setText] = useState("");
-  const [form, setForm] = useState<PostingFormState>(defaultFormState);
+  const [form, setForm] = useState<PostingFormState>({
+    ...defaultFormState,
+    parentPostingId: parentId,
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [editorFocused, setEditorFocused] = useState(false);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [invitedUsers, setInvitedUsers] = useState<InvitedUser[]>([]);
   const editorRef = useRef<EditorView | null>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
   const { keyboardVisible } = useMobileKeyboard();
+
+  // Fetch parent posting title when creating a child posting
+  const { data: parentTitle } = useSWR(
+    parentId ? `parent-title/${parentId}` : null,
+    fetchParentTitle,
+  );
 
   // Handle immediate commands (/format, /clean)
   const handleImmediateCommand = useCallback(
@@ -295,12 +327,25 @@ export default function NewPostingPage() {
     <div className="mx-auto max-w-2xl space-y-4 pb-20">
       {/* Back link */}
       <Link
-        href="/posts"
+        href={parentId ? `/postings/${parentId}` : "/posts"}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        {labels.postingCreation.backButton}
+        {parentId ? "Back to group" : labels.postingCreation.backButton}
       </Link>
+
+      {/* Parent context header */}
+      {parentId && parentTitle && (
+        <p className="text-sm text-muted-foreground">
+          Posting in:{" "}
+          <Link
+            href={`/postings/${parentId}`}
+            className="font-medium text-foreground hover:underline"
+          >
+            {parentTitle}
+          </Link>
+        </p>
+      )}
 
       {error && (
         <p
@@ -538,6 +583,21 @@ export default function NewPostingPage() {
         // eslint-disable-next-line react-hooks/refs -- stable ref passed as prop
         editor={editorRef.current}
         visible={keyboardVisible && editorFocused}
+      />
+
+      {/* Mobile command sheet + trigger button */}
+      <SlashTriggerButton onClick={() => setMobileSheetOpen(true)} />
+      <MobileCommandSheet
+        open={mobileSheetOpen}
+        commands={slash.contextCommands}
+        onSelect={(cmd) => {
+          setMobileSheetOpen(false);
+          const view = editorRef.current;
+          if (view) {
+            slash.selectCommand(view, cmd);
+          }
+        }}
+        onClose={() => setMobileSheetOpen(false)}
       />
     </div>
   );

@@ -2,6 +2,12 @@ import { withAuth } from "@/lib/api/with-auth";
 import { notifyIfPreferred } from "@/lib/api/notify-if-preferred";
 import { markPostingFilledIfFull } from "@/lib/api/posting-fulfillment";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
+import {
+  getPosting,
+  getApplicationForPosting,
+  createApplication,
+  countApplicationsByStatus,
+} from "@/lib/data";
 
 /**
  * POST /api/applications
@@ -12,9 +18,10 @@ import { apiSuccess, AppError, parseBody } from "@/lib/errors";
  *   - filled → "waitlisted"
  */
 export const POST = withAuth(async (req, { user, supabase }) => {
-  const { posting_id, cover_message } = await parseBody<{
+  const { posting_id, cover_message, responses } = await parseBody<{
     posting_id?: string;
     cover_message?: string;
+    responses?: Record<string, unknown>;
   }>(req);
 
   if (!posting_id || typeof posting_id !== "string") {
@@ -22,13 +29,9 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   }
 
   // Fetch the posting
-  const { data: posting, error: postingError } = await supabase
-    .from("postings")
-    .select("id, creator_id, mode, status, auto_accept, team_size_max, title")
-    .eq("id", posting_id)
-    .single();
+  const posting = await getPosting(supabase, posting_id);
 
-  if (postingError || !posting) {
+  if (!posting) {
     throw new AppError("NOT_FOUND", "Posting not found", 404);
   }
 
@@ -47,12 +50,11 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   }
 
   // Check for existing application to prevent duplicates
-  const { data: existing } = await supabase
-    .from("applications")
-    .select("id, status")
-    .eq("posting_id", posting_id)
-    .eq("applicant_id", user.id)
-    .maybeSingle();
+  const existing = await getApplicationForPosting(
+    supabase,
+    posting_id,
+    user.id,
+  );
 
   if (existing) {
     throw new AppError(
@@ -82,20 +84,13 @@ export const POST = withAuth(async (req, { user, supabase }) => {
       : null;
 
   // Create the application
-  const { data: application, error: insertError } = await supabase
-    .from("applications")
-    .insert({
-      posting_id,
-      applicant_id: user.id,
-      cover_message: effectiveCoverMessage,
-      status: initialStatus,
-    })
-    .select()
-    .single();
-
-  if (insertError) {
-    throw new AppError("INTERNAL", "Failed to create application", 500);
-  }
+  const application = await createApplication(supabase, {
+    posting_id,
+    applicant_id: user.id,
+    cover_message: effectiveCoverMessage,
+    status: initialStatus,
+    ...(responses && typeof responses === "object" ? { responses } : {}),
+  });
 
   // --- Notifications ---
 
@@ -141,12 +136,12 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   // Compute waitlist position if waitlisted
   let waitlistPosition: number | null = null;
   if (initialStatus === "waitlisted") {
-    const { count } = await supabase
-      .from("applications")
-      .select("*", { count: "exact", head: true })
-      .eq("posting_id", posting_id)
-      .eq("status", "waitlisted");
-    waitlistPosition = count ?? 1;
+    const count = await countApplicationsByStatus(
+      supabase,
+      posting_id,
+      "waitlisted",
+    );
+    waitlistPosition = count || 1;
   }
 
   return apiSuccess(

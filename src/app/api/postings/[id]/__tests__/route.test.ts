@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { buildChain, authedUser } from "tests/utils/supabase-mock";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -13,23 +14,6 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 const { PATCH, DELETE } = await import("@/app/api/postings/[id]/route");
-
-const MOCK_USER = { id: "user-1", email: "a@b.com" };
-
-function authedUser() {
-  mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
-}
-
-function buildChain(resolveValue: { data: unknown; error: unknown }) {
-  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
-  chain.select = vi.fn().mockReturnValue(chain);
-  chain.update = vi.fn().mockReturnValue(chain);
-  chain.insert = vi.fn().mockResolvedValue(resolveValue);
-  chain.delete = vi.fn().mockReturnValue(chain);
-  chain.eq = vi.fn().mockReturnValue(chain);
-  chain.single = vi.fn().mockResolvedValue(resolveValue);
-  return chain;
-}
 
 function makePatchReq(body?: Record<string, unknown>) {
   return new Request("http://localhost/api/postings/posting-1", {
@@ -60,7 +44,7 @@ describe("PATCH /api/postings/[id]", () => {
   });
 
   it("returns 404 when posting not found", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
       buildChain({ data: null, error: { message: "not found" } }),
     );
@@ -70,7 +54,7 @@ describe("PATCH /api/postings/[id]", () => {
   });
 
   it("returns 403 when user is not the creator", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
       buildChain({
         data: { id: "posting-1", creator_id: "other-user" },
@@ -83,7 +67,7 @@ describe("PATCH /api/postings/[id]", () => {
   });
 
   it("updates posting successfully", async () => {
-    authedUser();
+    authedUser(mockGetUser);
 
     const fetchChain = buildChain({
       data: { id: "posting-1", creator_id: "user-1" },
@@ -110,7 +94,7 @@ describe("PATCH /api/postings/[id]", () => {
   });
 
   it("syncs skills when selectedSkills provided", async () => {
-    authedUser();
+    authedUser(mockGetUser);
 
     const fetchChain = buildChain({
       data: { id: "posting-1", creator_id: "user-1" },
@@ -154,7 +138,7 @@ describe("DELETE /api/postings/[id]", () => {
   });
 
   it("returns 404 when posting not found", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
       buildChain({ data: null, error: { message: "not found" } }),
     );
@@ -164,7 +148,7 @@ describe("DELETE /api/postings/[id]", () => {
   });
 
   it("returns 403 when user is not the creator", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
       buildChain({
         data: { id: "posting-1", creator_id: "other-user" },
@@ -177,7 +161,7 @@ describe("DELETE /api/postings/[id]", () => {
   });
 
   it("deletes posting successfully", async () => {
-    authedUser();
+    authedUser(mockGetUser);
 
     const fetchChain = buildChain({
       data: { id: "posting-1", creator_id: "user-1" },

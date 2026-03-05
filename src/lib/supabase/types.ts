@@ -173,6 +173,7 @@ export interface Posting {
   availability_mode: "flexible" | "recurring" | "specific_dates";
   timezone: string | null;
   status: "open" | "closed" | "filled" | "expired" | "paused";
+  parent_posting_id: string | null;
   created_at: string;
   updated_at: string;
   expires_at: string;
@@ -205,6 +206,7 @@ export interface PostingInsert {
   timezone?: string | null;
   embedding?: number[] | null;
   status?: "open" | "closed" | "filled" | "expired" | "paused";
+  parent_posting_id?: string | null;
   created_at?: string;
   updated_at?: string;
   expires_at: string;
@@ -237,6 +239,7 @@ export interface PostingUpdate {
   timezone?: string | null;
   embedding?: number[] | null;
   status?: "open" | "closed" | "filled" | "expired" | "paused";
+  parent_posting_id?: string | null;
   created_at?: string;
   updated_at?: string;
   expires_at?: string;

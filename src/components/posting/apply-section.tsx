@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Clock, Loader2, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -7,9 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { labels } from "@/lib/labels";
 import { usePostingCoreContext } from "./posting-core-context";
 import { usePostingApplicationContext } from "./posting-application-context";
+import { SmartAcceptanceCard } from "./smart-acceptance-card";
 
 export function ApplySection() {
-  const { posting } = usePostingCoreContext();
+  const { posting, postingId } = usePostingCoreContext();
   const {
     hasApplied,
     myApplication,
@@ -23,6 +25,8 @@ export function ApplySection() {
     onApply,
     onWithdraw,
   } = usePostingApplicationContext();
+
+  const [showAcceptanceCard, setShowAcceptanceCard] = useState(false);
 
   if (hasApplied) {
     return (
@@ -67,11 +71,11 @@ export function ApplySection() {
     );
   }
 
-  // Filled posting: show waitlist CTA
+  // Filled posting: show waitlist CTA (no acceptance card for waitlist)
   if (posting.status === "filled") {
     if (posting.auto_accept) {
       return (
-        <Button onClick={onApply} disabled={isApplying}>
+        <Button onClick={() => onApply()} disabled={isApplying}>
           {isApplying ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -99,7 +103,7 @@ export function ApplySection() {
             className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
           <div className="flex gap-2">
-            <Button onClick={onApply} disabled={isApplying}>
+            <Button onClick={() => onApply()} disabled={isApplying}>
               {isApplying ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -137,25 +141,34 @@ export function ApplySection() {
     );
   }
 
-  // Auto-accept: instant join, no cover message form
+  // --- Open posting: show acceptance card flow ---
+
+  // Acceptance card is shown
+  if (showAcceptanceCard) {
+    return (
+      <SmartAcceptanceCard
+        postingId={postingId}
+        onSubmit={async (responses) => {
+          await onApply(responses);
+          setShowAcceptanceCard(false);
+        }}
+        onCancel={() => setShowAcceptanceCard(false)}
+        isSubmitting={isApplying}
+      />
+    );
+  }
+
+  // Auto-accept: show Join button that opens acceptance card
   if (posting.auto_accept) {
     return (
-      <Button onClick={onApply} disabled={isApplying}>
-        {isApplying ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {labels.postingDetail.joining}
-          </>
-        ) : (
-          <>
-            <Send className="h-4 w-4" />
-            {labels.joinRequest.action.join}
-          </>
-        )}
+      <Button onClick={() => setShowAcceptanceCard(true)} disabled={isApplying}>
+        <Send className="h-4 w-4" />
+        {labels.joinRequest.action.join}
       </Button>
     );
   }
 
+  // Manual review: show cover message form then acceptance card
   if (showApplyForm) {
     return (
       <div className="flex flex-col gap-2 w-full max-w-md">
@@ -167,18 +180,12 @@ export function ApplySection() {
           className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         />
         <div className="flex gap-2">
-          <Button onClick={onApply} disabled={isApplying}>
-            {isApplying ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {labels.postingDetail.requestingToJoin}
-              </>
-            ) : (
-              <>
-                <Send className="h-4 w-4" />
-                {labels.joinRequest.action.requestToJoin}
-              </>
-            )}
+          <Button
+            onClick={() => setShowAcceptanceCard(true)}
+            disabled={isApplying}
+          >
+            <Send className="h-4 w-4" />
+            {labels.joinRequest.action.requestToJoin}
           </Button>
           <Button variant="outline" onClick={onHideApplyForm}>
             {labels.common.cancel}

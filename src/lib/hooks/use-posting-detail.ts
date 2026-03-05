@@ -1,4 +1,5 @@
 import useSWR from "swr";
+import { cacheKeys } from "@/lib/swr/keys";
 import { createClient } from "@/lib/supabase/client";
 import type { ScoreBreakdown, Profile } from "@/lib/supabase/types";
 import type { SelectedPostingSkill } from "@/lib/types/skill";
@@ -31,6 +32,7 @@ export type PostingDetail = {
   max_distance_km: number | null;
   tags?: string[];
   context_identifier?: string | null;
+  parent_posting_id?: string | null;
   auto_accept: boolean;
   availability_mode?: string | null;
   timezone?: string | null;
@@ -51,6 +53,7 @@ export type Application = {
   cover_message: string | null;
   created_at: string;
   applicant_id: string;
+  responses?: Record<string, unknown> | null;
   profiles?: {
     full_name: string | null;
     headline: string | null;
@@ -83,6 +86,7 @@ export type PostingDetailData = {
   hasApplied: boolean;
   waitlistPosition: number | null;
   acceptedCount: number | null;
+  parentPosting: { id: string; title: string } | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -158,7 +162,19 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
       hasApplied: false,
       waitlistPosition: null,
       acceptedCount: null,
+      parentPosting: null,
     };
+  }
+
+  // Fetch parent posting title if this is a child posting
+  let parentPosting: { id: string; title: string } | null = null;
+  if (posting.parent_posting_id) {
+    const { data: pp } = await supabase
+      .from("postings")
+      .select("id, title")
+      .eq("id", posting.parent_posting_id)
+      .single();
+    if (pp) parentPosting = pp;
   }
 
   const isOwner = currentUserId === posting.creator_id;
@@ -326,6 +342,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
     hasApplied,
     waitlistPosition,
     acceptedCount,
+    parentPosting,
   };
 }
 
@@ -335,7 +352,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
 
 export function usePostingDetail(postingId: string) {
   const { data, error, isLoading, mutate } = useSWR(
-    postingId ? `posting-detail/${postingId}` : null,
+    postingId ? cacheKeys.posting(postingId) : null,
     fetchPostingDetail,
   );
 
@@ -351,6 +368,7 @@ export function usePostingDetail(postingId: string) {
     hasApplied: data?.hasApplied ?? false,
     waitlistPosition: data?.waitlistPosition ?? null,
     acceptedCount: data?.acceptedCount ?? null,
+    parentPosting: data?.parentPosting ?? null,
     error,
     isLoading,
     mutate,

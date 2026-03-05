@@ -6,6 +6,7 @@
 
 import { randomBytes } from "crypto";
 import { NextResponse, type NextRequest } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { createClient } from "@/lib/supabase/server";
 import { buildAuthUrl, OAUTH_STATE_COOKIE } from "@/lib/calendar/google";
 
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error("Google authorize error:", error);
+    Sentry.captureException(error);
     const message =
       error instanceof Error ? error.message : "Internal server error";
     return NextResponse.redirect(

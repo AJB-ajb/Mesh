@@ -11,37 +11,9 @@ vi.mock("@/lib/supabase/server", () => ({
   })),
 }));
 
+import { buildChain, authedUser } from "tests/utils/supabase-mock";
+
 import { POST } from "../[id]/send/route";
-
-const MOCK_USER = { id: "user-1", email: "a@b.com" };
-
-function chain(finalValue: { data: unknown; error: unknown }) {
-  const self: Record<string, unknown> = {};
-  const methods = [
-    "select",
-    "insert",
-    "update",
-    "delete",
-    "eq",
-    "or",
-    "in",
-    "limit",
-    "order",
-    "single",
-    "maybeSingle",
-  ];
-  for (const m of methods) {
-    self[m] = vi.fn(() => self);
-  }
-  self.single = vi.fn(() => Promise.resolve(finalValue));
-  self.maybeSingle = vi.fn(() => Promise.resolve(finalValue));
-  self.then = (resolve: (v: unknown) => void) => resolve(finalValue);
-  return self;
-}
-
-function authedUser() {
-  mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
-}
 
 function makeReq(url: string, init?: RequestInit) {
   return new Request(`http://localhost${url}`, init);
@@ -53,9 +25,9 @@ describe("POST /api/friend-ask/[id]/send", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("returns 404 when friend-ask not found", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
-      chain({ data: null, error: { message: "not found" } }),
+      buildChain({ data: null, error: { message: "not found" } }),
     );
 
     const res = await POST(
@@ -66,7 +38,7 @@ describe("POST /api/friend-ask/[id]/send", () => {
   });
 
   it("returns 403 when non-creator tries to send", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const fa = {
       id: "fa1",
       creator_id: "other-user",
@@ -74,7 +46,7 @@ describe("POST /api/friend-ask/[id]/send", () => {
       current_request_index: 0,
       status: "pending",
     };
-    mockFrom.mockReturnValue(chain({ data: fa, error: null }));
+    mockFrom.mockReturnValue(buildChain({ data: fa, error: null }));
 
     const res = await POST(
       makeReq("/api/friend-ask/fa1/send", { method: "POST" }),
@@ -86,7 +58,7 @@ describe("POST /api/friend-ask/[id]/send", () => {
   });
 
   it("returns 400 when friend-ask is not pending", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const fa = {
       id: "fa1",
       creator_id: "user-1",
@@ -94,7 +66,7 @@ describe("POST /api/friend-ask/[id]/send", () => {
       current_request_index: 0,
       status: "accepted",
     };
-    mockFrom.mockReturnValue(chain({ data: fa, error: null }));
+    mockFrom.mockReturnValue(buildChain({ data: fa, error: null }));
 
     const res = await POST(
       makeReq("/api/friend-ask/fa1/send", { method: "POST" }),
@@ -104,7 +76,7 @@ describe("POST /api/friend-ask/[id]/send", () => {
   });
 
   it("sends invite to current friend (first in list) with concurrent_invites=1", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const fa = {
       id: "fa1",
       creator_id: "user-1",
@@ -125,8 +97,8 @@ describe("POST /api/friend-ask/[id]/send", () => {
     let callCount = 0;
     mockFrom.mockImplementation(() => {
       callCount++;
-      if (callCount === 1) return chain({ data: fa, error: null });
-      return chain({ data: updated, error: null });
+      if (callCount === 1) return buildChain({ data: fa, error: null });
+      return buildChain({ data: updated, error: null });
     });
 
     const res = await POST(
@@ -141,7 +113,7 @@ describe("POST /api/friend-ask/[id]/send", () => {
   });
 
   it("uses sequential_invite notification type", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const fa = {
       id: "fa1",
       creator_id: "user-1",
@@ -154,7 +126,7 @@ describe("POST /api/friend-ask/[id]/send", () => {
       status: "pending",
     };
 
-    const insertChain = chain({ data: null, error: null });
+    const insertChain = buildChain({ data: null, error: null });
     let insertCalled = false;
 
     mockFrom.mockImplementation((table: string) => {
@@ -162,7 +134,7 @@ describe("POST /api/friend-ask/[id]/send", () => {
         insertCalled = true;
         return insertChain;
       }
-      return chain({ data: fa, error: null });
+      return buildChain({ data: fa, error: null });
     });
 
     const res = await POST(
@@ -174,7 +146,7 @@ describe("POST /api/friend-ask/[id]/send", () => {
   });
 
   it("marks as completed when index is past list length", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const fa = {
       id: "fa1",
       creator_id: "user-1",
@@ -190,8 +162,8 @@ describe("POST /api/friend-ask/[id]/send", () => {
     let callCount = 0;
     mockFrom.mockImplementation(() => {
       callCount++;
-      if (callCount === 1) return chain({ data: fa, error: null });
-      return chain({ data: updated, error: null });
+      if (callCount === 1) return buildChain({ data: fa, error: null });
+      return buildChain({ data: updated, error: null });
     });
 
     const res = await POST(
@@ -205,7 +177,7 @@ describe("POST /api/friend-ask/[id]/send", () => {
   });
 
   it("sends invites to N people at once (concurrent_invites: 3)", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const fa = {
       id: "fa1",
       creator_id: "user-1",
@@ -226,8 +198,8 @@ describe("POST /api/friend-ask/[id]/send", () => {
     let callCount = 0;
     mockFrom.mockImplementation(() => {
       callCount++;
-      if (callCount === 1) return chain({ data: fa, error: null });
-      return chain({ data: updated, error: null });
+      if (callCount === 1) return buildChain({ data: fa, error: null });
+      return buildChain({ data: updated, error: null });
     });
 
     const res = await POST(
@@ -241,7 +213,7 @@ describe("POST /api/friend-ask/[id]/send", () => {
   });
 
   it("skips declined users when filling concurrent slots", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const fa = {
       id: "fa1",
       creator_id: "user-1",
@@ -262,8 +234,8 @@ describe("POST /api/friend-ask/[id]/send", () => {
     let callCount = 0;
     mockFrom.mockImplementation(() => {
       callCount++;
-      if (callCount === 1) return chain({ data: fa, error: null });
-      return chain({ data: updated, error: null });
+      if (callCount === 1) return buildChain({ data: fa, error: null });
+      return buildChain({ data: updated, error: null });
     });
 
     const res = await POST(

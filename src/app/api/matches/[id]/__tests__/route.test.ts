@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { buildChain, authedUser } from "tests/utils/supabase-mock";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -14,21 +15,6 @@ vi.mock("@/lib/supabase/server", () => ({
 
 // Dynamic import for [id] path
 const { GET } = await import("@/app/api/matches/[id]/route");
-
-const MOCK_USER = { id: "user-1", email: "a@b.com" };
-
-function authedUser() {
-  mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
-}
-
-/** Chainable Supabase query mock */
-function buildChain(resolveValue: { data: unknown; error: unknown }) {
-  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
-  chain.select = vi.fn().mockReturnValue(chain);
-  chain.eq = vi.fn().mockReturnValue(chain);
-  chain.single = vi.fn().mockResolvedValue(resolveValue);
-  return chain;
-}
 
 const req = new Request("http://localhost/api/matches/match-1");
 const routeCtx = { params: Promise.resolve({ id: "match-1" }) };
@@ -46,7 +32,7 @@ describe("GET /api/matches/[id]", () => {
   });
 
   it("returns 404 when match not found", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
       buildChain({ data: null, error: { message: "not found" } }),
     );
@@ -59,7 +45,7 @@ describe("GET /api/matches/[id]", () => {
   });
 
   it("returns 403 when user has no access to match", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
       buildChain({
         data: {
@@ -85,7 +71,7 @@ describe("GET /api/matches/[id]", () => {
   });
 
   it("returns match details when user is the matched user", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const matchData = {
       id: "match-1",
       user_id: "user-1",
@@ -109,7 +95,7 @@ describe("GET /api/matches/[id]", () => {
   });
 
   it("returns match details when user is the posting creator", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const matchData = {
       id: "match-1",
       user_id: "other-user",

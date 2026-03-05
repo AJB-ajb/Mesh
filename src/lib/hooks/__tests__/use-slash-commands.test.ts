@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useSlashCommands } from "../use-slash-commands";
+import { SLASH_COMMANDS } from "@/lib/slash-commands/registry";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -96,7 +97,7 @@ describe("useSlashCommands", () => {
     });
 
     expect(result.current.menuOpen).toBe(true);
-    expect(result.current.filteredCommands.length).toBe(12);
+    expect(result.current.filteredCommands).toHaveLength(SLASH_COMMANDS.length);
   });
 
   it("opens menu when / is after whitespace", () => {
@@ -139,8 +140,8 @@ describe("useSlashCommands", () => {
     });
 
     expect(result.current.menuOpen).toBe(true);
-    // "ti" matches both "time" and "location" (substring match)
-    expect(result.current.filteredCommands.length).toBe(2);
+    // "ti" matches "time", "location", and "question" (substring match)
+    expect(result.current.filteredCommands.length).toBe(3);
     expect(result.current.filteredCommands.map((c) => c.name)).toContain(
       "time",
     );
@@ -180,7 +181,7 @@ describe("useSlashCommands", () => {
       result.current.onKeyDown(upEvent);
     });
 
-    expect(result.current.selectedIndex).toBe(11); // last index (12 commands)
+    expect(result.current.selectedIndex).toBe(SLASH_COMMANDS.length - 1);
   });
 
   it("Enter selects command and opens overlay for action type", () => {
