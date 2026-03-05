@@ -124,8 +124,17 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
   // Derive skills and selectedPostingSkills from join table
   let posting = rawPosting;
   if (rawPosting) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const psRows = (rawPosting.posting_skills as any[]) ?? [];
+    type PostingSkillRow = {
+      skill_id: string;
+      level_min: number | null;
+      skill_nodes: {
+        id: string;
+        name: string;
+        parent_id: string | null;
+        depth: number;
+      } | null;
+    };
+    const psRows = (rawPosting.posting_skills as PostingSkillRow[]) ?? [];
     const joinSkills = deriveSkillNames(psRows);
 
     // Build selectedPostingSkills for edit mode
@@ -137,8 +146,8 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
           "id" in ps.skill_nodes,
       )
       .map((ps) => ({
-        skillId: ps.skill_nodes.id as string,
-        name: ps.skill_nodes.name as string,
+        skillId: ps.skill_nodes!.id as string,
+        name: ps.skill_nodes!.name as string,
         path: [],
         levelMin: ps.level_min as number | null,
       }));

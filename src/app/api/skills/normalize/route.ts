@@ -1,5 +1,5 @@
 import { withAuth, type AuthContext } from "@/lib/api/with-auth";
-import { apiError, apiSuccess } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 import { SchemaType, type Schema } from "@google/generative-ai";
 import { generateStructuredJSON, isGeminiConfigured } from "@/lib/ai/gemini";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -51,7 +51,7 @@ const llmResponseSchema: Schema = {
 export const POST = withAuth(async (req: Request, ctx: AuthContext) => {
   const { user, supabase } = ctx;
 
-  const body = await req.json();
+  const body = await parseBody(req);
   const skill = (body.skill as string)?.trim();
 
   if (!skill || skill.length < 1) {
