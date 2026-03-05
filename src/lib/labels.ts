@@ -1303,6 +1303,7 @@ export const labels = {
     subtitle: "Your active postings",
     youCreated: "You created",
     youJoined: "You joined",
+    youApplied: "Requested",
     empty: "No active postings yet",
     emptyDescription:
       "Postings appear here once the minimum team size is reached.",
