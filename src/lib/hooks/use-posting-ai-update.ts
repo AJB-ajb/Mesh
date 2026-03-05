@@ -1,8 +1,7 @@
 "use client";
 
-import type { KeyedMutator } from "swr";
 import type { PostingFormState, ExtractedPosting } from "@/lib/types/posting";
-import type { PostingDetailData } from "./use-posting-detail";
+import { cacheKeys } from "@/lib/swr/keys";
 import { useAiUpdate, type AiUpdateConfig } from "./use-ai-update";
 
 // ---------------------------------------------------------------------------
@@ -98,13 +97,12 @@ export function usePostingAiUpdate(
   postingId: string,
   currentForm: PostingFormState,
   sourceText: string | null,
-  mutate: KeyedMutator<PostingDetailData>,
 ) {
   const config = buildPostingConfig(postingId);
   return useAiUpdate<PostingFormState, ExtractedPosting>(
     currentForm,
     sourceText,
-    mutate as KeyedMutator<unknown>,
+    cacheKeys.posting(postingId),
     config,
   );
 }

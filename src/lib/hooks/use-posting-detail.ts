@@ -1,4 +1,5 @@
 import useSWR from "swr";
+import { cacheKeys } from "@/lib/swr/keys";
 import { createClient } from "@/lib/supabase/client";
 import type { ScoreBreakdown, Profile } from "@/lib/supabase/types";
 import type { SelectedPostingSkill } from "@/lib/types/skill";
@@ -335,7 +336,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
 
 export function usePostingDetail(postingId: string) {
   const { data, error, isLoading, mutate } = useSWR(
-    postingId ? `posting-detail/${postingId}` : null,
+    postingId ? cacheKeys.posting(postingId) : null,
     fetchPostingDetail,
   );
 

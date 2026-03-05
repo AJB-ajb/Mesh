@@ -2,6 +2,19 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { defaultFormState, type ProfileFormState } from "@/lib/types/profile";
 
+// ---------------------------------------------------------------------------
+// Mocks
+// ---------------------------------------------------------------------------
+
+const mockMutate = vi.fn();
+vi.mock("swr", () => ({
+  useSWRConfig: () => ({ mutate: mockMutate }),
+}));
+
+vi.mock("sonner", () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}));
+
 import { useProfileSave } from "../use-profile-save";
 
 function createFakeEvent() {
@@ -38,10 +51,9 @@ describe("useProfileSave", () => {
   });
 
   it("starts with isSaving false and no error", () => {
-    const mutate = vi.fn();
     const onSuccess = vi.fn();
 
-    const { result } = renderHook(() => useProfileSave(mutate, onSuccess));
+    const { result } = renderHook(() => useProfileSave(onSuccess));
 
     expect(result.current.isSaving).toBe(false);
     expect(result.current.error).toBeNull();
@@ -56,10 +68,9 @@ describe("useProfileSave", () => {
         }),
     });
 
-    const mutate = vi.fn();
     const onSuccess = vi.fn();
 
-    const { result } = renderHook(() => useProfileSave(mutate, onSuccess));
+    const { result } = renderHook(() => useProfileSave(onSuccess));
 
     await act(async () => {
       await result.current.handleSubmit(createFakeEvent(), fakeForm);
@@ -78,10 +89,10 @@ describe("useProfileSave", () => {
       json: () => Promise.resolve({ success: true }),
     });
 
-    const mutate = vi.fn().mockResolvedValue(undefined);
+    mockMutate.mockResolvedValue(undefined);
     const onSuccess = vi.fn();
 
-    const { result } = renderHook(() => useProfileSave(mutate, onSuccess));
+    const { result } = renderHook(() => useProfileSave(onSuccess));
 
     await act(async () => {
       await result.current.handleSubmit(createFakeEvent(), fakeForm);
@@ -100,7 +111,7 @@ describe("useProfileSave", () => {
     expect(sentBody.locationMode).toBe("remote");
 
     expect(onSuccess).toHaveBeenCalledTimes(1);
-    expect(mutate).toHaveBeenCalledTimes(1);
+    expect(mockMutate).toHaveBeenCalledTimes(1);
     expect(result.current.isSaving).toBe(false);
     expect(result.current.error).toBeNull();
   });
@@ -112,10 +123,9 @@ describe("useProfileSave", () => {
         Promise.resolve({ error: { message: "Failed to save profile" } }),
     });
 
-    const mutate = vi.fn();
     const onSuccess = vi.fn();
 
-    const { result } = renderHook(() => useProfileSave(mutate, onSuccess));
+    const { result } = renderHook(() => useProfileSave(onSuccess));
 
     await act(async () => {
       await result.current.handleSubmit(createFakeEvent(), fakeForm);
