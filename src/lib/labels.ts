@@ -1860,6 +1860,15 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
+  // Coordination (nested postings)
+  // ---------------------------------------------------------------------------
+  coordination: {
+    scopedDiscoverTitle: (parentTitle: string) => `Discover in ${parentTitle}`,
+    browsePostings: "Browse postings",
+    backToGroup: "Back to group",
+  },
+
+  // ---------------------------------------------------------------------------
   // Posting card (unified)
   // ---------------------------------------------------------------------------
   postingCard: {
