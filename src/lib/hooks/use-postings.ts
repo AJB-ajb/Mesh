@@ -1,8 +1,15 @@
+"use client";
+
+import { useEffect } from "react";
 import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { computeWeightedScore, formatScore } from "@/lib/matching/scoring";
 import type { ScoreBreakdown } from "@/lib/supabase/types";
 import { deriveSkillNames } from "@/lib/skills/derive";
+import {
+  subscribeToPostings,
+  unsubscribeChannel,
+} from "@/lib/supabase/realtime";
 
 type Posting = {
   id: string;
@@ -265,6 +272,17 @@ export function usePostings(
   const { data, error, isLoading, mutate } = useSWR(key, fetchPostings, {
     keepPreviousData: true,
   });
+
+  // Subscribe to real-time posting changes and invalidate SWR cache
+  useEffect(() => {
+    const channel = subscribeToPostings(() => {
+      mutate();
+    });
+
+    return () => {
+      unsubscribeChannel(channel);
+    };
+  }, [mutate]);
 
   return {
     postings: data?.postings ?? [],

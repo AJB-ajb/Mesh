@@ -19,6 +19,11 @@ vi.mock("@/lib/supabase/client", () => ({
   }),
 }));
 
+vi.mock("@/lib/supabase/realtime", () => ({
+  subscribeToPostings: vi.fn(() => ({ id: "mock-channel" })),
+  unsubscribeChannel: vi.fn(),
+}));
+
 vi.mock("@/lib/matching/scoring", async () => {
   const actual = await vi.importActual<typeof import("@/lib/matching/scoring")>(
     "@/lib/matching/scoring",

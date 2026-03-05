@@ -1,7 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
 import useSWR from "swr";
 import { getUserOrThrow } from "@/lib/supabase/auth";
+import {
+  subscribeToPostings,
+  unsubscribeChannel,
+} from "@/lib/supabase/realtime";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -157,10 +162,21 @@ async function fetchActivePostings(): Promise<ActivePostingsData> {
 // ---------------------------------------------------------------------------
 
 export function useActivePostings() {
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR(
     "active-postings",
     fetchActivePostings,
   );
+
+  // Subscribe to real-time posting changes and invalidate SWR cache
+  useEffect(() => {
+    const channel = subscribeToPostings(() => {
+      mutate();
+    });
+
+    return () => {
+      unsubscribeChannel(channel);
+    };
+  }, [mutate]);
 
   return {
     postings: data?.postings ?? [],
