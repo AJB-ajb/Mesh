@@ -1860,6 +1860,20 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
+  // Coordination (nested postings)
+  // ---------------------------------------------------------------------------
+  coordination: {
+    composePlaceholder: "Propose a meeting, assign a task...",
+    postButton: "Post",
+    expandLink: "Full editor",
+    postSuccess: "Posted to group",
+    sectionTitle: "Coordination",
+    emptyState: "No coordination posts yet",
+    activities: (n: number) => `${n} ${n === 1 ? "activity" : "activities"}`,
+    inParent: (title: string) => `in ${title}`,
+  },
+
+  // ---------------------------------------------------------------------------
   // Posting card (unified)
   // ---------------------------------------------------------------------------
   postingCard: {

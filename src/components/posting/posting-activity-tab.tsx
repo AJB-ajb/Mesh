@@ -7,11 +7,15 @@ import { PostingAboutCard } from "./posting-about-card";
 import { GroupChatPanel } from "./group-chat-panel";
 import { PostingSidebar } from "./posting-sidebar";
 import { TeamSchedulingSection } from "./team-scheduling-section";
+import { CoordinationSection } from "./coordination-section";
+import { ComposeInContext } from "./compose-in-context";
+import { useChildPostings } from "@/lib/hooks/use-child-postings";
 
 export function PostingActivityTab() {
   const { posting, postingId, isOwner, currentUserId, currentUserName } =
     usePostingCoreContext();
   const { effectiveApplications } = usePostingApplicationContext();
+  const { mutate: mutateChildren } = useChildPostings(postingId);
 
   const teamMembers = [
     {
@@ -41,6 +45,14 @@ export function PostingActivityTab() {
             currentUserId={currentUserId}
           />
         )}
+
+        <CoordinationSection parentPostingId={postingId} />
+        <ComposeInContext
+          parentPostingId={postingId}
+          onCreated={() => {
+            mutateChildren();
+          }}
+        />
 
         <PostingAboutCard />
 
