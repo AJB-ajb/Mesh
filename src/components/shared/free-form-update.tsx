@@ -52,15 +52,19 @@ export function FreeFormUpdate<T extends Extracted>({
     sourceText ?? "",
   );
   const [updateInstruction, setUpdateInstruction] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSourceText, setShowSourceText] = useState(!!sourceText);
 
   const copy = labels.quickUpdate[entityType];
 
+  const busy = isApplying || isSubmitting;
+
   const handleApplyUpdate = async () => {
     if (!updateInstruction.trim()) return;
 
     setError(null);
+    setIsSubmitting(true);
 
     try {
       const body: Record<string, unknown> = {
@@ -101,6 +105,8 @@ export function FreeFormUpdate<T extends Extracted>({
       }
     } catch {
       setError(labels.quickUpdate.networkError);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -117,7 +123,7 @@ export function FreeFormUpdate<T extends Extracted>({
               variant="outline"
               size="sm"
               onClick={onUndo}
-              disabled={isApplying}
+              disabled={busy}
             >
               <Undo2 className="mr-2 h-4 w-4" />
               {labels.quickUpdate.undoButton}
@@ -192,9 +198,9 @@ export function FreeFormUpdate<T extends Extracted>({
 
         <Button
           onClick={handleApplyUpdate}
-          disabled={isApplying || !updateInstruction.trim()}
+          disabled={busy || !updateInstruction.trim()}
         >
-          {isApplying ? (
+          {busy ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               {labels.quickUpdate.applyingButton}
