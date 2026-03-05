@@ -97,7 +97,7 @@ export interface UnifiedPostingCardProps {
   onToggleBookmark?: (postingId: string) => void;
   activeTab?: "discover" | "my-postings";
   // Compact variant props (posts page)
-  role?: "owner" | "joined";
+  role?: "owner" | "joined" | "applied";
   unreadCount?: number;
   href?: string;
 }
@@ -166,7 +166,11 @@ export function UnifiedPostingCard({
   // ---------------------------------------------------------------------------
   if (!isFull) {
     const roleLabel =
-      role === "owner" ? labels.active.youCreated : labels.active.youJoined;
+      role === "owner"
+        ? labels.active.youCreated
+        : role === "applied"
+          ? labels.active.youApplied
+          : labels.active.youJoined;
 
     return (
       <Link href={postingHref} className="block min-w-0">
