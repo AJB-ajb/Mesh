@@ -1841,6 +1841,25 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
+  // Acceptance Card (Smart Join)
+  // ---------------------------------------------------------------------------
+  acceptanceCard: {
+    loading: "Preparing your join form...",
+    title: "A few quick things before you join:",
+    confirmJoin: "Confirm & Join",
+    confirming: "Joining...",
+    scheduledFor: "Scheduled for",
+    worksForMe: "This works for me",
+    whenWorks: "When works for you?",
+    selectAllThatWork: "Select all times that work",
+    whichRole: "What role are you interested in?",
+    selectOption: "Select an option",
+    typeAnswer: "Type your answer...",
+    yes: "Yes",
+    no: "No",
+  },
+
+  // ---------------------------------------------------------------------------
   // Posting card (unified)
   // ---------------------------------------------------------------------------
   postingCard: {

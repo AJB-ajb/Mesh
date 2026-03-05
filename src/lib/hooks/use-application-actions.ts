@@ -11,6 +11,7 @@ import type {
 } from "@/lib/hooks/use-posting-detail";
 import { apiMutate } from "@/lib/swr/api-mutate";
 import { cacheKeys } from "@/lib/swr/keys";
+import type { ApplicationResponses } from "@/lib/types/acceptance-card";
 
 export function useApplicationActions(
   postingId: string,
@@ -53,7 +54,7 @@ export function useApplicationActions(
       ? localWaitlistPosition
       : fetchedWaitlistPosition;
 
-  const handleApply = async () => {
+  const handleApply = async (responses?: ApplicationResponses) => {
     if (!router) return;
     const supabase = createClient();
     const {
@@ -78,6 +79,7 @@ export function useApplicationActions(
         body: {
           posting_id: postingId,
           cover_message: coverMessage.trim() || undefined,
+          ...(responses ? { responses } : {}),
         },
         successToast: "applicationSubmitted",
         errorFallback: "Failed to submit request",
