@@ -103,6 +103,7 @@ Rules:
       userPrompt: `Convert this search query into structured filters:\n\n"${query.trim()}"`,
       schema: filterSchema,
       temperature: 0.3,
+      tier: "fast",
     });
 
     return apiSuccess({
