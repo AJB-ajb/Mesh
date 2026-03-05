@@ -24,6 +24,8 @@ mockSelect.mockReturnValue({ single: mockSingle });
 
 import { POST } from "../route";
 
+const routeCtx = { params: Promise.resolve({}) };
+
 function makeRequest(body: Record<string, unknown>) {
   return new Request("http://localhost/api/feedback", {
     method: "POST",
@@ -35,6 +37,8 @@ function makeRequest(body: Record<string, unknown>) {
 describe("POST /api/feedback", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default to anonymous user (optional auth allows this)
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
     // Reset chain defaults
     mockInsert.mockReturnValue({ select: mockSelect });
     mockSelect.mockReturnValue({ single: mockSingle });
@@ -42,7 +46,7 @@ describe("POST /api/feedback", () => {
 
   it("returns 400 for missing message", async () => {
     const req = makeRequest({ page_url: "http://localhost/" });
-    const res = await POST(req);
+    const res = await POST(req, routeCtx);
     const body = await res.json();
 
     expect(res.status).toBe(400);
@@ -51,7 +55,7 @@ describe("POST /api/feedback", () => {
 
   it("returns 400 for empty message", async () => {
     const req = makeRequest({ message: "   ", page_url: "http://localhost/" });
-    const res = await POST(req);
+    const res = await POST(req, routeCtx);
     const body = await res.json();
 
     expect(res.status).toBe(400);
@@ -60,7 +64,7 @@ describe("POST /api/feedback", () => {
 
   it("returns 400 for missing page_url", async () => {
     const req = makeRequest({ message: "Some feedback" });
-    const res = await POST(req);
+    const res = await POST(req, routeCtx);
     const body = await res.json();
 
     expect(res.status).toBe(400);
@@ -73,7 +77,7 @@ describe("POST /api/feedback", () => {
       page_url: "http://localhost/",
       mood: "angry",
     });
-    const res = await POST(req);
+    const res = await POST(req, routeCtx);
     const body = await res.json();
 
     expect(res.status).toBe(400);
@@ -97,7 +101,7 @@ describe("POST /api/feedback", () => {
       page_url: "http://localhost/dashboard",
       user_agent: "Mozilla/5.0",
     });
-    const res = await POST(req);
+    const res = await POST(req, routeCtx);
     const body = await res.json();
 
     expect(res.status).toBe(201);
@@ -124,7 +128,7 @@ describe("POST /api/feedback", () => {
       message: "Found a bug",
       page_url: "http://localhost/",
     });
-    const res = await POST(req);
+    const res = await POST(req, routeCtx);
     const body = await res.json();
 
     expect(res.status).toBe(201);
@@ -150,7 +154,7 @@ describe("POST /api/feedback", () => {
       message: "Just some feedback",
       page_url: "http://localhost/postings",
     });
-    const res = await POST(req);
+    const res = await POST(req, routeCtx);
 
     expect(res.status).toBe(201);
     expect(mockInsert).toHaveBeenCalledWith(
@@ -172,7 +176,7 @@ describe("POST /api/feedback", () => {
       message: "Feedback that fails",
       page_url: "http://localhost/",
     });
-    const res = await POST(req);
+    const res = await POST(req, routeCtx);
     const body = await res.json();
 
     expect(res.status).toBe(500);

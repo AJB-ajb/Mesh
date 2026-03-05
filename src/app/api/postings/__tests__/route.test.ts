@@ -36,6 +36,7 @@ function buildChain(resolveValue: { data: unknown; error: unknown }) {
   chain.delete = vi.fn().mockReturnValue(chain);
   chain.eq = vi.fn().mockReturnValue(chain);
   chain.single = vi.fn().mockResolvedValue(resolveValue);
+  chain.maybeSingle = vi.fn().mockResolvedValue(resolveValue);
   return chain;
 }
 

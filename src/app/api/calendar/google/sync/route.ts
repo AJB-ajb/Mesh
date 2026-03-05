@@ -4,7 +4,6 @@
  * Fetches FreeBusy data and stores busy blocks.
  */
 
-import * as Sentry from "@sentry/nextjs";
 import { withAuth } from "@/lib/api/with-auth";
 import { apiSuccess, apiError } from "@/lib/errors";
 import {
@@ -105,7 +104,6 @@ export const POST = withAuth(async (_req, { user, supabase }) => {
       blockCount: busyBlocks.length,
     });
   } catch (error) {
-    Sentry.captureException(error);
     const message =
       error instanceof Error ? error.message : "Unknown sync error";
     await updateConnectionSyncStatus(supabase, connection.id, "error", message);

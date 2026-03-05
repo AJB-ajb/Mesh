@@ -1,5 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthContext } from "@/lib/api/with-auth";
 import { apiError, apiSuccess } from "@/lib/errors";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * GET /api/skills/search?q=react&limit=10
@@ -8,19 +9,10 @@ import { apiError, apiSuccess } from "@/lib/errors";
  * Returns matching leaf nodes with their ancestry path.
  * When query is empty, returns top-level categories for browsing.
  */
-export async function GET(request: Request) {
-  const supabase = await createClient();
+export const GET = withAuth(async (req: Request, ctx: AuthContext) => {
+  const { supabase } = ctx;
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return apiError("UNAUTHORIZED", "Unauthorized", 401);
-  }
-
-  const { searchParams } = new URL(request.url);
+  const { searchParams } = new URL(req.url);
   const query = searchParams.get("q")?.trim() ?? "";
   const limit = Math.min(
     parseInt(searchParams.get("limit") ?? "10", 10) || 10,
@@ -77,13 +69,13 @@ export async function GET(request: Request) {
   }
 
   return apiSuccess({ results: data ?? [] });
-}
+});
 
 /**
  * Build ancestry paths for a list of nodes by walking parent_id chains.
  */
 async function buildPaths(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: SupabaseClient,
   nodes: Array<{ id: string; name: string; is_leaf: boolean; depth: number }>,
 ) {
   if (nodes.length === 0) return [];
