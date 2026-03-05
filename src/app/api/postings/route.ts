@@ -7,6 +7,7 @@ import {
   type PostingBody,
 } from "@/lib/api/postings-validation";
 import { triggerEmbeddingGenerationServer } from "@/lib/api/trigger-embedding-server";
+import { logFireAndForget } from "@/lib/api/fire-and-forget";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 
 export const POST = withAuth(async (req, { user, supabase }) => {
@@ -140,7 +141,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   );
 
   // Trigger embedding generation (fire-and-forget)
-  triggerEmbeddingGenerationServer().catch(() => {});
+  logFireAndForget(triggerEmbeddingGenerationServer(), "embedding-generation");
 
   return apiSuccess({ posting }, 201);
 });
