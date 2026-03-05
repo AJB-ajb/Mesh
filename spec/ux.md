@@ -96,8 +96,7 @@ Unchanged from current behavior — collapsible sidebar with all navigation item
 | Sign up                | `/signup`               | Registration                                                                               |
 | Forgot password        | `/forgot-password`      | Recovery email                                                                             |
 | Reset password         | `/reset-password`       | Reset form                                                                                 |
-| Onboarding             | `/onboarding`           | Persona selection (developer / posting creator)                                            |
-| Onboarding — profile   | `/onboarding/developer` | Voice/text profile setup                                                                   |
+| Onboarding             | `/onboarding`           | Profile setup (paste text, guided prompts, or skip)                                        |
 | Discover               | `/discover`             | Single feed of all postings, sorted by match score, with saved filter                      |
 | Posts                  | `/posts`                | Merged view: user's created, joined, applied, and completed postings with filter chips     |
 | Create posting         | `/postings/new`         | Free-form input + AI extraction                                                            |
@@ -193,14 +192,15 @@ Tabs that are not yet relevant are shown but disabled.
 
 ### Active (`/active`)
 
-List of projects where min team size has been reached — both created and joined.
+List of projects where min team size has been reached — both created and joined. With the nested posting model (see [nested-postings.md](nested-postings.md)), Active becomes the hub for ongoing coordination: each group shows its child postings (meetings, task assignments, updates) in a Coordination section alongside Chat.
 
-- **Project cards** showing:
+- **Project/group cards** showing:
   - Title, team fill `current / min (max)`
-  - Unread message count
+  - Unread message count + unread coordination activity
   - Role: "You created" / "You joined"
   - Time since started
-- Clicking opens the posting detail at the **Project tab**
+- Clicking opens the group view with: Chat, Coordination (child postings), Members, Info
+- **Compose in context**: text input within the group view for creating child postings (lightweight, message-like)
 - **Empty state:** nudge to Discover
 
 ### Connections (`/connections`)

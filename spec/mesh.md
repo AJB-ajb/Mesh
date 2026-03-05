@@ -19,6 +19,14 @@ Activity coordination through messaging apps means excessive back-and-forth:
 - **Details scatter.** What started as "let's do X" becomes logistics spread across DMs, threads, and group chats.
 - **The root cause:** Messaging apps treat everything as a message. They don't know you're coordinating an activity, so they can't help — they can't check availability, match skills, or manage group formation.
 
+### Why it's hard: multi-dimensional negotiation
+
+Every activity requires negotiating multiple dimensions — who, when, where, what exactly, how many people — and the dimensions interact. A different "when" changes who can come. A different "who" changes what you can do. Messaging apps force each dimension into a separate round of back-and-forth, with no memory of what's already been decided.
+
+Mesh substitutes these negotiations: matching handles **who**, calendar overlap handles **when**, location matching handles **where**, deep matching + acceptance prompts handle **what**, team size + waitlist handle **how many**. A posting captures what you want; the system resolves the rest. See [vision.md](vision.md) for the full philosophy.
+
+For ongoing activities (projects, recurring meetings, hackathon teams), these negotiations happen in layers. The first posting establishes a group — resolving who and what. Subsequent postings within that group only negotiate what's new (when to meet this week, who handles which task). Context carries forward so each round of coordination takes less effort. See [nested-postings.md](nested-postings.md).
+
 ### Approach
 
 - Activity-first: start with what you want to do, then find people
@@ -74,6 +82,10 @@ See [use-cases.md](use-cases.md) for detailed examples and scenarios.
 
 See [matching.md](matching.md) for the matching algorithm.
 
+### Nested Postings & Contexts
+
+See [nested-postings.md](nested-postings.md) for how postings nest as coordination contexts — replacing channels, context identifiers, and recurring instances with a single parent-child model.
+
 ### Core
 
 - Fast posting (paste from Slack/WhatsApp, AI extracts features)
@@ -86,12 +98,12 @@ See [matching.md](matching.md) for the matching algorithm.
 
 See [roadmap.md](roadmap.md) for the full milestone plan. Key upcoming features:
 
-- **Text-first posting & profiles** (v0.3) — single text field replaces multi-step forms
-- **Smart input** (v0.4) — slash commands, quick chips, auto-format/clean, post-write nudges
-- **LLM deep matching** (v0.5) — Stage 2 matching with full-text evaluation and match explanations
-- **Auto-translation** (v0.6) — multilingual posting support
+- **Text-first rendering & syntax** (v0.6) — `mesh:` links, `||hidden||`, unified PostingCard, text-first profile redesign
+- **Command palette & coordination** (v0.7) — expanded slash commands, link invites, repost
+- **Smart acceptance & calendar** (v0.8) — LLM-generated acceptance flow, calendar overlap time slots
+- **Auto-translation** (v1.1) — multilingual posting support
 - Calendar sync (v1.0) — Google Calendar / iCal integration
-- Channels (v1.0) — shared posting contexts for hackathons, courses, communities
+- Channels (v1.0) — shared posting contexts for hackathons, courses, communities. Subsumed by nested posting model; see [nested-postings.md](nested-postings.md)
 - Verification — GitHub, LinkedIn profile linking and badges
 - Rating system — objective phrasing, no visible aggregate scores
 
@@ -106,6 +118,8 @@ See [ux.md](ux.md).
 - Mesh leverages that structure: because a posting is an activity, the platform can automate what messaging can't — check availability, match skills, manage invites, form groups
 - Small teams (2-5) outperform large groups for most tasks — yet current tools serve crowds, not small groups
 - Mesh is both a coordination tool (inviting people you know) and a matching tool (finding people you don't yet know), unified under a single activity-first interface
+- Coordination is multi-dimensional negotiation (who, when, where, what, how many) — Mesh resolves each dimension through intelligent mechanisms, replacing rounds of messaging with structured actions
+- For ongoing activities, context carries forward: once a group is formed, subsequent coordination inherits what's already decided, making each round nearly frictionless
 
 See [vision.md](vision.md) for deeper philosophy, insights, and target audience analysis.
 

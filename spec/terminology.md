@@ -81,11 +81,11 @@ Use "Flexible" as the third location option (alongside Remote and In-person).
 
 "Either" is vague — does it mean "I truly don't care" or "I'm open to both"? "Flexible" communicates openness clearly.
 
-### Bookmarks (separate page)
+### Bookmarks (Discover saved filter)
 
-Move saved/bookmarked postings from the Matches page to a dedicated `/bookmarks` page with its own sidebar nav item.
+Bookmarks are a toggle filter within the Discover feed, not a separate page. Users bookmark postings for later; toggling the saved filter in Discover shows only bookmarked postings. This avoids a standalone page that would go stale.
 
-The Matches page was overloaded with three unrelated sections (AI Matches, Interests Received, My Interests). "Bookmarks" is a well-understood pattern (save for later) that doesn't imply commitment to the poster.
+Previously planned as a separate `/bookmarks` page, but consolidated into Discover during the ux.md redesign (see `spec/ux.md`).
 
 ### Repost + Extend Deadline (not "Reactivate")
 
@@ -128,7 +128,22 @@ When a posting is filled, users can join a waitlist for automatic or manual prom
 
 ---
 
+### Group / Channel (nested posting contexts)
+
+Use "group" for small parent postings (2-8 members) and "channel" for large parent postings (20+ members, open membership). Both are postings with children — the terms describe the user-facing behavior, not a technical distinction.
+
+- **Group**: a posting where multiple people coordinate over time. Members can post updates, propose meetings, and chat within the group.
+- **Channel**: a shared space (hackathon, course, community) where members create postings. Join via link or QR code. Child postings are discoverable within the channel.
+
+These replace the `context_identifier` field, which was a string approximation of what should be a real entity with members, a description, and a lifecycle. See [nested-postings.md](nested-postings.md).
+
+### Context Identifier (deprecated)
+
+The `context_identifier` field (a free-text string like "XHacks 2026" for exact-match filtering) is replaced by the nested posting model. The context becomes a parent posting — a real entity you can join, browse, and share — rather than a string label. See [nested-postings.md](nested-postings.md) Section 2.
+
+---
+
 ## Open Questions
 
-- **Persona selection** ("developer" / "posting creator"): Unclear what these mean. Contradicts "no required configuration" principle if required during onboarding. Needs clarification or removal.
+- ~~**Persona selection**~~: Removed. The "developer" / "posting creator" personas contradicted the "no required configuration" principle. Onboarding now goes straight to optional profile setup (paste text, guided prompts, or skip).
 - **"Matches" page name**: With Bookmarks and Join Requests moved elsewhere, this page is now just AI recommendations. Consider renaming to "Recommended" or "For You."
