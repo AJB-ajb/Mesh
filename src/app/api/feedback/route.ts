@@ -1,5 +1,5 @@
 import { withAuth, type OptionalAuthContext } from "@/lib/api/with-auth";
-import { apiError, apiSuccess } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 import type { FeedbackMood } from "@/lib/supabase/types";
 
 const VALID_MOODS: FeedbackMood[] = ["frustrated", "neutral", "happy"];
@@ -10,7 +10,7 @@ export const POST = withAuth(
   async (request: Request, ctx: OptionalAuthContext) => {
     const { user, supabase } = ctx;
 
-    const body = await request.json();
+    const body = await parseBody(request);
 
     const { message, mood, page_url, user_agent } = body as {
       message?: string;
