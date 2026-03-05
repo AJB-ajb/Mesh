@@ -55,6 +55,14 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     type: "content",
   },
   {
+    name: "question",
+    icon: "HelpCircle",
+    label: labels.slashCommands.question.label,
+    description: labels.slashCommands.question.description,
+    type: "content",
+    context: "posting",
+  },
+  {
     name: "size",
     icon: "Users",
     label: labels.slashCommands.size.label,

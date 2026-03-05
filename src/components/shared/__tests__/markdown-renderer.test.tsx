@@ -90,4 +90,45 @@ describe("MarkdownRenderer", () => {
     );
     expect(container.firstChild).toHaveClass("text-red-500");
   });
+
+  describe("hidden content", () => {
+    it("shows placeholder when revealHidden is false", () => {
+      render(<MarkdownRenderer content="Meet at ||Karlsplatz 5||" />);
+      expect(
+        screen.getByText(/Details shared after acceptance/),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("Karlsplatz 5")).toBeNull();
+    });
+
+    it("reveals content when revealHidden is true", () => {
+      render(
+        <MarkdownRenderer
+          content="Meet at ||Karlsplatz 5||"
+          revealHidden={true}
+        />,
+      );
+      expect(screen.getByText(/Karlsplatz 5/)).toBeInTheDocument();
+      expect(screen.queryByText(/Details shared after acceptance/)).toBeNull();
+    });
+  });
+
+  describe("question content", () => {
+    it("shows placeholder when questionMode is placeholder (default)", () => {
+      render(<MarkdownRenderer content="||? What instrument? ||" />);
+      expect(
+        screen.getByText(/Questions will be asked when you join/),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("What instrument?")).toBeNull();
+    });
+
+    it("shows questions with Q: prefix when questionMode is owner", () => {
+      render(
+        <MarkdownRenderer
+          content="||? What instrument? ||"
+          questionMode="owner"
+        />,
+      );
+      expect(screen.getByText(/What instrument\?/)).toBeInTheDocument();
+    });
+  });
 });

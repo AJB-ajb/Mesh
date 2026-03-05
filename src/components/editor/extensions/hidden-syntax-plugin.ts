@@ -1,8 +1,8 @@
 /**
- * CodeMirror ViewPlugin for ||hidden|| syntax highlighting.
+ * CodeMirror ViewPlugin for ||hidden|| and ||?question|| syntax highlighting.
  *
- * Scans for ||...|| patterns and applies Decoration.mark with a dimmed style.
- * The || delimiters get a muted foreground (like markdown markers).
+ * ||...||  → dimmed hidden content (muted background + delimiter color)
+ * ||?...|| → question content (blue-tinted background + info-colored delimiter)
  */
 
 import {
@@ -15,20 +15,25 @@ import {
 import type { Range } from "@codemirror/state";
 import type { Extension } from "@codemirror/state";
 
-const HIDDEN_RE = /\|\|(?!\|)([\s\S]*?)\|\|/g;
+/** Matches ||...|| but NOT ||?...|| (negative lookahead for ?) or ||| (negative lookahead for |) */
+const HIDDEN_RE = /\|\|(?!\?|\|)([\s\S]*?)\|\|/g;
+
+/** Matches ||?...|| question syntax */
+const QUESTION_RE = /\|\|\?\s*([\s\S]*?)\|\|/g;
 
 function buildDecorations(view: EditorView): DecorationSet {
   const decorations: Range<Decoration>[] = [];
 
   for (const { from, to } of view.visibleRanges) {
     const text = view.state.sliceDoc(from, to);
+
+    // Hidden blocks: ||...||
     HIDDEN_RE.lastIndex = 0;
     let match;
     while ((match = HIDDEN_RE.exec(text))) {
       const start = from + match.index;
       const end = start + match[0].length;
 
-      // Mark the opening ||
       decorations.push(
         Decoration.mark({ class: "cm-hidden-delimiter" }).range(
           start,
@@ -36,7 +41,6 @@ function buildDecorations(view: EditorView): DecorationSet {
         ),
       );
 
-      // Mark the content between delimiters
       if (match[1].length > 0) {
         decorations.push(
           Decoration.mark({ class: "cm-hidden-content" }).range(
@@ -46,9 +50,40 @@ function buildDecorations(view: EditorView): DecorationSet {
         );
       }
 
-      // Mark the closing ||
       decorations.push(
         Decoration.mark({ class: "cm-hidden-delimiter" }).range(end - 2, end),
+      );
+    }
+
+    // Question blocks: ||?...||
+    QUESTION_RE.lastIndex = 0;
+    while ((match = QUESTION_RE.exec(text))) {
+      const start = from + match.index;
+      const end = start + match[0].length;
+
+      // Opening ||? (3 chars)
+      decorations.push(
+        Decoration.mark({ class: "cm-question-delimiter" }).range(
+          start,
+          start + 3,
+        ),
+      );
+
+      // Content between ||? and closing ||
+      const contentStart = start + 3;
+      const contentEnd = end - 2;
+      if (contentEnd > contentStart) {
+        decorations.push(
+          Decoration.mark({ class: "cm-question-content" }).range(
+            contentStart,
+            contentEnd,
+          ),
+        );
+      }
+
+      // Closing ||
+      decorations.push(
+        Decoration.mark({ class: "cm-question-delimiter" }).range(end - 2, end),
       );
     }
   }
@@ -83,6 +118,16 @@ const hiddenSyntaxTheme = EditorView.baseTheme({
   },
   ".cm-hidden-delimiter": {
     color: "var(--color-muted-foreground, #94a3b8)",
+    fontWeight: "600",
+  },
+  ".cm-question-content": {
+    opacity: "0.6",
+    backgroundColor:
+      "color-mix(in srgb, var(--color-info, #0ea5e9) 10%, transparent)",
+    borderRadius: "2px",
+  },
+  ".cm-question-delimiter": {
+    color: "var(--color-info, #0ea5e9)",
     fontWeight: "600",
   },
 });

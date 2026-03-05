@@ -7,7 +7,7 @@ import { PostingAboutCardView } from "./posting-about-card-view";
 import { PostingAboutCardEdit } from "./posting-about-card-edit";
 
 export function PostingAboutCard() {
-  const { posting } = usePostingCoreContext();
+  const { posting, isOwner, isAcceptedMember } = usePostingCoreContext();
   const { isEditing, form, onFormChange } = usePostingEditContext();
 
   return (
@@ -19,7 +19,11 @@ export function PostingAboutCard() {
         {isEditing ? (
           <PostingAboutCardEdit form={form} onFormChange={onFormChange} />
         ) : (
-          <PostingAboutCardView posting={posting} />
+          <PostingAboutCardView
+            posting={posting}
+            revealHidden={isOwner || isAcceptedMember}
+            questionMode={isOwner ? "owner" : "placeholder"}
+          />
         )}
       </CardContent>
     </Card>
