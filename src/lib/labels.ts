@@ -63,6 +63,7 @@ export const labels = {
       new_message: "New Message",
       new_group_message: "New Team Message",
       match_found: "Match Found",
+      meeting_proposal: "Meeting Proposal",
     } as const,
     dropdownTitle: "Notifications",
     markAllRead: "Mark all as read",
