@@ -96,7 +96,7 @@ describe("useSlashCommands", () => {
     });
 
     expect(result.current.menuOpen).toBe(true);
-    expect(result.current.filteredCommands.length).toBe(15);
+    expect(result.current.filteredCommands.length).toBe(16);
   });
 
   it("opens menu when / is after whitespace", () => {
@@ -139,8 +139,8 @@ describe("useSlashCommands", () => {
     });
 
     expect(result.current.menuOpen).toBe(true);
-    // "ti" matches both "time" and "location" (substring match)
-    expect(result.current.filteredCommands.length).toBe(2);
+    // "ti" matches "time", "location", and "question" (substring match)
+    expect(result.current.filteredCommands.length).toBe(3);
     expect(result.current.filteredCommands.map((c) => c.name)).toContain(
       "time",
     );
@@ -180,7 +180,7 @@ describe("useSlashCommands", () => {
       result.current.onKeyDown(upEvent);
     });
 
-    expect(result.current.selectedIndex).toBe(14); // last index (15 commands)
+    expect(result.current.selectedIndex).toBe(15); // last index (16 commands)
   });
 
   it("Enter selects command and opens overlay for action type", () => {
