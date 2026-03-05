@@ -1774,9 +1774,38 @@ export const labels = {
   // Toast notifications
   // ---------------------------------------------------------------------------
   toasts: {
+    // Bookmarks
     bookmarkAdded: "Posting saved",
     bookmarkRemoved: "Posting unsaved",
     bookmarkError: "Could not update bookmark",
+    // Profile
+    profileSaved: "Profile saved",
+    profileSaveError: "Could not save profile",
+    // Applications
+    applicationSubmitted: "Request submitted",
+    applicationWithdrawn: "Request withdrawn",
+    applicationAccepted: "Request accepted",
+    applicationRejected: "Request declined",
+    applicationError: "Could not process request",
+    // Postings
+    postingCreated: "Posting created",
+    postingUpdated: "Posting updated",
+    postingDeleted: "Posting deleted",
+    postingError: "Could not update posting",
+    postingReposted: "Posting reposted",
+    postingExtended: "Deadline extended",
+    // Connections
+    connectionSent: "Connection request sent",
+    connectionAccepted: "Connection accepted",
+    connectionDeclined: "Connection declined",
+    connectionError: "Could not update connection",
+    // Matches
+    matchAccepted: "Match accepted",
+    matchDeclined: "Match declined",
+    matchError: "Could not update match",
+    // General
+    genericError: "Something went wrong",
+    copied: "Copied to clipboard",
   },
 
   // ---------------------------------------------------------------------------
