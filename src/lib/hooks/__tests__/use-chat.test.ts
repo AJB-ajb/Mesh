@@ -20,14 +20,32 @@ const mockRealtimeGroupChat = {
 };
 
 const mockDmMessages = {
-  messages: [{ id: "dm-msg-1", conversation_id: "conv-1", sender_id: "user-1", content: "Hello", read: true, created_at: "2026-01-01T00:00:00Z" }],
+  messages: [
+    {
+      id: "dm-msg-1",
+      conversation_id: "conv-1",
+      sender_id: "user-1",
+      content: "Hello",
+      read: true,
+      created_at: "2026-01-01T00:00:00Z",
+    },
+  ],
   error: undefined,
   isLoading: false,
   mutate: vi.fn(),
 };
 
 const mockGroupMessages = {
-  messages: [{ id: "group-msg-1", posting_id: "posting-1", sender_id: "user-2", content: "Hi team", created_at: "2026-01-01T00:00:00Z", sender_name: "Alice" }],
+  messages: [
+    {
+      id: "group-msg-1",
+      posting_id: "posting-1",
+      sender_id: "user-2",
+      content: "Hi team",
+      created_at: "2026-01-01T00:00:00Z",
+      sender_name: "Alice",
+    },
+  ],
   isLoading: false,
   error: undefined,
   mutate: vi.fn(),
@@ -35,7 +53,16 @@ const mockGroupMessages = {
 
 const mockInbox = {
   notifications: [],
-  conversations: [{ id: "conv-1", participant_1: "user-1", participant_2: "user-2", posting_id: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" }],
+  conversations: [
+    {
+      id: "conv-1",
+      participant_1: "user-1",
+      participant_2: "user-2",
+      posting_id: null,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+  ],
   currentUserId: "user-1",
   error: undefined,
   isLoading: false,
@@ -67,7 +94,6 @@ import { useChat } from "../use-chat";
 import { useRealtimeChat } from "../use-realtime-chat";
 import { useRealtimeGroupChat } from "../use-realtime-group-chat";
 import { useConversationMessages, useInboxData } from "../use-inbox";
-import { useGroupMessages } from "../use-group-messages";
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -93,9 +119,7 @@ describe("useChat", () => {
     });
 
     it("activates DM realtime hooks with correct params", () => {
-      renderHook(() =>
-        useChat({ conversationId: "conv-1", userId: "user-1" }),
-      );
+      renderHook(() => useChat({ conversationId: "conv-1", userId: "user-1" }));
 
       expect(useRealtimeChat).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -106,9 +130,7 @@ describe("useChat", () => {
     });
 
     it("deactivates group realtime hooks", () => {
-      renderHook(() =>
-        useChat({ conversationId: "conv-1", userId: "user-1" }),
-      );
+      renderHook(() => useChat({ conversationId: "conv-1", userId: "user-1" }));
 
       expect(useRealtimeGroupChat).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -151,9 +173,7 @@ describe("useChat", () => {
     });
 
     it("activates group realtime hooks with correct params", () => {
-      renderHook(() =>
-        useChat({ postingId: "posting-1", userId: "user-2" }),
-      );
+      renderHook(() => useChat({ postingId: "posting-1", userId: "user-2" }));
 
       expect(useRealtimeGroupChat).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -164,9 +184,7 @@ describe("useChat", () => {
     });
 
     it("deactivates DM realtime hooks", () => {
-      renderHook(() =>
-        useChat({ postingId: "posting-1", userId: "user-2" }),
-      );
+      renderHook(() => useChat({ postingId: "posting-1", userId: "user-2" }));
 
       expect(useRealtimeChat).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -177,9 +195,7 @@ describe("useChat", () => {
     });
 
     it("deactivates DM message fetching", () => {
-      renderHook(() =>
-        useChat({ postingId: "posting-1", userId: "user-2" }),
-      );
+      renderHook(() => useChat({ postingId: "posting-1", userId: "user-2" }));
 
       expect(useConversationMessages).toHaveBeenCalledWith(null, null);
     });
@@ -196,9 +212,7 @@ describe("useChat", () => {
 
   describe("edge cases", () => {
     it("defaults to DM mode when neither ID is provided", () => {
-      const { result } = renderHook(() =>
-        useChat({ userId: "user-1" }),
-      );
+      const { result } = renderHook(() => useChat({ userId: "user-1" }));
 
       expect(result.current.isGroupChat).toBe(false);
     });
