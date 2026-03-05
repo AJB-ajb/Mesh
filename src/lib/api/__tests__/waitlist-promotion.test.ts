@@ -58,8 +58,8 @@ describe("promoteFromWaitlist", () => {
       status: "open",
     });
 
-    // Only one from() call (for applications), no update call
-    expect(mockFrom).toHaveBeenCalledTimes(1);
+    // No status update should happen — posting is already open
+    expect(appChain.update).not.toHaveBeenCalled();
   });
 
   it("auto-accepts and notifies the promoted user when auto_accept is true", async () => {
@@ -157,7 +157,10 @@ describe("promoteFromWaitlist", () => {
       auto_accept: true,
     });
 
-    // Should only have 3 from() calls — no notification insert
-    expect(mockFrom).toHaveBeenCalledTimes(3);
+    // Application was accepted but notification was skipped (disabled in prefs)
+    expect(updateChain.update).toHaveBeenCalledWith({ status: "accepted" });
+    // The notification chain should never have insert called
+    // (profileChain is the last chain returned, so no further from() calls)
+    expect(mockFrom).not.toHaveBeenCalledWith("notifications");
   });
 });

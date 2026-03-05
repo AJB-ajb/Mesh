@@ -37,34 +37,9 @@ vi.mock("@/lib/api/rate-limit", () => ({
   createRateLimiter: () => ({ check: mockCheck }),
 }));
 
+import { buildChain, authedUser } from "tests/utils/supabase-mock";
+
 import { POST } from "../route";
-
-const MOCK_USER = { id: "user-1", email: "a@b.com" };
-
-function authedUser() {
-  mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
-}
-
-/** Chainable Supabase query mock */
-function chain(finalValue: { data: unknown; error: unknown }) {
-  const self: Record<string, unknown> = {};
-  for (const m of [
-    "select",
-    "insert",
-    "update",
-    "delete",
-    "eq",
-    "in",
-    "or",
-    "single",
-    "maybeSingle",
-  ]) {
-    self[m] = vi.fn(() => self);
-  }
-  self.single = vi.fn(() => Promise.resolve(finalValue));
-  self.then = (resolve: (v: unknown) => void) => resolve(finalValue);
-  return self;
-}
 
 const makeReq = (body?: Record<string, unknown>) =>
   new Request("http://localhost/api/matches/deep-match", {
@@ -94,7 +69,7 @@ describe("POST /api/matches/deep-match", () => {
   });
 
   it("returns 403 for free tier users", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockGetUserTier.mockResolvedValue("free");
     mockCanAccessFeature.mockReturnValue(false);
 
@@ -107,7 +82,7 @@ describe("POST /api/matches/deep-match", () => {
   });
 
   it("returns 429 when rate-limited", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockCheck.mockReturnValue({ allowed: false, retryAfter: 1800 });
 
     const res = await POST(makeReq(), routeCtx);
@@ -119,7 +94,7 @@ describe("POST /api/matches/deep-match", () => {
   });
 
   it("returns 503 when deep match is not configured", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockIsDeepMatchAvailable.mockReturnValue(false);
 
     const res = await POST(makeReq(), routeCtx);
@@ -130,7 +105,7 @@ describe("POST /api/matches/deep-match", () => {
   });
 
   it("returns 400 when matchIds is missing", async () => {
-    authedUser();
+    authedUser(mockGetUser);
 
     const res = await POST(
       new Request("http://localhost/api/matches/deep-match", {
@@ -147,9 +122,9 @@ describe("POST /api/matches/deep-match", () => {
   });
 
   it("returns results for valid match IDs", async () => {
-    authedUser();
+    authedUser(mockGetUser);
 
-    const matchChain = chain({
+    const matchChain = buildChain({
       data: [
         {
           id: "m1",
@@ -161,7 +136,7 @@ describe("POST /api/matches/deep-match", () => {
       ],
       error: null,
     });
-    const postingChain = chain({
+    const postingChain = buildChain({
       data: [
         {
           id: "p1",
@@ -172,7 +147,7 @@ describe("POST /api/matches/deep-match", () => {
       ],
       error: null,
     });
-    const profileChain = chain({
+    const profileChain = buildChain({
       data: [
         {
           user_id: "user-1",
@@ -183,7 +158,7 @@ describe("POST /api/matches/deep-match", () => {
       ],
       error: null,
     });
-    const updateChain = chain({ data: null, error: null });
+    const updateChain = buildChain({ data: null, error: null });
 
     let callCount = 0;
     mockFrom.mockImplementation(() => {

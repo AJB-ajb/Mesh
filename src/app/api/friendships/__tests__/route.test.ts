@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { buildChain, authedUser } from "tests/utils/supabase-mock";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -14,40 +15,6 @@ vi.mock("@/lib/supabase/server", () => ({
 
 // Import *after* mocking so the mock takes effect
 import { GET, POST } from "../route";
-
-const MOCK_USER = { id: "user-1", email: "a@b.com" };
-
-/** Helper: build a chainable Supabase query mock */
-function chain(finalValue: { data: unknown; error: unknown }) {
-  const self: Record<string, unknown> = {};
-  const methods = [
-    "select",
-    "insert",
-    "update",
-    "delete",
-    "eq",
-    "or",
-    "in",
-    "limit",
-    "order",
-    "single",
-    "maybeSingle",
-  ];
-  for (const m of methods) {
-    self[m] = vi.fn(() => self);
-  }
-  // Terminal methods resolve to finalValue
-  self.single = vi.fn(() => Promise.resolve(finalValue));
-  self.maybeSingle = vi.fn(() => Promise.resolve(finalValue));
-  // Non-terminal methods that can also be terminal (select after insert)
-  // Wrap the proxy so the last call in the chain returns the data
-  self.then = (resolve: (v: unknown) => void) => resolve(finalValue);
-  return self;
-}
-
-function authedUser() {
-  mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
-}
 
 function makeReq(url: string, init?: RequestInit) {
   return new Request(`http://localhost${url}`, init);
@@ -68,11 +35,11 @@ describe("GET /api/friendships", () => {
   });
 
   it("returns friendships for the authenticated user", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const friendships = [
       { id: "f1", user_id: "user-1", friend_id: "user-2", status: "accepted" },
     ];
-    const q = chain({ data: friendships, error: null });
+    const q = buildChain({ data: friendships, error: null });
     mockFrom.mockReturnValue(q);
 
     const res = await GET(makeReq("/api/friendships"), routeCtx);
@@ -84,8 +51,8 @@ describe("GET /api/friendships", () => {
   });
 
   it("returns 500 on supabase error", async () => {
-    authedUser();
-    const q = chain({ data: null, error: null });
+    authedUser(mockGetUser);
+    const q = buildChain({ data: null, error: null });
     // Override the implicit thenable with an error
     q.then = (resolve: (v: unknown) => void) =>
       resolve({ data: null, error: { message: "DB down" } });
@@ -116,7 +83,7 @@ describe("POST /api/friendships", () => {
   });
 
   it("returns 400 when friend_id is missing", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const res = await POST(
       makeReq("/api/friendships", {
         method: "POST",
@@ -131,7 +98,7 @@ describe("POST /api/friendships", () => {
   });
 
   it("returns 400 when sending request to self", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const res = await POST(
       makeReq("/api/friendships", {
         method: "POST",
@@ -146,10 +113,10 @@ describe("POST /api/friendships", () => {
   });
 
   it("returns 409 when friendship already exists", async () => {
-    authedUser();
+    authedUser(mockGetUser);
 
     // First call: check existing → found
-    const existingQ = chain({
+    const existingQ = buildChain({
       data: { id: "existing-1", status: "pending" },
       error: null,
     });
@@ -170,7 +137,7 @@ describe("POST /api/friendships", () => {
   });
 
   it("creates a friendship request on success", async () => {
-    authedUser();
+    authedUser(mockGetUser);
 
     const newFriendship = {
       id: "f-new",
@@ -184,9 +151,9 @@ describe("POST /api/friendships", () => {
     mockFrom.mockImplementation(() => {
       callCount++;
       if (callCount === 1) {
-        return chain({ data: null, error: null });
+        return buildChain({ data: null, error: null });
       }
-      return chain({ data: newFriendship, error: null });
+      return buildChain({ data: newFriendship, error: null });
     });
 
     const res = await POST(
@@ -203,7 +170,7 @@ describe("POST /api/friendships", () => {
   });
 
   it("returns 400 for invalid JSON body", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const res = await POST(
       makeReq("/api/friendships", {
         method: "POST",

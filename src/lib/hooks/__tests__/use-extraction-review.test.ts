@@ -74,8 +74,15 @@ describe("useExtractionReview", () => {
       tags: ["hackathon"],
     });
 
-    // Should have called PATCH
-    expect(mockFetch).toHaveBeenCalledTimes(2);
+    // Verify extraction + auto-apply PATCH were called
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/extract/posting",
+      expect.anything(),
+    );
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/postings/p1",
+      expect.objectContaining({ method: "PATCH" }),
+    );
     expect(onMutate).toHaveBeenCalled();
   });
 
@@ -179,9 +186,18 @@ describe("useExtractionReview", () => {
 
     expect(result.current.status).toBe("idle");
     expect(result.current.appliedFields).toBeNull();
-    // 3 calls: extract, auto-apply PATCH, undo PATCH
-    expect(mockFetch).toHaveBeenCalledTimes(3);
+    // Verify all three requests were made: extract, auto-apply, undo
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/extract/posting",
+      expect.anything(),
+    );
+    // Two PATCH calls: auto-apply + undo
+    const patchCalls = (mockFetch.mock.calls as [string, RequestInit][]).filter(
+      ([url, opts]) =>
+        url === "/api/postings/p1" && opts?.method === "PATCH",
+    );
+    expect(patchCalls).toHaveLength(2);
     // onMutate called for both auto-apply and undo
-    expect(onMutate).toHaveBeenCalledTimes(2);
+    expect(onMutate.mock.calls).toHaveLength(2);
   });
 });

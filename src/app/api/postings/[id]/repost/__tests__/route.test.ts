@@ -12,24 +12,9 @@ vi.mock("@/lib/supabase/server", () => ({
   })),
 }));
 
+import { buildChain, authedUser } from "tests/utils/supabase-mock";
+
 const { POST } = await import("@/app/api/postings/[id]/repost/route");
-
-const MOCK_USER = { id: "user-1", email: "a@b.com" };
-
-function authedUser() {
-  mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
-}
-
-/** Chainable Supabase query mock */
-function buildChain(resolveValue: { data: unknown; error: unknown }) {
-  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
-  chain.select = vi.fn().mockReturnValue(chain);
-  chain.update = vi.fn().mockReturnValue(chain);
-  chain.delete = vi.fn().mockReturnValue(chain);
-  chain.eq = vi.fn().mockReturnValue(chain);
-  chain.single = vi.fn().mockResolvedValue(resolveValue);
-  return chain;
-}
 
 /** Build a chain that resolves at .eq() (no .single()) — for delete ops */
 function buildDeleteChain(resolveValue: { data: unknown; error: unknown }) {
@@ -62,7 +47,7 @@ describe("POST /api/postings/[id]/repost", () => {
   });
 
   it("returns 404 when posting not found", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
       buildChain({ data: null, error: { message: "not found" } }),
     );
@@ -75,7 +60,7 @@ describe("POST /api/postings/[id]/repost", () => {
   });
 
   it("returns 403 when user is not the creator", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
       buildChain({
         data: {
@@ -96,7 +81,7 @@ describe("POST /api/postings/[id]/repost", () => {
   });
 
   it("returns 400 when posting is not expired", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
       buildChain({
         data: {
@@ -117,7 +102,7 @@ describe("POST /api/postings/[id]/repost", () => {
   });
 
   it("reposts an expired posting successfully", async () => {
-    authedUser();
+    authedUser(mockGetUser);
 
     const expiredPosting = {
       id: "posting-1",
@@ -153,7 +138,7 @@ describe("POST /api/postings/[id]/repost", () => {
   });
 
   it("returns 500 when deleting applications fails", async () => {
-    authedUser();
+    authedUser(mockGetUser);
 
     const expiredPosting = {
       id: "posting-1",
@@ -181,7 +166,7 @@ describe("POST /api/postings/[id]/repost", () => {
   });
 
   it("returns 500 when update fails", async () => {
-    authedUser();
+    authedUser(mockGetUser);
 
     const expiredPosting = {
       id: "posting-1",

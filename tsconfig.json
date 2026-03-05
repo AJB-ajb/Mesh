@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "tests/*": ["./tests/*"]
     },
     "types": ["@serwist/next/typings"]
   },
@@ -31,5 +32,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "public/sw.js", "scripts", "tests"]
+  "exclude": ["node_modules", "public/sw.js", "scripts", "tests/e2e", "tests/utils/factories", "tests/utils/seed-helpers.ts"]
 }

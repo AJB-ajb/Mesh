@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { buildChain, authedUser } from "tests/utils/supabase-mock";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -17,23 +18,6 @@ vi.mock("@/lib/api/trigger-embedding-server", () => ({
 }));
 
 const { PATCH } = await import("@/app/api/profiles/route");
-
-const MOCK_USER = { id: "user-1", email: "a@b.com" };
-
-function authedUser() {
-  mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
-}
-
-function buildChain(resolveValue: { data: unknown; error: unknown }) {
-  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
-  chain.select = vi.fn().mockReturnValue(chain);
-  chain.upsert = vi.fn().mockResolvedValue(resolveValue);
-  chain.insert = vi.fn().mockResolvedValue(resolveValue);
-  chain.delete = vi.fn().mockReturnValue(chain);
-  chain.eq = vi.fn().mockReturnValue(chain);
-  chain.single = vi.fn().mockResolvedValue(resolveValue);
-  return chain;
-}
 
 function makeReq(body?: Record<string, unknown>) {
   return new Request("http://localhost/api/profiles", {
@@ -58,7 +42,7 @@ describe("PATCH /api/profiles", () => {
   });
 
   it("saves profile successfully", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(buildChain({ data: null, error: null }));
 
     const res = await PATCH(
@@ -81,7 +65,7 @@ describe("PATCH /api/profiles", () => {
   });
 
   it("returns 500 when upsert fails", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
       buildChain({ data: null, error: { message: "DB error" } }),
     );
@@ -91,7 +75,7 @@ describe("PATCH /api/profiles", () => {
   });
 
   it("validates coordinates — sends null for invalid", async () => {
-    authedUser();
+    authedUser(mockGetUser);
 
     // Track the upsert call to verify coordinates
     const upsertMock = vi.fn().mockResolvedValue({ data: null, error: null });
@@ -114,7 +98,7 @@ describe("PATCH /api/profiles", () => {
   });
 
   it("triggers embedding generation after save", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(buildChain({ data: null, error: null }));
 
     const { triggerEmbeddingGenerationServer } =
@@ -125,7 +109,7 @@ describe("PATCH /api/profiles", () => {
   });
 
   it("clears profile_skills when none selected", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const chain = buildChain({ data: null, error: null });
     mockFrom.mockReturnValue(chain);
 
