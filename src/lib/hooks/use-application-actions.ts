@@ -2,14 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { KeyedMutator } from "swr";
+import { useSWRConfig } from "swr";
 
 import { createClient } from "@/lib/supabase/client";
 import type {
   PostingDetail,
   Application,
-  PostingDetailData,
 } from "@/lib/hooks/use-posting-detail";
+import { apiMutate } from "@/lib/swr/api-mutate";
+import { cacheKeys } from "@/lib/swr/keys";
 
 export function useApplicationActions(
   postingId: string,
@@ -18,9 +19,9 @@ export function useApplicationActions(
   fetchedMyApplication: Application | null,
   fetchedWaitlistPosition: number | null,
   applications: Application[],
-  mutate: KeyedMutator<PostingDetailData>,
   setError: (error: string | null) => void,
 ) {
+  const { mutate } = useSWRConfig();
   const router = useRouter();
 
   const [localWaitlistPosition, setLocalWaitlistPosition] = useState<
@@ -68,25 +69,21 @@ export function useApplicationActions(
     setError(null);
 
     try {
-      const response = await fetch("/api/applications", {
+      const { data: responseData } = await apiMutate<{
+        application: Application;
+        status: string;
+        waitlistPosition?: number;
+      }>("/api/applications", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: {
           posting_id: postingId,
           cover_message: coverMessage.trim() || undefined,
-        }),
+        },
+        successToast: "applicationSubmitted",
+        errorFallback: "Failed to submit request",
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error?.message || "Failed to submit request");
-      }
-
-      const {
-        application,
-        status,
-        waitlistPosition: wlPos,
-      } = await response.json();
+      const { application, status, waitlistPosition: wlPos } = responseData;
 
       setLocalHasApplied(true);
       setLocalMyApplication(application);
@@ -116,23 +113,18 @@ export function useApplicationActions(
     if (!confirm(confirmMsg)) return;
 
     try {
-      const res = await fetch(
-        `/api/applications/${myApplication.id}/withdraw`,
-        {
-          method: "PATCH",
-        },
-      );
-
-      if (!res.ok) {
-        const body = await res.json();
-        setError(body.error?.message || "Failed to withdraw request.");
-        return;
-      }
+      await apiMutate(`/api/applications/${myApplication.id}/withdraw`, {
+        method: "PATCH",
+        successToast: "applicationWithdrawn",
+        errorFallback: "Failed to withdraw request.",
+      });
 
       setLocalMyApplication({ ...myApplication, status: "withdrawn" });
-      mutate();
-    } catch {
-      setError("Failed to withdraw request. Please try again.");
+      mutate(cacheKeys.posting(postingId));
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to withdraw request.",
+      );
     }
   };
 
@@ -143,18 +135,15 @@ export function useApplicationActions(
     setIsUpdatingApplication(applicationId);
 
     try {
-      const res = await fetch(`/api/applications/${applicationId}/decide`, {
+      await apiMutate(`/api/applications/${applicationId}/decide`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: { status: newStatus },
+        successToast:
+          newStatus === "accepted"
+            ? "applicationAccepted"
+            : "applicationRejected",
+        errorFallback: "Failed to update request.",
       });
-
-      if (!res.ok) {
-        const body = await res.json();
-        setError(body.error?.message || "Failed to update request.");
-        setIsUpdatingApplication(null);
-        return;
-      }
 
       setLocalApplications((prev) =>
         (prev ?? applications).map((app) =>
@@ -162,9 +151,11 @@ export function useApplicationActions(
         ),
       );
       setIsUpdatingApplication(null);
-      mutate();
-    } catch {
-      setError("Failed to update request. Please try again.");
+      mutate(cacheKeys.posting(postingId));
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to update request.",
+      );
       setIsUpdatingApplication(null);
     }
   };

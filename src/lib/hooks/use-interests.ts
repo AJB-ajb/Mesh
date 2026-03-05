@@ -1,4 +1,5 @@
 import useSWR from "swr";
+import { cacheKeys } from "@/lib/swr/keys";
 
 interface InterestPosting {
   id: string;
@@ -50,7 +51,7 @@ interface InterestsResponse {
 
 export function useInterests() {
   const { data, error, isLoading, mutate } = useSWR<InterestsResponse>(
-    "/api/matches/interests",
+    cacheKeys.interests(),
   );
 
   return {

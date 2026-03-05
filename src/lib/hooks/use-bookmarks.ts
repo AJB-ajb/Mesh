@@ -2,14 +2,16 @@ import { toast } from "sonner";
 import { labels } from "@/lib/labels";
 import { useCallback, useMemo } from "react";
 import useSWR from "swr";
+import { cacheKeys } from "@/lib/swr/keys";
 
 interface BookmarksApiResponse {
   postingIds: string[];
 }
 
 export function useBookmarks() {
-  const { data, error, isLoading, mutate } =
-    useSWR<BookmarksApiResponse>("/api/bookmarks");
+  const { data, error, isLoading, mutate } = useSWR<BookmarksApiResponse>(
+    cacheKeys.bookmarks(),
+  );
 
   const bookmarkedIds = useMemo(
     () => new Set(data?.postingIds ?? []),
