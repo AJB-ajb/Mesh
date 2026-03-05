@@ -7,6 +7,9 @@ import {
   APPLICATION_ACCEPTED,
   APPLICATION_REJECTED,
   MATCHES_FOUND,
+  MEETING_PROPOSED,
+  MEETING_CONFIRMED,
+  MEETING_CANCELLED,
 } from "../events";
 import { allNotificationTypes } from "../preferences";
 
@@ -20,6 +23,9 @@ describe("notification event constants", () => {
       APPLICATION_ACCEPTED,
       APPLICATION_REJECTED,
       MATCHES_FOUND,
+      MEETING_PROPOSED,
+      MEETING_CONFIRMED,
+      MEETING_CANCELLED,
     ];
 
     for (const event of events) {
