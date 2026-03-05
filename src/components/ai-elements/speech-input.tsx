@@ -266,7 +266,8 @@ export const SpeechInput = ({
   return (
     <Button
       className={cn(
-        "bg-transparent hover:bg-transparent text-muted-foreground hover:text-foreground transition-colors duration-200",
+        "relative bg-transparent hover:bg-transparent text-muted-foreground hover:text-foreground transition-colors duration-200",
+        "after:absolute after:content-[''] after:-inset-2",
         isListening && "text-destructive hover:text-destructive",
         className,
       )}
