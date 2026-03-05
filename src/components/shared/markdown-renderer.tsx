@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import type { Components } from "react-markdown";
 import { isMeshUrl } from "@/lib/mesh-links";
-import { processHiddenContent } from "@/lib/hidden-syntax";
+import { processAllSyntax, type QuestionMode } from "@/lib/hidden-syntax";
 
 type MarkdownRendererProps = {
   content: string;
@@ -13,6 +13,8 @@ type MarkdownRendererProps = {
   clamp?: number;
   /** If true, reveal ||hidden|| content. Default false (show placeholder). */
   revealHidden?: boolean;
+  /** How to render ||?...|| questions. Default 'placeholder'. */
+  questionMode?: QuestionMode;
 };
 
 type C = { children?: ReactNode };
@@ -92,10 +94,11 @@ export function MarkdownRenderer({
   className,
   clamp,
   revealHidden = false,
+  questionMode = "placeholder",
 }: MarkdownRendererProps) {
   if (!content?.trim()) return null;
 
-  const processed = processHiddenContent(content, revealHidden);
+  const processed = processAllSyntax(content, { revealHidden, questionMode });
   const clampClass = clamp ? `line-clamp-${clamp}` : "";
 
   return (

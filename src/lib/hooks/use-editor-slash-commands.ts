@@ -48,6 +48,7 @@ export interface UseEditorSlashCommandsReturn {
 const CONTENT_INSERTS: Record<string, { text: string; cursorOffset: number }> =
   {
     hidden: { text: "||\n\n||", cursorOffset: 3 },
+    question: { text: "||? \n||", cursorOffset: 4 },
     size: { text: "\u{1F465} 3 people", cursorOffset: 10 },
   };
 

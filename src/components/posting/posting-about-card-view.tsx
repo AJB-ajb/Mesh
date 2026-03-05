@@ -7,12 +7,23 @@ import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { NOT_SPECIFIED } from "@/lib/format";
 import { getLocationModeDisplay } from "@/lib/posting/location";
 import type { PostingDetail } from "@/lib/hooks/use-posting-detail";
+import type { QuestionMode } from "@/lib/hidden-syntax";
 
 // ---------------------------------------------------------------------------
 // PostingAboutCardView — display-only rendering of the about card
 // ---------------------------------------------------------------------------
 
-export function PostingAboutCardView({ posting }: { posting: PostingDetail }) {
+type PostingAboutCardViewProps = {
+  posting: PostingDetail;
+  revealHidden?: boolean;
+  questionMode?: QuestionMode;
+};
+
+export function PostingAboutCardView({
+  posting,
+  revealHidden,
+  questionMode,
+}: PostingAboutCardViewProps) {
   const locationDisplay = getLocationModeDisplay(posting.location_mode);
 
   return (
@@ -20,6 +31,8 @@ export function PostingAboutCardView({ posting }: { posting: PostingDetail }) {
       <MarkdownRenderer
         content={posting.description ?? ""}
         className="text-muted-foreground"
+        revealHidden={revealHidden}
+        questionMode={questionMode}
       />
 
       {/* Skills */}
@@ -73,9 +86,7 @@ export function PostingAboutCardView({ posting }: { posting: PostingDetail }) {
         {posting.estimated_time && (
           <div className="rounded-lg border border-border p-4">
             <Calendar className="h-5 w-5 text-muted-foreground" />
-            <p className="mt-2 text-sm text-muted-foreground">
-              Estimated Time
-            </p>
+            <p className="mt-2 text-sm text-muted-foreground">Estimated Time</p>
             <p className="font-medium">{posting.estimated_time}</p>
           </div>
         )}

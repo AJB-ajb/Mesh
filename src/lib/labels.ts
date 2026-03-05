@@ -1500,6 +1500,10 @@ export const labels = {
     skills: { label: "Skills", description: "Insert required skills" },
     template: { label: "Template", description: "Apply a posting template" },
     hidden: { label: "Hidden", description: "Insert hidden details block" },
+    question: {
+      label: "Question",
+      description: "Ask a question on acceptance",
+    },
     size: { label: "Size", description: "Insert team size" },
     visibility: {
       label: "Visibility",

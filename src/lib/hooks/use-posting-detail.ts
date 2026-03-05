@@ -52,6 +52,7 @@ export type Application = {
   cover_message: string | null;
   created_at: string;
   applicant_id: string;
+  responses?: Record<string, unknown> | null;
   profiles?: {
     full_name: string | null;
     headline: string | null;

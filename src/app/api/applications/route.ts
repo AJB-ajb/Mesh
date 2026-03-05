@@ -18,9 +18,10 @@ import {
  *   - filled → "waitlisted"
  */
 export const POST = withAuth(async (req, { user, supabase }) => {
-  const { posting_id, cover_message } = await parseBody<{
+  const { posting_id, cover_message, responses } = await parseBody<{
     posting_id?: string;
     cover_message?: string;
+    responses?: Record<string, unknown>;
   }>(req);
 
   if (!posting_id || typeof posting_id !== "string") {
@@ -88,6 +89,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     applicant_id: user.id,
     cover_message: effectiveCoverMessage,
     status: initialStatus,
+    ...(responses && typeof responses === "object" ? { responses } : {}),
   });
 
   // --- Notifications ---
