@@ -4,6 +4,7 @@
  * Fetches FreeBusy data and stores busy blocks.
  */
 
+import * as Sentry from "@sentry/nextjs";
 import { withAuth } from "@/lib/api/with-auth";
 import { apiSuccess, apiError } from "@/lib/errors";
 import {
@@ -29,7 +30,10 @@ export const POST = withAuth(async (_req, { user, supabase }) => {
     return apiError("NOT_FOUND", "No Google Calendar connection found", 404);
   }
 
-  if (!connection.access_token_encrypted || !connection.refresh_token_encrypted) {
+  if (
+    !connection.access_token_encrypted ||
+    !connection.refresh_token_encrypted
+  ) {
     return apiError("VALIDATION", "Missing tokens for Google connection", 400);
   }
 
@@ -59,7 +63,8 @@ export const POST = withAuth(async (_req, { user, supabase }) => {
       await supabase
         .from("calendar_connections")
         .update({
-          access_token_encrypted: refreshed.accessTokenEncrypted.toString("base64"),
+          access_token_encrypted:
+            refreshed.accessTokenEncrypted.toString("base64"),
           token_expires_at: refreshed.expiresAt.toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -100,14 +105,10 @@ export const POST = withAuth(async (_req, { user, supabase }) => {
       blockCount: busyBlocks.length,
     });
   } catch (error) {
+    Sentry.captureException(error);
     const message =
       error instanceof Error ? error.message : "Unknown sync error";
-    await updateConnectionSyncStatus(
-      supabase,
-      connection.id,
-      "error",
-      message,
-    );
+    await updateConnectionSyncStatus(supabase, connection.id, "error", message);
     return apiError("INTERNAL", `Sync failed: ${message}`, 500);
   }
 });

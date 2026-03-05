@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { createClient } from "@/lib/supabase/server";
 import { apiError, apiSuccess } from "@/lib/errors";
 import type { FeedbackMood } from "@/lib/supabase/types";
@@ -67,13 +68,13 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      console.error("Feedback insert error:", error);
+      Sentry.captureException(error);
       return apiError("INTERNAL", "Failed to save feedback", 500);
     }
 
     return apiSuccess({ id: data.id, created_at: data.created_at }, 201);
   } catch (error) {
-    console.error("Feedback route error:", error);
+    Sentry.captureException(error);
     return apiError("INTERNAL", "Internal server error", 500);
   }
 }
