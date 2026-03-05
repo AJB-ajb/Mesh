@@ -235,6 +235,13 @@ export const labels = {
     smartCompatibilityBody:
       "Skills, availability, location, and interest alignment \u2014 all at a glance.",
 
+    sequentialInviteTitle: "Invite people in the order that matters",
+    sequentialInviteBody:
+      "Not everyone is equally available \u2014 or equally suited. Sequential invite lets you reach out in priority order, so you always end up with the best possible team.",
+    sequentialInviteStep1: "Rank your preferred people",
+    sequentialInviteStep2: "Mesh invites them one at a time",
+    sequentialInviteStep3: "First to accept fills the slot",
+
     finalCtaTitle: "Ready to skip the back-and-forth?",
     ctaBody: "Post your activity and let Mesh handle finding the right people.",
     getStartedButton: "Get started free",
@@ -243,6 +250,22 @@ export const labels = {
     privacyLink: "Privacy",
     termsLink: "Terms",
     whyMeshLink: "Why Mesh?",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Privacy page
+  // ---------------------------------------------------------------------------
+  privacy: {
+    title: "Privacy Policy",
+    body: "This page is a placeholder. A full privacy policy will be published before Mesh launches publicly.",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Terms page
+  // ---------------------------------------------------------------------------
+  terms: {
+    title: "Terms of Service",
+    body: "This page is a placeholder. A full terms of service will be published before Mesh launches publicly.",
   },
 
   // ---------------------------------------------------------------------------
