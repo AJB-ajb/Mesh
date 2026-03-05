@@ -11,6 +11,7 @@ import {
   shouldNotify,
 } from "@/lib/notifications/preferences";
 import { sendNotification } from "@/lib/notifications/create";
+import { MATCHES_FOUND } from "@/lib/notifications/events";
 
 /**
  * GET /api/matches/for-me
@@ -78,7 +79,7 @@ export const GET = withAuth(async (req, { user, supabase }) => {
         {
           userId: user.id,
           type: "match_found",
-          title: "New Matches Found",
+          title: MATCHES_FOUND.title,
           body: `We found ${matches.length} posting${matches.length > 1 ? "s" : ""} matching your profile, including "${topMatch.posting.title}"`,
           relatedPostingId: topMatch.posting.id,
         },

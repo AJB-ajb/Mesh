@@ -1,6 +1,7 @@
 import { withAuth } from "@/lib/api/with-auth";
 import { notifyIfPreferred } from "@/lib/api/notify-if-preferred";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
+import { INVITE_RECEIVED, INVITE_ACCEPTED, INVITE_DECLINED } from "@/lib/notifications/events";
 
 /**
  * POST /api/friend-ask/[id]/respond
@@ -107,7 +108,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     notifyIfPreferred(supabase, friendId, "sequential_invite", {
       userId: friendId,
       type: "sequential_invite",
-      title: "Invite Received",
+      title: INVITE_RECEIVED.title,
       body: `${creatorName?.full_name || "Someone"} wants you to join "${postingTitle}"`,
       relatedPostingId: friendAsk.posting_id,
       relatedUserId: friendAsk.creator_id,
@@ -137,7 +138,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
         );
 
       notifyCreator(
-        "Invite Accepted!",
+        INVITE_ACCEPTED.title,
         `${responderName} has joined "${postingTitle}"`,
       );
 
@@ -164,7 +165,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       );
 
     notifyCreator(
-      "Invite Accepted!",
+      INVITE_ACCEPTED.title,
       `${responderName} has joined "${postingTitle}"`,
     );
 
@@ -180,7 +181,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
   // Notify the creator about the decline
   notifyCreator(
-    "Invite Declined",
+    INVITE_DECLINED.title,
     `${responderName} declined the invite for "${postingTitle}"`,
   );
 
