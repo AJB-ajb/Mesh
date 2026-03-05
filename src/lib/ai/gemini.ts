@@ -1,6 +1,7 @@
 /**
  * Shared Gemini client for AI extraction tasks.
- * Includes automatic fallback across models on 429 rate-limit errors.
+ * Includes automatic fallback across models on transient errors
+ * (429 rate-limit, 503 high demand, timeouts).
  */
 
 import {
@@ -11,7 +12,7 @@ import {
   type GenerativeModel,
   type Schema,
 } from "@google/generative-ai";
-import { GEMINI_MODELS } from "@/lib/constants";
+import { GEMINI_MODELS, GEMINI_TIMEOUT_MS } from "@/lib/constants";
 import { withTimeout } from "./timeout";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -28,23 +29,30 @@ function getGenAI(): GoogleGenerativeAI {
   return genAI;
 }
 
-function getGeminiModel(modelName = "gemini-2.0-flash"): GenerativeModel {
+function getGeminiModel(modelName: string): GenerativeModel {
   return getGenAI().getGenerativeModel({ model: modelName });
 }
 
-function isRateLimitError(error: unknown): boolean {
+/** Errors that should trigger a fallback to the next model. */
+function isTransientError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
   const msg = error.message;
   return (
     msg.includes("429") ||
     msg.includes("Too Many Requests") ||
-    msg.includes("RESOURCE_EXHAUSTED")
+    msg.includes("RESOURCE_EXHAUSTED") ||
+    msg.includes("503") ||
+    msg.includes("UNAVAILABLE") ||
+    msg.includes("high demand") ||
+    msg.includes("timed out")
   );
 }
 
+export type ModelTier = "fast" | "standard";
+
 /**
  * Generate structured JSON from Gemini using responseSchema.
- * Automatically falls back to next model on 429 rate-limit errors.
+ * Automatically falls back to next model on transient errors.
  */
 export async function generateStructuredJSON<T>(opts: {
   systemPrompt: string;
@@ -52,10 +60,12 @@ export async function generateStructuredJSON<T>(opts: {
   schema: Schema;
   temperature?: number;
   model?: string;
+  tier?: ModelTier;
 }): Promise<T> {
+  const models = GEMINI_MODELS[opts.tier ?? "standard"];
   let lastError: unknown;
 
-  for (const modelName of GEMINI_MODELS) {
+  for (const modelName of models) {
     try {
       const model = getGeminiModel(modelName);
       const result = await withTimeout(
@@ -68,7 +78,7 @@ export async function generateStructuredJSON<T>(opts: {
             responseSchema: opts.schema,
           },
         }),
-        60_000,
+        GEMINI_TIMEOUT_MS,
         "Gemini generateContent",
       );
 
@@ -76,9 +86,9 @@ export async function generateStructuredJSON<T>(opts: {
       return JSON.parse(text) as T;
     } catch (error) {
       lastError = error;
-      if (!isRateLimitError(error)) throw error;
+      if (!isTransientError(error)) throw error;
       console.warn(
-        `Gemini model ${modelName} rate-limited (429), trying next model...`,
+        `Gemini model ${modelName} failed (${error instanceof Error ? error.message.slice(0, 80) : "unknown"}), trying next model...`,
       );
     }
   }
@@ -87,16 +97,18 @@ export async function generateStructuredJSON<T>(opts: {
 }
 
 /**
- * Generate content with automatic model fallback on 429 rate-limit errors.
+ * Generate content with automatic model fallback on transient errors.
  * For non-structured calls (e.g. match explanations).
  */
 export async function generateContentWithFallback(opts: {
   contents: Content[];
   generationConfig?: GenerationConfig;
+  tier?: ModelTier;
 }): Promise<GenerateContentResult> {
+  const models = GEMINI_MODELS[opts.tier ?? "standard"];
   let lastError: unknown;
 
-  for (const modelName of GEMINI_MODELS) {
+  for (const modelName of models) {
     try {
       const model = getGeminiModel(modelName);
       return await withTimeout(
@@ -104,14 +116,14 @@ export async function generateContentWithFallback(opts: {
           contents: opts.contents,
           generationConfig: opts.generationConfig,
         }),
-        60_000,
+        GEMINI_TIMEOUT_MS,
         "Gemini generateContent",
       );
     } catch (error) {
       lastError = error;
-      if (!isRateLimitError(error)) throw error;
+      if (!isTransientError(error)) throw error;
       console.warn(
-        `Gemini model ${modelName} rate-limited (429), trying next model...`,
+        `Gemini model ${modelName} failed (${error instanceof Error ? error.message.slice(0, 80) : "unknown"}), trying next model...`,
       );
     }
   }
