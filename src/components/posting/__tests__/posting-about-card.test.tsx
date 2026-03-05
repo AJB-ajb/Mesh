@@ -94,6 +94,7 @@ function makeCoreValue(posting: PostingDetail): PostingCoreContextValue {
     isAcceptedMember: false,
     projectEnabled: false,
     acceptedCount: 0,
+    hasPendingInvite: false,
   };
 }
 
