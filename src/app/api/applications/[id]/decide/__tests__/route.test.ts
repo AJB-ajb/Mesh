@@ -62,7 +62,10 @@ describe("PATCH /api/applications/[id]/decide", () => {
   it("returns 404 when application not found", async () => {
     authedUser();
     mockFrom.mockReturnValue(
-      buildChain({ data: null, error: { message: "not found" } }),
+      buildChain({
+        data: null,
+        error: { code: "PGRST116", message: "not found" },
+      }),
     );
 
     const res = await PATCH(makeReq(), routeCtx);

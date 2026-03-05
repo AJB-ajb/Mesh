@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import type { KeyedMutator } from "swr";
+import { useSWRConfig } from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { triggerEmbeddingGeneration } from "@/lib/api/trigger-embedding";
 
@@ -73,9 +73,10 @@ export type AiUpdateConfig<TForm, TExtracted> = {
 export function useAiUpdate<TForm, TExtracted>(
   currentForm: TForm,
   sourceText: string | null,
-  mutate: KeyedMutator<unknown>,
+  cacheKey: string,
   config: AiUpdateConfig<TForm, TExtracted>,
 ) {
+  const { mutate } = useSWRConfig();
   const [isApplyingUpdate, setIsApplyingUpdate] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -137,9 +138,9 @@ export function useAiUpdate<TForm, TExtracted>(
       triggerEmbeddingGeneration();
 
       setSuccess(true);
-      await mutate();
+      await mutate(cacheKey);
     },
-    [currentForm, sourceText, mutate, config],
+    [currentForm, sourceText, mutate, cacheKey, config],
   );
 
   const undoLastUpdate = useCallback(async () => {
@@ -215,8 +216,8 @@ export function useAiUpdate<TForm, TExtracted>(
     }
 
     setSuccess(true);
-    await mutate();
-  }, [mutate, config]);
+    await mutate(cacheKey);
+  }, [mutate, cacheKey, config]);
 
   return {
     isApplyingUpdate,

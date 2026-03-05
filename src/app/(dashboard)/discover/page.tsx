@@ -165,10 +165,10 @@ function DiscoverContent() {
       {/* Page header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
             {labels.discover.title}
           </h1>
-          <p className="mt-1 text-muted-foreground">
+          <p className="mt-1 hidden md:block text-muted-foreground">
             {labels.discover.subtitle}
           </p>
         </div>

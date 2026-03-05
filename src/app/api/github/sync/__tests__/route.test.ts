@@ -48,6 +48,12 @@ vi.mock("@/lib/github", () => ({
 
 import { GET, POST } from "../route";
 
+const routeCtx = { params: Promise.resolve({}) };
+const postReq = new Request("http://localhost/api/github/sync", {
+  method: "POST",
+});
+const getReq = new Request("http://localhost/api/github/sync");
+
 const MOCK_USER = {
   id: "user-1",
   email: "a@b.com",
@@ -69,7 +75,7 @@ describe("POST /api/github/sync", () => {
       data: { user: null },
       error: { message: "No" },
     });
-    const res = await POST();
+    const res = await POST(postReq, routeCtx);
     expect(res.status).toBe(401);
   });
 
@@ -78,7 +84,7 @@ describe("POST /api/github/sync", () => {
     mockGetSession.mockResolvedValue({
       data: { session: { provider_token: null } },
     });
-    const res = await POST();
+    const res = await POST(postReq, routeCtx);
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error.message).toContain("GitHub access token");
@@ -93,7 +99,7 @@ describe("POST /api/github/sync", () => {
     mockGetSession.mockResolvedValue({
       data: { session: { provider_token: "token" } },
     });
-    const res = await POST();
+    const res = await POST(postReq, routeCtx);
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error.message).toContain("not linked");
@@ -138,7 +144,7 @@ describe("POST /api/github/sync", () => {
     mockMergeWithExistingProfile.mockReturnValue({ bio: "New bio" });
     mockUpdateUserProfile.mockResolvedValue(undefined);
 
-    const res = await POST();
+    const res = await POST(postReq, routeCtx);
     const body = await res.json();
 
     expect(res.status).toBe(200);
@@ -155,7 +161,7 @@ describe("POST /api/github/sync", () => {
       new Error("GitHub API rate limit"),
     );
 
-    const res = await POST();
+    const res = await POST(postReq, routeCtx);
     const body = await res.json();
 
     expect(res.status).toBe(500);
@@ -172,7 +178,7 @@ describe("POST /api/github/sync", () => {
     mockPrepareAnalysisInput.mockReturnValue({ codeSnippets: [] });
     mockAnalyzeGitHubProfile.mockRejectedValue(new Error("OpenAI down"));
 
-    const res = await POST();
+    const res = await POST(postReq, routeCtx);
     const body = await res.json();
 
     expect(res.status).toBe(500);
@@ -188,7 +194,7 @@ describe("GET /api/github/sync", () => {
       data: { user: null },
       error: { message: "No" },
     });
-    const res = await GET();
+    const res = await GET(getReq, routeCtx);
     expect(res.status).toBe(401);
   });
 
@@ -199,7 +205,7 @@ describe("GET /api/github/sync", () => {
     });
     mockGetGitHubProfile.mockResolvedValue(null);
 
-    const res = await GET();
+    const res = await GET(getReq, routeCtx);
     const body = await res.json();
 
     expect(res.status).toBe(200);
@@ -238,7 +244,7 @@ describe("GET /api/github/sync", () => {
       suggestedInterests: ["AI"],
     });
 
-    const res = await GET();
+    const res = await GET(getReq, routeCtx);
     const body = await res.json();
 
     expect(res.status).toBe(200);

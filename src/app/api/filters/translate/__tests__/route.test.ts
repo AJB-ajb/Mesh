@@ -23,6 +23,8 @@ vi.mock("@/lib/ai/gemini", () => ({
 // Import after mocking
 import { POST } from "../route";
 
+const routeCtx = { params: Promise.resolve({}) };
+
 const MOCK_USER = { id: "user-1", email: "a@b.com" };
 
 function makeReq(body: unknown) {
@@ -47,7 +49,7 @@ describe("POST /api/filters/translate", () => {
     mockIsGeminiConfigured.mockReturnValue(false);
     authedUser();
 
-    const res = await POST(makeReq({ query: "remote React" }));
+    const res = await POST(makeReq({ query: "remote React" }), routeCtx);
     expect(res.status).toBe(503);
 
     const body = await res.json();
@@ -60,14 +62,14 @@ describe("POST /api/filters/translate", () => {
       error: { message: "No session" },
     });
 
-    const res = await POST(makeReq({ query: "remote React" }));
+    const res = await POST(makeReq({ query: "remote React" }), routeCtx);
     expect(res.status).toBe(401);
   });
 
   it("returns 400 when query is missing", async () => {
     authedUser();
 
-    const res = await POST(makeReq({}));
+    const res = await POST(makeReq({}), routeCtx);
     expect(res.status).toBe(400);
 
     const body = await res.json();
@@ -77,14 +79,14 @@ describe("POST /api/filters/translate", () => {
   it("returns 400 when query is empty string", async () => {
     authedUser();
 
-    const res = await POST(makeReq({ query: "   " }));
+    const res = await POST(makeReq({ query: "   " }), routeCtx);
     expect(res.status).toBe(400);
   });
 
   it("returns 400 when query is not a string", async () => {
     authedUser();
 
-    const res = await POST(makeReq({ query: 123 }));
+    const res = await POST(makeReq({ query: 123 }), routeCtx);
     expect(res.status).toBe(400);
   });
 
@@ -99,6 +101,7 @@ describe("POST /api/filters/translate", () => {
 
     const res = await POST(
       makeReq({ query: "remote React TypeScript, 10+ hours/week" }),
+      routeCtx,
     );
     expect(res.status).toBe(200);
 
@@ -111,7 +114,7 @@ describe("POST /api/filters/translate", () => {
     authedUser();
     mockGenerateStructuredJSON.mockResolvedValue({});
 
-    await POST(makeReq({ query: "remote only" }));
+    await POST(makeReq({ query: "remote only" }), routeCtx);
 
     expect(mockGenerateStructuredJSON).toHaveBeenCalledOnce();
     const callArgs = mockGenerateStructuredJSON.mock.calls[0][0];
@@ -125,7 +128,7 @@ describe("POST /api/filters/translate", () => {
     authedUser();
     mockGenerateStructuredJSON.mockRejectedValue(new Error("API error"));
 
-    const res = await POST(makeReq({ query: "remote React" }));
+    const res = await POST(makeReq({ query: "remote React" }), routeCtx);
     expect(res.status).toBe(500);
 
     const body = await res.json();

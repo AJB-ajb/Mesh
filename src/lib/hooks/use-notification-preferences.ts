@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import useSWR from "swr";
+import { cacheKeys } from "@/lib/swr/keys";
 import { getUserOrThrow } from "@/lib/supabase/auth";
 import {
   type NotificationPreferences,
@@ -27,7 +28,7 @@ async function fetchNotificationPreferences(): Promise<NotificationPreferences> 
 
 export function useNotificationPreferences() {
   const { data, error, isLoading, mutate } = useSWR(
-    "notification-preferences",
+    cacheKeys.notificationPreferences(),
     fetchNotificationPreferences,
   );
 

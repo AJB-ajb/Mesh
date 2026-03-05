@@ -2,6 +2,8 @@ import { withAuth } from "@/lib/api/with-auth";
 import { notifyIfPreferred } from "@/lib/api/notify-if-preferred";
 import { markPostingFilledIfFull } from "@/lib/api/posting-fulfillment";
 import { apiSuccess, parseBody, AppError } from "@/lib/errors";
+import { getApplication, updateApplicationStatus } from "@/lib/data";
+import { verifyPostingOwnership } from "@/lib/api/guards";
 
 interface DecideBody {
   status: "accepted" | "rejected";
@@ -19,49 +21,22 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
     );
   }
 
-  // Fetch application with posting
-  const { data: application, error: appError } = await supabase
-    .from("applications")
-    .select("id, applicant_id, posting_id, status")
-    .eq("id", applicationId)
-    .single();
+  // Fetch application
+  const application = await getApplication(supabase, applicationId);
 
-  if (appError || !application) {
+  if (!application) {
     throw new AppError("NOT_FOUND", "Application not found", 404);
   }
 
-  // Fetch posting to verify ownership
-  const { data: posting, error: postingError } = await supabase
-    .from("postings")
-    .select("id, creator_id, title, team_size_max, status")
-    .eq("id", application.posting_id)
-    .single();
-
-  if (postingError || !posting) {
-    throw new AppError("NOT_FOUND", "Posting not found", 404);
-  }
-
-  if (posting.creator_id !== user.id) {
-    throw new AppError(
-      "FORBIDDEN",
-      "Not authorized to decide on this application",
-      403,
-    );
-  }
+  // Verify the current user owns the posting
+  const posting = await verifyPostingOwnership(
+    supabase,
+    application.posting_id,
+    user.id,
+  );
 
   // Update application status
-  const { error: updateError } = await supabase
-    .from("applications")
-    .update({ status: body.status })
-    .eq("id", applicationId);
-
-  if (updateError) {
-    throw new AppError(
-      "INTERNAL",
-      `Failed to update application: ${updateError.message}`,
-      500,
-    );
-  }
+  await updateApplicationStatus(supabase, applicationId, body.status);
 
   // Notify applicant (check preferences)
   const notifType =
