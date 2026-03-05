@@ -3,7 +3,8 @@
 import { Suspense, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Plus, Loader2, Bookmark, Search } from "lucide-react";
+import useSWR from "swr";
+import { Plus, Loader2, Bookmark, Search, ArrowLeft } from "lucide-react";
 import { labels } from "@/lib/labels";
 
 import { Button } from "@/components/ui/button";
@@ -19,12 +20,27 @@ import { UnifiedPostingCard } from "@/components/posting";
 import { stripTitleMarkdown } from "@/lib/format";
 import { PostingFilters } from "@/components/posting/posting-filters";
 import { EmptyState } from "@/components/ui/empty-state";
+import { createClient } from "@/lib/supabase/client";
 
 type SortOption = "recent" | "match";
+
+/** Fetch parent posting title for scoped discover header */
+async function fetchParentTitle(key: string): Promise<string | null> {
+  const id = key.split("/").pop();
+  if (!id) return null;
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("postings")
+    .select("title")
+    .eq("id", id)
+    .single();
+  return data?.title ?? null;
+}
 
 function DiscoverContent() {
   const searchParams = useSearchParams();
   const initialSavedFilter = searchParams.get("filter") === "saved";
+  const contextParentId = searchParams.get("context") ?? "";
 
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -33,6 +49,12 @@ function DiscoverContent() {
   const [showSaved, setShowSaved] = useState(initialSavedFilter);
   const [showConnections, setShowConnections] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("recent");
+
+  // Fetch parent posting title when in scoped discover mode
+  const { data: parentTitle } = useSWR(
+    contextParentId ? `parent-title/${contextParentId}` : null,
+    fetchParentTitle,
+  );
 
   // Skill filter state — populated when a skill filter UI is added
   const [selectedSkillIds] = useState<string[]>([]);
@@ -43,9 +65,11 @@ function DiscoverContent() {
 
   // Build query-level filters to pass to usePostings
   const queryFilters = useMemo<QueryFilters | undefined>(() => {
-    if (resolvedSkillIds.length === 0) return undefined;
-    return { skillNodeIds: resolvedSkillIds };
-  }, [resolvedSkillIds]);
+    const filters: QueryFilters = {};
+    if (resolvedSkillIds.length > 0) filters.skillNodeIds = resolvedSkillIds;
+    if (contextParentId) filters.parentPostingId = contextParentId;
+    return Object.keys(filters).length > 0 ? filters : undefined;
+  }, [resolvedSkillIds, contextParentId]);
 
   const { postings, userId, interestedPostingIds, isLoading, mutate } =
     usePostings("discover", filterCategory, queryFilters);
@@ -162,18 +186,41 @@ function DiscoverContent() {
 
   return (
     <div className="space-y-6">
+      {/* Scoped discover back link */}
+      {contextParentId && (
+        <Link
+          href={`/postings/${contextParentId}`}
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {labels.coordination.backToGroup}
+        </Link>
+      )}
+
       {/* Page header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-            {labels.discover.title}
+            {contextParentId && parentTitle
+              ? labels.coordination.scopedDiscoverTitle(
+                  stripTitleMarkdown(parentTitle),
+                )
+              : labels.discover.title}
           </h1>
-          <p className="mt-1 hidden md:block text-muted-foreground">
-            {labels.discover.subtitle}
-          </p>
+          {!contextParentId && (
+            <p className="mt-1 hidden md:block text-muted-foreground">
+              {labels.discover.subtitle}
+            </p>
+          )}
         </div>
         <Button asChild>
-          <Link href="/postings/new">
+          <Link
+            href={
+              contextParentId
+                ? `/postings/new?parent=${contextParentId}`
+                : "/postings/new"
+            }
+          >
             <Plus className="h-4 w-4" />
             {labels.common.newPosting}
           </Link>
