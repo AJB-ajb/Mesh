@@ -53,9 +53,8 @@ export async function matchPostingToProfiles(
   // asynchronously via the batch processor after posting save
   const embedding = posting.embedding;
   if (!embedding || !Array.isArray(embedding)) {
-    throw new Error(
-      "The posting embedding is still being generated. Please try again in a moment.",
-    );
+    console.warn(`[matching] Posting embedding not ready for ${postingId}, returning empty matches`);
+    return [];
   }
 
   // Build RPC params with hard filters from posting's location data
