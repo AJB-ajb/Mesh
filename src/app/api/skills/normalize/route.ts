@@ -150,6 +150,7 @@ Current skill tree:
 ${treeText}`,
     schema: llmResponseSchema,
     temperature: 0.2,
+    tier: "fast",
   });
 
   if (llmResult.action === "map" && llmResult.existing_node_name) {
