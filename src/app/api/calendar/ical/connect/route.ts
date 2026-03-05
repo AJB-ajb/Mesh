@@ -3,6 +3,7 @@
  * Connect an iCal feed URL: validate, create connection, initial sync.
  */
 
+import * as Sentry from "@sentry/nextjs";
 import { withAuth } from "@/lib/api/with-auth";
 import { apiSuccess, apiError, parseBody } from "@/lib/errors";
 import { fetchIcalBusyBlocks } from "@/lib/calendar/ical";
@@ -68,6 +69,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
       blockCount: busyBlocks.length,
     });
   } catch (error) {
+    Sentry.captureException(error);
     const message =
       error instanceof Error ? error.message : "Failed to fetch iCal feed";
     await updateConnectionSyncStatus(supabase, connection.id, "error", message);

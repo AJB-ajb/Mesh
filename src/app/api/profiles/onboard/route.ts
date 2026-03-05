@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { withAuth } from "@/lib/api/with-auth";
 import { apiSuccess, apiError, parseBody } from "@/lib/errors";
 import { parseList } from "@/lib/types/profile";
@@ -37,7 +38,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   });
 
   if (authUpdateError) {
-    console.error("Failed to mark profile as completed:", authUpdateError);
+    Sentry.captureException(authUpdateError);
   }
 
   return apiSuccess({ success: true }, 201);

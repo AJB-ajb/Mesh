@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { withAuth } from "@/lib/api/with-auth";
 import { apiError, apiSuccess } from "@/lib/errors";
 
@@ -45,7 +46,9 @@ export const POST = withAuth(async (req) => {
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Deepgram error:", response.status, errorText);
+    Sentry.captureException(
+      new Error(`Deepgram error: ${response.status} ${errorText}`),
+    );
     return apiError("INTERNAL", "Transcription failed", 502);
   }
 

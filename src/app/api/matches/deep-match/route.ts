@@ -6,6 +6,7 @@
  */
 
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { withAuth } from "@/lib/api/with-auth";
 import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 import { createRateLimiter } from "@/lib/api/rate-limit";
@@ -146,7 +147,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
 
       results.push({ matchId: match.id, result });
     } catch (err) {
-      console.error(`Deep match failed for match ${match.id}:`, err);
+      Sentry.captureException(err);
     }
   }
 

@@ -4,6 +4,7 @@
  */
 
 import { NextResponse, type NextRequest } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { createClient } from "@/lib/supabase/server";
 import { exchangeCode, OAUTH_STATE_COOKIE } from "@/lib/calendar/google";
 
@@ -106,7 +107,7 @@ export async function GET(req: NextRequest) {
         });
 
     if (saveError) {
-      console.error("Failed to store calendar connection:", saveError);
+      Sentry.captureException(saveError);
       return settingsRedirect(req, {
         error: "Failed to save calendar connection.",
       });
@@ -116,7 +117,7 @@ export async function GET(req: NextRequest) {
       success: "Google Calendar connected successfully!",
     });
   } catch (error) {
-    console.error("Google callback error:", error);
+    Sentry.captureException(error);
     return settingsRedirect(req, {
       error: "Failed to connect Google Calendar. Please try again.",
     });

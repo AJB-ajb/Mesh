@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { createClient } from "@/lib/supabase/server";
 import { apiError, apiSuccess } from "@/lib/errors";
 import { SchemaType, type Schema } from "@google/generative-ai";
@@ -121,7 +122,7 @@ Rules:
       filters,
     });
   } catch (error) {
-    console.error("Filter translation error:", error);
+    Sentry.captureException(error);
     return apiError("INTERNAL", "Failed to translate filters", 500);
   }
 }

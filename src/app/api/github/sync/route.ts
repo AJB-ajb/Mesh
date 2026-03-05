@@ -9,6 +9,7 @@
  * - Returns suggestions for user review
  */
 
+import * as Sentry from "@sentry/nextjs";
 import { createClient } from "@/lib/supabase/server";
 import { apiError, apiSuccess } from "@/lib/errors";
 import {
@@ -143,7 +144,7 @@ export async function POST() {
       profileUpdated: true,
     });
   } catch (error) {
-    console.error("[GitHub Sync] Error:", error);
+    Sentry.captureException(error);
 
     // Try to update sync status to failed
     try {
@@ -226,7 +227,7 @@ export async function GET() {
       suggestions,
     });
   } catch (error) {
-    console.error("[GitHub Sync] GET Error:", error);
+    Sentry.captureException(error);
     return apiError(
       "INTERNAL",
       error instanceof Error ? error.message : "Failed to get GitHub profile",

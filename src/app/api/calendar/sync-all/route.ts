@@ -5,6 +5,7 @@
  */
 
 import type { NextRequest } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { apiError, apiSuccess } from "@/lib/errors";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
@@ -130,6 +131,7 @@ export async function POST(req: NextRequest) {
         results.push({ id: conn.id, status: "synced" });
       }
     } catch (error) {
+      Sentry.captureException(error);
       const message = error instanceof Error ? error.message : "Unknown error";
       await updateConnectionSyncStatus(supabase, conn.id, "error", message);
       results.push({ id: conn.id, status: "error", error: message });
