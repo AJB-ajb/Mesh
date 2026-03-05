@@ -35,6 +35,8 @@ export type PostingCoreContextValue = {
   acceptedCount: number;
   // Parent posting (for nested postings breadcrumb)
   parentPosting?: { id: string; title: string } | null;
+  // Invite state
+  hasPendingInvite: boolean;
 };
 
 const PostingCoreContext = createContext<PostingCoreContextValue | null>(null);
