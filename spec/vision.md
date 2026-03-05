@@ -15,6 +15,26 @@ This serves two scenarios:
 - **Finding new people** (matching): describe your activity, get matched with compatible people based on skills, availability, and interests.
 - **Coordinating with people you know** (invites): post your activity, invite connections in order — the platform handles the asking, waiting, and fallback automatically.
 
+## Coordination as Negotiation Substitution
+
+Every activity involves multi-dimensional negotiation: who should come, when to meet, where, what exactly to do, how many people. In messaging apps, each dimension is a round of back-and-forth — and the dimensions interact (a different "when" might change "who" can come, which changes "what" you can do together).
+
+Mesh substitutes these negotiations with intelligent mechanisms:
+
+- **Who** -> matching (finding compatible people) + invites (asking in the right order)
+- **When** -> calendar overlap + LLM-generated time slots
+- **Where** -> location matching + post-accept detail reveal
+- **What exactly** -> deep matching on text + interactive acceptance prompts
+- **How many** -> team size + waitlist
+
+The key insight: these negotiations happen at every scale — for a coffee date AND a hackathon team AND a semester-long project. The difference is which dimensions dominate and how many rounds are needed. A coffee date resolves everything in one step. A hackathon team resolves "who" first, then "when to meet" repeatedly over the event.
+
+This is why postings nest. A posting is a coordination context — a bundle of negotiations, some resolved, some open. When the initial negotiations are resolved (team formed, project defined), new ones emerge (when to meet this week, who handles which task). A child posting inherits what's already resolved and focuses on what's new. Each level of nesting reduces effort because the system carries forward everything that's already been decided.
+
+The result: coordination that would take dozens of messages — spread across days, losing momentum — collapses into a few taps. Not because the app is doing something magical, but because it understands the structure of what's being negotiated and can act on it.
+
+See [nested-postings.md](nested-postings.md) for the technical model. See [use-cases.md](use-cases.md) for walkthroughs.
+
 ## Effectiveness Over Engagement
 
 Many apps optimize for engagement — time spent in app. Mesh optimizes for effectiveness — getting things done. The app should be pleasant to use, but not addictive. People should be able to coordinate quickly and then move on with their lives.
@@ -31,7 +51,7 @@ Most useful activities have an optimal number of participants — typically 2 to
 
 Mesh is designed for small postings — finding the right 1-4 people, not gathering a crowd.
 
-## Work Style & Social Dynamics
+## Collaboration Preferences & Social Dynamics
 
 - **Joint vs. solo work is a fundamental preference.** Some people prefer to work alone and consult others as needed. Others strongly prefer thinking jointly (whiteboarding, pair programming). This is one of the most significant interpersonal differences in collaborative work.
 - **Collaborator preferences are real but unstated.** In society, it's discouraged to say "I don't want to work with person X," but people have strong preferences that significantly impact motivation and productivity.
@@ -63,8 +83,10 @@ People working on hobbies (game development, writing, art, theater) want collabo
 
 Hackathons are great for collaboration but finding teammates aligned on a vision is hard.
 
-- **Channels** are important: a shared context for a specific event, with setup defaults (e.g., expiry, category).
-- **Share links and QR codes** for easy channel joining.
+- The hackathon itself is a parent posting (channel) — a shared context with event defaults (expiry, category). Participants join via QR code or share link.
+- Team-finding posts are child postings within the channel. Matching is scoped to channel members, so candidates are all at the same event.
+- Once a team forms, it becomes a group. Team coordination (planning calls, task assignment) happens via child postings within the group — each one inheriting the team context.
+- This is a natural two-level nesting: channel -> team -> coordination within team.
 
 ### Spontaneous Activities
 

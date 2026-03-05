@@ -20,10 +20,11 @@ This document defines how users and postings are matched based on compatibility.
 - Weighted filters per user
 - Compatibility = combined scores across dimensions
 - Two-stage database filtering using Supabase (PostgreSQL):
-  1. Fast filtering using indexed tables (context identifiers, category, location)
+  1. Fast filtering using indexed tables (context membership, category, location)
   2. Soft scoring on remaining candidates
 - Semantic matching via pgvector for embedding similarity (posting descriptions, tags, natural language criteria)
 - Keep raw inputs (e.g., "prefer Monday evening") for user editing and display
+- **Context-scoped matching**: Candidate pool narrows by posting context — global for top-level postings, channel members for channel children, no matching for small group sub-postings. See [nested-postings.md](nested-postings.md) Section 8.
 
 ### User Experience
 
@@ -49,7 +50,7 @@ Self-assessed skill level (0-10 scale, slider input):
   - 7-8: Advanced, professional-level, can mentor others
   - 9-10: Expert, deep expertise, recognized in field
 
-#### Work Style Preference
+#### Collaboration Preferences
 
 Preferred collaboration mode (person-level default, can be overridden per posting):
 
@@ -79,12 +80,12 @@ See [availability-calendar.md](availability-calendar.md) for the full availabili
 - **Category**:
   - Coarse categories (for fast filtering): Study, Hackathon, Personal, Professional, Social
   - Free-form tags/keywords (matched via overlap or pgvector embedding similarity)
-- **Context identifier**: Specific hackathon name, course code, etc. (exact string match filter)
+- **Parent posting**: Child postings are scoped to their parent's participants. Replaces the deprecated `context_identifier` string field. See [nested-postings.md](nested-postings.md).
 - **Natural language criteria**: Optional, stored as pgvector embeddings for semantic matching beyond structured dimensions
 - **Capacity**: How many people the poster is looking for (default: 1)
 - **Deadline**: When the posting closes to new join requests
 - **Activity date**: When the activity or project starts (optional)
-- **Mode**: Open (anyone can join or request to join) vs. Sequential Invite (ordered invites sent one-by-one until enough accept)
+- **Visibility**: Public (appears in Discover for anyone to find) or Private (invite-only). Invites are decoupled from visibility — you can invite connections on any posting.
 - **Auto-accept**: Per-posting boolean. When true, the CTA is "Join" (instant). When false, the CTA is "Request to join" (requires poster approval). Default: true for connection-scoped postings, false for open/global postings.
 - **Remote preference**: Remote, in-person, or flexible (overrides person-level default)
 - **Location**: Where the activity happens (overrides person-level default)
@@ -124,7 +125,7 @@ When a posting is filled (accepted count >= `team_size_max`), additional users c
 - Posting expires → waitlisted users are notified and removed from the waitlist
 - Multiple spots open simultaneously → promote in FIFO order
 
-#### Application statuses (updated)
+#### Join request statuses
 
 `pending | accepted | rejected | withdrawn | waitlisted`
 
@@ -134,17 +135,18 @@ When a posting is filled (accepted count >= `team_size_max`), additional users c
 
 ### Two-Stage Matching
 
-#### Stage 1: Hard Filters (Pass/Fail)
+#### Stage 1: Fast Filter (Negative Elimination)
 
-- Context identifier (exact match if specified)
+Hard filters that eliminate clear mismatches — a cost gate for the deep match LLM:
+
+- Context membership (child posting scoped to parent's participants)
 - Category (if filtered)
 - Skill level minimum (if specified)
 - Location mode (if hard constraint, e.g., "in-person only")
 - Time/date overlap (does the person's availability overlap with the posting's time at all?)
+- pgvector cosine similarity on posting/profile text embeddings (minimum threshold)
 
-#### Stage 2: Soft Scoring (0-1 Scale)
-
-Remaining dimensions combined via weighted average.
+Soft scoring dimensions (weighted average) further rank the filtered candidates:
 
 ### Compatibility Formula
 
@@ -190,9 +192,9 @@ Users can adjust weights to reflect their priorities.
 - Embeddings stored for: posting descriptions, tags, natural language criteria
 - Fast filtering via PostgreSQL indexes, semantic matching via pgvector cosine similarity
 
-### Stage 3: Deep Match — LLM Evaluation (v0.5)
+### Stage 2: Deep Match — LLM Evaluation (v0.5)
 
-> Added by the text-first rewrite. See [text_first_rewrite.md](../.prompts/text_first_rewrite.md) §6.
+> Added by the text-first rewrite. See [text_first_rewrite.md](../.prompts/todo/text_first_rewrite.md) §7.
 
 For the top ~10–20 candidates from Stages 1–2, an LLM evaluates the full text of both sides for nuanced compatibility that structured data can't capture (communication style, project approach, complementary experience).
 
