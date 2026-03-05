@@ -75,7 +75,7 @@ async function withRetry<T>(
 
 export const POST = withAuth(
   { authMode: "cron", cronSecretEnv: "EMBEDDINGS_API_KEY" },
-  async (_req, _ctx) => {
+  async () => {
     // Use service-role client for RLS bypass (ctx.supabase is cookie-based)
     const supabase = createServiceClient();
 
