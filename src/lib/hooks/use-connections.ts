@@ -1,4 +1,5 @@
 import useSWR from "swr";
+import { cacheKeys } from "@/lib/swr/keys";
 import type { Friendship } from "@/lib/supabase/types";
 
 type ConnectionsResponse = {
@@ -17,8 +18,9 @@ type ConnectionsResponse = {
 };
 
 export function useConnections() {
-  const { data, error, isLoading, mutate } =
-    useSWR<ConnectionsResponse>("/api/friendships");
+  const { data, error, isLoading, mutate } = useSWR<ConnectionsResponse>(
+    cacheKeys.connections(),
+  );
 
   return {
     connections: data?.friendships ?? [],

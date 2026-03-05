@@ -84,7 +84,7 @@ function PostingDetailInner() {
     handleDelete,
     handleExtendDeadline,
     handleRepost,
-  } = usePostingActions(postingId, posting, mutate);
+  } = usePostingActions(postingId, posting);
 
   // Application management logic
   const {
@@ -108,7 +108,6 @@ function PostingDetailInner() {
     fetchedMyApplication,
     fetchedWaitlistPosition,
     applications,
-    mutate,
     setError,
   );
 

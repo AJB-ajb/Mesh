@@ -17,13 +17,12 @@ import { useProfileProviders } from "./use-profile-providers";
 export function useProfile() {
   const { data, error: fetchError, isLoading, mutate } = useProfileData();
   const profileForm = useProfileForm(data);
-  const save = useProfileSave(mutate, () => {
+  const save = useProfileSave(() => {
     profileForm.setIsEditing(false);
   });
   const aiUpdate = useProfileAiUpdate(
     profileForm.form,
     data?.sourceText ?? null,
-    mutate,
   );
   const providers = useProfileProviders();
 
