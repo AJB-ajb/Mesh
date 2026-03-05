@@ -22,6 +22,11 @@ vi.mock("@/lib/api/trigger-embedding", () => ({
   triggerEmbeddingGeneration: vi.fn(),
 }));
 
+const mockMutate = vi.fn();
+vi.mock("swr", () => ({
+  useSWRConfig: () => ({ mutate: mockMutate }),
+}));
+
 import { useProfileAiUpdate } from "../use-profile-ai-update";
 
 const fakeForm: ProfileFormState = {
@@ -42,11 +47,7 @@ describe("useProfileAiUpdate", () => {
   });
 
   it("starts with isApplyingUpdate false", () => {
-    const mutate = vi.fn();
-
-    const { result } = renderHook(() =>
-      useProfileAiUpdate(fakeForm, null, mutate),
-    );
+    const { result } = renderHook(() => useProfileAiUpdate(fakeForm, null));
 
     expect(result.current.isApplyingUpdate).toBe(false);
     expect(result.current.error).toBeNull();
@@ -58,11 +59,7 @@ describe("useProfileAiUpdate", () => {
       error: { message: "Not authenticated" },
     });
 
-    const mutate = vi.fn();
-
-    const { result } = renderHook(() =>
-      useProfileAiUpdate(fakeForm, null, mutate),
-    );
+    const { result } = renderHook(() => useProfileAiUpdate(fakeForm, null));
 
     await act(async () => {
       await result.current.applyFreeFormUpdate("new text", {
@@ -72,7 +69,7 @@ describe("useProfileAiUpdate", () => {
 
     expect(result.current.error).toBe("Please sign in again.");
     expect(result.current.isApplyingUpdate).toBe(false);
-    expect(mutate).not.toHaveBeenCalled();
+    expect(mockMutate).not.toHaveBeenCalled();
   });
 
   it("sets error if user not authenticated during undoLastUpdate", async () => {
@@ -81,10 +78,8 @@ describe("useProfileAiUpdate", () => {
       error: { message: "Not authenticated" },
     });
 
-    const mutate = vi.fn();
-
     const { result } = renderHook(() =>
-      useProfileAiUpdate(fakeForm, "old source", mutate),
+      useProfileAiUpdate(fakeForm, "old source"),
     );
 
     await act(async () => {
@@ -93,7 +88,7 @@ describe("useProfileAiUpdate", () => {
 
     expect(result.current.error).toBe("Please sign in again.");
     expect(result.current.isApplyingUpdate).toBe(false);
-    expect(mutate).not.toHaveBeenCalled();
+    expect(mockMutate).not.toHaveBeenCalled();
   });
 
   it("calls mutate after successful update", async () => {
@@ -105,10 +100,10 @@ describe("useProfileAiUpdate", () => {
       upsert: upsertMock,
     });
 
-    const mutate = vi.fn().mockResolvedValue(undefined);
+    mockMutate.mockResolvedValue(undefined);
 
     const { result } = renderHook(() =>
-      useProfileAiUpdate(fakeForm, "old source text", mutate),
+      useProfileAiUpdate(fakeForm, "old source text"),
     );
 
     await act(async () => {
@@ -119,7 +114,7 @@ describe("useProfileAiUpdate", () => {
     });
 
     expect(upsertMock).toHaveBeenCalledTimes(1);
-    expect(mutate).toHaveBeenCalledTimes(1);
+    expect(mockMutate).toHaveBeenCalledTimes(1);
     expect(result.current.isApplyingUpdate).toBe(false);
     expect(result.current.error).toBeNull();
     expect(result.current.success).toBe(true);
