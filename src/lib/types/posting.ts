@@ -70,6 +70,7 @@ export type PostingFormState = {
   maxDistanceKm: string;
   tags: string;
   contextIdentifier: string;
+  parentPostingId: string;
   skillLevelMin: string;
   autoAccept: string;
   availabilityMode: AvailabilityMode;
@@ -98,6 +99,7 @@ export type ExtractedPosting = {
   team_size_max?: number;
   tags?: string[];
   context_identifier?: string;
+  parent_posting_id?: string;
   mode?: string;
   visibility?: string;
   invitees?: string[];
@@ -136,6 +138,7 @@ export const defaultPostingFormState: PostingFormState = {
   maxDistanceKm: "",
   tags: "",
   contextIdentifier: "",
+  parentPostingId: "",
   skillLevelMin: "",
   autoAccept: "false",
   availabilityMode: "flexible",

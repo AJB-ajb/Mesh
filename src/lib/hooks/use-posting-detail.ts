@@ -32,6 +32,7 @@ export type PostingDetail = {
   max_distance_km: number | null;
   tags?: string[];
   context_identifier?: string | null;
+  parent_posting_id?: string | null;
   auto_accept: boolean;
   availability_mode?: string | null;
   timezone?: string | null;
