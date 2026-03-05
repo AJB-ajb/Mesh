@@ -181,22 +181,23 @@ Project listings created by users seeking collaborators.
 
 **Additional fields (not in legacy `projects` table):**
 
-| Field                       | Type    | Nullable | Default    | Description                                                              |
-| --------------------------- | ------- | -------- | ---------- | ------------------------------------------------------------------------ |
-| `mode`                      | text    | NO       | 'open'     | One of: `open`, `friend_ask`. **Deprecated** — use `visibility` instead. |
-| `visibility`                | text    | YES      | 'public'   | One of: `public`, `private`. Controls discoverability. Replaces `mode`.  |
-| `auto_accept`               | boolean | NO       | false      | Instantly accept anyone who joins                                        |
-| `availability_mode`         | text    | NO       | 'flexible' | One of: flexible, recurring, specific_dates                              |
-| `timezone`                  | text    | YES      | null       | IANA timezone string                                                     |
-| `location_mode`             | text    | YES      | null       | One of: remote, in_person, either                                        |
-| `location_name`             | text    | YES      | null       | Human-readable location string                                           |
-| `location_lat`              | double  | YES      | null       | Latitude                                                                 |
-| `location_lng`              | double  | YES      | null       | Longitude                                                                |
-| `max_distance_km`           | integer | YES      | null       | Hard filter for in-person distance                                       |
-| `natural_language_criteria` | text    | YES      | null       | Free-form matching criteria                                              |
-| `identified_roles`          | jsonb   | YES      | null       | LLM-identified distinct roles needed by the posting (string array)       |
-| `hidden_details`            | text    | YES      | null       | Private text revealed only to accepted team members                      |
-| `chip_metadata`             | jsonb   | YES      | null       | Structured metadata for inline editor chips (locations, times, skills)   |
+| Field                       | Type    | Nullable | Default    | Description                                                                                                        |
+| --------------------------- | ------- | -------- | ---------- | ------------------------------------------------------------------------------------------------------------------ |
+| `mode`                      | text    | NO       | 'open'     | One of: `open`, `friend_ask`. **Deprecated** — use `visibility` instead.                                           |
+| `visibility`                | text    | YES      | 'public'   | One of: `public`, `private`. Controls discoverability. Replaces `mode`.                                            |
+| `auto_accept`               | boolean | NO       | false      | Instantly accept anyone who joins                                                                                  |
+| `availability_mode`         | text    | NO       | 'flexible' | One of: flexible, recurring, specific_dates                                                                        |
+| `timezone`                  | text    | YES      | null       | IANA timezone string                                                                                               |
+| `location_mode`             | text    | YES      | null       | One of: remote, in_person, either                                                                                  |
+| `location_name`             | text    | YES      | null       | Human-readable location string                                                                                     |
+| `location_lat`              | double  | YES      | null       | Latitude                                                                                                           |
+| `location_lng`              | double  | YES      | null       | Longitude                                                                                                          |
+| `max_distance_km`           | integer | YES      | null       | Hard filter for in-person distance                                                                                 |
+| `natural_language_criteria` | text    | YES      | null       | Free-form matching criteria                                                                                        |
+| `identified_roles`          | jsonb   | YES      | null       | LLM-identified distinct roles needed by the posting (string array)                                                 |
+| `hidden_details`            | text    | YES      | null       | Private text revealed only to accepted team members                                                                |
+| `chip_metadata`             | jsonb   | YES      | null       | Structured metadata for inline editor chips (locations, times, skills)                                             |
+| `parent_posting_id`         | uuid FK | YES      | null       | References `postings(id)` ON DELETE CASCADE. Child posting inherits parent context. See `spec/nested-postings.md`. |
 
 ---
 

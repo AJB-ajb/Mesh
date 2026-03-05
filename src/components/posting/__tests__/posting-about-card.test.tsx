@@ -62,6 +62,7 @@ const baseForm: PostingFormState = {
   maxDistanceKm: "",
   tags: "",
   contextIdentifier: "",
+  parentPostingId: "",
   skillLevelMin: "",
   autoAccept: "false",
   availabilityMode: "flexible",

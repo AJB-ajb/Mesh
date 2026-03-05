@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { labels } from "@/lib/labels";
 import { usePostingCoreContext } from "./posting-core-context";
 import { usePostingApplicationContext } from "./posting-application-context";
 import { PostingTeamCard } from "./posting-team-card";
@@ -7,11 +10,15 @@ import { PostingAboutCard } from "./posting-about-card";
 import { GroupChatPanel } from "./group-chat-panel";
 import { PostingSidebar } from "./posting-sidebar";
 import { TeamSchedulingSection } from "./team-scheduling-section";
+import { CoordinationSection } from "./coordination-section";
+import { ComposeInContext } from "./compose-in-context";
+import { useChildPostings } from "@/lib/hooks/use-child-postings";
 
 export function PostingActivityTab() {
   const { posting, postingId, isOwner, currentUserId, currentUserName } =
     usePostingCoreContext();
   const { effectiveApplications } = usePostingApplicationContext();
+  const { mutate: mutateChildren } = useChildPostings(postingId);
 
   const teamMembers = [
     {
@@ -33,6 +40,14 @@ export function PostingActivityTab() {
       <div className="space-y-6 lg:col-span-2">
         <PostingTeamCard />
 
+        <Link
+          href={`/discover?context=${postingId}`}
+          className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+        >
+          {labels.coordination.browsePostings}
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+
         {currentUserId && (
           <TeamSchedulingSection
             postingId={postingId}
@@ -41,6 +56,14 @@ export function PostingActivityTab() {
             currentUserId={currentUserId}
           />
         )}
+
+        <CoordinationSection parentPostingId={postingId} />
+        <ComposeInContext
+          parentPostingId={postingId}
+          onCreated={() => {
+            mutateChildren();
+          }}
+        />
 
         <PostingAboutCard />
 

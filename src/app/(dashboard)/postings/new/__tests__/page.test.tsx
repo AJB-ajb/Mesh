@@ -9,6 +9,7 @@ const mockPush = vi.fn();
 const mockRouter = { push: mockPush, replace: vi.fn(), back: vi.fn() };
 vi.mock("next/navigation", () => ({
   useRouter: () => mockRouter,
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 // Mock MeshEditor — CodeMirror relies on browser APIs unavailable in jsdom.

@@ -48,6 +48,7 @@ function PostingDetailInner() {
     hasApplied: fetchedHasApplied,
     waitlistPosition: fetchedWaitlistPosition,
     acceptedCount: fetchedAcceptedCount,
+    parentPosting,
     isLoading,
     mutate,
   } = usePostingDetail(postingId);
@@ -157,6 +158,7 @@ function PostingDetailInner() {
             isAcceptedMember: isAcceptedMember ?? false,
             projectEnabled,
             acceptedCount,
+            parentPosting,
           }
         : null,
     [
@@ -176,6 +178,7 @@ function PostingDetailInner() {
       isAcceptedMember,
       projectEnabled,
       acceptedCount,
+      parentPosting,
     ],
   );
 

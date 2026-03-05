@@ -33,6 +33,8 @@ export type PostingCoreContextValue = {
   isAcceptedMember: boolean;
   projectEnabled: boolean;
   acceptedCount: number;
+  // Parent posting (for nested postings breadcrumb)
+  parentPosting?: { id: string; title: string } | null;
 };
 
 const PostingCoreContext = createContext<PostingCoreContextValue | null>(null);
