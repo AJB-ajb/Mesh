@@ -152,7 +152,7 @@ export function NotificationsDropdown({ className }: { className?: string }) {
       setRespondingTo(notification.id);
 
       try {
-        const response = await fetch("/api/sequential-invite/respond", {
+        const response = await fetch("/api/friend-ask/respond-by-posting", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
