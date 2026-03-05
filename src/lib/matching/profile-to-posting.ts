@@ -66,9 +66,8 @@ export async function matchProfileToPostings(
   // asynchronously via the batch processor after profile save
   const embedding = profile.embedding;
   if (!embedding || !Array.isArray(embedding)) {
-    throw new Error(
-      "Your profile embedding is still being generated. Please try again in a moment.",
-    );
+    console.warn(`[matching] Profile embedding not ready for user ${userId}, returning empty matches`);
+    return [];
   }
 
   // Build RPC params with optional hard filters
