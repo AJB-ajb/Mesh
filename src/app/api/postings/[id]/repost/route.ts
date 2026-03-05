@@ -1,5 +1,5 @@
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, apiSuccess } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 import { DEADLINES } from "@/lib/constants";
 
 /**
@@ -10,7 +10,9 @@ import { DEADLINES } from "@/lib/constants";
 export const POST = withAuth(async (req, { user, supabase, params }) => {
   const postingId = params.id;
 
-  const body = await req.json().catch(() => ({}));
+  const body = await parseBody(req).catch(
+    () => ({}) as Record<string, unknown>,
+  );
   const days = body.days as number | undefined;
   const expiresAtRaw = body.expires_at as string | undefined;
 

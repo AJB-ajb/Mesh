@@ -1,5 +1,5 @@
 import { withAuth, type AuthContext } from "@/lib/api/with-auth";
-import { apiError, apiSuccess } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 import { SchemaType, type Schema } from "@google/generative-ai";
 import { generateStructuredJSON, isGeminiConfigured } from "@/lib/ai/gemini";
 import type { PostingFilters } from "@/lib/types/filters";
@@ -77,7 +77,7 @@ export const POST = withAuth(async (request: Request, ctx: AuthContext) => {
     return apiError("INTERNAL", "Gemini API key not configured", 503);
   }
 
-  const { query } = await request.json();
+  const { query } = await parseBody<{ query: string }>(request);
 
   if (!query || typeof query !== "string" || query.trim().length === 0) {
     return apiError(

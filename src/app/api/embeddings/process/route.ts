@@ -2,20 +2,20 @@
  * POST /api/embeddings/process
  *
  * Processes pending embedding generation in batches.
- * Protected by EMBEDDINGS_API_KEY or SUPABASE_SECRET_KEY header check.
+ * Protected by EMBEDDINGS_API_KEY via withAuth cron mode.
  *
  * 1. Queries profiles/postings WHERE needs_embedding = true (LIMIT 50 each)
  * 2. Generates embeddings in batch via OpenAI
  * 3. Updates records with embeddings and marks needs_embedding = false
  */
 
-import * as Sentry from "@sentry/nextjs";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import {
   generateEmbeddingsBatch,
   composeProfileText,
   composePostingText,
 } from "@/lib/ai/embeddings";
+import { withAuth } from "@/lib/api/with-auth";
 import { apiError, apiSuccess } from "@/lib/errors";
 
 const BATCH_LIMIT = 50;
@@ -56,20 +56,6 @@ function createServiceClient() {
   });
 }
 
-function verifyAuth(req: Request): boolean {
-  const authHeader = req.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) return false;
-
-  const token = authHeader.slice(7);
-  const secretKey = process.env.SUPABASE_SECRET_KEY;
-  const embeddingsKey = process.env.EMBEDDINGS_API_KEY;
-
-  if (embeddingsKey && token === embeddingsKey) return true;
-  if (secretKey && token === secretKey) return true;
-
-  return false;
-}
-
 async function withRetry<T>(
   fn: () => Promise<T>,
   retries = MAX_RETRIES,
@@ -87,12 +73,10 @@ async function withRetry<T>(
   throw new Error("Unreachable");
 }
 
-export async function POST(req: Request) {
-  if (!verifyAuth(req)) {
-    return apiError("UNAUTHORIZED", "Invalid or missing API key", 401);
-  }
-
-  try {
+export const POST = withAuth(
+  { authMode: "cron", cronSecretEnv: "EMBEDDINGS_API_KEY" },
+  async () => {
+    // Use service-role client for RLS bypass (ctx.supabase is cookie-based)
     const supabase = createServiceClient();
 
     // Fetch pending profiles with join table skills
@@ -271,11 +255,5 @@ export async function POST(req: Request) {
       },
       errors,
     });
-  } catch (error) {
-    Sentry.captureException(error);
-    return apiError(
-      "INTERNAL",
-      error instanceof Error ? error.message : "Internal server error",
-    );
-  }
-}
+  },
+);

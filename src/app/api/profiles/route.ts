@@ -1,6 +1,7 @@
 import { withAuth } from "@/lib/api/with-auth";
 import { syncJoinTableRows } from "@/lib/api/sync-join-table";
 import { triggerEmbeddingGenerationServer } from "@/lib/api/trigger-embedding-server";
+import { logFireAndForget } from "@/lib/api/fire-and-forget";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import { parseList } from "@/lib/types/profile";
 import type { RecurringWindow } from "@/lib/types/availability";
@@ -85,7 +86,7 @@ export const PATCH = withAuth(async (req, { user, supabase }) => {
   );
 
   // Trigger embedding generation (fire-and-forget)
-  triggerEmbeddingGenerationServer().catch(() => {});
+  logFireAndForget(triggerEmbeddingGenerationServer(), "embedding-generation");
 
   return apiSuccess({ success: true });
 });

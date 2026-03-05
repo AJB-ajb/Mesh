@@ -3,7 +3,7 @@ import { SchemaType, type ObjectSchema } from "@google/generative-ai";
 import { withAuth } from "@/lib/api/with-auth";
 import { generateStructuredJSON } from "@/lib/ai/gemini";
 import { CLEAN_SYSTEM_PROMPT } from "@/lib/ai/text-tool-prompts";
-import { apiError, apiSuccess } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 
 const cleanSchema: ObjectSchema = {
   type: SchemaType.OBJECT,
@@ -17,7 +17,7 @@ const cleanSchema: ObjectSchema = {
 };
 
 export const POST = withAuth(async (req) => {
-  const { text } = await req.json();
+  const { text } = await parseBody<{ text: string }>(req);
 
   if (!text?.trim()) {
     return apiError("VALIDATION", "Text is required", 400);
