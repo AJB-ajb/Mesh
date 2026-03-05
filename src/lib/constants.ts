@@ -14,13 +14,24 @@ export const VOICE = {
   SILENCE_DURATION_MS: 2500,
 } as const;
 
-/** Gemini models in fallback order for rate-limit (429) retry (free tier) */
-export const GEMINI_MODELS = [
-  "gemini-3-flash-preview",
-  "gemini-2.5-flash",
-  "gemini-2.5-flash-lite",
-  "gemini-2.0-flash",
-] as const;
+/** Gemini models in fallback order (free tier) */
+export const GEMINI_MODELS = {
+  /** Fast lite models for simple tasks (clean, format, normalize) */
+  fast: [
+    "gemini-3.1-flash-lite-preview",
+    "gemini-2.5-flash-lite",
+    "gemini-2.5-flash",
+  ] as const,
+  /** Standard models for complex tasks (extraction, deep-match, analysis) */
+  standard: [
+    "gemini-3-flash-preview",
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+  ] as const,
+} as const;
+
+/** Per-model timeout in milliseconds */
+export const GEMINI_TIMEOUT_MS = 15_000;
 
 /** Default pagination limits */
 export const PAGINATION = {
