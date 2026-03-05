@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { buildChain, authedUser } from "tests/utils/supabase-mock";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -14,22 +15,6 @@ vi.mock("@/lib/supabase/server", () => ({
 
 // Dynamic import for [id] path
 const { PATCH } = await import("@/app/api/matches/[id]/apply/route");
-
-const MOCK_USER = { id: "user-1", email: "a@b.com" };
-
-function authedUser() {
-  mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
-}
-
-/** Chainable Supabase query mock */
-function buildChain(resolveValue: { data: unknown; error: unknown }) {
-  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
-  chain.select = vi.fn().mockReturnValue(chain);
-  chain.update = vi.fn().mockReturnValue(chain);
-  chain.eq = vi.fn().mockReturnValue(chain);
-  chain.single = vi.fn().mockResolvedValue(resolveValue);
-  return chain;
-}
 
 const req = new Request("http://localhost/api/matches/match-1/apply", {
   method: "PATCH",
@@ -49,7 +34,7 @@ describe("PATCH /api/matches/[id]/apply", () => {
   });
 
   it("returns 404 when match not found", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
       buildChain({ data: null, error: { message: "not found" } }),
     );
@@ -62,7 +47,7 @@ describe("PATCH /api/matches/[id]/apply", () => {
   });
 
   it("returns 403 when user is not the matched user", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
       buildChain({
         data: { id: "match-1", user_id: "other-user", status: "pending" },
@@ -78,7 +63,7 @@ describe("PATCH /api/matches/[id]/apply", () => {
   });
 
   it("returns 400 when match is not in pending status", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
       buildChain({
         data: { id: "match-1", user_id: "user-1", status: "applied" },
@@ -94,7 +79,7 @@ describe("PATCH /api/matches/[id]/apply", () => {
   });
 
   it("applies to match successfully", async () => {
-    authedUser();
+    authedUser(mockGetUser);
 
     const matchData = { id: "match-1", user_id: "user-1", status: "pending" };
     const updatedMatch = {
@@ -126,7 +111,7 @@ describe("PATCH /api/matches/[id]/apply", () => {
   });
 
   it("returns 500 when update fails", async () => {
-    authedUser();
+    authedUser(mockGetUser);
 
     const matchData = { id: "match-1", user_id: "user-1", status: "pending" };
 

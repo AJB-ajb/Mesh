@@ -131,7 +131,8 @@ describe("useNlFilter", () => {
       await result.current.handleNlSearch("remote React");
     });
 
-    expect(result.current.nlFilterPills.length).toBe(2);
+    const expectedFilterKeys = ["skills", "location_mode"];
+    expect(result.current.nlFilterPills).toHaveLength(expectedFilterKeys.length);
 
     act(() => {
       result.current.handleRemoveNlFilter("skills");

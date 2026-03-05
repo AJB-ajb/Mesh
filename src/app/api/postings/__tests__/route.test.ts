@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { buildChain, authedUser } from "tests/utils/supabase-mock";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -18,27 +19,12 @@ vi.mock("@/lib/api/trigger-embedding-server", () => ({
 
 const { POST } = await import("@/app/api/postings/route");
 
+// Custom MOCK_USER with user_metadata (needed by this route)
 const MOCK_USER = {
   id: "user-1",
   email: "a@b.com",
   user_metadata: { full_name: "Test User" },
 };
-
-function authedUser() {
-  mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
-}
-
-function buildChain(resolveValue: { data: unknown; error: unknown }) {
-  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
-  chain.select = vi.fn().mockReturnValue(chain);
-  chain.insert = vi.fn().mockReturnValue(chain);
-  chain.upsert = vi.fn().mockResolvedValue(resolveValue);
-  chain.delete = vi.fn().mockReturnValue(chain);
-  chain.eq = vi.fn().mockReturnValue(chain);
-  chain.single = vi.fn().mockResolvedValue(resolveValue);
-  chain.maybeSingle = vi.fn().mockResolvedValue(resolveValue);
-  return chain;
-}
 
 function makeReq(body?: Record<string, unknown>) {
   return new Request("http://localhost/api/postings", {
@@ -65,7 +51,7 @@ describe("POST /api/postings", () => {
   });
 
   it("returns 400 when description is missing", async () => {
-    authedUser();
+    authedUser(mockGetUser, MOCK_USER);
     const res = await POST(makeReq({ title: "No desc" }), routeCtx);
     const body = await res.json();
     expect(res.status).toBe(400);
@@ -73,7 +59,7 @@ describe("POST /api/postings", () => {
   });
 
   it("creates a posting successfully", async () => {
-    authedUser();
+    authedUser(mockGetUser, MOCK_USER);
 
     const profileChain = buildChain({
       data: { user_id: "user-1" },
@@ -108,7 +94,7 @@ describe("POST /api/postings", () => {
   });
 
   it("auto-generates title from description", async () => {
-    authedUser();
+    authedUser(mockGetUser, MOCK_USER);
 
     const profileChain = buildChain({
       data: { user_id: "user-1" },
@@ -134,7 +120,7 @@ describe("POST /api/postings", () => {
   });
 
   it("creates minimal profile if none exists", async () => {
-    authedUser();
+    authedUser(mockGetUser, MOCK_USER);
 
     const noProfileChain = buildChain({
       data: null,
@@ -162,7 +148,7 @@ describe("POST /api/postings", () => {
   });
 
   it("maps PG error 23503 to user-friendly message", async () => {
-    authedUser();
+    authedUser(mockGetUser, MOCK_USER);
 
     const profileChain = buildChain({
       data: { user_id: "user-1" },
@@ -191,7 +177,7 @@ describe("POST /api/postings", () => {
   });
 
   it("maps PG error 23505 to conflict", async () => {
-    authedUser();
+    authedUser(mockGetUser, MOCK_USER);
 
     const profileChain = buildChain({
       data: { user_id: "user-1" },
@@ -220,7 +206,7 @@ describe("POST /api/postings", () => {
   });
 
   it("triggers embedding generation after creation", async () => {
-    authedUser();
+    authedUser(mockGetUser, MOCK_USER);
 
     const profileChain = buildChain({
       data: { user_id: "user-1" },

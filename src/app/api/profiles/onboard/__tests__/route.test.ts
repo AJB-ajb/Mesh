@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { buildChain, authedUser } from "tests/utils/supabase-mock";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -14,21 +15,6 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 const { POST } = await import("@/app/api/profiles/onboard/route");
-
-const MOCK_USER = { id: "user-1", email: "a@b.com" };
-
-function authedUser() {
-  mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
-}
-
-function buildChain(resolveValue: { data: unknown; error: unknown }) {
-  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
-  chain.select = vi.fn().mockReturnValue(chain);
-  chain.upsert = vi.fn().mockResolvedValue(resolveValue);
-  chain.eq = vi.fn().mockReturnValue(chain);
-  chain.single = vi.fn().mockResolvedValue(resolveValue);
-  return chain;
-}
 
 function makeReq(body?: Record<string, unknown>) {
   return new Request("http://localhost/api/profiles/onboard", {
@@ -53,7 +39,7 @@ describe("POST /api/profiles/onboard", () => {
   });
 
   it("creates profile and marks profile_completed on success", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(buildChain({ data: null, error: null }));
     mockUpdateUser.mockResolvedValue({ error: null });
 
@@ -78,7 +64,7 @@ describe("POST /api/profiles/onboard", () => {
   });
 
   it("returns 500 when upsert fails", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
       buildChain({ data: null, error: { message: "DB error" } }),
     );
@@ -88,7 +74,7 @@ describe("POST /api/profiles/onboard", () => {
   });
 
   it("trims whitespace from fields", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const chain = buildChain({ data: null, error: null });
     mockFrom.mockReturnValue(chain);
     mockUpdateUser.mockResolvedValue({ error: null });
@@ -111,7 +97,7 @@ describe("POST /api/profiles/onboard", () => {
   });
 
   it("parses comma-separated skills into array", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const chain = buildChain({ data: null, error: null });
     mockFrom.mockReturnValue(chain);
     mockUpdateUser.mockResolvedValue({ error: null });
@@ -132,7 +118,7 @@ describe("POST /api/profiles/onboard", () => {
   });
 
   it("handles missing optional fields gracefully", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const chain = buildChain({ data: null, error: null });
     mockFrom.mockReturnValue(chain);
     mockUpdateUser.mockResolvedValue({ error: null });

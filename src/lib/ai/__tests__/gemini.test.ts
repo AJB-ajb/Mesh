@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { SchemaType } from "@google/generative-ai";
+import { GEMINI_MODELS } from "@/lib/constants";
 
 // Mock the @google/generative-ai module
 const mockGenerateContent = vi.fn();
@@ -127,16 +128,20 @@ describe("gemini fallback", () => {
 
     it("throws last error when all models exhausted", async () => {
       const { generateStructuredJSON } = await importFresh();
-      mockGenerateContent
-        .mockRejectedValueOnce(new Error("429 Too Many Requests"))
-        .mockRejectedValueOnce(new Error("429 Too Many Requests"))
-        .mockRejectedValueOnce(new Error("429 Too Many Requests - last"));
+      const standardModelCount = GEMINI_MODELS.standard.length;
+      for (let i = 0; i < standardModelCount - 1; i++) {
+        mockGenerateContent.mockRejectedValueOnce(
+          new Error("429 Too Many Requests"),
+        );
+      }
+      mockGenerateContent.mockRejectedValueOnce(
+        new Error("429 Too Many Requests - last"),
+      );
 
       await expect(generateStructuredJSON(opts)).rejects.toThrow(
         "429 Too Many Requests - last",
       );
-      // 3 models in standard tier
-      expect(mockGenerateContent).toHaveBeenCalledTimes(3);
+      expect(mockGenerateContent).toHaveBeenCalledTimes(standardModelCount);
     });
 
     it("uses fast tier when specified", async () => {
@@ -224,15 +229,16 @@ describe("gemini fallback", () => {
 
     it("throws when all models exhausted", async () => {
       const { generateContentWithFallback } = await importFresh();
-      mockGenerateContent
-        .mockRejectedValueOnce(new Error("429"))
-        .mockRejectedValueOnce(new Error("429"))
-        .mockRejectedValueOnce(new Error("429 final"));
+      const standardModelCount = GEMINI_MODELS.standard.length;
+      for (let i = 0; i < standardModelCount - 1; i++) {
+        mockGenerateContent.mockRejectedValueOnce(new Error("429"));
+      }
+      mockGenerateContent.mockRejectedValueOnce(new Error("429 final"));
 
       await expect(generateContentWithFallback(opts)).rejects.toThrow(
         "429 final",
       );
-      expect(mockGenerateContent).toHaveBeenCalledTimes(3);
+      expect(mockGenerateContent).toHaveBeenCalledTimes(standardModelCount);
     });
   });
 });

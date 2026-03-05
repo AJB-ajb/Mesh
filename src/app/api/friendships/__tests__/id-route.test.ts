@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { buildChain, authedUser } from "tests/utils/supabase-mock";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -14,36 +15,7 @@ vi.mock("@/lib/supabase/server", () => ({
 
 import { PATCH, DELETE } from "../[id]/route";
 
-const MOCK_USER = { id: "user-1", email: "a@b.com" };
 const FRIEND_ID = "user-2";
-
-function chain(finalValue: { data: unknown; error: unknown }) {
-  const self: Record<string, unknown> = {};
-  const methods = [
-    "select",
-    "insert",
-    "update",
-    "delete",
-    "eq",
-    "or",
-    "in",
-    "limit",
-    "order",
-    "single",
-    "maybeSingle",
-  ];
-  for (const m of methods) {
-    self[m] = vi.fn(() => self);
-  }
-  self.single = vi.fn(() => Promise.resolve(finalValue));
-  self.maybeSingle = vi.fn(() => Promise.resolve(finalValue));
-  self.then = (resolve: (v: unknown) => void) => resolve(finalValue);
-  return self;
-}
-
-function authedUser() {
-  mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
-}
 
 function makeReq(url: string, init?: RequestInit) {
   return new Request(`http://localhost${url}`, init);
@@ -71,7 +43,7 @@ describe("PATCH /api/friendships/[id]", () => {
   });
 
   it("returns 400 for invalid status", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     const res = await PATCH(
       makeReq("/api/friendships/f1", {
         method: "PATCH",
@@ -86,9 +58,9 @@ describe("PATCH /api/friendships/[id]", () => {
   });
 
   it("returns 404 when friendship not found", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
-      chain({ data: null, error: { message: "not found" } }),
+      buildChain({ data: null, error: { message: "not found" } }),
     );
 
     const res = await PATCH(
@@ -103,7 +75,7 @@ describe("PATCH /api/friendships/[id]", () => {
   });
 
   it("returns 403 when non-recipient tries to accept", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     // user-1 is the initiator (user_id), not the recipient (friend_id)
     const friendship = {
       id: "f1",
@@ -111,7 +83,7 @@ describe("PATCH /api/friendships/[id]", () => {
       friend_id: FRIEND_ID,
       status: "pending",
     };
-    mockFrom.mockReturnValue(chain({ data: friendship, error: null }));
+    mockFrom.mockReturnValue(buildChain({ data: friendship, error: null }));
 
     const res = await PATCH(
       makeReq("/api/friendships/f1", {
@@ -127,7 +99,7 @@ describe("PATCH /api/friendships/[id]", () => {
   });
 
   it("allows the recipient to accept", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     // user-1 is the recipient (friend_id)
     const friendship = {
       id: "f1",
@@ -140,8 +112,8 @@ describe("PATCH /api/friendships/[id]", () => {
     let callCount = 0;
     mockFrom.mockImplementation(() => {
       callCount++;
-      if (callCount === 1) return chain({ data: friendship, error: null });
-      return chain({ data: updated, error: null });
+      if (callCount === 1) return buildChain({ data: friendship, error: null });
+      return buildChain({ data: updated, error: null });
     });
 
     const res = await PATCH(
@@ -162,9 +134,9 @@ describe("DELETE /api/friendships/[id]", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("returns 404 when friendship not found", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
-      chain({ data: null, error: { message: "not found" } }),
+      buildChain({ data: null, error: { message: "not found" } }),
     );
 
     const res = await DELETE(
@@ -175,10 +147,10 @@ describe("DELETE /api/friendships/[id]", () => {
   });
 
   it("returns 403 when non-initiator tries to delete", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     // user-1 is the recipient, not the initiator
     mockFrom.mockReturnValue(
-      chain({ data: { user_id: FRIEND_ID }, error: null }),
+      buildChain({ data: { user_id: FRIEND_ID }, error: null }),
     );
 
     const res = await DELETE(
@@ -191,17 +163,17 @@ describe("DELETE /api/friendships/[id]", () => {
   });
 
   it("deletes friendship when initiator requests", async () => {
-    authedUser();
+    authedUser(mockGetUser);
 
     let callCount = 0;
     mockFrom.mockImplementation(() => {
       callCount++;
       if (callCount === 1) {
         // fetch check
-        return chain({ data: { user_id: "user-1" }, error: null });
+        return buildChain({ data: { user_id: "user-1" }, error: null });
       }
       // delete call
-      const q = chain({ data: null, error: null });
+      const q = buildChain({ data: null, error: null });
       q.then = (resolve: (v: unknown) => void) =>
         resolve({ data: null, error: null });
       return q;

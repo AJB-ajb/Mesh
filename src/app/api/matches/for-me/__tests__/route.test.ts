@@ -22,32 +22,9 @@ vi.mock("@/lib/matching/profile-to-posting", () => ({
   createMatchRecords: (...args: unknown[]) => mockCreateMatchRecords(...args),
 }));
 
+import { buildChain, authedUser } from "tests/utils/supabase-mock";
+
 import { GET } from "../route";
-
-const MOCK_USER = { id: "user-1", email: "a@b.com" };
-
-function authedUser() {
-  mockGetUser.mockResolvedValue({ data: { user: MOCK_USER }, error: null });
-}
-
-/** Chainable Supabase query mock */
-function chain(finalValue: { data: unknown; error: unknown }) {
-  const self: Record<string, unknown> = {};
-  for (const m of [
-    "select",
-    "insert",
-    "update",
-    "delete",
-    "eq",
-    "single",
-    "maybeSingle",
-  ]) {
-    self[m] = vi.fn(() => self);
-  }
-  self.single = vi.fn(() => Promise.resolve(finalValue));
-  self.then = (resolve: (v: unknown) => void) => resolve(finalValue);
-  return self;
-}
 
 const makeReq = () => new Request("http://localhost/api/matches/for-me");
 const routeCtx = { params: Promise.resolve({}) };
@@ -65,9 +42,9 @@ describe("GET /api/matches/for-me", () => {
   });
 
   it("returns empty matches when profile not found", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
-      chain({ data: null, error: { message: "not found" } }),
+      buildChain({ data: null, error: { message: "not found" } }),
     );
 
     const res = await GET(makeReq(), routeCtx);
@@ -79,9 +56,9 @@ describe("GET /api/matches/for-me", () => {
   });
 
   it("returns empty matches when profile has no data", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
-      chain({
+      buildChain({
         data: { bio: null, skills: [], headline: null },
         error: null,
       }),
@@ -96,9 +73,9 @@ describe("GET /api/matches/for-me", () => {
   });
 
   it("returns matches successfully", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
-      chain({
+      buildChain({
         data: { bio: "Developer", skills: ["React"], headline: "Dev" },
         error: null,
       }),
@@ -136,9 +113,9 @@ describe("GET /api/matches/for-me", () => {
   });
 
   it("returns empty array when no matches found", async () => {
-    authedUser();
+    authedUser(mockGetUser);
     mockFrom.mockReturnValue(
-      chain({
+      buildChain({
         data: { bio: "Developer", skills: ["React"], headline: "Dev" },
         error: null,
       }),
