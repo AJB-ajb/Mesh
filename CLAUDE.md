@@ -20,6 +20,8 @@ To avoid permission prompts from compound commands:
 
 For larger features, prefer splitting independent work into parallel subagent sessions (via the `Task` tool) when it gives a significant total advantage — e.g. cutting wall-clock time or keeping the main context focused. Use `isolation: "worktree"` when the subagent needs to write code (gives it its own branch and working copy); skip isolation for read-only research or exploration. Don't parallelise for the sake of it — only when the tasks are genuinely independent and the overhead is worth it.
 
+When subagents produce separate branches, merge them into the session's main worktree branch before landing — don't land each one individually. See "Consolidating subagent branches" in `.AGENTS.md`.
+
 ## Worktree Locations
 
 Two worktree approaches coexist — use the right one for the context:
