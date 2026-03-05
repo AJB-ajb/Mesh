@@ -17,13 +17,12 @@ import { useProfileProviders } from "./use-profile-providers";
 export function useProfile() {
   const { data, error: fetchError, isLoading, mutate } = useProfileData();
   const profileForm = useProfileForm(data);
-  const save = useProfileSave(mutate, () => {
+  const save = useProfileSave(() => {
     profileForm.setIsEditing(false);
   });
   const aiUpdate = useProfileAiUpdate(
     profileForm.form,
     data?.sourceText ?? null,
-    mutate,
   );
   const providers = useProfileProviders();
 
@@ -33,13 +32,11 @@ export function useProfile() {
     null,
   );
 
-  // When editing, use local draft; otherwise use fetched data
-  const availabilityWindows: RecurringWindow[] = profileForm.isEditing
-    ? (localWindows ??
-      data?.recurringWindows ??
-      gridToWindows(profileForm.form.availabilitySlots))
-    : (data?.recurringWindows ??
-      gridToWindows(profileForm.form.availabilitySlots));
+  // Use local draft when available, otherwise fetched data
+  const availabilityWindows: RecurringWindow[] =
+    localWindows ??
+    data?.recurringWindows ??
+    gridToWindows(profileForm.form.availabilitySlots);
 
   const handleAvailabilityWindowsChange = useCallback(
     (windows: RecurringWindow[]) => {

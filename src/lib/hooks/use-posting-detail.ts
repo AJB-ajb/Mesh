@@ -1,4 +1,5 @@
 import useSWR from "swr";
+import { cacheKeys } from "@/lib/swr/keys";
 import { createClient } from "@/lib/supabase/client";
 import type { ScoreBreakdown, Profile } from "@/lib/supabase/types";
 import type { SelectedPostingSkill } from "@/lib/types/skill";
@@ -31,6 +32,7 @@ export type PostingDetail = {
   max_distance_km: number | null;
   tags?: string[];
   context_identifier?: string | null;
+  parent_posting_id?: string | null;
   auto_accept: boolean;
   availability_mode?: string | null;
   timezone?: string | null;
@@ -51,6 +53,7 @@ export type Application = {
   cover_message: string | null;
   created_at: string;
   applicant_id: string;
+  responses?: Record<string, unknown> | null;
   profiles?: {
     full_name: string | null;
     headline: string | null;
@@ -335,7 +338,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
 
 export function usePostingDetail(postingId: string) {
   const { data, error, isLoading, mutate } = useSWR(
-    postingId ? `posting-detail/${postingId}` : null,
+    postingId ? cacheKeys.posting(postingId) : null,
     fetchPostingDetail,
   );
 

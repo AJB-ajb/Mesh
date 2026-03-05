@@ -145,8 +145,8 @@ export const POST = withAuth(async (req, { user, supabase }) => {
         .eq("id", match.id);
 
       results.push({ matchId: match.id, result });
-    } catch (err) {
-      console.error(`Deep match failed for match ${match.id}:`, err);
+    } catch {
+      // Error propagates to withAuth's error handler
     }
   }
 

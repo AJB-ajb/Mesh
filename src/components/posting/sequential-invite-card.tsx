@@ -1,12 +1,17 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Loader2, ListOrdered, XCircle } from "lucide-react";
+import { Loader2, ListOrdered, XCircle, Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useSequentialInviteForPosting } from "@/lib/hooks/use-sequential-invites";
 import { SequentialInviteSelector } from "./sequential-invite-selector";
 import { SequentialInviteStatus } from "./sequential-invite-status";
@@ -154,7 +159,7 @@ export function SequentialInviteCard({
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <Loader2 className="size-6 animate-spin text-muted-foreground" />
         </CardContent>
       </Card>
     );
@@ -170,7 +175,7 @@ export function SequentialInviteCard({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <ListOrdered className="h-5 w-5" />
+            <ListOrdered className="size-5" />
             {labels.invite.title}
           </CardTitle>
         </CardHeader>
@@ -190,9 +195,9 @@ export function SequentialInviteCard({
               disabled={isCancelling}
             >
               {isCancelling ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="size-4 animate-spin" />
               ) : (
-                <XCircle className="h-4 w-4" />
+                <XCircle className="size-4" />
               )}
               {labels.invite.cancelInvite}
             </Button>
@@ -207,7 +212,7 @@ export function SequentialInviteCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <ListOrdered className="h-5 w-5" />
+          <ListOrdered className="size-5" />
           {labels.invite.title}
         </CardTitle>
       </CardHeader>
@@ -221,11 +226,39 @@ export function SequentialInviteCard({
             />
           </div>
         )}
-        {/* Invite mode toggle */}
+
+        {/* Invite mode toggle with info popover */}
         <div className="space-y-2">
-          <label className="text-sm font-medium">
-            {labels.invite.modeLabel}
-          </label>
+          <div className="flex items-center gap-1.5">
+            <label className="text-sm font-medium">
+              {labels.invite.modeLabel}
+            </label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+                  aria-label={labels.invite.modeInfoLabel}
+                >
+                  <Info className="size-3.5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 text-sm" side="top">
+                <p className="font-medium">
+                  {labels.invite.modeSequential}
+                </p>
+                <p className="mt-1 text-muted-foreground">
+                  {labels.invite.modeSequentialHelp}
+                </p>
+                <p className="mt-3 font-medium">
+                  {labels.invite.modeParallel}
+                </p>
+                <p className="mt-1 text-muted-foreground">
+                  {labels.invite.modeParallelHelp}
+                </p>
+              </PopoverContent>
+            </Popover>
+          </div>
           <div className="flex rounded-lg border border-input overflow-hidden">
             {(["sequential", "parallel"] as const).map((mode) => (
               <button
@@ -245,48 +278,45 @@ export function SequentialInviteCard({
               </button>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground">
-            {inviteMode === "sequential"
-              ? labels.invite.modeSequentialHelp
-              : labels.invite.modeParallelHelp}
-          </p>
         </div>
 
-        {/* Concurrent invites (sequential mode only) */}
+        {/* Advanced settings (concurrent invites) — progressive disclosure */}
         {inviteMode === "sequential" && (
-          <div className="space-y-2">
-            <label htmlFor="concurrent-invites" className="text-sm font-medium">
-              {labels.invite.concurrentLabel}
-            </label>
-            <input
-              id="concurrent-invites"
-              type="number"
-              min={1}
-              max={Math.max(1, selectedConnections.length)}
-              value={concurrentInvites}
-              onChange={(e) => {
-                const val = Math.max(
-                  1,
-                  Math.min(
-                    Math.max(1, selectedConnections.length),
-                    Number(e.target.value) || 1,
-                  ),
-                );
-                setConcurrentInvites(val);
-              }}
-              className="flex h-9 w-20 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            />
-            <p className="text-xs text-muted-foreground">
-              {labels.invite.concurrentHelp}
-            </p>
-          </div>
+          <details>
+            <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
+              {labels.invite.advancedSettings}
+            </summary>
+            <div className="mt-2 space-y-2">
+              <label
+                htmlFor="concurrent-invites"
+                className="text-sm font-medium"
+              >
+                {labels.invite.concurrentLabel}
+              </label>
+              <input
+                id="concurrent-invites"
+                type="number"
+                min={1}
+                max={Math.max(1, selectedConnections.length)}
+                value={concurrentInvites}
+                onChange={(e) => {
+                  const val = Math.max(
+                    1,
+                    Math.min(
+                      Math.max(1, selectedConnections.length),
+                      Number(e.target.value) || 1,
+                    ),
+                  );
+                  setConcurrentInvites(val);
+                }}
+                className="flex h-9 w-20 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+              <p className="text-xs text-muted-foreground">
+                {labels.invite.concurrentHelp}
+              </p>
+            </div>
+          </details>
         )}
-
-        <p className="text-sm text-muted-foreground">
-          {inviteMode === "sequential"
-            ? labels.invite.sequentialDescription
-            : labels.invite.parallelDescription}
-        </p>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
@@ -301,7 +331,7 @@ export function SequentialInviteCard({
           <Button onClick={handleCreate} disabled={isCreating}>
             {isCreating ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="size-4 animate-spin" />
                 {labels.invite.starting}
               </>
             ) : (

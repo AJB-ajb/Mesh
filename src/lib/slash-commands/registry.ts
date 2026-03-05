@@ -55,6 +55,14 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     type: "content",
   },
   {
+    name: "question",
+    icon: "HelpCircle",
+    label: labels.slashCommands.question.label,
+    description: labels.slashCommands.question.description,
+    type: "content",
+    context: "posting",
+  },
+  {
     name: "size",
     icon: "Users",
     label: labels.slashCommands.size.label,
@@ -107,6 +115,31 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     label: labels.slashCommands.clean.label,
     description: labels.slashCommands.clean.description,
     type: "immediate",
+  },
+  // Profile-context commands
+  {
+    name: "availability",
+    icon: "CalendarDays",
+    label: labels.slashCommands.availability.label,
+    description: labels.slashCommands.availability.description,
+    type: "action",
+    context: "profile",
+  },
+  {
+    name: "calendar",
+    icon: "RefreshCw",
+    label: labels.slashCommands.calendar.label,
+    description: labels.slashCommands.calendar.description,
+    type: "action",
+    context: "profile",
+  },
+  {
+    name: "update",
+    icon: "Pencil",
+    label: labels.slashCommands.update.label,
+    description: labels.slashCommands.update.description,
+    type: "action",
+    context: "profile",
   },
 ];
 

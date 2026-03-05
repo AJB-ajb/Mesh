@@ -1,4 +1,5 @@
 import useSWR from "swr";
+import { cacheKeys } from "@/lib/swr/keys";
 import type { MatchResponse } from "@/lib/supabase/types";
 
 type MatchesResponse = {
@@ -8,7 +9,7 @@ type MatchesResponse = {
 
 export function useMatches() {
   const { data, error, isLoading, mutate } = useSWR<MatchesResponse>(
-    "/api/matches/for-me",
+    cacheKeys.matches(),
   );
 
   return {

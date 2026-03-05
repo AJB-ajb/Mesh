@@ -1,12 +1,11 @@
 "use client";
 
-import type { KeyedMutator } from "swr";
 import {
   type ProfileFormState,
   type ExtractedProfileV2,
   parseList,
 } from "@/lib/types/profile";
-import type { ProfileFetchResult } from "./use-profile-data";
+import { cacheKeys } from "@/lib/swr/keys";
 import { useAiUpdate, type AiUpdateConfig } from "./use-ai-update";
 
 // ---------------------------------------------------------------------------
@@ -88,13 +87,12 @@ function buildProfileConfig(): AiUpdateConfig<
 export function useProfileAiUpdate(
   currentForm: ProfileFormState,
   sourceText: string | null,
-  mutate: KeyedMutator<ProfileFetchResult>,
 ) {
   const config = buildProfileConfig();
   return useAiUpdate<ProfileFormState, ExtractedProfileV2>(
     currentForm,
     sourceText,
-    mutate as KeyedMutator<unknown>,
+    cacheKeys.profile(),
     config,
   );
 }

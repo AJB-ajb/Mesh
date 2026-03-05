@@ -9,6 +9,7 @@
  * 3. Updates records with embeddings and marks needs_embedding = false
  */
 
+import * as Sentry from "@sentry/nextjs";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import {
   generateEmbeddingsBatch,
@@ -271,7 +272,7 @@ export async function POST(req: Request) {
       errors,
     });
   } catch (error) {
-    console.error("Embedding processing error:", error);
+    Sentry.captureException(error);
     return apiError(
       "INTERNAL",
       error instanceof Error ? error.message : "Internal server error",

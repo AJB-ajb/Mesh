@@ -44,8 +44,6 @@ export const POST = withAuth(async (req) => {
   );
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Deepgram error:", response.status, errorText);
     return apiError("INTERNAL", "Transcription failed", 502);
   }
 

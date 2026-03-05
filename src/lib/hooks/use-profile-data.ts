@@ -2,6 +2,7 @@
 
 import useSWR from "swr";
 import { useRouter } from "next/navigation";
+import { cacheKeys } from "@/lib/swr/keys";
 import { getUserOrThrow } from "@/lib/supabase/auth";
 import {
   type ProfileFormState,
@@ -214,7 +215,7 @@ async function fetchProfile(): Promise<ProfileFetchResult> {
 export function useProfileData() {
   const router = useRouter();
 
-  return useSWR("profile", fetchProfile, {
+  return useSWR(cacheKeys.profile(), fetchProfile, {
     onError: () => {
       router.replace("/login");
     },

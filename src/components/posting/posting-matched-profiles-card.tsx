@@ -1,6 +1,13 @@
 "use client";
 
-import { Sparkles, Loader2, MessageSquare, Users } from "lucide-react";
+import { useState } from "react";
+import {
+  Sparkles,
+  Loader2,
+  MessageSquare,
+  Users,
+  ChevronRight,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +22,8 @@ import { useRouter } from "next/navigation";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatScore } from "@/lib/matching/scoring";
 import { getInitials } from "@/lib/format";
+import { labels } from "@/lib/labels";
+import { cn } from "@/lib/utils";
 import { usePostingDetailContext } from "./posting-detail-context";
 
 export function PostingMatchedProfilesCard() {
@@ -25,11 +34,18 @@ export function PostingMatchedProfilesCard() {
   } = usePostingDetailContext();
   const router = useRouter();
   const onViewProfile = (userId: string) => router.push(`/profile/${userId}`);
+
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const toggleExpand = (userId: string) => {
+    setExpandedId((prev) => (prev === userId ? null : userId));
+  };
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-blue-500" />
+          <Sparkles className="size-5 text-blue-500" />
           <CardTitle>Matched Collaborators</CardTitle>
         </div>
         <CardDescription>
@@ -39,7 +55,7 @@ export function PostingMatchedProfilesCard() {
       <CardContent>
         {isLoadingMatches ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <Loader2 className="size-6 animate-spin text-muted-foreground" />
           </div>
         ) : matchedProfiles.length === 0 ? (
           <EmptyState
@@ -49,33 +65,47 @@ export function PostingMatchedProfilesCard() {
             className="py-8"
           />
         ) : (
-          <div className="space-y-4">
-            {matchedProfiles.map((matchedProfile) => (
-              <div
-                key={matchedProfile.user_id}
-                className="rounded-lg border border-border p-4 hover:bg-muted/30 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-sm font-medium shrink-0">
+          <div className="divide-y divide-border rounded-lg border border-border">
+            {matchedProfiles.map((matchedProfile) => {
+              const isExpanded = expandedId === matchedProfile.user_id;
+
+              return (
+                <div key={matchedProfile.user_id}>
+                  {/* Compact row */}
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-muted/30"
+                    onClick={() => toggleExpand(matchedProfile.user_id)}
+                    aria-expanded={isExpanded}
+                  >
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium">
                       {getInitials(matchedProfile.full_name)}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium truncate">
-                          {matchedProfile.full_name || "Anonymous"}
-                        </h4>
-                        <Badge variant="default" className="text-xs shrink-0">
-                          {formatScore(matchedProfile.overall_score)}
-                        </Badge>
-                      </div>
+                    <span className="min-w-0 flex-1 truncate font-medium">
+                      {matchedProfile.full_name || "Anonymous"}
+                    </span>
+                    <Badge variant="default" className="shrink-0 text-xs">
+                      {formatScore(matchedProfile.overall_score)}
+                    </Badge>
+                    <ChevronRight
+                      className={cn(
+                        "size-4 shrink-0 text-muted-foreground transition-transform",
+                        isExpanded && "rotate-90",
+                      )}
+                    />
+                  </button>
+
+                  {/* Expanded details */}
+                  {isExpanded && (
+                    <div className="border-t border-border bg-muted/10 px-3 pb-3 pt-2 space-y-3">
                       {matchedProfile.headline && (
-                        <p className="text-sm text-muted-foreground truncate">
+                        <p className="text-sm text-muted-foreground">
                           {matchedProfile.headline}
                         </p>
                       )}
+
                       {/* Match Breakdown */}
-                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                      <div className="grid grid-cols-2 gap-2 text-xs">
                         {(
                           [
                             ["Semantic", matchedProfile.breakdown.semantic],
@@ -103,30 +133,32 @@ export function PostingMatchedProfilesCard() {
                           </div>
                         ))}
                       </div>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Action buttons */}
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onViewProfile(matchedProfile.user_id)}
-                  >
-                    View Profile
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="default"
-                    onClick={() => onMessage(matchedProfile.user_id)}
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    Message
-                  </Button>
+                      {/* Action buttons */}
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            onViewProfile(matchedProfile.user_id)
+                          }
+                        >
+                          {labels.matchedProfiles.viewProfile}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => onMessage(matchedProfile.user_id)}
+                        >
+                          <MessageSquare className="size-4" />
+                          {labels.matchedProfiles.message}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>

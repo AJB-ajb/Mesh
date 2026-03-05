@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import useSWR from "swr";
+import { cacheKeys } from "@/lib/swr/keys";
 import { createClient } from "@/lib/supabase/client";
 import { getInitials } from "@/lib/format";
 import { getUserOrThrow } from "@/lib/supabase/auth";
@@ -61,7 +62,7 @@ async function fetchNotificationData(): Promise<NotificationData> {
 export function useNotifications() {
   const supabaseRef = useRef(createClient());
   const { data, error, isLoading, mutate } = useSWR(
-    "header-notifications",
+    cacheKeys.notifications(),
     fetchNotificationData,
   );
 

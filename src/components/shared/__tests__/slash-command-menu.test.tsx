@@ -80,8 +80,8 @@ describe("SlashCommandMenu", () => {
     const onSelect = vi.fn();
     render(<SlashCommandMenu {...defaultProps} onSelect={onSelect} />);
 
-    // Use mouseDown since the component uses onMouseDown
-    fireEvent.mouseDown(screen.getByText("/location"));
+    // Use pointerDown since the component uses onPointerDown
+    fireEvent.pointerDown(screen.getByText("/location"));
 
     expect(onSelect).toHaveBeenCalledTimes(1);
     expect(onSelect).toHaveBeenCalledWith(mockCommands[1]);
