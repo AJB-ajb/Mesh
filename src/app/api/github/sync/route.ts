@@ -9,8 +9,7 @@
  * - Returns suggestions for user review
  */
 
-import * as Sentry from "@sentry/nextjs";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthContext } from "@/lib/api/with-auth";
 import { apiError, apiSuccess } from "@/lib/errors";
 import {
   extractGitHubProfile,
@@ -26,57 +25,47 @@ import {
   getUserProfile,
 } from "@/lib/github";
 
-export async function POST() {
-  try {
-    const supabase = await createClient();
+export const POST = withAuth(async (req: Request, ctx: AuthContext) => {
+  const { user, supabase } = ctx;
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+  // Get GitHub access token from session
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
-    if (authError || !user) {
-      return apiError("UNAUTHORIZED", "Unauthorized", 401);
-    }
+  const providerToken = session?.provider_token;
 
-    // Get GitHub access token from session
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    const providerToken = session?.provider_token;
-
-    if (!providerToken) {
-      return apiError(
-        "VALIDATION",
-        "GitHub access token not available. Please sign in with GitHub to sync your profile",
-        400,
-      );
-    }
-
-    // Check if user has GitHub linked (either primary or linked identity)
-    // Supabase stores provider info in multiple places
-    const identities = user.identities || [];
-    const hasGithubIdentity = identities.some(
-      (identity: { provider: string }) => identity.provider === "github",
+  if (!providerToken) {
+    return apiError(
+      "VALIDATION",
+      "GitHub access token not available. Please sign in with GitHub to sync your profile",
+      400,
     );
+  }
 
-    if (!hasGithubIdentity) {
-      return apiError(
-        "VALIDATION",
-        "GitHub account not linked. Please link your GitHub account in Settings to sync your profile",
-        400,
-      );
-    }
+  // Check if user has GitHub linked (either primary or linked identity)
+  // Supabase stores provider info in multiple places
+  const identities = user.identities || [];
+  const hasGithubIdentity = identities.some(
+    (identity: { provider: string }) => identity.provider === "github",
+  );
 
-    // Update sync status to 'syncing'
-    try {
-      await updateSyncStatus(user.id, "syncing");
-    } catch {
-      // Ignore if record doesn't exist yet
-    }
+  if (!hasGithubIdentity) {
+    return apiError(
+      "VALIDATION",
+      "GitHub account not linked. Please link your GitHub account in Settings to sync your profile",
+      400,
+    );
+  }
 
+  // Update sync status to 'syncing'
+  try {
+    await updateSyncStatus(user.id, "syncing");
+  } catch {
+    // Ignore if record doesn't exist yet
+  }
+
+  try {
     // Extract GitHub profile data
     console.log(`[GitHub Sync] Starting extraction for user ${user.id}`);
     const extraction = await extractGitHubProfile(providerToken);
@@ -144,21 +133,13 @@ export async function POST() {
       profileUpdated: true,
     });
   } catch (error) {
-    Sentry.captureException(error);
-
     // Try to update sync status to failed
     try {
-      const supabase = await createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        await updateSyncStatus(
-          user.id,
-          "failed",
-          error instanceof Error ? error.message : "Unknown error",
-        );
-      }
+      await updateSyncStatus(
+        user.id,
+        "failed",
+        error instanceof Error ? error.message : "Unknown error",
+      );
     } catch {
       // Ignore status update errors
     }
@@ -169,69 +150,51 @@ export async function POST() {
       500,
     );
   }
-}
+});
 
 /**
  * GET /api/github/sync
  * Get current GitHub sync status and profile data
  */
-export async function GET() {
-  try {
-    const supabase = await createClient();
+export const GET = withAuth(async (req: Request, ctx: AuthContext) => {
+  const { user } = ctx;
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+  // Get GitHub profile
+  const githubProfile = await getGitHubProfile(user.id);
 
-    if (authError || !user) {
-      return apiError("UNAUTHORIZED", "Unauthorized", 401);
-    }
-
-    // Get GitHub profile
-    const githubProfile = await getGitHubProfile(user.id);
-
-    if (!githubProfile) {
-      return apiSuccess({
-        synced: false,
-        message: "No GitHub profile data found. Sync to get started.",
-      });
-    }
-
-    // Get existing user profile for suggestions
-    const existingProfile = await getUserProfile(user.id);
-    const suggestions = existingProfile
-      ? getProfileSuggestions(existingProfile, githubProfile)
-      : null;
-
+  if (!githubProfile) {
     return apiSuccess({
-      synced: true,
-      lastSyncedAt: githubProfile.lastSyncedAt,
-      syncStatus: githubProfile.syncStatus,
-      data: {
-        githubUsername: githubProfile.githubUsername,
-        githubUrl: githubProfile.githubUrl,
-        avatarUrl: githubProfile.avatarUrl,
-        repoCount: githubProfile.repoCount,
-        totalStars: githubProfile.totalStars,
-        primaryLanguages: githubProfile.primaryLanguages,
-        topics: githubProfile.topics,
-        inferredSkills: githubProfile.inferredSkills,
-        inferredInterests: githubProfile.inferredInterests,
-        experienceSignals: githubProfile.experienceSignals,
-        codingStyle: githubProfile.codingStyle,
-        collaborationStyle: githubProfile.collaborationStyle,
-        activityLevel: githubProfile.activityLevel,
-        suggestedBio: githubProfile.suggestedBio,
-      },
-      suggestions,
+      synced: false,
+      message: "No GitHub profile data found. Sync to get started.",
     });
-  } catch (error) {
-    Sentry.captureException(error);
-    return apiError(
-      "INTERNAL",
-      error instanceof Error ? error.message : "Failed to get GitHub profile",
-      500,
-    );
   }
-}
+
+  // Get existing user profile for suggestions
+  const existingProfile = await getUserProfile(user.id);
+  const suggestions = existingProfile
+    ? getProfileSuggestions(existingProfile, githubProfile)
+    : null;
+
+  return apiSuccess({
+    synced: true,
+    lastSyncedAt: githubProfile.lastSyncedAt,
+    syncStatus: githubProfile.syncStatus,
+    data: {
+      githubUsername: githubProfile.githubUsername,
+      githubUrl: githubProfile.githubUrl,
+      avatarUrl: githubProfile.avatarUrl,
+      repoCount: githubProfile.repoCount,
+      totalStars: githubProfile.totalStars,
+      primaryLanguages: githubProfile.primaryLanguages,
+      topics: githubProfile.topics,
+      inferredSkills: githubProfile.inferredSkills,
+      inferredInterests: githubProfile.inferredInterests,
+      experienceSignals: githubProfile.experienceSignals,
+      codingStyle: githubProfile.codingStyle,
+      collaborationStyle: githubProfile.collaborationStyle,
+      activityLevel: githubProfile.activityLevel,
+      suggestedBio: githubProfile.suggestedBio,
+    },
+    suggestions,
+  });
+});

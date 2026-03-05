@@ -1,5 +1,4 @@
-import * as Sentry from "@sentry/nextjs";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthContext } from "@/lib/api/with-auth";
 import { apiError, apiSuccess } from "@/lib/errors";
 import { SchemaType, type Schema } from "@google/generative-ai";
 import { generateStructuredJSON, isGeminiConfigured } from "@/lib/ai/gemini";
@@ -73,33 +72,22 @@ const filterSchema: Schema = {
  * POST /api/filters/translate
  * Translates a natural language query into structured posting filters using Gemini.
  */
-export async function POST(request: Request) {
+export const POST = withAuth(async (request: Request, ctx: AuthContext) => {
+  if (!isGeminiConfigured()) {
+    return apiError("INTERNAL", "Gemini API key not configured", 503);
+  }
+
+  const { query } = await request.json();
+
+  if (!query || typeof query !== "string" || query.trim().length === 0) {
+    return apiError(
+      "VALIDATION",
+      "Please provide a search query to translate into filters",
+      400,
+    );
+  }
+
   try {
-    if (!isGeminiConfigured()) {
-      return apiError("INTERNAL", "Gemini API key not configured", 503);
-    }
-
-    const supabase = await createClient();
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return apiError("UNAUTHORIZED", "Unauthorized", 401);
-    }
-
-    const { query } = await request.json();
-
-    if (!query || typeof query !== "string" || query.trim().length === 0) {
-      return apiError(
-        "VALIDATION",
-        "Please provide a search query to translate into filters",
-        400,
-      );
-    }
-
     const filters = await generateStructuredJSON<PostingFilters>({
       systemPrompt: `You are a filter parser for a project/team-finding platform. Convert natural language search queries into structured filter objects.
 
@@ -121,8 +109,7 @@ Rules:
       success: true,
       filters,
     });
-  } catch (error) {
-    Sentry.captureException(error);
+  } catch {
     return apiError("INTERNAL", "Failed to translate filters", 500);
   }
-}
+});
