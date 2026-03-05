@@ -26,6 +26,7 @@ type Posting = {
   location_name: string | null;
   estimated_time: string | null;
   context_identifier: string | null;
+  parent_posting_id: string | null;
   natural_language_criteria: string | null;
   status: string;
   created_at: string;
@@ -51,6 +52,8 @@ export interface QueryFilters {
   locationMode?: string;
   /** Context identifier (e.g. university, org). */
   contextIdentifier?: string;
+  /** Parent posting ID — scoped discover within a parent context. */
+  parentPostingId?: string;
 }
 
 type PostingsResult = {
@@ -130,6 +133,15 @@ async function fetchPostings(key: string): Promise<PostingsResult> {
     query = query.or(
       `context_identifier.eq.${queryFilters.contextIdentifier},context_identifier.is.null`,
     );
+  }
+
+  // Parent posting scope: scoped discover or exclude children from global
+  if (tab === "discover") {
+    if (queryFilters.parentPostingId) {
+      query = query.eq("parent_posting_id", queryFilters.parentPostingId);
+    } else {
+      query = query.is("parent_posting_id", null);
+    }
   }
 
   const { data, error } = await query;

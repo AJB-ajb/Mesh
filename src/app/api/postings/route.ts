@@ -25,6 +25,47 @@ export const POST = withAuth(async (req, { user, supabase }) => {
 
   const dbRow = buildPostingDbRow(body, "create");
 
+  // Verify parent posting membership if creating a child posting
+  if (dbRow.parent_posting_id) {
+    const { data: parent, error: parentError } = await supabase
+      .from("postings")
+      .select("id, creator_id, status")
+      .eq("id", dbRow.parent_posting_id)
+      .single();
+
+    if (parentError || !parent) {
+      throw new AppError("VALIDATION", "Parent posting not found.", 404);
+    }
+
+    if (parent.status !== "open") {
+      throw new AppError(
+        "VALIDATION",
+        "Cannot create a posting in a closed or expired parent.",
+        400,
+      );
+    }
+
+    // Check if user is creator or accepted applicant of parent
+    if (parent.creator_id !== user.id) {
+      const { data: membership } = await supabase
+        .from("applications")
+        .select("id")
+        .eq("posting_id", parent.id)
+        .eq("applicant_id", user.id)
+        .eq("status", "accepted")
+        .limit(1)
+        .maybeSingle();
+
+      if (!membership) {
+        throw new AppError(
+          "FORBIDDEN",
+          "You must be a member of the parent posting to create a child posting.",
+          403,
+        );
+      }
+    }
+  }
+
   const { data: posting, error: insertError } = await supabase
     .from("postings")
     .insert({
