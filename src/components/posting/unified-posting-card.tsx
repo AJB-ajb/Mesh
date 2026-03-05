@@ -97,7 +97,7 @@ export interface UnifiedPostingCardProps {
   onToggleBookmark?: (postingId: string) => void;
   activeTab?: "discover" | "my-postings";
   // Compact variant props (posts page)
-  role?: "owner" | "joined" | "applied";
+  role?: "owner" | "joined" | "applied" | "invited";
   unreadCount?: number;
   href?: string;
   // Nested posting props

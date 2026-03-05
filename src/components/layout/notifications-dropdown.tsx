@@ -20,6 +20,7 @@ import { useRovingIndex } from "@/lib/hooks/use-roving-index";
 import { useNotifications } from "@/lib/hooks/use-notifications";
 import { formatTimeAgoShort } from "@/lib/format";
 import type { Notification } from "@/lib/supabase/realtime";
+import { INVITE_RECEIVED } from "@/lib/notifications/events";
 
 // ---------------------------------------------------------------------------
 // Helpers (reused from notifications-list.tsx)
@@ -61,7 +62,7 @@ function getIconColor(type: string) {
 function isActionableInvite(notification: Notification) {
   return (
     notification.type === "sequential_invite" &&
-    notification.title === "Sequential Invite Received" &&
+    notification.title === INVITE_RECEIVED.title &&
     notification.related_posting_id
   );
 }
@@ -151,7 +152,7 @@ export function NotificationsDropdown({ className }: { className?: string }) {
       setRespondingTo(notification.id);
 
       try {
-        const response = await fetch("/api/sequential-invite/respond", {
+        const response = await fetch("/api/friend-ask/respond-by-posting", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

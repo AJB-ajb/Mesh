@@ -1322,6 +1322,7 @@ export const labels = {
       created: "Created",
       joined: "Joined",
       applied: "Requested",
+      invited: "Invited",
       completed: "Completed",
     } as const,
     empty: {
@@ -1329,6 +1330,7 @@ export const labels = {
       created: "You haven\u2019t created any postings yet.",
       joined: "You haven\u2019t joined any postings yet.",
       applied: "No pending join requests.",
+      invited: "No pending invites.",
       completed: "No completed postings yet.",
     } as const,
     emptyDescription: {
@@ -1336,6 +1338,7 @@ export const labels = {
       created: "Create a new posting to find collaborators.",
       joined: "Browse the discover page to find postings to join.",
       applied: "Request to join postings you\u2019re interested in.",
+      invited: "Invites from connections will appear here.",
       completed: "Completed projects will appear here.",
     } as const,
     newPosting: "New Posting",

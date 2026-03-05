@@ -21,6 +21,7 @@ export function PostingVisitorView() {
     currentUserProfile,
     isAcceptedMember,
     projectEnabled,
+    hasPendingInvite,
   } = usePostingCoreContext();
 
   const { effectiveApplications } = usePostingApplicationContext();
@@ -47,7 +48,9 @@ export function PostingVisitorView() {
     <div className="space-y-6">
       <PostingDetailHeader />
 
-      {(posting.visibility === "private" || posting.mode === "friend_ask") &&
+      {(posting.visibility === "private" ||
+        posting.mode === "friend_ask" ||
+        hasPendingInvite) &&
         currentUserId && (
           <SequentialInviteResponseCard
             postingId={postingId}

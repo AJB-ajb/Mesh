@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { formatTimeAgoShort } from "@/lib/format";
 import type { Notification } from "@/lib/supabase/realtime";
+import { INVITE_RECEIVED } from "@/lib/notifications/events";
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
@@ -53,7 +54,7 @@ const getIconColor = (type: string) => {
 const isActionableInvite = (notification: Notification) => {
   return (
     notification.type === "sequential_invite" &&
-    notification.title === "Sequential Invite Received" &&
+    notification.title === INVITE_RECEIVED.title &&
     notification.related_posting_id
   );
 };

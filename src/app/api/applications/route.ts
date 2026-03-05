@@ -64,6 +64,35 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     );
   }
 
+  // Check for active invite where user is an invitee
+  const { data: activeInvite } = await supabase
+    .from("friend_asks")
+    .select(
+      "id, pending_invitees, ordered_friend_list, invite_mode, declined_list",
+    )
+    .eq("posting_id", posting_id)
+    .in("status", ["pending", "accepted"])
+    .limit(1)
+    .maybeSingle();
+
+  if (activeInvite) {
+    const inviteMode = activeInvite.invite_mode ?? "sequential";
+    const declinedList: string[] = activeInvite.declined_list ?? [];
+    const isInvited =
+      inviteMode === "parallel"
+        ? activeInvite.ordered_friend_list.includes(user.id) &&
+          !declinedList.includes(user.id)
+        : ((activeInvite.pending_invitees as string[]) ?? []).includes(user.id);
+
+    if (isInvited) {
+      throw new AppError(
+        "CONFLICT",
+        "You have a pending invite for this posting. Please respond to the invite instead.",
+        409,
+      );
+    }
+  }
+
   // Determine initial status
   const isFilled = posting.status === "filled";
   const isAutoAccept = posting.auto_accept === true;
