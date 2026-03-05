@@ -1,4 +1,5 @@
 import { withAuth } from "@/lib/api/with-auth";
+import { getBookmarkedPostingIds, toggleBookmark } from "@/lib/data";
 import { AppError, apiSuccess, parseBody } from "@/lib/errors";
 
 /**
@@ -6,18 +7,8 @@ import { AppError, apiSuccess, parseBody } from "@/lib/errors";
  * Return the current user's bookmarked posting IDs.
  */
 export const GET = withAuth(async (_req, { user, supabase }) => {
-  const { data, error } = await supabase
-    .from("bookmarks")
-    .select("posting_id")
-    .eq("user_id", user.id);
-
-  if (error) {
-    throw new AppError("INTERNAL", "Failed to fetch bookmarks", 500);
-  }
-
-  return apiSuccess({
-    postingIds: data.map((row: { posting_id: string }) => row.posting_id),
-  });
+  const postingIds = await getBookmarkedPostingIds(supabase, user.id);
+  return apiSuccess({ postingIds });
 });
 
 /**
@@ -32,36 +23,6 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     throw new AppError("VALIDATION", "posting_id is required", 400);
   }
 
-  // Check if bookmark already exists
-  const { data: existing } = await supabase
-    .from("bookmarks")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("posting_id", posting_id)
-    .maybeSingle();
-
-  if (existing) {
-    // Remove bookmark
-    const { error } = await supabase
-      .from("bookmarks")
-      .delete()
-      .eq("id", existing.id);
-
-    if (error) {
-      throw new AppError("INTERNAL", "Failed to remove bookmark", 500);
-    }
-
-    return apiSuccess({ bookmarked: false });
-  }
-
-  // Add bookmark
-  const { error } = await supabase
-    .from("bookmarks")
-    .insert({ user_id: user.id, posting_id });
-
-  if (error) {
-    throw new AppError("INTERNAL", "Failed to add bookmark", 500);
-  }
-
-  return apiSuccess({ bookmarked: true });
+  const bookmarked = await toggleBookmark(supabase, user.id, posting_id);
+  return apiSuccess({ bookmarked });
 });

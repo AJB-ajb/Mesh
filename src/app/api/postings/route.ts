@@ -1,4 +1,5 @@
 import { withAuth } from "@/lib/api/with-auth";
+import { ensureProfileExists } from "@/lib/api/guards";
 import { syncJoinTableRows } from "@/lib/api/sync-join-table";
 import {
   validatePostingBody,
@@ -20,31 +21,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     "Untitled Posting";
 
   // Ensure user has a profile (required for creator_id FK)
-  const { data: profile, error: profileCheckError } = await supabase
-    .from("profiles")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .single();
-
-  if (profileCheckError && profileCheckError.code !== "PGRST116") {
-    throw new AppError("INTERNAL", "Failed to verify profile", 500);
-  }
-
-  if (!profile) {
-    const { error: profileError } = await supabase.from("profiles").insert({
-      user_id: user.id,
-      full_name:
-        user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
-    });
-
-    if (profileError) {
-      throw new AppError(
-        "INTERNAL",
-        `Failed to create user profile: ${profileError.message || "Please try again."}`,
-        500,
-      );
-    }
-  }
+  await ensureProfileExists(supabase, user);
 
   const dbRow = buildPostingDbRow(body, "create");
 

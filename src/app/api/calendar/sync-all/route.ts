@@ -4,11 +4,9 @@
  * Syncs all active calendar connections.
  */
 
-import type { NextRequest } from "next/server";
-import * as Sentry from "@sentry/nextjs";
+import { withAuth, type CronContext } from "@/lib/api/with-auth";
 import { apiError, apiSuccess } from "@/lib/errors";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/server";
 import {
   fetchFreeBusy,
   refreshAccessToken,
@@ -100,43 +98,40 @@ async function syncIcalConnection(
   await updateConnectionSyncStatus(supabase, conn.id, "synced");
 }
 
-export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
-  const secret = process.env.CALENDAR_SYNC_CRON_SECRET;
+export const POST = withAuth(
+  { authMode: "cron", cronSecretEnv: "CALENDAR_SYNC_CRON_SECRET" },
+  async (req: Request, ctx: CronContext) => {
+    const { supabase } = ctx;
 
-  if (!secret || authHeader !== `Bearer ${secret}`) {
-    return apiError("UNAUTHORIZED", "Unauthorized", 401);
-  }
+    // Sync all connections including errored ones (they may recover on retry)
+    const { data: connections, error: fetchError } = await supabase
+      .from("calendar_connections")
+      .select("*");
 
-  const supabase = await createClient();
-
-  // Sync all connections including errored ones (they may recover on retry)
-  const { data: connections, error: fetchError } = await supabase
-    .from("calendar_connections")
-    .select("*");
-
-  if (fetchError || !connections) {
-    return apiError("INTERNAL", fetchError?.message ?? "No connections", 500);
-  }
-
-  const results: { id: string; status: string; error?: string }[] = [];
-
-  for (const conn of connections as CalendarConnectionRow[]) {
-    try {
-      if (conn.provider === "google") {
-        await syncGoogleConnection(supabase, conn);
-        results.push({ id: conn.id, status: "synced" });
-      } else if (conn.provider === "ical") {
-        await syncIcalConnection(supabase, conn);
-        results.push({ id: conn.id, status: "synced" });
-      }
-    } catch (error) {
-      Sentry.captureException(error);
-      const message = error instanceof Error ? error.message : "Unknown error";
-      await updateConnectionSyncStatus(supabase, conn.id, "error", message);
-      results.push({ id: conn.id, status: "error", error: message });
+    if (fetchError || !connections) {
+      return apiError("INTERNAL", fetchError?.message ?? "No connections", 500);
     }
-  }
 
-  return apiSuccess({ synced: results.length, results });
-}
+    const results: { id: string; status: string; error?: string }[] = [];
+
+    for (const conn of connections as CalendarConnectionRow[]) {
+      try {
+        if (conn.provider === "google") {
+          await syncGoogleConnection(supabase, conn);
+          results.push({ id: conn.id, status: "synced" });
+        } else if (conn.provider === "ical") {
+          await syncIcalConnection(supabase, conn);
+          results.push({ id: conn.id, status: "synced" });
+        }
+      } catch (error) {
+        console.error(`[calendar/sync-all] Error syncing ${conn.id}:`, error);
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        await updateConnectionSyncStatus(supabase, conn.id, "error", message);
+        results.push({ id: conn.id, status: "error", error: message });
+      }
+    }
+
+    return apiSuccess({ synced: results.length, results });
+  },
+);
