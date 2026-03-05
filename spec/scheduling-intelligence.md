@@ -407,3 +407,4 @@ If a participant's calendar changes after accepting (new meeting added):
 - **`spec/availability-calendar.md`**: Provides the calendar data (sync, free/busy, overlap scoring). This spec adds the intelligence layer on top.
 - **`.prompts/todo/text_first_rewrite.md` §11 (Smart acceptance flow)**: The acceptance card UI is defined there. This spec defines how time slots are generated for that card.
 - **Matching (`spec/matching.md`)**: Scheduling preferences text is readable by the deep match LLM, so "nothing before 10am" naturally influences match scores for early-morning postings. This is emergent, not a separate mechanism.
+- **Nested postings (`spec/nested-postings.md`)**: Scheduling intelligence works the same for child postings but inherits context. A child posting "meet Thursday?" within a group auto-scopes to the group's members for calendar overlap. The LLM receives parent context for smarter slot suggestions.
