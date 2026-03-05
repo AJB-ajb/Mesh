@@ -6,6 +6,7 @@ import type {
   Application,
   MatchedProfile,
 } from "@/lib/hooks/use-posting-detail";
+import type { ApplicationResponses } from "@/lib/types/acceptance-card";
 
 // ---------------------------------------------------------------------------
 // PostingApplicationContext — applications, matching, apply/withdraw
@@ -25,7 +26,7 @@ export type PostingApplicationContextValue = {
   onHideApplyForm: () => void;
   onCoverMessageChange: (value: string) => void;
   // Apply/withdraw callbacks
-  onApply: () => void;
+  onApply: (responses?: ApplicationResponses) => void;
   onWithdraw: () => void;
   // Application management (owner)
   isUpdatingApplication: string | null;
