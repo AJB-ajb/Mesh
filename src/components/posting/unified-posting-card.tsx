@@ -100,6 +100,9 @@ export interface UnifiedPostingCardProps {
   role?: "owner" | "joined" | "applied";
   unreadCount?: number;
   href?: string;
+  // Nested posting props
+  parentTitle?: string;
+  childCount?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -140,6 +143,8 @@ export function UnifiedPostingCard({
   role,
   unreadCount,
   href,
+  parentTitle,
+  childCount,
 }: UnifiedPostingCardProps) {
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -182,6 +187,11 @@ export function UnifiedPostingCard({
                 {getInitials(creatorName ?? strippedTitle)}
               </div>
               <span>{formatDateAgo(createdAt)}</span>
+              {parentTitle && (
+                <span className="text-xs text-muted-foreground">
+                  {labels.coordination.inParent(parentTitle)}
+                </span>
+              )}
             </div>
 
             {/* Title + badges */}
@@ -246,6 +256,11 @@ export function UnifiedPostingCard({
                   <MessageSquare className="size-3.5" />
                   {labels.active.unreadMessages(unreadCount)}
                 </span>
+              )}
+              {childCount != null && childCount > 0 && (
+                <Badge variant="outline" className="text-xs">
+                  {labels.coordination.activities(childCount)}
+                </Badge>
               )}
             </div>
 

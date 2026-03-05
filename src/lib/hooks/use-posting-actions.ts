@@ -44,6 +44,7 @@ function postingToForm(
     maxDistanceKm: posting.max_distance_km?.toString() || "",
     tags: posting.tags?.join(", ") || "",
     contextIdentifier: posting.context_identifier || "",
+    parentPostingId: "",
     skillLevelMin: "",
     autoAccept: posting.auto_accept ? "true" : "false",
     availabilityMode:
@@ -87,6 +88,7 @@ export function usePostingActions(
     maxDistanceKm: "",
     tags: "",
     contextIdentifier: "",
+    parentPostingId: "",
     skillLevelMin: "",
     autoAccept: "false",
     availabilityMode: "flexible",
