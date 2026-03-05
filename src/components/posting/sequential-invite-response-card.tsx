@@ -39,7 +39,7 @@ export function SequentialInviteResponseCard({
       const { data: friendAsks } = await supabase
         .from("friend_asks")
         .select(
-          "id, ordered_friend_list, current_request_index, status, invite_mode, declined_list",
+          "id, ordered_friend_list, current_request_index, status, invite_mode, declined_list, pending_invitees",
         )
         .eq("posting_id", postingId)
         .in("status", ["pending", "accepted"]);
@@ -81,30 +81,26 @@ export function SequentialInviteResponseCard({
             return;
           }
         } else {
-          // Sequential: user is the current invitee
-          if (
-            fa.status === "pending" &&
-            fa.ordered_friend_list[fa.current_request_index] === currentUserId
-          ) {
+          // Sequential: check pending_invitees
+          const pendingInvitees: string[] = fa.pending_invitees ?? [];
+
+          if (fa.status === "pending" && pendingInvitees.includes(currentUserId)) {
             setState({ type: "pending", friendAskId: fa.id });
             return;
           }
 
-          // User accepted
+          // User accepted (status is accepted and user is in the friend list)
           if (
             fa.status === "accepted" &&
-            fa.ordered_friend_list[fa.current_request_index] === currentUserId
+            fa.ordered_friend_list.includes(currentUserId) &&
+            !declinedList.includes(currentUserId)
           ) {
             setState({ type: "accepted" });
             return;
           }
 
-          // User was previously asked (earlier index) — they declined
-          if (
-            fa.ordered_friend_list
-              .slice(0, fa.current_request_index)
-              .includes(currentUserId)
-          ) {
+          // User declined
+          if (declinedList.includes(currentUserId)) {
             setState({ type: "declined" });
             return;
           }

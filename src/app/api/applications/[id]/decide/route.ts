@@ -4,6 +4,7 @@ import { markPostingFilledIfFull } from "@/lib/api/posting-fulfillment";
 import { apiSuccess, parseBody, AppError } from "@/lib/errors";
 import { getApplication, updateApplicationStatus } from "@/lib/data";
 import { verifyPostingOwnership } from "@/lib/api/guards";
+import { APPLICATION_ACCEPTED, APPLICATION_REJECTED } from "@/lib/notifications/events";
 
 interface DecideBody {
   status: "accepted" | "rejected";
@@ -47,7 +48,7 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
   notifyIfPreferred(supabase, application.applicant_id, notifType, {
     userId: application.applicant_id,
     type: notifType,
-    title: body.status === "accepted" ? "Request Accepted!" : "Request Update",
+    title: body.status === "accepted" ? APPLICATION_ACCEPTED.title : APPLICATION_REJECTED.title,
     body:
       body.status === "accepted"
         ? `Your request to join "${posting.title}" has been accepted!`

@@ -17,6 +17,7 @@ const FILTERS: PostsPageFilter[] = [
   "created",
   "joined",
   "applied",
+  "invited",
   "completed",
 ];
 

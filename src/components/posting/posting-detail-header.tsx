@@ -64,16 +64,18 @@ export function PostingDetailHeader() {
     backHref,
     backLabel,
     parentPosting,
+    hasPendingInvite,
   } = usePostingCoreContext();
   const { form, onFormChange, saveStatus } = usePostingEditContext();
 
   const creatorName = posting.profiles?.full_name || "Unknown";
 
-  // Determine whether to hide the apply section (private postings for visitors)
-  const hideApplySection =
-    !isOwner &&
+  const isPrivate =
     (posting.visibility ??
       (posting.mode === "friend_ask" ? "private" : "public")) === "private";
+
+  // Hide apply section for private postings and when user has a pending invite
+  const hideApplySection = !isOwner && (isPrivate || hasPendingInvite);
 
   return (
     <>
