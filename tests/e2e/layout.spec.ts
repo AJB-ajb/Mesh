@@ -480,7 +480,154 @@ test.describe("Layout > No clipped positioned elements", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Group 10: Minimum vertical spacing between key layout regions
+// Group 10: Connections page — chat view on mobile
+//   The layout tests above only check the initial state (connection list).
+//   These tests click a connection to show the chat area and verify it
+//   renders properly on mobile — no clipping, text wrapping, input visible.
+// ---------------------------------------------------------------------------
+
+test.describe("Layout > Connections chat view (mobile)", () => {
+  test("Chat panel fits within viewport after selecting a connection", async ({
+    page,
+  }) => {
+    test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
+    await navigateToPage(page, "/connections", "mobile");
+
+    // Click the first connection item
+    const firstConn = page.locator('button[class*="items-start"]').first();
+    const hasConnections = (await firstConn.count()) > 0;
+    test.skip(!hasConnections, "No connections to test");
+
+    await firstConn.click();
+    await page.waitForTimeout(500);
+
+    // The chat panel (Card) should be visible
+    const chatCard = page.locator('[data-slot="card"]').first();
+    await expect(chatCard).toBeVisible();
+
+    // Chat card should not exceed viewport width
+    const cardRect = await chatCard.boundingBox();
+    const viewport = page.viewportSize()!;
+    expect(
+      cardRect!.width,
+      `Chat card width (${cardRect!.width}px) should not exceed viewport width (${viewport.width}px)`,
+    ).toBeLessThanOrEqual(viewport.width);
+
+    // Chat card should not be clipped — its right edge should be within viewport
+    expect(
+      cardRect!.x + cardRect!.width,
+      `Chat card right edge exceeds viewport`,
+    ).toBeLessThanOrEqual(viewport.width + 1);
+  });
+
+  test("Chat header text is contained (not overflowing)", async ({ page }) => {
+    test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
+    await navigateToPage(page, "/connections", "mobile");
+
+    const firstConn = page.locator('button[class*="items-start"]').first();
+    const hasConnections = (await firstConn.count()) > 0;
+    test.skip(!hasConnections, "No connections to test");
+
+    await firstConn.click();
+    await page.waitForTimeout(500);
+
+    // Check that no text elements inside the chat panel overflow their container
+    const textOverflows = await page.evaluate(() => {
+      const chatCard = document.querySelector('[data-slot="card"]');
+      if (!chatCard) return [];
+
+      const violations: Array<{
+        selector: string;
+        text: string;
+        scrollWidth: number;
+        clientWidth: number;
+      }> = [];
+
+      const textEls = chatCard.querySelectorAll("p, h4, span, a");
+      for (const el of textEls) {
+        if (!(el instanceof HTMLElement)) continue;
+        const style = getComputedStyle(el);
+        if (style.display === "none" || style.visibility === "hidden") continue;
+
+        // Skip elements using intentional truncation
+        if (style.textOverflow === "ellipsis") continue;
+
+        if (el.scrollWidth > el.clientWidth + 1) {
+          let s = el.tagName.toLowerCase();
+          if (el.className && typeof el.className === "string") {
+            s += "." + el.className.split(" ").slice(0, 3).join(".");
+          }
+          violations.push({
+            selector: s,
+            text: (el.textContent || "").slice(0, 60),
+            scrollWidth: el.scrollWidth,
+            clientWidth: el.clientWidth,
+          });
+        }
+      }
+      return violations;
+    });
+
+    expect(
+      textOverflows,
+      `Chat text overflows container: ${JSON.stringify(textOverflows)}`,
+    ).toEqual([]);
+  });
+
+  test("Chat message input is visible and in viewport", async ({ page }) => {
+    test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
+    await navigateToPage(page, "/connections", "mobile");
+
+    const firstConn = page.locator('button[class*="items-start"]').first();
+    const hasConnections = (await firstConn.count()) > 0;
+    test.skip(!hasConnections, "No connections to test");
+
+    await firstConn.click();
+    await page.waitForTimeout(500);
+
+    // The message input textarea should be visible
+    const textarea = page.locator('[data-slot="card"] textarea').first();
+    await expect(textarea).toBeVisible();
+
+    // Send button should be visible
+    const sendBtn = page.locator('[data-slot="card"] button:has(svg)').last();
+    await expect(sendBtn).toBeVisible();
+  });
+
+  test("Connection list cards wrap text properly on mobile", async ({
+    page,
+  }) => {
+    test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
+    await navigateToPage(page, "/connections", "mobile");
+
+    const connItems = page.locator('button[class*="items-start"]');
+    const count = await connItems.count();
+    test.skip(count === 0, "No connections to test");
+
+    // Check that connection list items fit within viewport
+    for (let i = 0; i < Math.min(count, 5); i++) {
+      const item = connItems.nth(i);
+      const box = await item.boundingBox();
+      if (!box) continue;
+
+      const viewport = page.viewportSize()!;
+      expect(
+        box.x + box.width,
+        `Connection item ${i} right edge (${box.x + box.width}px) exceeds viewport (${viewport.width}px)`,
+      ).toBeLessThanOrEqual(viewport.width + 1);
+    }
+
+    // Check no horizontal overflow in the connections grid
+    const result = await checkNoHorizontalPageOverflow(page);
+    expect(
+      result.overflows,
+      `Horizontal overflow on /connections (mobile) with connection list: scrollWidth=${result.scrollWidth}, clientWidth=${result.clientWidth}`,
+    ).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Group 11: Minimum vertical spacing between key layout regions
 //   Catches cramped layouts where the header bar sits too close to page
 //   content, or filter rows sit flush against the first card. Checks the
 //   vertical gap between two elements meets a minimum pixel threshold.
