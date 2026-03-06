@@ -6,6 +6,7 @@ import { Loader2, ListOrdered, XCircle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
+import { NumberPicker } from "@/components/ui/number-picker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Popover,
@@ -244,15 +245,11 @@ export function SequentialInviteCard({
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-72 text-sm" side="top">
-                <p className="font-medium">
-                  {labels.invite.modeSequential}
-                </p>
+                <p className="font-medium">{labels.invite.modeSequential}</p>
                 <p className="mt-1 text-muted-foreground">
                   {labels.invite.modeSequentialHelp}
                 </p>
-                <p className="mt-3 font-medium">
-                  {labels.invite.modeParallel}
-                </p>
+                <p className="mt-3 font-medium">{labels.invite.modeParallel}</p>
                 <p className="mt-1 text-muted-foreground">
                   {labels.invite.modeParallelHelp}
                 </p>
@@ -287,29 +284,15 @@ export function SequentialInviteCard({
               {labels.invite.advancedSettings}
             </summary>
             <div className="mt-2 space-y-2">
-              <label
-                htmlFor="concurrent-invites"
-                className="text-sm font-medium"
-              >
+              <label className="text-sm font-medium">
                 {labels.invite.concurrentLabel}
               </label>
-              <input
-                id="concurrent-invites"
-                type="number"
+              <NumberPicker
+                value={concurrentInvites}
+                onChange={setConcurrentInvites}
                 min={1}
                 max={Math.max(1, selectedConnections.length)}
-                value={concurrentInvites}
-                onChange={(e) => {
-                  const val = Math.max(
-                    1,
-                    Math.min(
-                      Math.max(1, selectedConnections.length),
-                      Number(e.target.value) || 1,
-                    ),
-                  );
-                  setConcurrentInvites(val);
-                }}
-                className="flex h-9 w-20 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                label={labels.invite.concurrentLabel}
               />
               <p className="text-xs text-muted-foreground">
                 {labels.invite.concurrentHelp}
