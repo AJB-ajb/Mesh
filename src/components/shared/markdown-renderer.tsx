@@ -53,7 +53,7 @@ const components: Components = {
   ),
   li: ({ children }: C) => <li>{children}</li>,
   code: ({ children }: C) => (
-    <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-mono">
+    <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-mono break-all">
       {children}
     </code>
   ),
@@ -70,7 +70,7 @@ const components: Components = {
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-primary underline underline-offset-2 hover:text-primary/80"
+        className="text-primary underline underline-offset-2 hover:text-primary/80 break-words"
       >
         {children}
       </a>

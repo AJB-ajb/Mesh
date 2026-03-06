@@ -729,10 +729,211 @@ export async function findClippedPositionedElements(
 }
 
 // ---------------------------------------------------------------------------
-// 9. checkMinimumSpacing
-//    Measures the vertical gap between two elements (bottom of A to top of B)
-//    and asserts it meets a minimum pixel threshold. Catches tight/zero gaps
-//    between header bars and page content, filter rows and card grids, etc.
+// 9. findLongTextOverflowViolations
+//    Stress-tests text elements by temporarily injecting very long content
+//    (with and without spaces) and checking for horizontal overflow.
+//    Catches elements that lack word-break, overflow-wrap, or truncation
+//    and would overflow their container with real long user content.
+// ---------------------------------------------------------------------------
+
+export type LongTextOverflowViolation = {
+  /** Selector for the overflowing element */
+  selector: string;
+  /** Original text (truncated for readability) */
+  originalText: string;
+  /** Which test string caused the overflow: 'no-spaces' or 'long-words' */
+  testType: "no-spaces" | "long-words";
+  /** How many pixels the content exceeds the container */
+  excessPx: number;
+  /** The element's clientWidth at time of check */
+  clientWidth: number;
+  /** The element's scrollWidth at time of check */
+  scrollWidth: number;
+};
+
+export async function findLongTextOverflowViolations(
+  page: Page,
+  /** CSS selector to scope the search (default: entire page) */
+  scope = "body",
+  /** Selectors for elements to skip (e.g. intentionally scrollable areas) */
+  allowlist: readonly string[] = [],
+): Promise<LongTextOverflowViolation[]> {
+  return page.evaluate(
+    ({ scope, allowlist }) => {
+      const buildSelector = new Function(
+        "el",
+        `
+        if (el.id) return el.tagName.toLowerCase() + '#' + el.id;
+        let s = el.tagName.toLowerCase();
+        if (el.className && typeof el.className === 'string') {
+          const classes = el.className.trim().split(/\\s+/).slice(0, 3).join('.');
+          if (classes) s += '.' + classes;
+        }
+        return s;
+        `,
+      ) as (el: Element) => string;
+
+      function isAllowlisted(el: Element): boolean {
+        for (const sel of allowlist) {
+          try {
+            if (el.matches(sel)) return true;
+          } catch {
+            /* invalid selector */
+          }
+        }
+        let parent = el.parentElement;
+        while (parent) {
+          for (const sel of allowlist) {
+            try {
+              if (parent.matches(sel)) return true;
+            } catch {
+              /* invalid selector */
+            }
+          }
+          parent = parent.parentElement;
+        }
+        return false;
+      }
+
+      const LONG_NO_SPACES =
+        "Superlongwordwithoutanyspacesthatwilloverflowmostcontainersonmobiledevicesandshouldtriggertextbreaking";
+      const LONG_WITH_SPACES =
+        "This is a reasonably long sentence that contains multiple words and should wrap properly within its container but might overflow if the container is too narrow or lacks proper text wrapping styles applied to it";
+
+      const container = document.querySelector(scope);
+      if (!container) return [];
+
+      // Find all visible text-bearing elements
+      const textSelectors =
+        "p, h1, h2, h3, h4, h5, h6, span, a, li, label, td, th, dt, dd";
+      const elements = container.querySelectorAll(textSelectors);
+
+      const violations: LongTextOverflowViolation[] = [];
+
+      for (const el of elements) {
+        if (!(el instanceof HTMLElement)) continue;
+
+        const style = getComputedStyle(el);
+        if (style.display === "none" || style.visibility === "hidden") continue;
+
+        // Skip zero-size or offscreen elements
+        const rect = el.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) continue;
+        if (rect.top > window.innerHeight || rect.bottom < 0) continue;
+
+        // Skip sr-only
+        if (
+          el.classList.contains("sr-only") ||
+          (style.position === "absolute" &&
+            style.clip === "rect(0px, 0px, 0px, 0px)")
+        )
+          continue;
+
+        // Skip absolute/fixed positioned elements (badges, indicators, dots)
+        if (style.position === "absolute" || style.position === "fixed")
+          continue;
+
+        // Skip allowlisted
+        if (isAllowlisted(el)) continue;
+
+        // Skip elements that already use truncation (they handle overflow)
+        if (
+          style.textOverflow === "ellipsis" ||
+          el.classList.contains("truncate")
+        )
+          continue;
+
+        // Skip elements inside line-clamp containers
+        let inLineClamp = false;
+        let p = el.parentElement;
+        while (p) {
+          if (
+            p.className &&
+            typeof p.className === "string" &&
+            /line-clamp/.test(p.className)
+          ) {
+            inLineClamp = true;
+            break;
+          }
+          p = p.parentElement;
+        }
+        if (inLineClamp) continue;
+
+        // Skip elements inside buttons/interactive controls (labels, not content)
+        let insideControl = false;
+        let cp = el.parentElement;
+        while (cp) {
+          const tag = cp.tagName;
+          if (tag === "BUTTON" || tag === "A") {
+            const cpStyle = getComputedStyle(cp);
+            // Skip if parent is a button-like link (inline-flex = button style)
+            if (
+              tag === "BUTTON" ||
+              cpStyle.display === "inline-flex" ||
+              cpStyle.display === "flex"
+            ) {
+              insideControl = true;
+              break;
+            }
+          }
+          cp = cp.parentElement;
+        }
+        if (insideControl) continue;
+
+        // Skip purely inline elements (they flow within parent)
+        if (style.display === "inline" && el.tagName !== "A") continue;
+
+        // Skip very small elements (badges, timestamps, icons)
+        if (rect.width < 60) continue;
+
+        const originalHTML = el.innerHTML;
+        const testCases: Array<{
+          text: string;
+          type: "no-spaces" | "long-words";
+        }> = [
+          { text: LONG_NO_SPACES, type: "no-spaces" },
+          { text: LONG_WITH_SPACES, type: "long-words" },
+        ];
+
+        for (const testCase of testCases) {
+          el.textContent = testCase.text;
+
+          // Force layout recalc
+          void el.offsetWidth;
+
+          const excess = el.scrollWidth - el.clientWidth;
+          if (excess > 1) {
+            violations.push({
+              selector: buildSelector(el),
+              originalText: (originalHTML || "")
+                .replace(/<[^>]*>/g, "")
+                .slice(0, 40),
+              testType: testCase.type,
+              excessPx: Math.round(excess),
+              clientWidth: el.clientWidth,
+              scrollWidth: el.scrollWidth,
+            });
+            // Only report first failing test type per element
+            el.innerHTML = originalHTML;
+            break;
+          }
+        }
+
+        // Restore original content
+        el.innerHTML = originalHTML;
+      }
+
+      return violations;
+    },
+    { scope, allowlist: [...allowlist] },
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 10. checkMinimumSpacing
+//     Measures the vertical gap between two elements (bottom of A to top of B)
+//     and asserts it meets a minimum pixel threshold. Catches tight/zero gaps
+//     between header bars and page content, filter rows and card grids, etc.
 // ---------------------------------------------------------------------------
 
 export async function checkMinimumSpacing(
