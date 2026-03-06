@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { computeWeightedScore, formatScore } from "@/lib/matching/scoring";
 import { labels } from "@/lib/labels";
 import { formatDateAgo, stripTitleMarkdown } from "@/lib/format";
+import { RelativeTime } from "@/components/ui/relative-time";
 import type { SaveStatus } from "@/lib/hooks/use-auto-save";
 import { usePostingCoreContext } from "./posting-core-context";
 import { usePostingEditContext } from "./posting-edit-context";
@@ -168,7 +169,8 @@ export function PostingDetailHeader() {
             >
               {creatorName}
             </Link>{" "}
-            &bull; {formatDateAgo(posting.created_at)}
+            &bull;{" "}
+            <RelativeTime date={posting.created_at} formatter={formatDateAgo} />
           </p>
         </div>
 

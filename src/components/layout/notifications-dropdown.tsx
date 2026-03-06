@@ -19,6 +19,7 @@ import { labels } from "@/lib/labels";
 import { useRovingIndex } from "@/lib/hooks/use-roving-index";
 import { useNotifications } from "@/lib/hooks/use-notifications";
 import { formatTimeAgoShort } from "@/lib/format";
+import { RelativeTime } from "@/components/ui/relative-time";
 import type { Notification } from "@/lib/supabase/realtime";
 import { INVITE_RECEIVED } from "@/lib/notifications/events";
 
@@ -266,9 +267,11 @@ export function NotificationsDropdown({ className }: { className?: string }) {
                           >
                             {notification.title}
                           </p>
-                          <span className="shrink-0 text-xs text-muted-foreground">
-                            {formatTimeAgoShort(notification.created_at)}
-                          </span>
+                          <RelativeTime
+                            date={notification.created_at}
+                            formatter={formatTimeAgoShort}
+                            className="shrink-0 text-xs text-muted-foreground"
+                          />
                         </div>
                         {notification.body && (
                           <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">

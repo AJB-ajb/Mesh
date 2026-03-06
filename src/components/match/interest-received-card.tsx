@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BadgeList } from "@/components/ui/badge-list";
 import { getInitials, formatTimeAgo } from "@/lib/format";
+import { RelativeTime } from "@/components/ui/relative-time";
 import type { InterestReceived } from "@/lib/hooks/use-interests";
 
 const statusColors = {
@@ -35,7 +36,10 @@ export function InterestReceivedCard({ interest }: InterestReceivedCardProps) {
               </span>
             </div>
             <p className="text-sm text-muted-foreground">
-              {formatTimeAgo(interest.created_at)}
+              <RelativeTime
+                date={interest.created_at}
+                formatter={formatTimeAgo}
+              />
             </p>
           </div>
         </div>

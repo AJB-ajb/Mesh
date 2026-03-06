@@ -16,6 +16,7 @@ import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { getInitials, formatTimeAgoShort } from "@/lib/format";
+import { RelativeTime } from "@/components/ui/relative-time";
 import {
   useGroupMessages,
   markGroupMessageRead,
@@ -222,7 +223,10 @@ export function GroupChatPanel({
                           : "text-muted-foreground",
                       )}
                     >
-                      {formatTimeAgoShort(message.created_at)}
+                      <RelativeTime
+                        date={message.created_at}
+                        formatter={formatTimeAgoShort}
+                      />
                     </p>
                   </div>
                 </div>

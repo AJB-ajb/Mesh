@@ -24,6 +24,7 @@ import { useRealtimeChat } from "@/lib/hooks/use-realtime-chat";
 import { useSendMessage } from "@/lib/hooks/use-send-message";
 import { usePresenceContext } from "@/components/providers/presence-provider";
 import { getInitials, formatTimeAgoShort } from "@/lib/format";
+import { RelativeTime } from "@/components/ui/relative-time";
 import { useConversationMessages } from "@/lib/hooks/use-inbox";
 import type { Conversation, Message } from "@/lib/hooks/use-inbox";
 
@@ -105,9 +106,11 @@ export function ConversationList({
                   {conversation.other_user?.full_name || labels.common.unknown}
                 </h4>
                 {conversation.last_message && (
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    {formatTimeAgoShort(conversation.last_message.created_at)}
-                  </span>
+                  <RelativeTime
+                    date={conversation.last_message.created_at}
+                    formatter={formatTimeAgoShort}
+                    className="text-xs text-muted-foreground shrink-0"
+                  />
                 )}
               </div>
               {conversation.posting && (
@@ -288,7 +291,10 @@ export function ChatPanel({
                       : "text-muted-foreground",
                   )}
                 >
-                  {formatTimeAgoShort(message.created_at)}
+                  <RelativeTime
+                    date={message.created_at}
+                    formatter={formatTimeAgoShort}
+                  />
                 </p>
               </div>
             </div>

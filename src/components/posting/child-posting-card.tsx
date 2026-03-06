@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { formatDateAgo } from "@/lib/format";
+import { RelativeTime } from "@/components/ui/relative-time";
 import type { ChildPosting } from "@/lib/hooks/use-child-postings";
 
 // ---------------------------------------------------------------------------
@@ -37,7 +38,7 @@ export function ChildPostingCard({ posting }: { posting: ChildPosting }) {
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>{creatorName}</span>
           <span>&middot;</span>
-          <span>{formatDateAgo(posting.created_at)}</span>
+          <RelativeTime date={posting.created_at} formatter={formatDateAgo} />
         </div>
 
         <p className="mt-1 text-sm line-clamp-2">{displayText}</p>

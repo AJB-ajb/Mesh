@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getInitials, formatDateAgo } from "@/lib/format";
+import { RelativeTime } from "@/components/ui/relative-time";
 import { labels } from "@/lib/labels";
 import { usePostingDetailContext } from "./posting-detail-context";
 
@@ -121,7 +122,11 @@ export function PostingApplicationsCard() {
                         </div>
                       )}
                       <p className="mt-2 text-xs text-muted-foreground">
-                        Requested {formatDateAgo(application.created_at)}
+                        Requested{" "}
+                        <RelativeTime
+                          date={application.created_at}
+                          formatter={formatDateAgo}
+                        />
                       </p>
                     </div>
                   </div>

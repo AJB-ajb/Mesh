@@ -19,6 +19,13 @@ function getBaseUrl(): string {
 export async function triggerEmbeddingGenerationServer(
   retries = MAX_RETRIES,
 ): Promise<void> {
+  if (!process.env.EMBEDDINGS_API_KEY) {
+    console.warn(
+      "[embeddings] EMBEDDINGS_API_KEY is not set — skipping embedding trigger",
+    );
+    return;
+  }
+
   const url = `${getBaseUrl()}/api/embeddings/process`;
   let lastStatus: number | null = null;
   let lastBody: string | null = null;
