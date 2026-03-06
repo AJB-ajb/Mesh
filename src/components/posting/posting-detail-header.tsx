@@ -110,7 +110,7 @@ export function PostingDetailHeader() {
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-2">
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex flex-col gap-2">
             {isOwner ? (
               <input
                 value={form.title}
@@ -122,43 +122,45 @@ export function PostingDetailHeader() {
                 {stripTitleMarkdown(posting.title)}
               </h1>
             )}
-            <Badge
-              variant={
-                posting.status === "open"
-                  ? isExpired(posting.expires_at)
-                    ? "destructive"
-                    : "default"
-                  : posting.status === "filled"
-                    ? "secondary"
-                    : "outline"
-              }
-            >
-              {isExpired(posting.expires_at)
-                ? labels.common.expired
-                : posting.status}
-            </Badge>
-            {(posting.visibility === "private" ||
-              posting.mode === "friend_ask") && (
-              <Badge variant="outline">{labels.invite.privateBadge}</Badge>
-            )}
-            {posting.expires_at && (
-              <span
-                className={`text-xs ${isExpired(posting.expires_at) ? "text-destructive" : "text-muted-foreground"}`}
-              >
-                {formatExpiry(posting.expires_at)}
-              </span>
-            )}
-            {!isOwner && matchBreakdown && (
+            <div className="flex items-center gap-3 flex-wrap">
               <Badge
-                variant="default"
-                className="bg-green-500 hover:bg-green-600 flex items-center gap-1"
+                variant={
+                  posting.status === "open"
+                    ? isExpired(posting.expires_at)
+                      ? "destructive"
+                      : "default"
+                    : posting.status === "filled"
+                      ? "secondary"
+                      : "outline"
+                }
               >
-                <Sparkles className="h-4 w-4" />
-                {formatScore(computeWeightedScore(matchBreakdown))}{" "}
-                {labels.postingDetail.match}
+                {isExpired(posting.expires_at)
+                  ? labels.common.expired
+                  : posting.status}
               </Badge>
-            )}
-            {isOwner && <SaveStatusIndicator status={saveStatus} />}
+              {(posting.visibility === "private" ||
+                posting.mode === "friend_ask") && (
+                <Badge variant="outline">{labels.invite.privateBadge}</Badge>
+              )}
+              {posting.expires_at && (
+                <span
+                  className={`text-xs ${isExpired(posting.expires_at) ? "text-destructive" : "text-muted-foreground"}`}
+                >
+                  {formatExpiry(posting.expires_at)}
+                </span>
+              )}
+              {!isOwner && matchBreakdown && (
+                <Badge
+                  variant="default"
+                  className="bg-green-500 hover:bg-green-600 flex items-center gap-1"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  {formatScore(computeWeightedScore(matchBreakdown))}{" "}
+                  {labels.postingDetail.match}
+                </Badge>
+              )}
+              {isOwner && <SaveStatusIndicator status={saveStatus} />}
+            </div>
           </div>
           <p className="text-muted-foreground">
             {labels.postingDetail.postedBy}{" "}
