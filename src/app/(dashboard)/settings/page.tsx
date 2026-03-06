@@ -15,7 +15,6 @@ import type {
   NotificationChannel,
   NotificationPreferences,
 } from "@/lib/notifications/preferences";
-import { AccountInfoCard } from "@/components/settings/account-info-card";
 import { ConnectedAccountsCard } from "@/components/settings/connected-accounts-card";
 import { GithubSyncCard } from "@/components/settings/github-sync-card";
 import { NotificationPreferencesCard } from "@/components/settings/notification-preferences-card";
@@ -24,15 +23,8 @@ import { DangerZoneCard } from "@/components/settings/danger-zone-card";
 function SettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const {
-    userEmail,
-    persona,
-    providers,
-    githubSyncStatus,
-    isLoading,
-    mutate,
-    mutateGithubSync,
-  } = useSettings();
+  const { providers, githubSyncStatus, isLoading, mutate, mutateGithubSync } =
+    useSettings();
 
   const { preferences: notifPrefs, updatePreferences: updateNotifPrefs } =
     useNotificationPreferences();
@@ -121,8 +113,6 @@ function SettingsContent() {
           <span>{success}</span>
         </div>
       )}
-
-      <AccountInfoCard userEmail={userEmail} persona={persona} />
 
       <ConnectedAccountsCard
         providers={providers}

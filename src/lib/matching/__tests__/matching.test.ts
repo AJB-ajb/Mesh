@@ -549,6 +549,8 @@ describe("createMatchRecords", () => {
           embedding: null,
           status: "open",
           identified_roles: null,
+          in_discover: true,
+          link_token: null,
 
           created_at: "",
           updated_at: "",
@@ -611,6 +613,8 @@ describe("createMatchRecords", () => {
           embedding: null,
           status: "open",
           identified_roles: null,
+          in_discover: true,
+          link_token: null,
 
           created_at: "",
           updated_at: "",
