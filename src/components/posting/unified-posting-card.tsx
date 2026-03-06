@@ -398,7 +398,7 @@ export function UnifiedPostingCard({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0 space-y-1 flex-1">
             <div className="flex items-center gap-3 flex-wrap">
-              <h3 className="text-lg font-semibold">
+              <h3 className="text-lg font-semibold break-words">
                 <Link
                   href={postingHref}
                   className="hover:underline cursor-pointer"
