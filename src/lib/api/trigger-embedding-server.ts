@@ -4,19 +4,29 @@
  * The client-side version uses a relative `/api/embeddings/process` path,
  * which only works in the browser. API routes run on the server and need
  * a fully-qualified URL.
+ *
+ * Callers should pass `origin` (from the incoming request) so the function
+ * targets the same deployment that is handling the request.
  */
 
 import * as Sentry from "@sentry/nextjs";
 
 const MAX_RETRIES = 2;
 
-function getBaseUrl(): string {
+export function getBaseUrl(origin?: string): string {
+  if (origin) return origin;
   if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  // Stable Vercel URLs — avoid VERCEL_URL which is per-deployment and ephemeral
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL)
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  if (process.env.VERCEL_BRANCH_URL)
+    return `https://${process.env.VERCEL_BRANCH_URL}`;
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   return "http://localhost:3000";
 }
 
 export async function triggerEmbeddingGenerationServer(
+  origin?: string,
   retries = MAX_RETRIES,
 ): Promise<void> {
   if (!process.env.EMBEDDINGS_API_KEY) {
@@ -26,7 +36,7 @@ export async function triggerEmbeddingGenerationServer(
     return;
   }
 
-  const url = `${getBaseUrl()}/api/embeddings/process`;
+  const url = `${getBaseUrl(origin)}/api/embeddings/process`;
   let lastStatus: number | null = null;
   let lastBody: string | null = null;
   let lastError: unknown = null;

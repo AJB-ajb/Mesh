@@ -228,6 +228,8 @@ describe("POST /api/postings", () => {
 
     const { triggerEmbeddingGenerationServer } =
       await import("@/lib/api/trigger-embedding-server");
-    expect(triggerEmbeddingGenerationServer).toHaveBeenCalled();
+    expect(triggerEmbeddingGenerationServer).toHaveBeenCalledWith(
+      "http://localhost",
+    );
   });
 });
