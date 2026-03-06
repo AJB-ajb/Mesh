@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { buildChain, buildCountChain } from "tests/utils/supabase-mock";
 import { markPostingFilledIfFull } from "../posting-fulfillment";
 
@@ -8,42 +8,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 describe("markPostingFilledIfFull", () => {
   let mockFrom: ReturnType<typeof vi.fn>;
   let supabase: SupabaseClient;
-
-  function setupSupabase(opts: {
-    posting: { team_size_max: number | null } | null;
-    count: number | null;
-  }) {
-    const postingChain = buildChain({
-      data: opts.posting,
-      error: null,
-    });
-    const countChain =
-      opts.count !== null
-        ? buildCountChain(opts.count)
-        : buildChain({ data: null, error: null, count: null });
-    const updateChain = buildChain({ data: null, error: null });
-
-    mockFrom = vi.fn((table: string) => {
-      if (table === "postings") {
-        // First call is select, subsequent calls may be update
-        // We track via call count
-        if (
-          mockFrom.mock.calls.filter((c: string[]) => c[0] === "postings")
-            .length > 1
-        ) {
-          return updateChain;
-        }
-        return postingChain;
-      }
-      return countChain;
-    });
-
-    supabase = { from: mockFrom } as unknown as SupabaseClient;
-  }
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
 
   it("marks posting as filled when accepted count reaches team_size_max", async () => {
     const postingChain = buildChain({
