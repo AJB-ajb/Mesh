@@ -1,5 +1,6 @@
 import { withAuth, type OptionalAuthContext } from "@/lib/api/with-auth";
 import { apiError, apiSuccess } from "@/lib/errors";
+import * as Sentry from "@sentry/nextjs";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -42,7 +43,15 @@ export const POST = withAuth(
       });
 
     if (error) {
-      console.error("Screenshot upload error:", error);
+      console.error("Screenshot upload error:", JSON.stringify(error));
+      Sentry.captureException(error, {
+        extra: {
+          bucket: "feedback-screenshots",
+          fileName,
+          contentType: file.type,
+          fileSize: file.size,
+        },
+      });
       return apiError("INTERNAL", `Upload failed: ${error.message}`, 500);
     }
 
