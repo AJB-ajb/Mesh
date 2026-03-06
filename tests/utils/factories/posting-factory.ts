@@ -21,6 +21,7 @@ export type TestPosting = {
   skill_level_min: number;
   context_identifier: string | null;
   natural_language_criteria: string | null;
+  auto_accept: boolean;
   status: "open" | "closed" | "filled" | "expired";
   expiration_date: Date;
 };
@@ -103,6 +104,7 @@ export const createPosting = (
     skill_level_min: faker.number.int({ min: 1, max: 5 }),
     context_identifier: null,
     natural_language_criteria: null,
+    auto_accept: false,
     status: "open",
     expiration_date: expirationDate,
     ...overrides,
