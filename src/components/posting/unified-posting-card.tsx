@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Users,
   Calendar,
@@ -15,7 +14,6 @@ import {
   BookmarkCheck,
   ChevronDown,
   MessageSquare,
-  Pencil,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -149,7 +147,6 @@ export function UnifiedPostingCard({
 }: UnifiedPostingCardProps) {
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
-  const router = useRouter();
 
   const isFull = variant === "full";
   const displayTitle = title || extractTitleFromDescription(description);
@@ -195,52 +192,32 @@ export function UnifiedPostingCard({
               )}
             </div>
 
-            {/* Title + badges */}
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <h3
-                    className="text-lg font-semibold truncate"
-                    title={strippedTitle}
-                  >
-                    {strippedTitle}
-                  </h3>
-                  <Badge variant="secondary" className={getStatusColor(status)}>
-                    {status}
-                  </Badge>
-                </div>
+            {/* Title */}
+            <h3
+              className="text-lg font-semibold line-clamp-2"
+              title={strippedTitle}
+            >
+              {strippedTitle}
+            </h3>
 
-                {/* Description — clamped to 4 lines */}
-                <MarkdownRenderer
-                  content={description}
-                  clamp={4}
-                  className="mt-1 text-muted-foreground"
-                />
-              </div>
-
-              {/* Role badge + edit */}
-              <div className="flex shrink-0 items-center gap-1.5">
-                <Badge variant="outline" className="text-xs">
-                  {roleLabel}
-                </Badge>
-                {role === "owner" && (
-                  <button
-                    type="button"
-                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    aria-label="Edit"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      router.push(`/postings/${id}?tab=edit`);
-                    }}
-                  >
-                    <Pencil className="size-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
+            {/* Description — clamped to 2 lines */}
+            <MarkdownRenderer
+              content={description}
+              clamp={2}
+              className="mt-1 text-muted-foreground"
+            />
 
             {/* Meta line */}
-            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <Badge
+                variant="secondary"
+                className={cn("text-xs", getStatusColor(status))}
+              >
+                {status}
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                {roleLabel}
+              </Badge>
               {teamSizeMin != null && teamSizeMax != null && (
                 <span className="flex items-center gap-1">
                   <Users className="size-4" />
@@ -425,11 +402,9 @@ export function UnifiedPostingCard({
                   Private
                 </Badge>
               )}
-              {status !== "open" && (
-                <Badge variant={status === "filled" ? "default" : "secondary"}>
-                  {status}
-                </Badge>
-              )}
+              <Badge variant="secondary" className={getStatusColor(status)}>
+                {status}
+              </Badge>
               {!isOwner && compatibilityScore !== undefined && (
                 <Badge
                   variant="default"

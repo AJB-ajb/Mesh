@@ -216,18 +216,6 @@ describe("UnifiedPostingCard -- compact variant", () => {
     expect(screen.getByText("You joined")).toBeInTheDocument();
   });
 
-  it("shows edit button only for owner", () => {
-    render(<UnifiedPostingCard {...compactBaseProps} />);
-    expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
-  });
-
-  it("hides edit button for joined role", () => {
-    render(<UnifiedPostingCard {...compactBaseProps} role="joined" />);
-    expect(
-      screen.queryByRole("button", { name: "Edit" }),
-    ).not.toBeInTheDocument();
-  });
-
   it("shows status badge", () => {
     render(<UnifiedPostingCard {...compactBaseProps} />);
     expect(screen.getByText("open")).toBeInTheDocument();
