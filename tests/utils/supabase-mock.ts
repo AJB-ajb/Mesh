@@ -71,3 +71,29 @@ export function unauthenticatedUser(mockGetUser: ReturnType<typeof vi.fn>) {
     error: { message: "No session" },
   });
 }
+
+/**
+ * Route `mockFrom` by table name instead of call order.
+ * Accepts a record of table name -> chain (or array of chains for tables queried multiple times).
+ * Falls back to a generic empty chain for unregistered tables.
+ */
+export function mockTables(
+  mockFrom: ReturnType<typeof vi.fn>,
+  tables: Record<
+    string,
+    ReturnType<typeof buildChain> | ReturnType<typeof buildChain>[]
+  >,
+) {
+  const callIndices: Record<string, number> = {};
+
+  mockFrom.mockImplementation((table: string) => {
+    const entry = tables[table];
+    if (!entry) return buildChain({ data: null, error: null });
+    if (Array.isArray(entry)) {
+      const idx = callIndices[table] ?? 0;
+      callIndices[table] = idx + 1;
+      return entry[idx] ?? entry[entry.length - 1];
+    }
+    return entry;
+  });
+}
