@@ -99,18 +99,15 @@ export function FeedbackWidget() {
       });
 
       if (!res.ok) {
-        const errBody = await res.json().catch(() => null);
-        const detail = errBody?.error?.message ?? res.statusText;
-        setError(`${labels.feedback.screenshotError} (${detail})`);
+        setError(labels.feedback.screenshotError);
         setScreenshotPreview(null);
         return;
       }
 
       const json = await res.json();
       setScreenshotUrl(json.url);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
-      setError(`${labels.feedback.screenshotError} (${msg})`);
+    } catch {
+      setError(labels.feedback.screenshotError);
       setScreenshotPreview(null);
     } finally {
       setUploadingScreenshot(false);

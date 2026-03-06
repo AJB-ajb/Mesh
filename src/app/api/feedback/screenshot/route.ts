@@ -43,7 +43,6 @@ export const POST = withAuth(
       });
 
     if (error) {
-      console.error("Screenshot upload error:", JSON.stringify(error));
       Sentry.captureException(error, {
         extra: {
           bucket: "feedback-screenshots",
@@ -52,7 +51,7 @@ export const POST = withAuth(
           fileSize: file.size,
         },
       });
-      return apiError("INTERNAL", `Upload failed: ${error.message}`, 500);
+      throw error;
     }
 
     const { data: urlData } = supabase.storage
