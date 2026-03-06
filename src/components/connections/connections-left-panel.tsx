@@ -10,25 +10,10 @@ import { OnlineStatusBadge } from "@/components/ui/online-status";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { useRovingIndex } from "@/lib/hooks/use-roving-index";
-import { getInitials } from "@/lib/format";
+import { getInitials, formatTimeAgoShort } from "@/lib/format";
+import { RelativeTime } from "@/components/ui/relative-time";
 import { usePresenceContext } from "@/components/providers/presence-provider";
 import type { MergedConnection } from "@/lib/hooks/use-connections-page";
-
-const formatRelativeTime = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffMins < 1) return "now";
-  if (diffMins < 60) return `${diffMins}m`;
-  if (diffHours < 24) return `${diffHours}h`;
-  if (diffDays === 1) return "1d";
-  if (diffDays < 7) return `${diffDays}d`;
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-};
 
 type PendingConnection = {
   friendshipId: string;
@@ -222,9 +207,11 @@ export function ConnectionsLeftPanel({
                       {conn.otherUser.full_name || labels.common.unknown}
                     </p>
                     {conn.lastMessage && (
-                      <span className="text-xs text-muted-foreground shrink-0">
-                        {formatRelativeTime(conn.lastMessage.created_at)}
-                      </span>
+                      <RelativeTime
+                        date={conn.lastMessage.created_at}
+                        formatter={formatTimeAgoShort}
+                        className="text-xs text-muted-foreground shrink-0"
+                      />
                     )}
                   </div>
                   {conn.lastMessage ? (
