@@ -14,6 +14,10 @@ export interface PostingBody {
   lookingFor?: string | number;
   category?: string;
   visibility?: string;
+  /** Composable access: appears in Discover feed */
+  inDiscover?: boolean;
+  /** Composable access: shareable link token */
+  linkToken?: string | null;
   status?: string;
   expiresAt?: string;
   locationMode?: string;
@@ -77,6 +81,12 @@ export function buildPostingDbRow(body: PostingBody, mode: "create" | "edit") {
         .filter(Boolean)
     : [];
 
+  // Composable access: derive in_discover from explicit field or fall back to visibility
+  const inDiscover =
+    body.inDiscover !== undefined
+      ? body.inDiscover
+      : (body.visibility ?? "public") !== "private";
+
   const row: Record<string, unknown> = {
     title: (body.title ?? "").trim() || undefined,
     description: (body.description ?? "").trim() || undefined,
@@ -87,8 +97,11 @@ export function buildPostingDbRow(body: PostingBody, mode: "create" | "edit") {
     ),
     team_size_max: lookingFor,
     category: body.category || "personal",
-    visibility: body.visibility || "public",
-    mode: body.visibility === "private" ? "friend_ask" : "open",
+    // Write both during expand-contract transition
+    visibility: inDiscover ? "public" : "private",
+    mode: inDiscover ? "open" : "friend_ask",
+    in_discover: inDiscover,
+    link_token: body.linkToken ?? null,
     location_mode: body.locationMode || "either",
     location_name: (body.locationName ?? "").trim() || null,
     location_lat: Number.isFinite(locationLat) ? locationLat : null,

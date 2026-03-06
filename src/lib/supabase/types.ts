@@ -174,6 +174,10 @@ export interface Posting {
   timezone: string | null;
   status: "open" | "closed" | "filled" | "expired" | "paused";
   parent_posting_id: string | null;
+  /** Composable access: appears in platform-wide Discover feed */
+  in_discover: boolean;
+  /** Composable access: shareable link token (null = no link) */
+  link_token: string | null;
   created_at: string;
   updated_at: string;
   expires_at: string;
@@ -207,6 +211,8 @@ export interface PostingInsert {
   embedding?: number[] | null;
   status?: "open" | "closed" | "filled" | "expired" | "paused";
   parent_posting_id?: string | null;
+  in_discover?: boolean;
+  link_token?: string | null;
   created_at?: string;
   updated_at?: string;
   expires_at: string;
@@ -240,6 +246,8 @@ export interface PostingUpdate {
   embedding?: number[] | null;
   status?: "open" | "closed" | "filled" | "expired" | "paused";
   parent_posting_id?: string | null;
+  in_discover?: boolean;
+  link_token?: string | null;
   created_at?: string;
   updated_at?: string;
   expires_at?: string;
