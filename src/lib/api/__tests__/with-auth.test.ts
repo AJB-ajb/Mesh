@@ -2,6 +2,12 @@
 import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
 import { NextResponse } from "next/server";
 
+// Mock Sentry
+vi.mock("@sentry/nextjs", () => ({
+  captureException: vi.fn(),
+}));
+import * as Sentry from "@sentry/nextjs";
+
 // Mock supabase server client
 const mockGetUser = vi.fn();
 vi.mock("@/lib/supabase/server", () => ({
@@ -18,6 +24,7 @@ import {
   type CronContext,
   type OptionalAuthContext,
 } from "../with-auth";
+import { AppError } from "@/lib/errors";
 
 describe("withAuth", () => {
   beforeEach(() => {
@@ -136,6 +143,50 @@ describe("withAuth", () => {
     expect(response.status).toBe(500);
     expect(body.error.code).toBe("INTERNAL");
     expect(body.error.message).toBe("Internal server error");
+  });
+
+  it("maps AppError to correct HTTP status", async () => {
+    const mockUser = { id: "user-123", email: "test@example.com" };
+    mockGetUser.mockResolvedValue({
+      data: { user: mockUser },
+      error: null,
+    });
+
+    const handler = vi.fn(async () => {
+      throw new AppError("FORBIDDEN", "Nope", 403);
+    });
+    const wrappedHandler = withAuth(handler);
+
+    const req = new Request("http://localhost/api/test");
+    const response = await wrappedHandler(req, { params: Promise.resolve({}) });
+    const body = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(body.error.code).toBe("FORBIDDEN");
+    expect(body.error.message).toBe("Nope");
+  });
+
+  it("calls Sentry.captureException on non-AppError throw", async () => {
+    const mockUser = { id: "user-123", email: "test@example.com" };
+    mockGetUser.mockResolvedValue({
+      data: { user: mockUser },
+      error: null,
+    });
+
+    const handler = vi.fn(async () => {
+      throw new Error("crash");
+    });
+    const wrappedHandler = withAuth(handler);
+
+    const req = new Request("http://localhost/api/test");
+    await wrappedHandler(req, { params: Promise.resolve({}) });
+
+    expect(Sentry.captureException).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        extra: { url: "http://localhost/api/test", method: "GET" },
+      }),
+    );
   });
 });
 

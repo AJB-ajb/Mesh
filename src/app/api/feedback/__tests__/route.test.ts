@@ -162,6 +162,62 @@ describe("POST /api/feedback", () => {
     );
   });
 
+  describe("malformed payloads", () => {
+    it("returns 400 when message is a number instead of string", async () => {
+      const req = makeRequest({ message: 123, page_url: "http://x/" });
+      const res = await POST(req, routeCtx);
+      const body = await res.json();
+
+      expect(res.status).toBe(400);
+      expect(body.error.code).toBe("VALIDATION");
+    });
+
+    it("returns 400 when page_url is a number", async () => {
+      const req = makeRequest({ message: "ok", page_url: 123 });
+      const res = await POST(req, routeCtx);
+      const body = await res.json();
+
+      expect(res.status).toBe(400);
+      expect(body.error.code).toBe("VALIDATION");
+    });
+
+    it("treats null mood as valid (omitted)", async () => {
+      mockGetUser.mockResolvedValue({
+        data: { user: { id: "user-123" } },
+        error: null,
+      });
+      mockSingle.mockResolvedValue({
+        data: { id: "fb-m", created_at: "2026-03-06T00:00:00Z" },
+        error: null,
+      });
+
+      const req = makeRequest({
+        message: "ok",
+        page_url: "http://x/",
+        mood: null,
+      });
+      const res = await POST(req, routeCtx);
+
+      expect(res.status).toBe(201);
+      expect(mockInsert).toHaveBeenCalledWith(
+        expect.objectContaining({ mood: null }),
+      );
+    });
+
+    it("returns 400 for extra-long message (> 5000 chars)", async () => {
+      const req = makeRequest({
+        message: "a".repeat(5001),
+        page_url: "http://x/",
+      });
+      const res = await POST(req, routeCtx);
+      const body = await res.json();
+
+      expect(res.status).toBe(400);
+      expect(body.error.code).toBe("VALIDATION");
+      expect(body.error.message).toContain("5000");
+    });
+  });
+
   it("returns 500 on insert failure", async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: "user-123" } },

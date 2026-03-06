@@ -60,6 +60,26 @@ describe("POST /api/matches/interest", () => {
     expect(body.error.code).toBe("UNAUTHORIZED");
   });
 
+  it("returns 400 when posting_id is a number", async () => {
+    const req = makeRequest({ posting_id: 123 });
+    const response = await POST(req, { params: Promise.resolve({}) });
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error.code).toBe("VALIDATION");
+    expect(body.error.message).toBe("posting_id is required");
+  });
+
+  it("returns 400 when posting_id is an empty string", async () => {
+    const req = makeRequest({ posting_id: "" });
+    const response = await POST(req, { params: Promise.resolve({}) });
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error.code).toBe("VALIDATION");
+    expect(body.error.message).toBe("posting_id is required");
+  });
+
   it("returns 400 when posting_id is missing", async () => {
     const req = makeRequest({});
     const response = await POST(req, { params: Promise.resolve({}) });
