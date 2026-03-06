@@ -1,104 +1,173 @@
 ---
 name: test-ui
-description: "Browser-based UI testing for Mesh. Runs user-flow tests, visual/responsive checks, and multi-user scenarios against a local server (production build by default), producing structured bug reports. Use whenever someone says 'test the UI', 'run browser tests', 'QA the app', 'check the pages', 'visual regression', 'test mobile layout', 'run flow tests', or 'test the posting flow'."
-argument-hint: "[flows|visual|full] [mobile|desktop] [route-or-flow-name]"
+description: "Browser-based UI testing for Mesh. Tests use-case flows end-to-end from the user's perspective, flags bugs, UX friction, and unintuitive behavior. Supports multi-user scenarios via a two-agent pattern (one in the browser, one via API). Produces structured bug reports. Use whenever someone says 'test the UI', 'run browser tests', 'QA the app', 'check the pages', 'visual regression', 'test mobile layout', 'test the flow', or 'run use-case tests'."
+argument-hint: "[use-case description | flows | visual | full] [mobile | desktop] [route-or-area]"
 ---
 
 # Browser UI Testing Skill
 
-## 1. Mode Selection
+## 1. Philosophy
+
+Test Mesh **the way a real user would use it** — not as a checklist of UI elements, but as someone trying to accomplish a goal. The most valuable findings are not pixel-level bugs but **UX friction**: confusing flows, unintuitive interactions, missing feedback, dead ends, and moments where a user would hesitate or give up.
+
+### What to look for
+
+- **Friction**: Steps that feel unnecessary, confusing, or slow
+- **Dead ends**: States where the user doesn't know what to do next
+- **Missing feedback**: Actions with no visible response (loading, success, error)
+- **Inconsistency**: Similar actions that behave differently across pages
+- **Discoverability**: Features that exist but are hard to find
+- **Broken flows**: Errors, crashes, wrong redirects, lost data
+- **Responsive issues**: Layout problems at different viewport sizes
+
+## 2. Mode Selection
 
 Parse `$ARGUMENTS` along four dimensions:
 
 | Dimension    | Values                                                       | Default                   |
 | ------------ | ------------------------------------------------------------ | ------------------------- |
-| **Scope**    | `flows`, `visual`, `full`                                    | `full` (run both)         |
+| **Scope**    | `flows`, `visual`, `full`, or a **use-case description**     | `full` (run both)         |
 | **Viewport** | `mobile`, `desktop`                                          | both                      |
-| **Target**   | route path or flow name (e.g. `/discover`, `authentication`) | all                       |
+| **Target**   | route path or area name (e.g. `/settings`, `authentication`) | all                       |
 | **Server**   | `dev`, `prod`                                                | `prod` (production build) |
+
+When the argument is a **use-case description** (e.g. "new user creates a posting and someone applies"), treat it as a use-case-driven test session (see section 7).
 
 Examples:
 
-- `flows mobile` — flow tests at mobile viewport only (production build)
+- `a user creates a tennis posting and a stranger applies` — use-case-driven test
+- `flows mobile` — flow tests at mobile viewport only
 - `visual /profile` — visual tests on the profile page only
-- `full desktop connections` — all tests, desktop only, focused on connections flow/page
-- `dev flows` — flow tests using dev server instead of production build
-- (empty) — full test suite, both viewports, all pages and flows, production build
+- `full desktop` — all tests, desktop only
+- `dev flows` — flow tests using dev server
+- (empty) — full test suite, both viewports
 
-## 2. Prerequisites
+## 3. Prerequisites
 
 Before starting, verify each of these. If any fails, report it and stop.
 
 1. **Server running** at `http://localhost:3000` — start it if needed, then navigate and confirm the page loads.
 
-   **Production mode (default):** Run a production build and start the server. This is faster, more stable, and representative of what users experience. Dev mode suffers from slow on-demand compilation, React development warnings, and broken slash commands — all of which degrade automated testing.
+   **Production mode (default):**
 
    ```bash
-   # Build (takes ~30–60s, one-time per session)
    pnpm build
-   # Start production server in background
    pnpm start &
    ```
 
-   **Dev mode (when `dev` flag is set):** Use `pnpm dev` instead. Only use this when you specifically need to test dev-mode behavior (HMR, dev warnings, etc.).
+   **Dev mode (when `dev` flag is set):** Use `pnpm dev &` instead.
 
-   ```bash
-   pnpm dev &
-   ```
+   **If a server is already running on port 3000:** Check whether it matches the requested mode. Reuse it if so, otherwise ask the user.
 
-   **If a server is already running on port 3000:** Check whether it's a dev or production server. If it matches the requested mode, reuse it. Otherwise, inform the user and ask whether to restart.
-
-   _Why_: Production builds load 3–5x faster, produce no compilation delays, and avoid React StrictMode double-renders that confuse element detection. This makes automated test sessions significantly more reliable.
+   _Why production by default_: Production builds load faster, produce no compilation delays, and avoid React StrictMode double-renders that confuse element detection.
 
 2. **Browser automation available** — Claude-in-Chrome MCP tools respond.
-   _Why_: The skill drives the browser programmatically via MCP.
 
-3. **Test password available** — `.env` contains `TEST_USER_PASSWORD`.
-   _Why_: Both test accounts share this password for login.
+3. **Test credentials available** — read `spec/testing.md` for test user setup. Verify `.env` contains `TEST_USER_PASSWORD`.
 
-```
-Grep pattern="TEST_USER_PASSWORD" path=".env"
-```
-
-## 3. Setup
+## 4. Setup
 
 1. Call `tabs_context_mcp` to get browser context.
 2. Create a new tab with `tabs_create_mcp`.
 3. Read `TEST_USER_PASSWORD` from `.env`.
-4. Initialize a **test-data tracking list** — an in-memory list to record IDs of any entities created during testing (posting IDs, bookmarks, connection requests, etc.). This list drives the cleanup phase at the end.
-   _Why_: The dev database is disposable, so we exercise full CRUD, but we clean up after ourselves to leave the database in a known state.
-5. Store credentials for both test users:
-   - **User 1** (primary/UI): `ajb60721@gmail.com`
+4. Initialize a **test-data tracking list** — an in-memory list to record IDs of any entities created during testing (posting IDs, bookmarks, connection requests, etc.). This drives cleanup at the end.
+5. Read `spec/testing.md` for test user credentials and multi-user patterns:
+   - **User 1** (primary/browser): `ajb60721@gmail.com`
    - **User 2** (secondary/API): `ajb60722@gmail.com`
    - Password for both: value from `.env`
 
-## 4. Dynamic Route Discovery
+## 5. App Discovery
 
-Instead of a hardcoded page list, discover routes at test time:
+Before testing, understand the current state of the app. Routes change as Mesh evolves — discover dynamically.
+
+### Route Discovery
 
 ```
 Glob pattern="src/app/**/page.tsx"
 ```
 
-Parse the Next.js App Router directory structure to build a route table. The `(group)` directories are route groups that don't appear in the URL. For example, `src/app/(dashboard)/discover/page.tsx` maps to `/discover`.
+Parse the Next.js App Router directory structure to build a route table. Read `references/pages.md` for guidance on interpreting the directory layout, route groups, and what to look for on each type of page.
 
-Read `references/pages.md` (in this skill directory) for guidance on interpreting the directory layout, which route groups exist, and what to look for on each type of page.
+### Understand What's Available
 
-_Why_: Routes change as the app evolves. Dynamic discovery ensures the skill always tests the actual current routes rather than a stale list.
+Before writing test flows, spend a few minutes exploring:
 
-## 5. Login Helper
+1. Navigate to the main authenticated page
+2. Identify the navigation structure (sidebar, header, mobile nav)
+3. Note which features are implemented vs. placeholder
+4. Check what actions are available on each page
 
-Use this procedure whenever authentication is needed for a given user.
+This exploration informs which use cases can actually be tested end-to-end.
 
-1. Navigate to `http://localhost:3000/login`
-2. Wait for the page to load (take screenshot to verify)
-3. Find the email input, enter the user's email
-4. Find the password input, enter the password from `.env`
-5. Click the "Sign In" button
-6. Wait for redirect — take screenshot and note the actual post-login URL (do not assume a specific route)
-7. Verify the page content loads (not a blank page or error)
+## 6. Multi-User Testing (Two-Agent Pattern)
 
-**Skip if already authenticated**: Before logging in, check if the current page shows the authenticated app shell (sidebar, header). If so, verify the correct user is logged in and skip the login flow.
+Mesh's core features involve two users interacting. The skill uses a split approach:
+
+- **User 1** (primary) interacts through the browser UI normally
+- **User 2** (secondary) actions are simulated via authenticated API calls
+
+See `spec/testing.md` for the full list of multi-user scenarios.
+
+### Setting Up User 2's Session
+
+1. Log in as User 2 via the browser to establish a session
+2. Extract auth cookies/tokens from the browser
+3. Switch back to User 1 in the browser
+4. Use `javascript_tool` with `fetch()` against `localhost:3000/api/...` routes, passing User 2's credentials
+
+### Key Multi-User Patterns
+
+- User 1 creates posting -> User 2 requests to join -> User 1 accepts -> conversation opens
+- User 1 sends connection request -> User 2 accepts
+- Sequential invite: User 1 creates posting -> selects User 2 -> User 2 responds
+
+After User 2 acts via API, verify in User 1's browser that the result is visible (notification, updated state, etc.).
+
+## 7. Use-Case-Driven Testing
+
+When a use-case description is provided (or as part of `full` mode), test end-to-end user journeys.
+
+### Use-Case Sources
+
+1. **User-provided**: The developer describes a scenario to test
+2. **From spec**: Read `spec/use-cases.md` for documented Mesh use cases — these describe real scenarios with expected behaviors
+3. **Access model**: `spec/use-cases.md` also contains access & composition use cases (UC-A1 through UC-A12) with specific verify steps
+
+### How to Run a Use-Case Test
+
+1. **Define the goal**: What is the user trying to accomplish?
+2. **Identify the entry point**: Where does the user start?
+3. **Walk through naturally**: Follow the path a real user would take, making choices as they would
+4. **Note every friction point**: Anything that makes you pause, re-read, or try multiple approaches
+5. **Test the happy path first**, then try edge cases (empty inputs, long text, back button, refresh)
+6. **Verify the outcome**: Did the user achieve their goal? Is the result visible and correct?
+
+### What Makes a Good Use-Case Test
+
+- **Be specific**: "A user creates a tennis partner posting and a stranger discovers and applies" is better than "test postings"
+- **Cross multiple pages**: Good use cases naturally span several routes
+- **Include the return trip**: If you create something, check it appears in lists, can be edited, can be deleted
+- **Test as a confused user**: Try clicking the "wrong" thing. Is recovery easy?
+
+### Documenting Friction
+
+For each friction point, record:
+
+- **What happened**: The exact interaction that felt wrong
+- **Why it's a problem**: What a user would think/feel
+- **Severity**: From "mildly confusing" to "completely blocked"
+- **Suggestion**: How it could be improved (if obvious)
+
+## 8. Login Helper
+
+1. Navigate to `/login`
+2. Take a screenshot to verify the form renders
+3. Enter the user's email and password
+4. Click "Sign In"
+5. Wait for redirect — take a screenshot and note the actual post-login URL
+6. Verify the page content loads (not a blank page or error)
+
+**Skip if already authenticated**: Check if the current page shows the authenticated app shell. If so, verify the correct user is logged in.
 
 If login fails, report it as a critical bug and stop.
 
@@ -106,110 +175,72 @@ If login fails, report it as a critical bug and stop.
 
 To switch from User 1 to User 2 (or vice versa):
 
-1. Sign out via the avatar dropdown → "Sign out"
+1. Sign out via the avatar dropdown -> "Sign out"
 2. Run the login helper with the other user's email
 
-## 6. Multi-User Testing
-
-Many features require two users interacting. The test skill uses a split approach:
-
-- **User 1** (primary) interacts through the browser UI as normal
-- **User 2** (secondary) actions are simulated via authenticated API calls
-
-### User 2 API Pattern
-
-Use `javascript_tool` to make fetch calls against the app's API routes with User 2's auth session:
-
-1. **Obtain User 2's session**: Log in as User 2 via the browser, extract the auth cookies/token, then switch back to User 1.
-2. **Make API calls**: Use `javascript_tool` with `fetch()` against `localhost:3000/api/...` routes, passing User 2's auth credentials.
-
-Read `spec/testing.md` for the full list of multi-user scenarios. Key patterns:
-
-- User 1 creates posting → User 2 requests to join → User 1 accepts → conversation opens
-- User 1 sends connection request → User 2 accepts
-- Sequential invite: User 1 creates posting → selects User 2 → User 2 responds
-
-_Why_: Real usage involves multiple users. Testing only single-user flows misses interaction bugs like notification delivery, permission checks, and state transitions between users.
-
-## 7. Flow Tests
+## 9. Flow Tests
 
 **When scope is `flows` or `full`.**
 
-Read `references/flows.md` (in this skill directory) for the 10 flow test scripts. Execute each flow in order:
+These are generic flow patterns — adapt them to what you discover in section 5. Read `references/flows.md` for detailed guidance on each flow.
 
-1. **Authentication** — login, OAuth buttons visible, redirect
-2. **Navigation** — discover routes dynamically, verify sidebar/header/mobile nav
-3. **Create Posting** — actually submit via CodeMirror editor, track posting ID
-4. **Browse & Filter** — search, category chips, bookmark toggle
-5. **Posting Detail** — owner view (edit/manage), visitor view (apply)
-6. **Posts Page** — filter chips, verify test posting appears
-7. **Connections** — view list, split-pane chat
-8. **Profile** — edit a field, save, undo the edit
-9. **Settings** — toggle a preference, undo the toggle
-10. **Sign Out** — sign out, verify session cleared
-
-Multi-user steps are woven into the flows:
-
-- Flow 5: User 2 requests to join User 1's test posting (via API)
-- Flow 7: User 2 sends connection request to User 1 (via API)
+1. **Authentication** — login works, redirects correctly, session persists
+2. **Navigation** — all nav links work, pages load, mobile nav works
+3. **Create posting** — full creation flow through the editor/form, track the posting ID
+4. **Browse & search** — discover page: search, filter, sort, bookmark
+5. **Posting detail** — owner view vs. visitor view, multi-user interaction (User 2 applies)
+6. **My content** — find your postings, verify management controls
+7. **Connections** — connection list, chat, multi-user flow (User 2 sends request)
+8. **Profile** — edit a field, save, verify persistence, revert
+9. **Settings** — toggle a preference, verify persistence, revert
+10. **Sign out** — session clears, protected routes redirect
 
 For each flow:
 
-- Follow the steps in `references/flows.md`
 - Take screenshots at key verification points
-- Record result as PASS or FAIL
-- If FAIL, record a bug with full details (see report template)
-- If **target** was specified, only run the matching flow
+- Record PASS or FAIL
+- If FAIL, record a detailed bug
+- **Also record UX friction** even on PASS — a flow can work but still be confusing
 
-## 8. Visual Tests
+## 10. Visual Tests
 
 **When scope is `visual` or `full`.**
 
-### Page Discovery
+For each discovered page:
 
-Use the route table from step 4 (dynamic route discovery). For each discovered page:
+1. Navigate to the page (log in first if protected)
+2. **Desktop check** (skip if viewport is `mobile` only) — resize to 1440x900, screenshot, apply checklist
+3. **Mobile check** (skip if viewport is `desktop` only) — resize to 375x812, screenshot, apply checklist
+4. Record any issues found
 
-1. Navigate to the page (log in first if it's a protected route)
-2. **Desktop check** (skip if viewport is `mobile` only) — resize to 1440×900, take screenshot, apply the 10-point visual checklist
-3. **Mobile check** (skip if viewport is `desktop` only) — resize to 375×812, take screenshot, apply the 10-point visual checklist
-4. Record any issues found as bugs
+### Visual Checklist
 
-_Why both viewports_: Mesh is a PWA targeting both desktop and mobile users. Responsive breakpoints frequently cause layout regressions that only show at specific widths.
+1. **Layout integrity** — no overflow, no overlapping elements, no unintended horizontal scroll
+2. **Typography** — readable sizes (min 14px body), proper hierarchy
+3. **Spacing** — consistent padding/margins, nothing cramped or floating
+4. **Touch targets** — buttons/links min 44px on mobile, visible hover/focus states
+5. **Responsive behavior** — content reflows properly, nav adapts, nothing cut off
+6. **Color & contrast** — text readable, interactive elements distinguishable
+7. **Empty states** — helpful messages when no data, clear call to action
+8. **Loading states** — feedback during data fetch, not a blank void
+9. **Error states** — what happens on bad input, failed requests, missing data?
+10. **Consistency** — similar elements styled the same across pages
 
-If **target** was specified, only test the matching page.
+## 11. Stateful Testing
 
-### 10-Point Visual Checklist
+Exercise full CRUD — don't just look at pages, interact with them.
 
-For each page/viewport, check:
-
-1. **Layout integrity** — no content overflow, no overlapping elements, no horizontal scroll
-2. **Typography** — readable font sizes (min 14px body), proper heading hierarchy
-3. **Spacing** — consistent padding/margins, no cramped or overly spaced elements
-4. **Interactive elements** — buttons/links adequately sized (min 44px touch target on mobile), visible focus states
-5. **Responsive behavior** — sidebar collapses on mobile, content reflows properly, no cut-off text
-6. **Color & contrast** — text readable against background, theme toggle works if present
-7. **Empty states** — appropriate messages shown when no data, not blank/broken
-8. **Loading states** — spinner or skeleton shown during data fetch, not blank
-9. **Broken images/icons** — all images load, icons render correctly
-10. **Accessibility basics** — landmarks present, form labels exist, images have alt text
-
-## 9. Stateful Testing Guidelines
-
-The dev database is disposable — exercise full CRUD operations.
-
-- **Prefix test data** with `[TEST]` in titles/descriptions so it's identifiable
-- **Track all created entity IDs** in the test-data tracking list (initialized in setup)
+- **Prefix test data** with `[TEST]` so it's identifiable
+- **Track all created entity IDs** in the test-data tracking list
 - **Types to track**: posting IDs, bookmark IDs, connection request IDs, profile field changes, settings changes
-- After all tests, the cleanup protocol (section 12) reverses these changes
+- After all tests, the cleanup protocol (section 14) reverses these changes
 
-_Why_: Read-only testing misses entire categories of bugs — form validation, submission flows, data persistence, state transitions. The `[TEST]` prefix and cleanup protocol keep the database tidy.
+## 12. Report Generation
 
-## 10. Report Generation
+After all tests complete, generate a report:
 
-After all tests complete, generate a report file:
-
-- Path: `.reports/browser-test-YYYY-MM-DD[-suffix].md` (use today's date; add a short suffix like `-v02` if a report already exists for today)
-- Create the `.reports/` directory if it doesn't exist
+- Path: `.reports/browser-test-YYYY-MM-DD[-suffix].md` (add `-v02` etc. if a report already exists for today)
+- Create `.reports/` if it doesn't exist
 
 ### Report Template
 
@@ -219,67 +250,60 @@ After all tests complete, generate a report file:
 ## Summary
 
 - **Date**: YYYY-MM-DD
-- **Mode**: flows | visual | full
+- **Mode**: flows | visual | full | use-case
 - **Viewport**: desktop | mobile | both
-- **Target**: all | specific route/flow
+- **Target**: all | specific route/flow/use-case
 - **Bugs Found**: N (C critical, H high, M medium, L low)
+- **UX Friction Points**: N
 - **Flows Passed**: X/10 (if flows were run)
 - **Pages Scanned**: Y (if visual was run)
 - **Test Data Cleaned**: yes | partial | no
+
+## UX Friction Points
+
+Issues that aren't bugs but make the experience worse. Ordered by impact.
+
+### FRICTION-001: [Short description]
+
+- **Where**: /route or flow name
+- **What happened**: Describe the interaction
+- **Why it's a problem**: What a user would think/feel
+- **Impact**: high | medium | low
+- **Suggestion**: How to improve it
 
 ## Bugs
 
 ### BUG-001: [Title]
 
 - **Severity**: critical | high | medium | low
-- **Category**: layout | style | UX | functionality | accessibility | responsiveness
+- **Category**: layout | functionality | UX | accessibility | responsiveness
 - **Page**: /route
 - **Viewport**: desktop | mobile | both
 - **Steps to Reproduce**:
-  1. Navigate to /route
-  2. Do X
-  3. Observe Y
+  1. Step one
+  2. Step two
 - **Expected**: What should happen
 - **Actual**: What actually happens
-- **Suggested Fix**: Brief suggestion (e.g. "add `overflow-hidden` to container")
-
-### Example Bug Entry
-
-> ### BUG-002: Category chips overflow on mobile
->
-> - **Severity**: medium
-> - **Category**: responsiveness
-> - **Page**: /discover
-> - **Viewport**: mobile
-> - **Steps to Reproduce**:
->   1. Navigate to /discover at 375px width
->   2. Observe the category chip row
-> - **Expected**: Chips scroll horizontally or wrap to a second line
-> - **Actual**: Chips overflow the container and cause horizontal page scroll
-> - **Suggested Fix**: Add `overflow-x-auto` and `flex-nowrap` to the chip container
+- **Suggested Fix**: Brief suggestion
 
 ## Flow Tests
 
 | #   | Flow           | Status    | Notes |
 | --- | -------------- | --------- | ----- |
 | 1   | Authentication | PASS/FAIL |       |
-| 2   | Navigation     | PASS/FAIL |       |
 | ... | ...            | ...       | ...   |
 
 ## Pages Tested
 
-| Page     | Route     | Desktop   | Mobile    | Notes |
-| -------- | --------- | --------- | --------- | ----- |
-| Discover | /discover | PASS/FAIL | PASS/FAIL |       |
-| ...      | ...       | ...       | ...       | ...   |
+| Page | Route | Desktop | Mobile | Notes |
+| ---- | ----- | ------- | ------ | ----- |
+| ...  | ...   | ...     | ...    | ...   |
 
 ## Cleanup
 
-| Entity        | ID      | Action   | Result  |
-| ------------- | ------- | -------- | ------- |
-| Posting       | abc-123 | Deleted  | Success |
-| Profile field | bio     | Reverted | Success |
-| ...           | ...     | ...      | ...     |
+| Entity | ID  | Action | Result |
+| ------ | --- | ------ | ------ |
+| ...    | ... | ...    | ...    |
 
 ## Test Environment
 
@@ -288,63 +312,54 @@ After all tests complete, generate a report file:
 - **Date**: YYYY-MM-DD
 ```
 
-After writing the report, tell the user the file path and give a brief summary of findings.
+## 13. Severity Guide
 
-## 11. Severity Guide
+| Level        | Meaning                                             | Examples                                                     |
+| ------------ | --------------------------------------------------- | ------------------------------------------------------------ |
+| **Critical** | Feature broken or unusable, blocks core workflows   | Login fails, page crashes, data loss, creation errors        |
+| **High**     | Feature works but with significant usability issues | Form doesn't validate, nav broken on mobile, wrong data      |
+| **Medium**   | Noticeable issue that doesn't block functionality   | Layout overflow, inconsistent spacing, missing loading state |
+| **Low**      | Minor cosmetic or polish issue                      | Slight alignment, icon sizing, non-ideal empty state text    |
 
-| Level        | Meaning                                                       | Examples                                                                        |
-| ------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| **Critical** | Feature is broken or unusable, blocks core workflows          | Login fails, page crashes, data loss, posting creation errors                   |
-| **High**     | Feature works but with significant issues affecting usability | Form doesn't validate, navigation broken on mobile, incorrect data displayed    |
-| **Medium**   | Noticeable issue that doesn't block functionality             | Layout overflow at certain widths, inconsistent spacing, missing loading states |
-| **Low**      | Minor cosmetic or polish issue                                | Slight alignment off, icon slightly wrong size, non-ideal empty state text      |
-
-## 12. Cleanup Protocol
+## 14. Cleanup Protocol
 
 After all tests complete, reverse test data using the tracking list:
 
-1. **Delete test postings** — navigate to each test posting and use the delete/archive action, or use API calls
-2. **Withdraw applications** — if User 2 applied to a posting, withdraw via API
-3. **Remove connection requests** — cancel or remove any test connections
-4. **Revert profile changes** — restore any modified profile fields to their original values
-5. **Revert settings changes** — restore any toggled settings to their original values
-6. **Log cleanup results** in the report's Cleanup section
+1. Delete test postings (navigate and use delete action, or via API)
+2. Withdraw applications/join requests
+3. Remove test connections
+4. Revert profile field changes to original values
+5. Revert settings changes to original values
+6. Log results in the report's Cleanup section
 
-_Why_: Even though the dev database is disposable, cleaning up prevents test data from accumulating across multiple test runs and confusing future tests.
+If cleanup fails for any entity, log it as a warning (not a bug).
 
-If cleanup fails for any entity, log it as a warning in the report (not a bug).
-
-## 13. Error Recovery
+## 15. Error Recovery
 
 ### MCP Disconnection
 
-The Claude-in-Chrome extension may disconnect periodically. If a browser tool call fails:
+If a browser tool call fails:
 
-1. Wait 3–5 seconds
+1. Wait 3-5 seconds
 2. Call `tabs_context_mcp` to reconnect
 3. Retry the failed action
-4. If it fails 3 times, report the issue and move on to the next test
+4. If it fails 3 times, report and move on
 
 ### Page Load Failures
 
-If a page doesn't load:
-
-1. Take a screenshot to document the state
+1. Screenshot the state
 2. Try navigating again
 3. If still failing, record as a bug and continue
 
 ### Element Not Found
 
-If an expected element isn't found:
-
-1. Take a screenshot
+1. Screenshot the page
 2. Try `find` with alternative descriptions
 3. If still not found, record as a bug and continue
 
 ### Test Data Leak
 
-If a test session is interrupted before cleanup completes:
+If a session is interrupted before cleanup:
 
-1. Check the test-data tracking list for uncleaned entities
-2. On next test run, search for entities prefixed with `[TEST]` and clean them up
-3. Log any orphaned test data found in the report
+1. On next run, search for entities prefixed with `[TEST]` and clean them up
+2. Log any orphaned test data in the report
