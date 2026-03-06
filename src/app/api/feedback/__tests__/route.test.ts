@@ -108,9 +108,46 @@ describe("POST /api/feedback", () => {
     expect(body.id).toBe("fb-1");
     expect(body.created_at).toBeDefined();
 
-    // Verify insert was called with user_id
+    // Verify insert was called with user_id and new fields default to null
     expect(mockInsert).toHaveBeenCalledWith(
-      expect.objectContaining({ user_id: "user-123", mood: "happy" }),
+      expect.objectContaining({
+        user_id: "user-123",
+        mood: "happy",
+        screenshot_url: null,
+        metadata: null,
+      }),
+    );
+  });
+
+  it("passes screenshot_url and metadata to insert", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "user-123" } },
+      error: null,
+    });
+    mockSingle.mockResolvedValue({
+      data: { id: "fb-meta", created_at: "2026-03-06T00:00:00Z" },
+      error: null,
+    });
+
+    const metadata = {
+      viewport_width: 375,
+      viewport_height: 812,
+      platform: "iPhone",
+    };
+    const req = makeRequest({
+      message: "Bug with screenshot",
+      page_url: "http://localhost/postings",
+      screenshot_url: "https://storage.example.com/shot.png",
+      metadata,
+    });
+    const res = await POST(req, routeCtx);
+
+    expect(res.status).toBe(201);
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        screenshot_url: "https://storage.example.com/shot.png",
+        metadata,
+      }),
     );
   });
 

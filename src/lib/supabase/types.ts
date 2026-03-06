@@ -380,6 +380,18 @@ export interface FriendshipInsert {
 
 export type FeedbackMood = "frustrated" | "neutral" | "happy";
 
+export interface FeedbackMetadata {
+  viewport_width?: number;
+  viewport_height?: number;
+  screen_width?: number;
+  screen_height?: number;
+  device_pixel_ratio?: number;
+  connection_type?: string;
+  app_version?: string;
+  platform?: string;
+  dark_mode?: boolean;
+}
+
 export interface Feedback {
   id: string;
   user_id: string | null;
@@ -387,6 +399,8 @@ export interface Feedback {
   mood: FeedbackMood | null;
   page_url: string;
   user_agent: string | null;
+  screenshot_url: string | null;
+  metadata: FeedbackMetadata | null;
   created_at: string;
 }
 
@@ -397,6 +411,8 @@ export interface FeedbackInsert {
   mood?: FeedbackMood | null;
   page_url: string;
   user_agent?: string | null;
+  screenshot_url?: string | null;
+  metadata?: FeedbackMetadata | null;
   created_at?: string;
 }
 

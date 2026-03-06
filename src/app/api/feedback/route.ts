@@ -1,6 +1,6 @@
 import { withAuth, type OptionalAuthContext } from "@/lib/api/with-auth";
 import { apiError, apiSuccess, parseBody } from "@/lib/errors";
-import type { FeedbackMood } from "@/lib/supabase/types";
+import type { FeedbackMood, FeedbackMetadata } from "@/lib/supabase/types";
 
 const VALID_MOODS: FeedbackMood[] = ["frustrated", "neutral", "happy"];
 const MAX_MESSAGE_LENGTH = 5000;
@@ -12,12 +12,15 @@ export const POST = withAuth(
 
     const body = await parseBody(request);
 
-    const { message, mood, page_url, user_agent } = body as {
-      message?: string;
-      mood?: string;
-      page_url?: string;
-      user_agent?: string;
-    };
+    const { message, mood, page_url, user_agent, screenshot_url, metadata } =
+      body as {
+        message?: string;
+        mood?: string;
+        page_url?: string;
+        user_agent?: string;
+        screenshot_url?: string;
+        metadata?: FeedbackMetadata;
+      };
 
     // Validate required fields
     if (
@@ -58,6 +61,8 @@ export const POST = withAuth(
         mood: (mood as FeedbackMood) ?? null,
         page_url,
         user_agent: user_agent ?? null,
+        screenshot_url: screenshot_url ?? null,
+        metadata: metadata ?? null,
       })
       .select("id, created_at")
       .single();

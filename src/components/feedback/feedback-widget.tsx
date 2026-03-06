@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { MessageSquarePlus, Check } from "lucide-react";
+import { useState, useCallback, useRef } from "react";
+import { MessageSquarePlus, Check, ImagePlus, X, Bug } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,7 +14,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { labels } from "@/lib/labels";
-import type { FeedbackMood } from "@/lib/supabase/types";
+import { useFeedbackSheet } from "./use-feedback-sheet";
+import type { FeedbackMood, FeedbackMetadata } from "@/lib/supabase/types";
 
 const MOOD_EMOJIS: Record<FeedbackMood, string> = {
   frustrated: "\u{1F614}",
@@ -24,31 +25,103 @@ const MOOD_EMOJIS: Record<FeedbackMood, string> = {
 
 const MOOD_VALUES: FeedbackMood[] = ["frustrated", "neutral", "happy"];
 
+function collectMetadata(): FeedbackMetadata {
+  const nav = navigator as Navigator & {
+    connection?: { effectiveType?: string };
+  };
+  return {
+    viewport_width: window.innerWidth,
+    viewport_height: window.innerHeight,
+    screen_width: screen.width,
+    screen_height: screen.height,
+    device_pixel_ratio: window.devicePixelRatio,
+    connection_type: nav.connection?.effectiveType,
+    app_version: "0.5.0",
+    platform: navigator.platform,
+    dark_mode: document.documentElement.classList.contains("dark"),
+  };
+}
+
 export function FeedbackWidget() {
-  const [open, setOpen] = useState(false);
+  const { open, setOpen } = useFeedbackSheet();
   const [message, setMessage] = useState("");
   const [mood, setMood] = useState<FeedbackMood | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Screenshot state
+  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(
+    null,
+  );
+  const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const resetForm = useCallback(() => {
     setMessage("");
     setMood(null);
     setError(null);
     setSuccess(false);
+    setScreenshotUrl(null);
+    setScreenshotPreview(null);
   }, []);
 
   const handleOpenChange = useCallback(
     (nextOpen: boolean) => {
       setOpen(nextOpen);
       if (!nextOpen) {
-        // Reset form when closing
         resetForm();
       }
     },
-    [resetForm],
+    [setOpen, resetForm],
   );
+
+  const handleScreenshotSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      // Show local preview immediately
+      const reader = new FileReader();
+      reader.onload = (ev) => setScreenshotPreview(ev.target?.result as string);
+      reader.readAsDataURL(file);
+
+      // Upload to server
+      setUploadingScreenshot(true);
+      setError(null);
+
+      try {
+        const formData = new FormData();
+        formData.append("screenshot", file);
+        const res = await fetch("/api/feedback/screenshot", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) {
+          setError(labels.feedback.screenshotError);
+          setScreenshotPreview(null);
+          return;
+        }
+
+        const { data } = await res.json();
+        setScreenshotUrl(data.url);
+      } catch {
+        setError(labels.feedback.screenshotError);
+        setScreenshotPreview(null);
+      } finally {
+        setUploadingScreenshot(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    },
+    [],
+  );
+
+  const removeScreenshot = useCallback(() => {
+    setScreenshotUrl(null);
+    setScreenshotPreview(null);
+  }, []);
 
   const handleSubmit = useCallback(async () => {
     if (!message.trim()) {
@@ -68,6 +141,8 @@ export function FeedbackWidget() {
           mood,
           page_url: window.location.href,
           user_agent: navigator.userAgent,
+          screenshot_url: screenshotUrl,
+          metadata: collectMetadata(),
         }),
       });
 
@@ -86,7 +161,7 @@ export function FeedbackWidget() {
     } finally {
       setSubmitting(false);
     }
-  }, [message, mood, resetForm]);
+  }, [message, mood, screenshotUrl, setOpen, resetForm]);
 
   const handleTranscription = useCallback((text: string) => {
     setMessage((prev) => (prev ? `${prev} ${text}` : text));
@@ -94,6 +169,7 @@ export function FeedbackWidget() {
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
+      {/* Desktop-only trigger — mobile uses the FAB speed-dial */}
       <SheetTrigger asChild>
         <Button
           variant="default"
@@ -163,13 +239,68 @@ export function FeedbackWidget() {
                 disabled={submitting}
               />
 
+              {/* Screenshot */}
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium">
+                  {labels.feedback.screenshotLabel}
+                </label>
+                {screenshotPreview ? (
+                  <div className="relative rounded-lg border overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={screenshotPreview}
+                      alt="Screenshot preview"
+                      className="w-full max-h-48 object-cover"
+                    />
+                    {uploadingScreenshot && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-background/60">
+                        <span className="text-sm text-muted-foreground">
+                          {labels.feedback.screenshotUploading}
+                        </span>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={removeScreenshot}
+                      className="absolute top-2 right-2 size-6 rounded-full bg-background/80 flex items-center justify-center hover:bg-background"
+                      aria-label={labels.feedback.screenshotRemove}
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-2 rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors"
+                  >
+                    <ImagePlus className="size-4" />
+                    {labels.feedback.screenshotAdd}
+                  </button>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleScreenshotSelect}
+                />
+              </div>
+
+              {/* Debug context note */}
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <Bug className="size-3 shrink-0" />
+                {labels.feedback.debugContextLabel}
+              </p>
+
               {/* Error message */}
               {error && <p className="text-destructive text-sm">{error}</p>}
 
               {/* Submit button */}
               <Button
                 onClick={handleSubmit}
-                disabled={submitting || !message.trim()}
+                disabled={submitting || uploadingScreenshot || !message.trim()}
               >
                 {submitting
                   ? labels.feedback.submittingButton

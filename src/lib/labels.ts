@@ -638,6 +638,7 @@ export const labels = {
   // Common / shared strings
   // ---------------------------------------------------------------------------
   common: {
+    close: "Close",
     cancel: "Cancel",
     save: "Save",
     saving: "Saving...",
@@ -1221,6 +1222,12 @@ export const labels = {
     successMessage: "Thank you for your feedback!",
     errorGeneric: "Something went wrong. Please try again.",
     errorEmptyMessage: "Please enter a message.",
+    screenshotLabel: "Screenshot",
+    screenshotAdd: "Add screenshot",
+    screenshotUploading: "Uploading...",
+    screenshotRemove: "Remove",
+    screenshotError: "Failed to upload screenshot. Please try again.",
+    debugContextLabel: "Debug info attached automatically",
   },
 
   // ---------------------------------------------------------------------------
