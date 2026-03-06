@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { buildChain, authedUser } from "tests/utils/supabase-mock";
+import { buildChain, authedUser, mockTables } from "tests/utils/supabase-mock";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -62,31 +62,26 @@ describe("PATCH /api/applications/[id]/decide", () => {
   it("returns 403 when user is not the posting creator", async () => {
     authedUser(mockGetUser, MOCK_USER);
 
-    const appChain = buildChain({
-      data: {
-        id: "app-1",
-        applicant_id: "user-2",
-        posting_id: "posting-1",
-        status: "pending",
-      },
-      error: null,
-    });
-    const postingChain = buildChain({
-      data: {
-        id: "posting-1",
-        creator_id: "other-owner",
-        title: "Test",
-        team_size_max: 3,
-        status: "open",
-      },
-      error: null,
-    });
-
-    let callCount = 0;
-    mockFrom.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) return appChain;
-      return postingChain;
+    mockTables(mockFrom, {
+      applications: buildChain({
+        data: {
+          id: "app-1",
+          applicant_id: "user-2",
+          posting_id: "posting-1",
+          status: "pending",
+        },
+        error: null,
+      }),
+      postings: buildChain({
+        data: {
+          id: "posting-1",
+          creator_id: "other-owner",
+          title: "Test",
+          team_size_max: 3,
+          status: "open",
+        },
+        error: null,
+      }),
     });
 
     const res = await PATCH(makeReq(), routeCtx);
@@ -96,49 +91,37 @@ describe("PATCH /api/applications/[id]/decide", () => {
   it("accepts application and notifies applicant", async () => {
     authedUser(mockGetUser, MOCK_USER);
 
-    const appChain = buildChain({
-      data: {
-        id: "app-1",
-        applicant_id: "user-2",
-        posting_id: "posting-1",
-        status: "pending",
-      },
-      error: null,
-    });
-    const postingChain = buildChain({
-      data: {
-        id: "posting-1",
-        creator_id: "owner-1",
-        title: "Test Posting",
-        team_size_max: 3,
-        status: "open",
-      },
-      error: null,
-    });
-    const updateChain = buildChain({ data: null, error: null });
-    const profileChain = buildChain({
-      data: { notification_preferences: null },
-      error: null,
-    });
-    const notifChain = buildChain({ data: null, error: null });
-    const countChain = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-    };
-    // Mock count response - not enough to fill
-    (countChain as Record<string, unknown>).then = vi
-      .fn()
-      .mockResolvedValue({ count: 1 });
-
-    let callCount = 0;
-    mockFrom.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) return appChain;
-      if (callCount === 2) return postingChain;
-      if (callCount === 3) return updateChain;
-      if (callCount === 4) return profileChain;
-      if (callCount === 5) return notifChain;
-      return buildChain({ data: null, error: null });
+    mockTables(mockFrom, {
+      applications: [
+        buildChain({
+          data: {
+            id: "app-1",
+            applicant_id: "user-2",
+            posting_id: "posting-1",
+            status: "pending",
+          },
+          error: null,
+        }),
+        buildChain({ data: null, error: null }), // update
+      ],
+      postings: [
+        buildChain({
+          data: {
+            id: "posting-1",
+            creator_id: "owner-1",
+            title: "Test Posting",
+            team_size_max: 3,
+            status: "open",
+          },
+          error: null,
+        }),
+        buildChain({ data: null, error: null, count: 1 }), // fulfillment check
+      ],
+      profiles: buildChain({
+        data: { notification_preferences: null },
+        error: null,
+      }),
+      notifications: buildChain({ data: null, error: null }),
     });
 
     const res = await PATCH(makeReq({ status: "accepted" }), routeCtx);
@@ -150,45 +133,62 @@ describe("PATCH /api/applications/[id]/decide", () => {
   it("rejects application and notifies applicant", async () => {
     authedUser(mockGetUser, MOCK_USER);
 
-    const appChain = buildChain({
-      data: {
-        id: "app-1",
-        applicant_id: "user-2",
-        posting_id: "posting-1",
-        status: "pending",
-      },
-      error: null,
-    });
-    const postingChain = buildChain({
-      data: {
-        id: "posting-1",
-        creator_id: "owner-1",
-        title: "Test Posting",
-        team_size_max: 3,
-        status: "open",
-      },
-      error: null,
-    });
-    const updateChain = buildChain({ data: null, error: null });
-    const profileChain = buildChain({
-      data: { notification_preferences: null },
-      error: null,
-    });
-    const notifChain = buildChain({ data: null, error: null });
-
-    let callCount = 0;
-    mockFrom.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) return appChain;
-      if (callCount === 2) return postingChain;
-      if (callCount === 3) return updateChain;
-      if (callCount === 4) return profileChain;
-      return notifChain;
+    mockTables(mockFrom, {
+      applications: [
+        buildChain({
+          data: {
+            id: "app-1",
+            applicant_id: "user-2",
+            posting_id: "posting-1",
+            status: "pending",
+          },
+          error: null,
+        }),
+        buildChain({ data: null, error: null }), // update
+      ],
+      postings: buildChain({
+        data: {
+          id: "posting-1",
+          creator_id: "owner-1",
+          title: "Test Posting",
+          team_size_max: 3,
+          status: "open",
+        },
+        error: null,
+      }),
+      profiles: buildChain({
+        data: { notification_preferences: null },
+        error: null,
+      }),
+      notifications: buildChain({ data: null, error: null }),
     });
 
     const res = await PATCH(makeReq({ status: "rejected" }), routeCtx);
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.application.status).toBe("rejected");
+  });
+
+  it("returns 404 when posting lookup fails after application found", async () => {
+    authedUser(mockGetUser, MOCK_USER);
+
+    mockTables(mockFrom, {
+      applications: buildChain({
+        data: {
+          id: "app-1",
+          applicant_id: "user-2",
+          posting_id: "posting-1",
+          status: "pending",
+        },
+        error: null,
+      }),
+      postings: buildChain({
+        data: null,
+        error: { code: "PGRST116", message: "not found" },
+      }),
+    });
+
+    const res = await PATCH(makeReq(), routeCtx);
+    expect(res.status).toBe(404);
   });
 });
