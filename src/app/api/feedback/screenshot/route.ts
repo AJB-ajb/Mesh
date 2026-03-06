@@ -32,15 +32,18 @@ export const POST = withAuth(
       file.type.split("/")[1] === "jpeg" ? "jpg" : file.type.split("/")[1];
     const fileName = `${crypto.randomUUID()}.${ext}`;
 
+    const buffer = Buffer.from(await file.arrayBuffer());
+
     const { error } = await supabase.storage
       .from("feedback-screenshots")
-      .upload(fileName, file, {
+      .upload(fileName, buffer, {
         contentType: file.type,
         cacheControl: "31536000",
       });
 
     if (error) {
-      throw error;
+      console.error("Screenshot upload error:", error);
+      return apiError("INTERNAL", `Upload failed: ${error.message}`, 500);
     }
 
     const { data: urlData } = supabase.storage
