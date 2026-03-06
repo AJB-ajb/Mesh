@@ -11,7 +11,7 @@ vi.mock("@/lib/supabase/server", () => ({
   })),
 }));
 
-import { buildChain, authedUser } from "tests/utils/supabase-mock";
+import { buildChain, authedUser, mockTables } from "tests/utils/supabase-mock";
 
 import { POST } from "../[id]/send/route";
 
@@ -94,11 +94,17 @@ describe("POST /api/friend-ask/[id]/send", () => {
       current_request_index: 1,
     };
 
-    let callCount = 0;
-    mockFrom.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) return buildChain({ data: fa, error: null });
-      return buildChain({ data: updated, error: null });
+    mockTables(mockFrom, {
+      friend_asks: [
+        buildChain({ data: fa, error: null }),
+        buildChain({ data: updated, error: null }),
+      ],
+      profiles: [
+        buildChain({ data: { full_name: "Sender" }, error: null }),
+        buildChain({ data: { notification_preferences: null }, error: null }),
+      ],
+      postings: buildChain({ data: { title: "Test Posting" }, error: null }),
+      notifications: buildChain({ data: null, error: null }),
     });
 
     const res = await POST(
@@ -127,14 +133,15 @@ describe("POST /api/friend-ask/[id]/send", () => {
     };
 
     const insertChain = buildChain({ data: null, error: null });
-    let insertCalled = false;
 
-    mockFrom.mockImplementation((table: string) => {
-      if (table === "notifications") {
-        insertCalled = true;
-        return insertChain;
-      }
-      return buildChain({ data: fa, error: null });
+    mockTables(mockFrom, {
+      friend_asks: buildChain({ data: fa, error: null }),
+      profiles: [
+        buildChain({ data: { full_name: "Sender" }, error: null }),
+        buildChain({ data: { notification_preferences: null }, error: null }),
+      ],
+      postings: buildChain({ data: { title: "Test Posting" }, error: null }),
+      notifications: insertChain,
     });
 
     const res = await POST(
@@ -142,7 +149,7 @@ describe("POST /api/friend-ask/[id]/send", () => {
       routeCtx("fa1"),
     );
     expect(res.status).toBe(200);
-    expect(insertCalled).toBe(true);
+    expect(insertChain.insert).toHaveBeenCalled();
   });
 
   it("marks as completed when index is past list length", async () => {
@@ -159,11 +166,13 @@ describe("POST /api/friend-ask/[id]/send", () => {
     };
     const updated = { ...fa, status: "completed" };
 
-    let callCount = 0;
-    mockFrom.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) return buildChain({ data: fa, error: null });
-      return buildChain({ data: updated, error: null });
+    mockTables(mockFrom, {
+      friend_asks: [
+        buildChain({ data: fa, error: null }),
+        buildChain({ data: updated, error: null }),
+      ],
+      profiles: buildChain({ data: { full_name: "Sender" }, error: null }),
+      postings: buildChain({ data: { title: "Test Posting" }, error: null }),
     });
 
     const res = await POST(
@@ -195,11 +204,19 @@ describe("POST /api/friend-ask/[id]/send", () => {
       current_request_index: 3,
     };
 
-    let callCount = 0;
-    mockFrom.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) return buildChain({ data: fa, error: null });
-      return buildChain({ data: updated, error: null });
+    mockTables(mockFrom, {
+      friend_asks: [
+        buildChain({ data: fa, error: null }),
+        buildChain({ data: updated, error: null }),
+      ],
+      profiles: [
+        buildChain({ data: { full_name: "Sender" }, error: null }),
+        buildChain({ data: { notification_preferences: null }, error: null }),
+        buildChain({ data: { notification_preferences: null }, error: null }),
+        buildChain({ data: { notification_preferences: null }, error: null }),
+      ],
+      postings: buildChain({ data: { title: "Test Posting" }, error: null }),
+      notifications: buildChain({ data: null, error: null }),
     });
 
     const res = await POST(
@@ -231,11 +248,18 @@ describe("POST /api/friend-ask/[id]/send", () => {
       current_request_index: 3,
     };
 
-    let callCount = 0;
-    mockFrom.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) return buildChain({ data: fa, error: null });
-      return buildChain({ data: updated, error: null });
+    mockTables(mockFrom, {
+      friend_asks: [
+        buildChain({ data: fa, error: null }),
+        buildChain({ data: updated, error: null }),
+      ],
+      profiles: [
+        buildChain({ data: { full_name: "Sender" }, error: null }),
+        buildChain({ data: { notification_preferences: null }, error: null }),
+        buildChain({ data: { notification_preferences: null }, error: null }),
+      ],
+      postings: buildChain({ data: { title: "Test Posting" }, error: null }),
+      notifications: buildChain({ data: null, error: null }),
     });
 
     const res = await POST(
@@ -247,5 +271,78 @@ describe("POST /api/friend-ask/[id]/send", () => {
     // u2 is skipped (declined), so u3 and u4 are notified
     expect(body.notified).toEqual(["u3", "u4"]);
     expect(body.notified_count).toBe(2);
+  });
+
+  it("gracefully handles profile lookup failure after friend-ask found", async () => {
+    authedUser(mockGetUser);
+    const fa = {
+      id: "fa1",
+      creator_id: "user-1",
+      posting_id: "p1",
+      ordered_friend_list: ["u2"],
+      current_request_index: 0,
+      concurrent_invites: 1,
+      pending_invitees: [],
+      declined_list: [],
+      status: "pending",
+    };
+
+    mockTables(mockFrom, {
+      friend_asks: [
+        buildChain({ data: fa, error: null }),
+        buildChain({ data: fa, error: null }),
+      ],
+      profiles: buildChain({
+        data: null,
+        error: { message: "profiles error" },
+      }),
+      postings: buildChain({ data: { title: "Test Posting" }, error: null }),
+      notifications: buildChain({ data: null, error: null }),
+    });
+
+    const res = await POST(
+      makeReq("/api/friend-ask/fa1/send", { method: "POST" }),
+      routeCtx("fa1"),
+    );
+    // Route continues with fallback "Someone" when profile fails, so still 200
+    expect(res.status).toBe(200);
+  });
+
+  it("gracefully handles posting lookup failure after friend-ask found", async () => {
+    authedUser(mockGetUser);
+    const fa = {
+      id: "fa1",
+      creator_id: "user-1",
+      posting_id: "p1",
+      ordered_friend_list: ["u2"],
+      current_request_index: 0,
+      concurrent_invites: 1,
+      pending_invitees: [],
+      declined_list: [],
+      status: "pending",
+    };
+
+    mockTables(mockFrom, {
+      friend_asks: [
+        buildChain({ data: fa, error: null }),
+        buildChain({ data: fa, error: null }),
+      ],
+      profiles: [
+        buildChain({ data: { full_name: "Sender" }, error: null }),
+        buildChain({ data: { notification_preferences: null }, error: null }),
+      ],
+      postings: buildChain({
+        data: null,
+        error: { message: "postings error" },
+      }),
+      notifications: buildChain({ data: null, error: null }),
+    });
+
+    const res = await POST(
+      makeReq("/api/friend-ask/fa1/send", { method: "POST" }),
+      routeCtx("fa1"),
+    );
+    // Route continues with fallback "a posting" when posting fails, so still 200
+    expect(res.status).toBe(200);
   });
 });
