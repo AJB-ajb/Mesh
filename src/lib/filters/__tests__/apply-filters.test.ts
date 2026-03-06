@@ -275,6 +275,53 @@ describe("applyFilters", () => {
     });
   });
 
+  describe("null field edge cases", () => {
+    it("posting with null skills is excluded by skills filter", () => {
+      const postings = [
+        {
+          id: "n1",
+          skills: null as unknown as string[],
+          tags: ["web"],
+          estimated_time: "10h/week",
+        },
+      ];
+      const result = applyFilters(postings, { skills: ["React"] });
+      expect(result).toHaveLength(0);
+    });
+
+    it("posting with null tags is excluded by tags filter", () => {
+      const postings = [
+        {
+          id: "n2",
+          skills: ["React"],
+          tags: null as unknown as string[],
+          estimated_time: "5h/week",
+        },
+      ];
+      const result = applyFilters(postings, { tags: ["web"] });
+      expect(result).toHaveLength(0);
+    });
+
+    it("posting with null location passes location_mode filter", () => {
+      const postings = [
+        {
+          id: "n3",
+          location_mode: null,
+          location_preference: null,
+          location_name: null,
+        },
+      ];
+      const result = applyFilters(postings, { location_mode: "remote" });
+      expect(result).toHaveLength(1);
+    });
+
+    it("posting with null estimated_time passes hours filter", () => {
+      const postings = [{ id: "n4", estimated_time: null }];
+      const result = applyFilters(postings, { hours_per_week_min: 10 });
+      expect(result).toHaveLength(1);
+    });
+  });
+
   describe("edge cases", () => {
     it("handles empty postings array", () => {
       const result = applyFilters([], { category: "hackathon" });
@@ -328,5 +375,9 @@ describe("parseHoursPerWeek", () => {
 
   it("handles '2 hours' format", () => {
     expect(parseHoursPerWeek("2 hours")).toEqual({ min: 2, max: 2 });
+  });
+
+  it("returns null for undefined input", () => {
+    expect(parseHoursPerWeek(undefined)).toBeNull();
   });
 });

@@ -206,6 +206,79 @@ describe("useProfile", () => {
     expect(result.current.form.fullName).toBe("New Name");
   });
 
+  it("handles Supabase error response gracefully", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: fakeUser } });
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "profiles")
+        return mockQuery({
+          data: null,
+          error: { message: "DB error", code: "500" },
+        });
+      return mockListQuery({ data: [], error: null });
+    });
+
+    const { result } = renderHook(() => useProfile(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    // Should not crash — profile falls back to default state
+    expect(result.current.canUndo).toBe(false);
+    expect(result.current.sourceText).toBeNull();
+  });
+
+  it("handles profile with all-null optional fields", async () => {
+    const nullProfile = {
+      user_id: "user-1",
+      full_name: null,
+      headline: null,
+      bio: null,
+      location: null,
+      location_lat: null,
+      location_lng: null,
+      skills: null,
+      interests: null,
+      languages: null,
+      portfolio_url: null,
+      github_url: null,
+      source_text: null,
+      previous_source_text: null,
+      skill_levels: null,
+      location_mode: null,
+      availability_slots: null,
+    };
+
+    mockGetUser.mockResolvedValue({ data: { user: fakeUser } });
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "profiles")
+        return mockQuery({ data: nullProfile, error: null });
+      return mockListQuery({ data: [], error: null });
+    });
+
+    const { result } = renderHook(() => useProfile(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    // Wait for microtask form sync
+    await waitFor(() => {
+      expect(result.current.form.fullName).toBeDefined();
+    });
+
+    // The hook should handle null -> "" or null -> [] gracefully
+    expect(result.current.form.fullName).toBe("");
+    expect(result.current.form.headline).toBe("");
+    expect(result.current.form.bio).toBe("");
+    expect(result.current.form.skills).toBe("");
+    expect(result.current.form.interests).toBe("");
+    expect(result.current.form.locationMode).toBe("either");
+    expect(result.current.form.skillLevels).toEqual([]);
+    expect(result.current.canUndo).toBe(false);
+    expect(result.current.sourceText).toBeNull();
+  });
+
   it("returns default form when no profile data exists", async () => {
     mockGetUser.mockResolvedValue({ data: { user: fakeUser } });
     mockFrom.mockImplementation((table: string) => {
