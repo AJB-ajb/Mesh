@@ -109,6 +109,44 @@ describe("useMatches", () => {
     expect(result.current.matches).toEqual([]);
   });
 
+  it("returns empty array when matches response is empty array", async () => {
+    fetchMock.mockResolvedValue({ matches: [] });
+
+    const { result } = renderHook(() => useMatches(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.matches).toEqual([]);
+    expect(result.current.apiError).toBeNull();
+  });
+
+  it("handles match with null posting gracefully", async () => {
+    fetchMock.mockResolvedValue({
+      matches: [
+        {
+          id: "m1",
+          posting: null,
+          profile: null,
+          score: 0.5,
+          status: "pending",
+          created_at: "2026-01-01T00:00:00Z",
+        },
+      ],
+    });
+
+    const { result } = renderHook(() => useMatches(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.matches).toHaveLength(1);
+    expect(result.current.matches[0].posting).toBeNull();
+    expect(result.current.apiError).toBeNull();
+  });
+
   it("provides mutate function for revalidation", async () => {
     fetchMock.mockResolvedValue({ matches: fakeMatches });
 
