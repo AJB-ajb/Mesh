@@ -1223,7 +1223,7 @@ export const labels = {
     errorGeneric: "Something went wrong. Please try again.",
     errorEmptyMessage: "Please enter a message.",
     screenshotLabel: "Screenshot",
-    screenshotAdd: "Add screenshot",
+    screenshotAdd: "Tap, paste, or drop an image",
     screenshotUploading: "Uploading...",
     screenshotRemove: "Remove",
     screenshotError: "Failed to upload screenshot. Please try again.",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { MessageSquarePlus, Check, ImagePlus, X, Bug } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ const MOOD_EMOJIS: Record<FeedbackMood, string> = {
 };
 
 const MOOD_VALUES: FeedbackMood[] = ["frustrated", "neutral", "happy"];
+const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
 function collectMetadata(): FeedbackMetadata {
   const nav = navigator as Navigator & {
@@ -77,46 +78,94 @@ export function FeedbackWidget() {
     [setOpen, resetForm],
   );
 
-  const handleScreenshotSelect = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
+  const uploadFile = useCallback(async (file: File) => {
+    if (!ALLOWED_TYPES.includes(file.type)) return;
 
-      // Show local preview immediately
-      const reader = new FileReader();
-      reader.onload = (ev) => setScreenshotPreview(ev.target?.result as string);
-      reader.readAsDataURL(file);
+    // Show local preview immediately
+    const reader = new FileReader();
+    reader.onload = (ev) => setScreenshotPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
 
-      // Upload to server
-      setUploadingScreenshot(true);
-      setError(null);
+    // Upload to server
+    setUploadingScreenshot(true);
+    setError(null);
 
-      try {
-        const formData = new FormData();
-        formData.append("screenshot", file);
-        const res = await fetch("/api/feedback/screenshot", {
-          method: "POST",
-          body: formData,
-        });
+    try {
+      const formData = new FormData();
+      formData.append("screenshot", file);
+      const res = await fetch("/api/feedback/screenshot", {
+        method: "POST",
+        body: formData,
+      });
 
-        if (!res.ok) {
-          setError(labels.feedback.screenshotError);
-          setScreenshotPreview(null);
-          return;
-        }
-
-        const { data } = await res.json();
-        setScreenshotUrl(data.url);
-      } catch {
+      if (!res.ok) {
         setError(labels.feedback.screenshotError);
         setScreenshotPreview(null);
-      } finally {
-        setUploadingScreenshot(false);
-        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
       }
+
+      const { data } = await res.json();
+      setScreenshotUrl(data.url);
+    } catch {
+      setError(labels.feedback.screenshotError);
+      setScreenshotPreview(null);
+    } finally {
+      setUploadingScreenshot(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, []);
+
+  const handleScreenshotSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) uploadFile(file);
     },
-    [],
+    [uploadFile],
   );
+
+  // Drag-and-drop state
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragOver(false);
+      const file = e.dataTransfer.files[0];
+      if (file && ALLOWED_TYPES.includes(file.type)) uploadFile(file);
+    },
+    [uploadFile],
+  );
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+  }, []);
+
+  // Paste from clipboard
+  useEffect(() => {
+    if (!open || screenshotPreview) return;
+    function handlePaste(e: ClipboardEvent) {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (ALLOWED_TYPES.includes(item.type)) {
+          const file = item.getAsFile();
+          if (file) {
+            e.preventDefault();
+            uploadFile(file);
+            return;
+          }
+        }
+      }
+    }
+    document.addEventListener("paste", handlePaste);
+    return () => document.removeEventListener("paste", handlePaste);
+  }, [open, screenshotPreview, uploadFile]);
 
   const removeScreenshot = useCallback(() => {
     setScreenshotUrl(null);
@@ -272,7 +321,14 @@ export function FeedbackWidget() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2 rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors"
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    className={`flex items-center gap-2 rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground transition-colors ${
+                      dragOver
+                        ? "border-primary bg-primary/5 text-foreground"
+                        : "hover:border-primary/50 hover:text-foreground"
+                    }`}
                   >
                     <ImagePlus className="size-4" />
                     {labels.feedback.screenshotAdd}
