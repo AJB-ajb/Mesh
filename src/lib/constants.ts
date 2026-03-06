@@ -24,8 +24,8 @@ export const GEMINI_MODELS = {
   ] as const,
   /** Standard models for complex tasks (extraction, deep-match, analysis) */
   standard: [
-    "gemini-3-flash-preview",
     "gemini-2.5-flash",
+    "gemini-3-flash-preview",
     "gemini-2.5-flash-lite",
   ] as const,
 } as const;
