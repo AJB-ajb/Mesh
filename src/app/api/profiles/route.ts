@@ -86,7 +86,11 @@ export const PATCH = withAuth(async (req, { user, supabase }) => {
   );
 
   // Trigger embedding generation (fire-and-forget)
-  logFireAndForget(triggerEmbeddingGenerationServer(), "embedding-generation");
+  const origin = new URL(req.url).origin;
+  logFireAndForget(
+    triggerEmbeddingGenerationServer(origin),
+    "embedding-generation",
+  );
 
   return apiSuccess({ success: true });
 });

@@ -105,7 +105,9 @@ describe("PATCH /api/profiles", () => {
       await import("@/lib/api/trigger-embedding-server");
 
     await PATCH(makeReq({ fullName: "Test" }), routeCtx);
-    expect(triggerEmbeddingGenerationServer).toHaveBeenCalled();
+    expect(triggerEmbeddingGenerationServer).toHaveBeenCalledWith(
+      "http://localhost",
+    );
   });
 
   it("clears profile_skills when none selected", async () => {
