@@ -30,6 +30,7 @@ import {
   stripTitleMarkdown,
   extractTitleFromDescription,
 } from "@/lib/format";
+import { RelativeTime } from "@/components/ui/relative-time";
 import { labels } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { categoryStyles } from "@/lib/posting/styles";
@@ -186,7 +187,7 @@ export function UnifiedPostingCard({
               <div className="flex size-6 items-center justify-center rounded-full bg-muted text-[0.625rem] font-medium">
                 {getInitials(creatorName ?? strippedTitle)}
               </div>
-              <span>{formatDateAgo(createdAt)}</span>
+              <RelativeTime date={createdAt} formatter={formatDateAgo} />
               {parentTitle && (
                 <span className="text-xs text-muted-foreground">
                   {labels.coordination.inParent(parentTitle)}
@@ -390,7 +391,7 @@ export function UnifiedPostingCard({
                 )}
               </>
             )}{" "}
-            &middot; {formatDateAgo(createdAt)}
+            &middot; <RelativeTime date={createdAt} formatter={formatDateAgo} />
           </span>
         </div>
 
