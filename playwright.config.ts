@@ -57,6 +57,14 @@ export default defineConfig({
       testMatch:
         /e2e\/(posting-creation|application-flow|discover-filtering)\.spec\.ts/,
     },
+    // Full multi-user lifecycle tests — opt-in, not run by default.
+    // Run with: pnpm test:e2e:full
+    {
+      name: "e2e-full",
+      use: { ...devices["Desktop Chrome"] },
+      testDir: "./tests/e2e-full",
+      timeout: 60_000,
+    },
   ],
   webServer: {
     command: "pnpm dev",

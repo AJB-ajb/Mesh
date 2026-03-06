@@ -166,7 +166,7 @@ describe("gemini fallback", () => {
       await generateStructuredJSON(opts);
 
       expect(mockGetGenerativeModel).toHaveBeenCalledWith({
-        model: "gemini-3-flash-preview",
+        model: "gemini-2.5-flash",
       });
     });
   });

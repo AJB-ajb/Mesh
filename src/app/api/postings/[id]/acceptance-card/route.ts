@@ -110,6 +110,7 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
       }),
       schema: acceptanceCardResponseSchema(),
       temperature: 0.3,
+      tier: "fast",
     });
 
     // Overlay confirmed_time if it exists
