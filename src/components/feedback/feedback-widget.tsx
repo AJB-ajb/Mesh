@@ -338,7 +338,6 @@ export function FeedbackWidget() {
                   ref={fileInputRef}
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
-                  capture="environment"
                   className="hidden"
                   onChange={handleScreenshotSelect}
                 />
