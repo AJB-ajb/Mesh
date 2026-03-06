@@ -57,6 +57,25 @@ describe("POST /api/friend-ask/[id]/send", () => {
     expect(body.error.code).toBe("FORBIDDEN");
   });
 
+  it("does not call supabase update when user gets 403", async () => {
+    authedUser(mockGetUser);
+    const fa = {
+      id: "fa1",
+      creator_id: "other-user",
+      ordered_friend_list: ["u2", "u3"],
+      current_request_index: 0,
+      status: "pending",
+    };
+    mockFrom.mockReturnValue(buildChain({ data: fa, error: null }));
+
+    await POST(
+      makeReq("/api/friend-ask/fa1/send", { method: "POST" }),
+      routeCtx("fa1"),
+    );
+    // Only one call to `from` — the initial fetch; no update should happen
+    expect(mockFrom).toHaveBeenCalledTimes(1);
+  });
+
   it("returns 400 when friend-ask is not pending", async () => {
     authedUser(mockGetUser);
     const fa = {
