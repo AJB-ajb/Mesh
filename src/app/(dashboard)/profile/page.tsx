@@ -26,7 +26,6 @@ import { SpeechInput } from "@/components/ai-elements/speech-input";
 import { transcribeAudio } from "@/lib/transcribe";
 import { AvailabilityEditor } from "@/components/availability/availability-editor";
 import { CalendarConnect } from "@/components/calendar/calendar-connect";
-import { ConnectedAccountsCard } from "@/components/settings/connected-accounts-card";
 import { ProfileExtractionReviewCard } from "@/components/profile/profile-extraction-review-card";
 import {
   AvailabilityOverlay,
@@ -42,7 +41,6 @@ import {
 import { meshLinkExtension } from "@/components/editor/extensions/mesh-link-plugin";
 import { hiddenSyntaxExtension } from "@/components/editor/extensions/hidden-syntax-plugin";
 import { autoFormat, autoClean } from "@/lib/text-tools-api";
-import { useSettings } from "@/lib/hooks/use-settings";
 
 function insertAtCursor(view: EditorView, text: string) {
   const pos = view.state.selection.main.head;
@@ -72,8 +70,6 @@ function ProfilePageContent() {
 
   const { busyWindows } = useCalendarBusyBlocks(profileId);
   const { keyboardVisible } = useMobileKeyboard();
-  const { providers, mutate: mutateSettings } = useSettings();
-
   // Editor state
   const [editorText, setEditorText] = useState("");
   const [editorFocused, setEditorFocused] = useState(false);
@@ -387,7 +383,12 @@ function ProfilePageContent() {
       {/* Toolbar: TextTools + Save */}
       <div className="flex items-center justify-between">
         <TextTools text={editorText} onTextChange={setEditorText} />
-        <Button onClick={handleExplicitSave} disabled={isSaving} size="lg">
+        <Button
+          onClick={handleExplicitSave}
+          disabled={isSaving}
+          size="lg"
+          className="shrink-0"
+        >
           {isSaving
             ? labels.profileEditor.saving
             : labels.profileEditor.saveButton}
@@ -453,14 +454,6 @@ function ProfilePageContent() {
           onSuccess={() => setCalendarError(null)}
         />
       </div>
-
-      {/* Connected accounts */}
-      <ConnectedAccountsCard
-        providers={providers}
-        onError={() => {}}
-        onSuccess={() => {}}
-        onMutate={mutateSettings}
-      />
 
       {/* Mobile markdown toolbar */}
       <MarkdownToolbar

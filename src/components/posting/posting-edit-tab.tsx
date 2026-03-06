@@ -1,36 +1,66 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
-import { ChevronDown } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
 
-import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { FreeFormUpdate } from "@/components/shared/free-form-update";
 import { usePostingCoreContext } from "./posting-core-context";
 import { usePostingEditContext } from "./posting-edit-context";
-import { PostingAboutCard } from "./posting-about-card";
 import { PostingSidebar } from "./posting-sidebar";
+import { PostingContextBar, type ContextBarState } from "./posting-context-bar";
 
-function useIsDesktop() {
-  return useSyncExternalStore(
-    (cb) => {
-      const mq = window.matchMedia("(min-width: 1024px)");
-      mq.addEventListener("change", cb);
-      return () => mq.removeEventListener("change", cb);
-    },
-    () => window.matchMedia("(min-width: 1024px)").matches,
-    () => false,
-  );
+function defaultExpiresAt(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 3);
+  return d.toISOString().slice(0, 10);
 }
 
 export function PostingEditTab() {
-  const { posting, postingId } = usePostingCoreContext();
-  const { isApplyingUpdate, onApplyUpdate, onUndoUpdate } =
+  const { posting, postingId, onMutate } = usePostingCoreContext();
+  const { isApplyingUpdate, onApplyUpdate, onUndoUpdate, form, onFormChange } =
     usePostingEditContext();
 
-  const isDesktop = useIsDesktop();
-  const [manualOverride, setManualOverride] = useState<boolean | null>(null);
-  const showManualForm = manualOverride ?? isDesktop;
+  // Build context bar state from existing posting data
+  const [contextBar, setContextBar] = useState<ContextBarState>(() => ({
+    parentPostingId: posting.parent_posting_id ?? "",
+    parentPostingTitle: null, // Would need separate fetch
+    parentMemberCount: null,
+    invitedUsers: [],
+    linkToken:
+      ((posting as Record<string, unknown>).link_token as string | null) ??
+      null,
+    inDiscover:
+      ((posting as Record<string, unknown>).in_discover as boolean) ??
+      posting.visibility === "public",
+    settings: {
+      teamSizeMin: String(posting.team_size_min ?? 1),
+      teamSizeMax: String(posting.team_size_max ?? 5),
+      expiresAt: posting.expires_at
+        ? new Date(posting.expires_at).toISOString().slice(0, 10)
+        : defaultExpiresAt(),
+      autoAccept: posting.auto_accept ?? false,
+      sequentialCount: 1,
+    },
+  }));
+
+  // Sync context bar changes back to form state for auto-save
+  const handleContextBarChange = useCallback(
+    (newState: ContextBarState) => {
+      setContextBar(newState);
+
+      // Sync relevant fields to the form for auto-save
+      onFormChange("teamSizeMin", newState.settings.teamSizeMin);
+      onFormChange("teamSizeMax", newState.settings.teamSizeMax);
+      onFormChange("lookingFor", newState.settings.teamSizeMax);
+      onFormChange("expiresAt", newState.settings.expiresAt);
+      onFormChange(
+        "autoAccept",
+        newState.settings.autoAccept ? "true" : "false",
+      );
+      onFormChange("visibility", newState.inDiscover ? "public" : "private");
+    },
+    [onFormChange],
+  );
 
   return (
     <div className="grid gap-6 lg:grid-cols-3 mt-6">
@@ -45,31 +75,11 @@ export function PostingEditTab() {
           onUndo={onUndoUpdate}
         />
 
-        {/* Collapsible manual edit form */}
-        <div>
-          <button
-            type="button"
-            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
-            onClick={() => setManualOverride((v) => !(v ?? isDesktop))}
-          >
-            <ChevronDown
-              className={cn(
-                "size-4 transition-transform",
-                showManualForm && "rotate-180",
-              )}
-            />
-            {labels.postingEdit.editManuallyToggle}
-          </button>
-          <p className="mt-1 px-3 text-xs text-muted-foreground lg:hidden">
-            {labels.postingEdit.editManuallyHint}
-          </p>
-
-          {showManualForm && (
-            <div className="mt-4 lg:mt-0">
-              <PostingAboutCard />
-            </div>
-          )}
-        </div>
+        {/* Context bar (replaces PostingAboutCard) */}
+        <PostingContextBar
+          state={contextBar}
+          onChange={handleContextBarChange}
+        />
       </div>
 
       <PostingSidebar />
