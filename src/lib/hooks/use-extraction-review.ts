@@ -88,20 +88,32 @@ export function useExtractionReview({
     [postingId],
   );
 
-  /** Build the PATCH payload from extracted fields. */
-  const buildPatchPayload = useCallback((extracted: ExtractedFields) => {
-    const fields: Record<string, unknown> = {};
-    if (extracted.category) fields.category = extracted.category;
-    if (extracted.skills) fields.skills = extracted.skills.join(", ");
-    if (extracted.team_size_min)
-      fields.teamSizeMin = String(extracted.team_size_min);
-    if (extracted.team_size_max)
-      fields.teamSizeMax = String(extracted.team_size_max);
-    if (extracted.estimated_time)
-      fields.estimatedTime = extracted.estimated_time;
-    if (extracted.tags) fields.tags = extracted.tags.join(", ");
-    return fields;
-  }, []);
+  /** Build the PATCH payload from extracted fields.
+   *  Skip fields the user already set to non-default values to avoid
+   *  overwriting intentional choices (e.g. team size). */
+  const buildPatchPayload = useCallback(
+    (extracted: ExtractedFields) => {
+      const fields: Record<string, unknown> = {};
+      if (extracted.category) fields.category = extracted.category;
+      if (extracted.skills) fields.skills = extracted.skills.join(", ");
+      // Only apply extracted team size if the user hasn't changed from defaults
+      const userSetMin =
+        currentPosting?.team_size_min != null &&
+        currentPosting.team_size_min !== 1;
+      const userSetMax =
+        currentPosting?.team_size_max != null &&
+        currentPosting.team_size_max !== 5;
+      if (extracted.team_size_min && !userSetMin)
+        fields.teamSizeMin = String(extracted.team_size_min);
+      if (extracted.team_size_max && !userSetMax)
+        fields.teamSizeMax = String(extracted.team_size_max);
+      if (extracted.estimated_time)
+        fields.estimatedTime = extracted.estimated_time;
+      if (extracted.tags) fields.tags = extracted.tags.join(", ");
+      return fields;
+    },
+    [currentPosting],
+  );
 
   /** Snapshot current posting values for the fields we're about to overwrite. */
   const takeSnapshot = useCallback(

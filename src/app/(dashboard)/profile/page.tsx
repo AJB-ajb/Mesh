@@ -383,7 +383,12 @@ function ProfilePageContent() {
       {/* Toolbar: TextTools + Save */}
       <div className="flex items-center justify-between">
         <TextTools text={editorText} onTextChange={setEditorText} />
-        <Button onClick={handleExplicitSave} disabled={isSaving} size="lg">
+        <Button
+          onClick={handleExplicitSave}
+          disabled={isSaving}
+          size="lg"
+          className="shrink-0"
+        >
           {isSaving
             ? labels.profileEditor.saving
             : labels.profileEditor.saveButton}
