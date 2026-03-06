@@ -134,6 +134,7 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
           required: ["auto_commit", "reason"],
         },
         temperature: 0.1,
+        tier: "fast",
       });
 
       shouldAutoCommit = result.auto_commit;
