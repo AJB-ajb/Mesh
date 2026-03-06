@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { NumberPicker } from "@/components/ui/number-picker";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
@@ -53,13 +54,12 @@ export function PostingSettingsRow({
             <label className="text-xs font-medium text-muted-foreground">
               {l.teamSizeMinLabel}
             </label>
-            <Input
-              type="number"
+            <NumberPicker
+              value={Number(settings.teamSizeMin) || 1}
+              onChange={(v) => update({ teamSizeMin: String(v) })}
               min={1}
               max={10}
-              value={settings.teamSizeMin}
-              onChange={(e) => update({ teamSizeMin: e.target.value })}
-              className="h-8"
+              label={l.teamSizeMinLabel}
             />
           </div>
 
@@ -68,13 +68,12 @@ export function PostingSettingsRow({
             <label className="text-xs font-medium text-muted-foreground">
               {l.teamSizeMaxLabel}
             </label>
-            <Input
-              type="number"
+            <NumberPicker
+              value={Number(settings.teamSizeMax) || 1}
+              onChange={(v) => update({ teamSizeMax: String(v) })}
               min={1}
               max={10}
-              value={settings.teamSizeMax}
-              onChange={(e) => update({ teamSizeMax: e.target.value })}
-              className="h-8"
+              label={l.teamSizeMaxLabel}
             />
           </div>
 
@@ -97,17 +96,12 @@ export function PostingSettingsRow({
             <label className="text-xs font-medium text-muted-foreground">
               {l.sequentialCountLabel}
             </label>
-            <Input
-              type="number"
+            <NumberPicker
+              value={settings.sequentialCount}
+              onChange={(v) => update({ sequentialCount: v })}
               min={1}
               max={10}
-              value={settings.sequentialCount}
-              onChange={(e) =>
-                update({
-                  sequentialCount: Math.max(1, Number(e.target.value) || 1),
-                })
-              }
-              className="h-8"
+              label={l.sequentialCountLabel}
             />
           </div>
 
