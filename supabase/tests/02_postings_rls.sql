@@ -125,19 +125,16 @@ SELECT is(
 );
 
 -- ============================================
--- SELECT: anonymous CAN see public open postings (current behavior)
--- NOTE: The visibility policy's public+open branch has no auth.uid() check,
--- so anon users can read public open postings. This may be intentional for
--- a public landing page. If this should be locked down, add an auth check.
+-- SELECT: anonymous cannot see any postings
 -- ============================================
 
 SELECT tests.clear_authentication();
 SET LOCAL ROLE anon;
 
 SELECT is(
-  (SELECT count(*)::int FROM public.postings WHERE status = 'open' AND visibility = 'public'),
-  1,
-  'Anonymous user can see public open postings (current behavior — no auth gate)'
+  (SELECT count(*)::int FROM public.postings),
+  0,
+  'Anonymous user cannot see any postings'
 );
 
 -- ============================================
