@@ -85,7 +85,45 @@ describe("PATCH /api/applications/[id]/decide", () => {
     });
 
     const res = await PATCH(makeReq(), routeCtx);
+    const body = await res.json();
     expect(res.status).toBe(403);
+    expect(body.error.code).toBe("FORBIDDEN");
+  });
+
+  describe("malformed payloads", () => {
+    it("returns 400 when body is empty object", async () => {
+      authedUser(mockGetUser, MOCK_USER);
+      const res = await PATCH(makeReq({}), routeCtx);
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 400 when status is null", async () => {
+      authedUser(mockGetUser, MOCK_USER);
+      const res = await PATCH(makeReq({ status: null }), routeCtx);
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 400 when status is a number", async () => {
+      authedUser(mockGetUser, MOCK_USER);
+      const res = await PATCH(makeReq({ status: 42 }), routeCtx);
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 400 when body is invalid JSON", async () => {
+      authedUser(mockGetUser, MOCK_USER);
+      const req = new Request(
+        "http://localhost/api/applications/app-1/decide",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: "not json{{",
+        },
+      );
+      const res = await PATCH(req, routeCtx);
+      const body = await res.json();
+      expect(res.status).toBe(400);
+      expect(body.error.code).toBe("VALIDATION");
+    });
   });
 
   it("accepts application and notifies applicant", async () => {
