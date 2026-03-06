@@ -1027,6 +1027,39 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
+  // Context bar (composable access)
+  // ---------------------------------------------------------------------------
+  contextBar: {
+    contextLabel: "Context",
+    contextNone: "None",
+    contextSearchPlaceholder: "Search groups...",
+    inviteLabel: "Invite",
+    inviteAdd: "+ Add people",
+    linkLabel: "Link",
+    linkCreate: "Create link",
+    linkCopy: "Copy link",
+    linkRevoke: "Revoke",
+    linkCopied: "Link copied to clipboard",
+    discoverLabel: "Show in Discover",
+    summaryPrefix: "Visible to:",
+    summaryEveryone: "Everyone (Discover)",
+    summaryOnly: (names: string) => `Only ${names}`,
+    summaryInvited: (count: number) => `${count} invited`,
+    summaryPlusDiscover: (base: string) => `${base} + Everyone (Discover)`,
+    summaryAnyoneWithLink: "Anyone with the link",
+    summaryPlusLink: (base: string) => `${base} + anyone with link`,
+    summaryMembers: (name: string, count: number) =>
+      `${name} (${count} members)`,
+    settingsToggle: "Settings",
+    settingsHint: "size, expire, accept, N-sequential",
+    teamSizeMinLabel: "Min team size",
+    teamSizeMaxLabel: "Max team size",
+    expiryLabel: "Expiry",
+    autoAcceptLabel: "Auto-accept",
+    sequentialCountLabel: "N-sequential",
+  },
+
+  // ---------------------------------------------------------------------------
   // Posting edit tab
   // ---------------------------------------------------------------------------
   postingEdit: {

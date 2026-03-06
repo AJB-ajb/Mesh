@@ -4,16 +4,12 @@ import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import useSWR from "swr";
-import { ArrowLeft, ChevronDown, X } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import type { EditorView } from "@codemirror/view";
 
 import { Button } from "@/components/ui/button";
 import { labels } from "@/lib/labels";
-import {
-  PostingFormCard,
-  defaultFormState,
-} from "@/components/posting/posting-form-card";
 import { TextTools } from "@/components/shared/text-tools";
 import { MeshEditor } from "@/components/editor/mesh-editor";
 import { SpeechInput } from "@/components/ai-elements/speech-input";
@@ -39,8 +35,11 @@ import {
   InlineInvitePicker,
   type InvitedUser,
 } from "@/components/shared/inline-invite-picker";
+import {
+  PostingContextBar,
+  type ContextBarState,
+} from "@/components/posting/posting-context-bar";
 import { autoFormat, autoClean } from "@/lib/text-tools-api";
-import type { PostingFormState } from "@/components/posting/posting-form-card";
 import { meshLinkExtension } from "@/components/editor/extensions/mesh-link-plugin";
 import { hiddenSyntaxExtension } from "@/components/editor/extensions/hidden-syntax-plugin";
 
@@ -54,13 +53,8 @@ function insertAtCursor(view: EditorView, text: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Setting picker options
+// Setting picker options (for slash commands)
 // ---------------------------------------------------------------------------
-
-const VISIBILITY_OPTIONS: SettingOption[] = [
-  { label: "Public", value: "public" },
-  { label: "Connections only", value: "connections" },
-];
 
 const EXPIRE_OPTIONS: SettingOption[] = [
   { label: "1 day", value: "1" },
@@ -78,6 +72,12 @@ const AUTOACCEPT_OPTIONS: SettingOption[] = [
 function daysFromNow(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function defaultExpiresAt(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 3);
   return d.toISOString().slice(0, 10);
 }
 
@@ -103,25 +103,46 @@ function NewPostingPageInner() {
   const searchParams = useSearchParams();
   const parentId = searchParams.get("parent") ?? "";
   const [text, setText] = useState("");
-  const [form, setForm] = useState<PostingFormState>({
-    ...defaultFormState,
-    parentPostingId: parentId,
-  });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
   const [editorFocused, setEditorFocused] = useState(false);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
-  const [invitedUsers, setInvitedUsers] = useState<InvitedUser[]>([]);
   const editorRef = useRef<EditorView | null>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
   const { keyboardVisible } = useMobileKeyboard();
+
+  // Context bar state (replaces PostingFormCard)
+  const [contextBar, setContextBar] = useState<ContextBarState>({
+    parentPostingId: parentId,
+    parentPostingTitle: null,
+    parentMemberCount: null,
+    invitedUsers: [],
+    linkToken: null,
+    inDiscover: !parentId, // default: Discover on for top-level, off for child postings
+    settings: {
+      teamSizeMin: "1",
+      teamSizeMax: "5",
+      expiresAt: defaultExpiresAt(),
+      autoAccept: false,
+      sequentialCount: 1,
+    },
+  });
 
   // Fetch parent posting title when creating a child posting
   const { data: parentTitle } = useSWR(
     parentId ? `parent-title/${parentId}` : null,
     fetchParentTitle,
   );
+
+  // Sync parent title into context bar state
+  useEffect(() => {
+    if (parentTitle && parentTitle !== contextBar.parentPostingTitle) {
+      setContextBar((prev) => ({
+        ...prev,
+        parentPostingTitle: parentTitle,
+      }));
+    }
+  }, [parentTitle, contextBar.parentPostingTitle]);
 
   // Handle immediate commands (/format, /clean)
   const handleImmediateCommand = useCallback(
@@ -211,9 +232,16 @@ function NewPostingPageInner() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...form,
           description: trimmed,
           sourceText: trimmed,
+          teamSizeMin: contextBar.settings.teamSizeMin,
+          teamSizeMax: contextBar.settings.teamSizeMax,
+          lookingFor: contextBar.settings.teamSizeMax,
+          expiresAt: contextBar.settings.expiresAt,
+          autoAccept: contextBar.settings.autoAccept,
+          parentPostingId: contextBar.parentPostingId || undefined,
+          inDiscover: contextBar.inDiscover,
+          linkToken: contextBar.linkToken,
         }),
       });
 
@@ -228,13 +256,13 @@ function NewPostingPageInner() {
       const postingId = data.posting.id;
 
       // Fire-and-forget: create invites if any users were selected
-      if (invitedUsers.length > 0) {
+      if (contextBar.invitedUsers.length > 0) {
         fetch("/api/friend-ask", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             posting_id: postingId,
-            ordered_friend_list: invitedUsers.map((u) => u.user_id),
+            ordered_friend_list: contextBar.invitedUsers.map((u) => u.user_id),
             invite_mode: "parallel",
           }),
         })
@@ -257,21 +285,15 @@ function NewPostingPageInner() {
       setIsSaving(false);
       setError(labels.postingCreation.errorGeneric);
     }
-  }, [text, form, router, invitedUsers]);
+  }, [text, contextBar, router]);
 
-  const handleFormChange = (field: keyof PostingFormState, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  /**
-   * Handle overlay result — all overlays now return plain mesh: link strings.
-   */
+  /** Handle overlay result — all overlays return mesh: link strings. */
   const handleOverlayResult = useCallback(
     (result: string | OverlayResult) => {
-      const text = typeof result === "string" ? result : result.display;
+      const insertText = typeof result === "string" ? result : result.display;
       const view = editorRef.current;
       if (view) {
-        insertAtCursor(view, text);
+        insertAtCursor(view, insertText);
       }
       slash.closeOverlay();
       editorRef.current?.focus();
@@ -279,39 +301,43 @@ function NewPostingPageInner() {
     [slash],
   );
 
-  /** Handle setting selection from SettingPicker */
+  /** Handle setting selection from SettingPicker (via slash commands) */
   const handleSettingSelect = useCallback(
     (key: string, value: string) => {
-      if (key === "visibility") {
-        setForm((prev) => ({ ...prev, visibility: value }));
-        const label = VISIBILITY_OPTIONS.find((o) => o.value === value)?.label;
-        toast.success(
-          labels.slashCommands.settingApplied.visibility(label ?? value),
-        );
-      } else if (key === "expire") {
-        setForm((prev) => ({ ...prev, expiresAt: daysFromNow(Number(value)) }));
+      if (key === "expire") {
+        setContextBar((prev) => ({
+          ...prev,
+          settings: {
+            ...prev.settings,
+            expiresAt: daysFromNow(Number(value)),
+          },
+        }));
         const label = EXPIRE_OPTIONS.find((o) => o.value === value)?.label;
         toast.success(
           labels.slashCommands.settingApplied.expire(label ?? value),
         );
       } else if (key === "autoaccept") {
-        setForm((prev) => ({ ...prev, autoAccept: value }));
+        setContextBar((prev) => ({
+          ...prev,
+          settings: { ...prev.settings, autoAccept: value === "true" },
+        }));
         toast.success(
           labels.slashCommands.settingApplied.autoaccept(
             value === "true" ? "enabled" : "disabled",
           ),
         );
+      } else if (key === "visibility") {
+        setContextBar((prev) => ({
+          ...prev,
+          inDiscover: value === "public",
+        }));
+        toast.success(labels.slashCommands.settingApplied.visibility(value));
       }
       slash.closeOverlay();
       editorRef.current?.focus();
     },
     [slash],
   );
-
-  /** Remove an invited user chip */
-  const removeInvitedUser = useCallback((userId: string) => {
-    setInvitedUsers((prev) => prev.filter((u) => u.user_id !== userId));
-  }, []);
 
   /** Get picker position from editor cursor */
   const getPickerPosition = () => {
@@ -333,19 +359,6 @@ function NewPostingPageInner() {
         <ArrowLeft className="h-4 w-4" />
         {parentId ? "Back to group" : labels.postingCreation.backButton}
       </Link>
-
-      {/* Parent context header */}
-      {parentId && parentTitle && (
-        <p className="text-sm text-muted-foreground">
-          Posting in:{" "}
-          <Link
-            href={`/postings/${parentId}`}
-            className="font-medium text-foreground hover:underline"
-          >
-            {parentTitle}
-          </Link>
-        </p>
-      )}
 
       {error && (
         <p
@@ -385,30 +398,8 @@ function NewPostingPageInner() {
         />
       </div>
 
-      {/* Invited user chips */}
-      {invitedUsers.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {invitedUsers.map((user) => (
-            <span
-              key={user.user_id}
-              className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium"
-            >
-              {user.full_name}
-              <button
-                type="button"
-                onClick={() => removeInvitedUser(user.user_id)}
-                className="rounded-full p-0.5 hover:bg-accent-foreground/10"
-                aria-label={`Remove ${user.full_name}`}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
-
       {/* Slash command menu */}
-      {/* eslint-disable react-hooks/refs -- editor ref access is intentional in this block */}
+      {/* eslint-disable react-hooks/refs -- editor ref access is intentional */}
       {slash.menuState.isOpen && editorRef.current && (
         <SlashCommandMenu
           commands={slash.menuState.commands}
@@ -467,13 +458,16 @@ function NewPostingPageInner() {
         />
       )}
 
-      {/* Setting pickers */}
+      {/* Setting pickers (from slash commands) */}
       {/* eslint-disable react-hooks/refs -- editor ref access for picker position */}
       {slash.activeOverlay === "visibility" && (
         <SettingPicker
           title="Visibility"
-          options={VISIBILITY_OPTIONS}
-          currentValue={form.visibility}
+          options={[
+            { label: "Public", value: "public" },
+            { label: "Connections only", value: "connections" },
+          ]}
+          currentValue={contextBar.inDiscover ? "public" : "connections"}
           position={getPickerPosition()}
           onSelect={(v) => handleSettingSelect("visibility", v)}
           onClose={() => {
@@ -499,7 +493,7 @@ function NewPostingPageInner() {
         <SettingPicker
           title="Auto-accept"
           options={AUTOACCEPT_OPTIONS}
-          currentValue={form.autoAccept}
+          currentValue={contextBar.settings.autoAccept ? "true" : "false"}
           position={getPickerPosition()}
           onSelect={(v) => handleSettingSelect("autoaccept", v)}
           onClose={() => {
@@ -509,13 +503,13 @@ function NewPostingPageInner() {
         />
       )}
 
-      {/* Invite picker */}
+      {/* /invite command opens inline invite picker */}
       {slash.activeOverlay === "invite" && (
         <InlineInvitePicker
           position={getPickerPosition()}
-          selected={invitedUsers}
-          onDone={(users) => {
-            setInvitedUsers(users);
+          selected={contextBar.invitedUsers}
+          onDone={(users: InvitedUser[]) => {
+            setContextBar((prev) => ({ ...prev, invitedUsers: users }));
             slash.closeOverlay();
             editorRef.current?.focus();
           }}
@@ -527,7 +521,7 @@ function NewPostingPageInner() {
       )}
       {/* eslint-enable react-hooks/refs */}
 
-      {/* Compact toolbar: TextTools + Post button in one row */}
+      {/* Compact toolbar: TextTools + Post button */}
       <div className="flex items-center justify-between">
         <TextTools text={text} onTextChange={setText} />
         <Button
@@ -539,44 +533,8 @@ function NewPostingPageInner() {
         </Button>
       </div>
 
-      {/* Collapsible edit details */}
-      <div className="border-t pt-4">
-        <button
-          type="button"
-          onClick={() => setShowDetails(!showDetails)}
-          className="flex w-full items-center justify-between text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <div>
-            <span className="font-medium">
-              {labels.postingCreation.editDetailsToggle}
-            </span>
-            <span className="ml-2 text-xs">
-              {labels.postingCreation.editDetailsHint}
-            </span>
-          </div>
-          <ChevronDown
-            className={`h-4 w-4 transition-transform ${showDetails ? "rotate-180" : ""}`}
-          />
-        </button>
-
-        {showDetails && (
-          <div className="mt-4 space-y-6">
-            <PostingFormCard
-              form={form}
-              setForm={setForm}
-              onChange={handleFormChange}
-              onSubmit={async (e) => {
-                e.preventDefault();
-                await handleSubmit();
-              }}
-              isSaving={isSaving}
-              isExtracting={false}
-              hideSubmitButton
-              hideDescription
-            />
-          </div>
-        )}
-      </div>
+      {/* Context bar (replaces PostingFormCard) */}
+      <PostingContextBar state={contextBar} onChange={setContextBar} />
 
       {/* Mobile markdown toolbar */}
       <MarkdownToolbar
