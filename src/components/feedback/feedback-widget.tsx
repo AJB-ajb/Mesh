@@ -104,8 +104,8 @@ export function FeedbackWidget() {
         return;
       }
 
-      const { data } = await res.json();
-      setScreenshotUrl(data.url);
+      const json = await res.json();
+      setScreenshotUrl(json.url);
     } catch {
       setError(labels.feedback.screenshotError);
       setScreenshotPreview(null);
