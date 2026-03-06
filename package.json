@@ -20,6 +20,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ci": "playwright test --reporter=list --reporter=junit",
     "test:e2e:ui": "playwright test --ui",
+    "test:db": "supabase test db",
     "test:e2e:debug": "playwright test --debug",
     "prepare": "husky",
     "cap:sync": "cap sync android",
