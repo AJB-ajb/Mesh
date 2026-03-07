@@ -1,6 +1,7 @@
 -- pgTAP tests for notifications RLS policies
 
 BEGIN;
+SET search_path TO extensions, public, auth;
 SELECT plan(6);
 SELECT tests.create_test_users();
 

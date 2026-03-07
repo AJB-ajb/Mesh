@@ -2,6 +2,8 @@
 -- Sets up test users and common fixtures used across all RLS test files.
 
 BEGIN;
+-- Ensure pgTAP functions are on the search path (needed for remote/linked DB)
+SET search_path TO extensions, public, auth;
 SELECT plan(1);
 
 CREATE SCHEMA IF NOT EXISTS tests;
