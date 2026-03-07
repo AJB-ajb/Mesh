@@ -971,6 +971,7 @@ export const labels = {
     sharePosting: "Share Posting",
     reportIssue: "Report Issue",
     shareTitle: "Check out this posting on Mesh",
+    editPosting: "Edit posting",
 
     // Error messages
     errorUpdatePosting: "Failed to update posting. Please try again.",

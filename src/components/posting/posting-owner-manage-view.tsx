@@ -1,13 +1,18 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
+import { ChevronDown } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { FreeFormUpdate } from "@/components/shared/free-form-update";
 import { usePostingCoreContext } from "./posting-core-context";
 import { usePostingEditContext } from "./posting-edit-context";
 import { PostingSidebar } from "./posting-sidebar";
 import { PostingContextBar, type ContextBarState } from "./posting-context-bar";
+import { PostingApplicationsCard } from "./posting-applications-card";
+import { PostingMatchedProfilesCard } from "./posting-matched-profiles-card";
+import { SequentialInviteCard } from "./sequential-invite-card";
 
 function defaultExpiresAt(): string {
   const d = new Date();
@@ -15,15 +20,17 @@ function defaultExpiresAt(): string {
   return d.toISOString().slice(0, 10);
 }
 
-export function PostingEditTab() {
-  const { posting, postingId, onMutate } = usePostingCoreContext();
+export function PostingOwnerManageView() {
+  const { posting, postingId, currentUserId } = usePostingCoreContext();
   const { isApplyingUpdate, onApplyUpdate, onUndoUpdate, form, onFormChange } =
     usePostingEditContext();
+
+  const [showEdit, setShowEdit] = useState(false);
 
   // Build context bar state from existing posting data
   const [contextBar, setContextBar] = useState<ContextBarState>(() => ({
     parentPostingId: posting.parent_posting_id ?? "",
-    parentPostingTitle: null, // Would need separate fetch
+    parentPostingTitle: null,
     parentMemberCount: null,
     invitedUsers: [],
     linkToken:
@@ -43,12 +50,9 @@ export function PostingEditTab() {
     },
   }));
 
-  // Sync context bar changes back to form state for auto-save
   const handleContextBarChange = useCallback(
     (newState: ContextBarState) => {
       setContextBar(newState);
-
-      // Sync relevant fields to the form for auto-save
       onFormChange("teamSizeMin", newState.settings.teamSizeMin);
       onFormChange("teamSizeMax", newState.settings.teamSizeMax);
       onFormChange("lookingFor", newState.settings.teamSizeMax);
@@ -65,24 +69,59 @@ export function PostingEditTab() {
   return (
     <div className="grid gap-6 lg:grid-cols-3 mt-6">
       <div className="space-y-6 lg:col-span-2">
-        <FreeFormUpdate
-          entityType="posting"
-          entityId={postingId}
-          sourceText={posting.source_text ?? null}
-          canUndo={!!posting.previous_source_text}
-          isApplying={isApplyingUpdate}
-          onUpdate={onApplyUpdate}
-          onUndo={onUndoUpdate}
-        />
+        {/* 1. Invite progress */}
+        {currentUserId && (
+          <SequentialInviteCard
+            postingId={postingId}
+            currentUserId={currentUserId}
+          />
+        )}
 
-        {/* Context bar (replaces PostingAboutCard) */}
-        <PostingContextBar
-          state={contextBar}
-          onChange={handleContextBarChange}
-        />
+        {/* 2. Join requests */}
+        <PostingApplicationsCard />
+
+        {/* 3. Edit section (collapsible) */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowEdit(!showEdit)}
+            className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full py-2"
+          >
+            <ChevronDown
+              className={cn(
+                "size-4 transition-transform",
+                showEdit && "rotate-180",
+              )}
+            />
+            {labels.postingDetail.editPosting}
+          </button>
+          {showEdit && (
+            <div className="space-y-6 mt-2">
+              <FreeFormUpdate
+                entityType="posting"
+                entityId={postingId}
+                sourceText={posting.source_text ?? null}
+                canUndo={!!posting.previous_source_text}
+                isApplying={isApplyingUpdate}
+                onUpdate={onApplyUpdate}
+                onUndo={onUndoUpdate}
+              />
+              <PostingContextBar
+                state={contextBar}
+                onChange={handleContextBarChange}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* 4. Matched profiles */}
+        <PostingMatchedProfilesCard />
       </div>
 
-      <PostingSidebar />
+      {/* Sidebar: hidden for owners on mobile */}
+      <div className="hidden lg:block">
+        <PostingSidebar />
+      </div>
     </div>
   );
 }
