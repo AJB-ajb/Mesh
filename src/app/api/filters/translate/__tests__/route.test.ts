@@ -22,6 +22,7 @@ vi.mock("@/lib/ai/gemini", () => ({
 
 // Import after mocking
 import { POST } from "../route";
+import { testRequiresAuth } from "tests/utils/route-test-helpers";
 
 const routeCtx = { params: Promise.resolve({}) };
 
@@ -56,15 +57,7 @@ describe("POST /api/filters/translate", () => {
     expect(body.error.message).toContain("Gemini");
   });
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No session" },
-    });
-
-    const res = await POST(makeReq({ query: "remote React" }), routeCtx);
-    expect(res.status).toBe(401);
-  });
+  testRequiresAuth(POST, () => makeReq({ query: "remote React" }), routeCtx, mockGetUser);
 
   it("returns 400 when query is missing", async () => {
     authedUser();

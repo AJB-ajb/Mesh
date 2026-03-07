@@ -12,6 +12,7 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 import { buildChain, authedUser, mockTables } from "tests/utils/supabase-mock";
+import { testRequiresResource, testRequiresOwnership } from "tests/utils/route-test-helpers";
 
 import { POST } from "../[id]/send/route";
 
@@ -24,37 +25,16 @@ const routeCtx = (id: string) => ({ params: Promise.resolve({ id }) });
 describe("POST /api/friend-ask/[id]/send", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 404 when friend-ask not found", async () => {
-    authedUser(mockGetUser);
-    mockFrom.mockReturnValue(
-      buildChain({ data: null, error: { message: "not found" } }),
-    );
+  testRequiresResource(POST, () => makeReq("/api/friend-ask/nope/send", { method: "POST" }), routeCtx("nope"), mockGetUser, mockFrom);
 
-    const res = await POST(
-      makeReq("/api/friend-ask/nope/send", { method: "POST" }),
-      routeCtx("nope"),
-    );
-    expect(res.status).toBe(404);
-  });
-
-  it("returns 403 when non-creator tries to send", async () => {
-    authedUser(mockGetUser);
-    const fa = {
+  testRequiresOwnership(POST, () => makeReq("/api/friend-ask/fa1/send", { method: "POST" }), routeCtx("fa1"), mockGetUser, () => {
+    mockFrom.mockReturnValue(buildChain({ data: {
       id: "fa1",
       creator_id: "other-user",
       ordered_friend_list: ["u2", "u3"],
       current_request_index: 0,
       status: "pending",
-    };
-    mockFrom.mockReturnValue(buildChain({ data: fa, error: null }));
-
-    const res = await POST(
-      makeReq("/api/friend-ask/fa1/send", { method: "POST" }),
-      routeCtx("fa1"),
-    );
-    const body = await res.json();
-    expect(res.status).toBe(403);
-    expect(body.error.code).toBe("FORBIDDEN");
+    }, error: null }));
   });
 
   it("does not call supabase update when user gets 403", async () => {

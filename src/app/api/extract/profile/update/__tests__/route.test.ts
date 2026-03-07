@@ -22,6 +22,7 @@ vi.mock("@/lib/ai/gemini", () => ({
 }));
 
 import { POST } from "../route";
+import { testRequiresAuth } from "tests/utils/route-test-helpers";
 
 const MOCK_USER = { id: "user-1", email: "a@b.com" };
 const routeCtx = { params: Promise.resolve({}) };
@@ -57,20 +58,10 @@ describe("POST /api/extract/profile/update", () => {
     expect(res.status).toBe(503);
   });
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await POST(
-      makeReq({
-        sourceText: "some profile text",
-        updateInstruction: "add Python",
-      }),
-      routeCtx,
-    );
-    expect(res.status).toBe(401);
-  });
+  testRequiresAuth(POST, () => makeReq({
+    sourceText: "some profile text",
+    updateInstruction: "add Python",
+  }), routeCtx, mockGetUser);
 
   it("succeeds when sourceText is missing (fetches from DB)", async () => {
     authedUser();

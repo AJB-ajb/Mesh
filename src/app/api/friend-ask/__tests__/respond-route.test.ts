@@ -12,6 +12,7 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 import { buildChain, authedUser } from "tests/utils/supabase-mock";
+import { testRequiresResource, testRequiresOwnership } from "tests/utils/route-test-helpers";
 
 import { POST } from "../[id]/respond/route";
 
@@ -68,49 +69,28 @@ describe("POST /api/friend-ask/[id]/respond", () => {
     expect(body.error.code).toBe("VALIDATION");
   });
 
-  it("returns 404 when friend-ask not found", async () => {
-    authedUser(mockGetUser);
-    mockFrom.mockReturnValue(
-      buildChain({ data: null, error: { message: "not found" } }),
-    );
+  testRequiresResource(POST, () => makeReq("/api/friend-ask/nope/respond", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "accept" }),
+  }), routeCtx("nope"), mockGetUser, mockFrom);
 
-    const res = await POST(
-      makeReq("/api/friend-ask/nope/respond", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "accept" }),
-      }),
-      routeCtx("nope"),
-    );
-    expect(res.status).toBe(404);
-  });
-
-  it("returns 403 when user is not in pending_invitees", async () => {
-    authedUser(mockGetUser);
-    const fa = {
+  testRequiresOwnership(POST, () => makeReq("/api/friend-ask/fa1/respond", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "accept" }),
+  }), routeCtx("fa1"), mockGetUser, () => {
+    mockFrom.mockReturnValue(buildChain({ data: {
       id: "fa1",
       creator_id: "creator",
       posting_id: "p1",
       ordered_friend_list: ["other-user", "user-1"],
       current_request_index: 1,
-      pending_invitees: ["other-user"], // user-1 is NOT in pending_invitees
+      pending_invitees: ["other-user"],
       declined_list: [],
       concurrent_invites: 1,
       status: "pending",
-    };
-    mockFrom.mockReturnValue(buildChain({ data: fa, error: null }));
-
-    const res = await POST(
-      makeReq("/api/friend-ask/fa1/respond", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "accept" }),
-      }),
-      routeCtx("fa1"),
-    );
-    const body = await res.json();
-    expect(res.status).toBe(403);
-    expect(body.error.code).toBe("FORBIDDEN");
+    }, error: null }));
   });
 
   it("accepts the friend-ask and notifies creator", async () => {

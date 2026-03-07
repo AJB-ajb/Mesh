@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { buildChain, authedUser, mockTables } from "tests/utils/supabase-mock";
+import { testRequiresAuth, testRequiresOwnership } from "tests/utils/route-test-helpers";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -31,14 +32,7 @@ const routeCtx = { params: Promise.resolve({ id: "app-1" }) };
 describe("PATCH /api/applications/[id]/decide", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await PATCH(makeReq(), routeCtx);
-    expect(res.status).toBe(401);
-  });
+  testRequiresAuth(PATCH, makeReq, routeCtx, mockGetUser);
 
   it("returns 400 for invalid status", async () => {
     authedUser(mockGetUser, MOCK_USER);
@@ -54,14 +48,11 @@ describe("PATCH /api/applications/[id]/decide", () => {
         error: { code: "PGRST116", message: "not found" },
       }),
     );
-
     const res = await PATCH(makeReq(), routeCtx);
     expect(res.status).toBe(404);
   });
 
-  it("returns 403 when user is not the posting creator", async () => {
-    authedUser(mockGetUser, MOCK_USER);
-
+  testRequiresOwnership(PATCH, makeReq, routeCtx, mockGetUser, () => {
     mockTables(mockFrom, {
       applications: buildChain({
         data: {
@@ -83,11 +74,6 @@ describe("PATCH /api/applications/[id]/decide", () => {
         error: null,
       }),
     });
-
-    const res = await PATCH(makeReq(), routeCtx);
-    const body = await res.json();
-    expect(res.status).toBe(403);
-    expect(body.error.code).toBe("FORBIDDEN");
   });
 
   describe("malformed payloads", () => {

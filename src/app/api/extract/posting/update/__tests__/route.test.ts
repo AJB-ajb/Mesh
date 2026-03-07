@@ -22,6 +22,8 @@ vi.mock("@/lib/ai/gemini", () => ({
 }));
 
 import { POST } from "../route";
+import { testRequiresAuth, testRequiresResource, testRequiresOwnership } from "tests/utils/route-test-helpers";
+import { buildChain } from "tests/utils/supabase-mock";
 
 const MOCK_USER = { id: "user-1", email: "a@b.com" };
 const routeCtx = { params: Promise.resolve({}) };
@@ -78,21 +80,11 @@ describe("POST /api/extract/posting/update", () => {
     expect(res.status).toBe(503);
   });
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await POST(
-      makeReq({
-        postingId: "p1",
-        sourceText: "some text",
-        updateInstruction: "add Python",
-      }),
-      routeCtx,
-    );
-    expect(res.status).toBe(401);
-  });
+  testRequiresAuth(POST, () => makeReq({
+    postingId: "p1",
+    sourceText: "some text",
+    updateInstruction: "add Python",
+  }), routeCtx, mockGetUser);
 
   it("returns 400 when postingId is missing", async () => {
     authedUser();
@@ -112,46 +104,18 @@ describe("POST /api/extract/posting/update", () => {
     expect(res.status).toBe(400);
   });
 
-  it("returns 404 when posting is not found", async () => {
-    authedUser();
-    const mockSingle = vi.fn().mockResolvedValue({
-      data: null,
-      error: { message: "Not found" },
-    });
-    const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
-    const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
-    mockFrom.mockReturnValue({ select: mockSelect });
+  testRequiresResource(POST, () => makeReq({
+    postingId: "p-nonexistent",
+    sourceText: "some text",
+    updateInstruction: "add Python",
+  }), routeCtx, mockGetUser, mockFrom);
 
-    const res = await POST(
-      makeReq({
-        postingId: "p-nonexistent",
-        sourceText: "some text",
-        updateInstruction: "add Python",
-      }),
-      routeCtx,
-    );
-    expect(res.status).toBe(404);
-  });
-
-  it("returns 403 when user is not the owner", async () => {
-    authedUser();
-    const mockSingle = vi.fn().mockResolvedValue({
-      data: { creator_id: "other-user", title: "T" },
-      error: null,
-    });
-    const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
-    const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
-    mockFrom.mockReturnValue({ select: mockSelect });
-
-    const res = await POST(
-      makeReq({
-        postingId: "p1",
-        sourceText: "some text",
-        updateInstruction: "add Python",
-      }),
-      routeCtx,
-    );
-    expect(res.status).toBe(403);
+  testRequiresOwnership(POST, () => makeReq({
+    postingId: "p1",
+    sourceText: "some text",
+    updateInstruction: "add Python",
+  }), routeCtx, mockGetUser, () => {
+    mockFrom.mockReturnValue(buildChain({ data: { creator_id: "other-user", title: "T" }, error: null }));
   });
 
   it("updates and extracts posting successfully", async () => {

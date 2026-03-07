@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { buildChain, authedUser } from "tests/utils/supabase-mock";
+import { testRequiresAuth } from "tests/utils/route-test-helpers";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -29,14 +30,7 @@ const routeCtx = { params: Promise.resolve({}) };
 describe("POST /api/profiles/onboard", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await POST(makeReq({}), routeCtx);
-    expect(res.status).toBe(401);
-  });
+  testRequiresAuth(POST, () => makeReq({}), routeCtx, mockGetUser);
 
   it("creates profile and marks profile_completed on success", async () => {
     authedUser(mockGetUser);

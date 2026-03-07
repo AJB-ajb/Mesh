@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { buildChain, authedUser } from "tests/utils/supabase-mock";
+import { testRequiresAuth, testRequiresResource, testRequiresOwnership } from "tests/utils/route-test-helpers";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -24,42 +25,15 @@ const routeCtx = { params: Promise.resolve({ id: "match-1" }) };
 describe("PATCH /api/matches/[id]/apply", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await PATCH(req, routeCtx);
-    expect(res.status).toBe(401);
-  });
-
-  it("returns 404 when match not found", async () => {
-    authedUser(mockGetUser);
-    mockFrom.mockReturnValue(
-      buildChain({ data: null, error: { message: "not found" } }),
-    );
-
-    const res = await PATCH(req, routeCtx);
-    const body = await res.json();
-
-    expect(res.status).toBe(404);
-    expect(body.error.code).toBe("NOT_FOUND");
-  });
-
-  it("returns 403 when user is not the matched user", async () => {
-    authedUser(mockGetUser);
+  testRequiresAuth(PATCH, () => req, routeCtx, mockGetUser);
+  testRequiresResource(PATCH, () => req, routeCtx, mockGetUser, mockFrom);
+  testRequiresOwnership(PATCH, () => req, routeCtx, mockGetUser, () => {
     mockFrom.mockReturnValue(
       buildChain({
         data: { id: "match-1", user_id: "other-user", status: "pending" },
         error: null,
       }),
     );
-
-    const res = await PATCH(req, routeCtx);
-    const body = await res.json();
-
-    expect(res.status).toBe(403);
-    expect(body.error.code).toBe("FORBIDDEN");
   });
 
   it("returns 400 when match is not in pending status", async () => {
