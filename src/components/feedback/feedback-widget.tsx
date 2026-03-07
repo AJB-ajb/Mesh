@@ -238,7 +238,7 @@ export function FeedbackWidget() {
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-col gap-4 px-4">
+        <div className="flex flex-col gap-4 px-4 overflow-y-auto">
           {success ? (
             <div className="flex flex-col items-center gap-2 py-8 text-center">
               <div className="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-full">

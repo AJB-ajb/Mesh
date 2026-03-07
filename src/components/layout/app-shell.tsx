@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
+import { BottomBar } from "./bottom-bar";
 import { CreatePostingFab } from "./create-posting-fab";
 import { TestModeBanner } from "./test-mode-banner";
 import { SkipLink } from "@/components/ui/skip-link";
@@ -23,13 +24,14 @@ export function AppShell({ children, className }: AppShellProps) {
           <Header />
           <main
             id="main-content"
-            className={cn("flex-1 p-4 sm:p-6", className)}
+            className={cn("flex-1 p-4 pb-20 sm:p-6 md:pb-6", className)}
             role="main"
             tabIndex={-1}
           >
             {children}
           </main>
         </div>
+        <BottomBar />
         <CreatePostingFab />
         <GlobalKeyboardShortcuts />
       </div>

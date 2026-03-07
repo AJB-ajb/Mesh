@@ -16,6 +16,8 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
         if (type === "AbortError") return null;
         // Transient mobile network failures (fetch itself throws)
         if (type === "TypeError" && value === "Failed to fetch") return null;
+        // Expected for expired sessions — not a bug
+        if (value === "Not authenticated") return null;
       }
       return event;
     },

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
+  ChevronDown,
+  ChevronUp,
   GripVertical,
   X,
   UserPlus,
@@ -97,38 +99,69 @@ export function InvitePickerSheet({
     [selectedConnections, onChange],
   );
 
-  // Drag-to-reorder
-  const handleDragStart = (index: number) => setDragIndex(index);
+  // Reorder via pointer (touch + mouse) drag
+  const pointerOrigin = useRef<{ index: number; y: number } | null>(null);
+  const itemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    setDragOverIndex(index);
-  };
+  const handlePointerDown = useCallback(
+    (index: number, e: React.PointerEvent) => {
+      if (inviteMode !== "sequential") return;
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      pointerOrigin.current = { index, y: e.clientY };
+      setDragIndex(index);
+    },
+    [inviteMode],
+  );
 
-  const handleDrop = (dropIndex: number) => {
-    if (dragIndex === null || dragIndex === dropIndex) {
-      setDragIndex(null);
-      setDragOverIndex(null);
-      return;
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    const origin = pointerOrigin.current;
+    if (!origin) return;
+    // Determine which item the pointer is over based on midpoints
+    for (const [idx, el] of itemRefs.current) {
+      const rect = el.getBoundingClientRect();
+      if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
+        setDragOverIndex(idx !== origin.index ? idx : null);
+        return;
+      }
     }
-    const reordered = [...selectedConnections];
-    const [moved] = reordered.splice(dragIndex, 1);
-    reordered.splice(dropIndex, 0, moved);
-    onChange(reordered);
-    setDragIndex(null);
-    setDragOverIndex(null);
-  };
+  }, []);
 
-  const handleDragEnd = () => {
+  const handlePointerUp = useCallback(() => {
+    const origin = pointerOrigin.current;
+    if (origin && dragOverIndex !== null && dragOverIndex !== origin.index) {
+      const reordered = [...selectedConnections];
+      const [moved] = reordered.splice(origin.index, 1);
+      reordered.splice(dragOverIndex, 0, moved);
+      onChange(reordered);
+    }
+    pointerOrigin.current = null;
     setDragIndex(null);
     setDragOverIndex(null);
-  };
+  }, [dragOverIndex, selectedConnections, onChange]);
+
+  // Button-based reorder (accessible fallback)
+  const moveItem = useCallback(
+    (index: number, direction: -1 | 1) => {
+      const target = index + direction;
+      if (target < 0 || target >= selectedConnections.length) return;
+      const reordered = [...selectedConnections];
+      [reordered[index], reordered[target]] = [
+        reordered[target],
+        reordered[index],
+      ];
+      onChange(reordered);
+    },
+    [selectedConnections, onChange],
+  );
 
   return (
-    <Sheet open={open} onOpenChange={(isOpen) => {
-      if (!isOpen) setFilter("");
-      onOpenChange(isOpen);
-    }}>
+    <Sheet
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) setFilter("");
+        onOpenChange(isOpen);
+      }}
+    >
       <SheetContent
         side="bottom"
         className="max-h-[85vh] rounded-t-xl"
@@ -162,29 +195,14 @@ export function InvitePickerSheet({
               {selectedConnections.map((connection, index) => (
                 <div
                   key={connection.user_id}
-                  draggable={inviteMode === "sequential"}
-                  onDragStart={
-                    inviteMode === "sequential"
-                      ? () => handleDragStart(index)
-                      : undefined
-                  }
-                  onDragOver={
-                    inviteMode === "sequential"
-                      ? (e) => handleDragOver(e, index)
-                      : undefined
-                  }
-                  onDrop={
-                    inviteMode === "sequential"
-                      ? () => handleDrop(index)
-                      : undefined
-                  }
-                  onDragEnd={
-                    inviteMode === "sequential" ? handleDragEnd : undefined
-                  }
+                  ref={(el) => {
+                    if (el) itemRefs.current.set(index, el);
+                    else itemRefs.current.delete(index);
+                  }}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={handlePointerUp}
                   className={cn(
-                    "flex items-center gap-2 rounded-md border bg-background p-2 transition-colors",
-                    inviteMode === "sequential" &&
-                      "cursor-grab active:cursor-grabbing",
+                    "flex items-center gap-2 rounded-md border bg-background p-2 transition-colors select-none",
                     dragIndex === index && "opacity-50",
                     dragOverIndex === index &&
                       dragIndex !== index &&
@@ -193,7 +211,10 @@ export function InvitePickerSheet({
                 >
                   {inviteMode === "sequential" && (
                     <>
-                      <GripVertical className="size-4 text-muted-foreground shrink-0" />
+                      <GripVertical
+                        className="size-4 text-muted-foreground shrink-0 touch-none cursor-grab active:cursor-grabbing"
+                        onPointerDown={(e) => handlePointerDown(index, e)}
+                      />
                       <span className="text-sm font-medium text-muted-foreground w-6 shrink-0">
                         {index + 1}.
                       </span>
@@ -202,6 +223,28 @@ export function InvitePickerSheet({
                   <span className="text-sm truncate flex-1">
                     {connection.full_name}
                   </span>
+                  {inviteMode === "sequential" && (
+                    <div className="flex flex-col shrink-0">
+                      <button
+                        type="button"
+                        className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                        disabled={index === 0}
+                        onClick={() => moveItem(index, -1)}
+                        aria-label={`Move ${connection.full_name} up`}
+                      >
+                        <ChevronUp className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                        disabled={index === selectedConnections.length - 1}
+                        onClick={() => moveItem(index, 1)}
+                        aria-label={`Move ${connection.full_name} down`}
+                      >
+                        <ChevronDown className="size-3.5" />
+                      </button>
+                    </div>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
