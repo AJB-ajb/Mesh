@@ -1,6 +1,7 @@
 -- pgTAP tests for matches RLS policies
 
 BEGIN;
+SET search_path TO extensions, public, auth;
 SELECT plan(5);
 SELECT tests.create_test_users();
 

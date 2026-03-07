@@ -7,6 +7,7 @@
 --   DELETE: "Creators can delete own postings"
 
 BEGIN;
+SET search_path TO extensions, public, auth;
 SELECT plan(15);
 SELECT tests.create_test_users();
 

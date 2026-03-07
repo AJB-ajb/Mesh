@@ -5,6 +5,7 @@
 --   UPDATE: "Profiles can be updated by the owner"
 
 BEGIN;
+SET search_path TO extensions, public, auth;
 SELECT plan(7);
 SELECT tests.create_test_users();
 
