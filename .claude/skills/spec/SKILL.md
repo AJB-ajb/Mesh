@@ -1,48 +1,55 @@
 ---
 name: spec
 description: >
-  Navigate, read, create, and update product specifications. Encodes the layered spec structure
-  (direction, behavior, roadmap, architecture), file conventions, and the spec-first workflow.
-  Use when someone says 'read the spec', 'update the spec', 'write a spec', 'create a spec',
-  'spec for [feature]', 'check the spec', or when starting work on a new feature that needs
-  spec context.
+  Navigate, read, create, and update product specifications and technical documentation.
+  Covers spec/ (what to build) and docs/ (how it's built). Use when someone says 'read the spec',
+  'update the spec', 'write a spec', 'check the docs', 'update the data model', 'architecture',
+  or when starting work on a feature that needs spec or docs context.
 argument-hint: "[topic or feature name]"
 ---
 
-# Spec Navigation & Authoring
+# Spec & Docs Navigation
 
-## Spec Directory Structure
+## Two directories, two purposes
+
+| Directory        | Purpose                                                              | Audience                                |
+| ---------------- | -------------------------------------------------------------------- | --------------------------------------- |
+| `spec/`          | **What to build** — product vision, behavior, roadmap                | Agents + humans                         |
+| `docs/`          | **How it's built** — architecture, conventions, data model, services | Agents + humans                         |
+| `docs/runbooks/` | **How to operate** — setup guides, deployment, config                | Humans only (never loaded into context) |
+
+## Spec Directory
 
 All specs live in `spec/`. Read `spec/README.md` first for the full index and loading guidance.
 
 ### Layers
 
-| Prefix | Layer | Purpose | When to update |
-|--------|-------|---------|----------------|
-| `0-` | Direction | Why, for whom, guiding scenarios | Rarely — when product vision changes |
-| `1-` | Behavior | How the product should work (target state + insights) | Before code changes for new features |
-| `2-` | Roadmap | What's done, what's next | When milestones ship |
-| `3-` | Architecture | Tech stack, libraries, deployment | When stack changes |
-| `designs/` | Designs | Per-milestone feature designs (ephemeral) | Created during planning, folded into Layer 1 when shipped |
+| Prefix     | Layer        | Purpose                                               | When to update                                            |
+| ---------- | ------------ | ----------------------------------------------------- | --------------------------------------------------------- |
+| `0-`       | Direction    | Why, for whom, guiding scenarios                      | Rarely — when product vision changes                      |
+| `1-`       | Behavior     | How the product should work (target state + insights) | Before code changes for new features                      |
+| `2-`       | Roadmap      | What's done, what's next                              | When milestones ship                                      |
+| `3-`       | Architecture | Tech stack, libraries, deployment                     | When stack changes                                        |
+| `designs/` | Designs      | Per-milestone feature designs (ephemeral)             | Created during planning, folded into Layer 1 when shipped |
 
 ### Key Files
 
-| File | When to read |
-|------|-------------|
-| `0-vision.md` | Unsure about product direction, need guiding principles |
-| `0-use-cases.md` | Need concrete scenarios to guide design decisions |
-| `1-mesh.md` | Product overview, scope, monetization |
-| `1-text-first.md` | Text-first philosophy, `mesh:` syntax, `\|\|hidden\|\|`, data model |
-| `1-ux.md` | Layout, pages, interaction patterns, voice & tone |
-| `1-matching.md` | Matching dimensions, scoring, deep match pipeline |
-| `1-scheduling.md` | Scheduling intelligence, time slot generation |
-| `1-skills.md` | Skill tree, taxonomy, LLM auto-adding |
-| `1-availability.md` | Calendar sync, availability windows, overlap |
-| `1-nested-postings.md` | Nesting model, groups, channels, context inheritance |
-| `1-posting-access.md` | Composable access model (discover/invite/link/context) |
-| `1-terminology.md` | Canonical terms — check here before inventing labels |
-| `2-roadmap.md` | Implementation status, milestones, version tracking |
-| `3-architecture.md` | Tech stack, key libraries |
+| File                   | When to read                                                        |
+| ---------------------- | ------------------------------------------------------------------- |
+| `0-vision.md`          | Unsure about product direction, need guiding principles             |
+| `0-use-cases.md`       | Need concrete scenarios to guide design decisions                   |
+| `1-mesh.md`            | Product overview, scope, monetization                               |
+| `1-text-first.md`      | Text-first philosophy, `mesh:` syntax, `\|\|hidden\|\|`, data model |
+| `1-ux.md`              | Layout, pages, interaction patterns, voice & tone                   |
+| `1-matching.md`        | Matching dimensions, scoring, deep match pipeline                   |
+| `1-scheduling.md`      | Scheduling intelligence, time slot generation                       |
+| `1-skills.md`          | Skill tree, taxonomy, LLM auto-adding                               |
+| `1-availability.md`    | Calendar sync, availability windows, overlap                        |
+| `1-nested-postings.md` | Nesting model, groups, channels, context inheritance                |
+| `1-posting-access.md`  | Composable access model (discover/invite/link/context)              |
+| `1-terminology.md`     | Canonical terms — check here before inventing labels                |
+| `2-roadmap.md`         | Implementation status, milestones, version tracking                 |
+| `3-architecture.md`    | Tech stack, key libraries                                           |
 
 ## Workflow
 
@@ -89,17 +96,20 @@ All specs live in `spec/`. Read `spec/README.md` first for the full index and lo
 ### Content shapes (not rigid templates)
 
 **Shape A — Insight-driven** (text-first, nested-postings, posting-access, matching, skills):
+
 - Lead with "why" / the problem / the insight
 - Then "how" — the target design
 - Topic-specific sections as needed
 - Current Deviations at bottom
 
 **Shape B — Reference** (terminology, availability):
+
 - Brief principles (optional)
 - Structured entries: tables, decision logs, schemas
 - Current Deviations at bottom
 
 **Shape C — Direction** (vision, use-cases):
+
 - Narrative: insights, scenarios, arguments
 - No Current Deviations section — these describe the target world
 
@@ -114,9 +124,41 @@ All specs live in `spec/`. Read `spec/README.md` first for the full index and lo
 
 Each entry links to a roadmap milestone. When that milestone ships, delete the entry.
 
+## Docs Directory
+
+Technical documentation in `docs/` describes the current implementation — not the target state.
+
+### Agent-facing files (flat in `docs/`)
+
+| File              | When to read                                                 |
+| ----------------- | ------------------------------------------------------------ |
+| `architecture.md` | System layers, key patterns, critical file paths             |
+| `conventions.md`  | Code patterns: DAL, withAuth, SWR, hooks, toasts             |
+| `data-model.md`   | DB semantics, relationships, JSONB structures, RPC functions |
+| `services.md`     | External service reference table                             |
+
+**`data-model.md` is intentionally lean.** Column types, nullability, defaults, indexes, and RLS
+policies are recoverable from `supabase db dump` or `supabase/migrations/`. The doc only captures
+what the schema doesn't tell you: semantic meaning, JSONB types, relationship overview, RPC logic.
+
+### Human-only files (`docs/runbooks/`)
+
+Setup guides, deployment, config. Never loaded into agent context:
+`capacitor-android.md`, `mcp-setup.md`, `setup-google-cloud.md`, `setup-sentry.md`,
+`setup-supabase.md`, `vercel-deployment.md`
+
+### Updating docs
+
+- Update `docs/data-model.md` after any migration that adds semantic meaning (new JSONB structures,
+  dual-purpose fields, non-obvious constraints). Don't document plain column additions — the schema
+  speaks for itself.
+- Update `docs/architecture.md` when adding new system layers or changing core patterns.
+- Update `docs/conventions.md` when establishing new code patterns that should be followed project-wide.
+
 ## Token Efficiency
 
 - Use tables over prose for reference data
 - Insight/philosophy sections can be narrative
 - Don't duplicate content — cross-reference with `[file](file.md)`
 - Scope statements enable fast scanning without reading the full file
+- Prefer recoverable-from-source over documented: don't repeat what `\d tablename` or the code itself shows

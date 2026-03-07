@@ -6,7 +6,7 @@ argument-hint: "[focus area] (optional — e.g. 'security', 'spec compliance')"
 
 # Critical Review
 
-Review all changes on the current branch vs `dev` with fresh eyes. Be adversarial — assume bugs exist and find them.
+Review all changes on the current branch vs `dev` with fresh eyes. Be adversarial — assume bugs and unreasonable changes exist and find them.
 
 ## 1. Gather context
 
