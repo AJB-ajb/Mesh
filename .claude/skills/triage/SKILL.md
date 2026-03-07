@@ -86,3 +86,17 @@ Use the Sentry API to update the issue status:
 PUT https://sentry.io/api/0/projects/{org}/{project}/issues/{issue_id}/
 { "status": "resolved" }
 ```
+
+## 7. Mark Fixed Items as Resolved
+
+After code fixes are committed for specific feedback or Sentry items, **immediately mark them as resolved** — do not wait for the user to ask:
+
+- PATCH each fixed feedback item with `resolved_at` (see §5)
+- PUT each fixed Sentry issue to `resolved` (see §6). Note: the single-issue endpoint may 404 — use the **bulk update** endpoint instead:
+
+```
+PUT https://sentry.io/api/0/projects/{org}/{project}/issues/?id={id1}&id={id2}
+{ "status": "resolved" }
+```
+
+Do not end the session without confirming every worked-on item has been marked resolved in both the database and Sentry.
