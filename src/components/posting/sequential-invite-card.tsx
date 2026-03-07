@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Loader2, ListOrdered, XCircle, Info } from "lucide-react";
+import { Loader2, ListOrdered, XCircle, Info, UserPlus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
@@ -14,8 +14,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useSequentialInviteForPosting } from "@/lib/hooks/use-sequential-invites";
-import { SequentialInviteSelector } from "./sequential-invite-selector";
 import { SequentialInviteStatus } from "./sequential-invite-status";
+import { InvitePickerSheet } from "./invite-picker-sheet";
 
 type ConnectionItem = {
   user_id: string;
@@ -43,6 +43,7 @@ export function SequentialInviteCard({
   const [isCreating, setIsCreating] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
   const [connectionNames, setConnectionNames] = useState<
     Record<string, string>
   >({});
@@ -188,21 +189,23 @@ export function SequentialInviteCard({
             connectionNames={connectionNames}
           />
 
-          {sequentialInvite.status === "pending" && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCancel}
-              disabled={isCancelling}
-            >
-              {isCancelling ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <XCircle className="size-4" />
-              )}
-              {labels.invite.cancelInvite}
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {sequentialInvite.status === "pending" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancel}
+                disabled={isCancelling}
+              >
+                {isCancelling ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <XCircle className="size-4" />
+                )}
+                {labels.invite.cancelInvite}
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
     );
@@ -303,12 +306,30 @@ export function SequentialInviteCard({
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
-        <SequentialInviteSelector
-          currentUserId={currentUserId}
-          selectedConnections={selectedConnections}
-          onChange={setSelectedConnections}
-          inviteMode={inviteMode}
-        />
+        {/* Selected people summary + add button */}
+        {selectedConnections.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {selectedConnections.map((c) => (
+              <span
+                key={c.user_id}
+                className="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-xs font-medium"
+              >
+                {c.full_name}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowPicker(true)}
+        >
+          <UserPlus className="size-4" />
+          {selectedConnections.length > 0
+            ? labels.invite.pickerInviteMore
+            : labels.invite.pickerTitle}
+        </Button>
 
         {selectedConnections.length > 0 && (
           <Button onClick={handleCreate} disabled={isCreating}>
@@ -322,6 +343,15 @@ export function SequentialInviteCard({
             )}
           </Button>
         )}
+
+        <InvitePickerSheet
+          open={showPicker}
+          onOpenChange={setShowPicker}
+          selectedConnections={selectedConnections}
+          onChange={setSelectedConnections}
+          currentUserId={currentUserId}
+          inviteMode={inviteMode}
+        />
       </CardContent>
     </Card>
   );
