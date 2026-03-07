@@ -2,7 +2,7 @@
 
 > Mesh replaces the back-and-forth messaging that dominates real-world coordination — finding people, negotiating times, exchanging logistics — with structured flows that resolve these negotiations in one or two taps.
 
-**Note**: Some features in the case studies below (quick chips, post-write nudges, calendar auto-skip, `||hidden||` auto-reveal, scheduling preferences, `||?||` prompts, renegotiation flow) are aspirational — they describe the target UX, not the current implementation. This is Layer 0: the world we are building toward.
+**Note**: Some features in the case studies below are not yet implemented — they describe the target UX, not the current implementation. This is Layer 0: the world we are building toward.
 
 See [1-nested-postings.md](1-nested-postings.md) for the architectural model, [1-matching.md](1-matching.md) for matching, [1-scheduling.md](1-scheduling.md) for scheduling.
 
@@ -58,7 +58,7 @@ The system extracts location, time, vibe. Quick chips confirm coordinates with o
 >
 > Would be great if you're into travel or music — gives us something to actually talk about beyond grammar drills.
 
-The system extracts CEFR levels (B1-B2) for fast filtering. But the *context* around them — "so we can actually have real conversations" — drives the deep match. "Trip to Colombia" is matching gold: a native speaker from Bogota who loves salsa scores 0.92; a C2-certified grammar teacher with no shared interests scores 0.61.
+The system extracts CEFR levels (B1-B2) for fast filtering. But the _context_ around them — "so we can actually have real conversations" — drives the deep match. "Trip to Colombia" is matching gold: a native speaker from Bogota who loves salsa scores 0.92; a C2-certified grammar teacher with no shared interests scores 0.61.
 
 **Dual-track invite**: Sequential invite runs for top matches AND the posting stays open on Discover. An organic applicant (Carlos) requests to join and is waitlisted. When the sequential match (Ana) later withdraws, Carlos is auto-promoted from the waitlist — his application wasn't wasted.
 
@@ -73,6 +73,7 @@ The system extracts CEFR levels (B1-B2) for fast filtering. But the *context* ar
 > **Weekend Short Film — Need a Small Crew**
 >
 > Shooting a 5-minute short film next Saturday-Sunday in Englischer Garten. Looking for:
+>
 > - **Actor/actress** — female, 20s-30s, comfortable with improvisation
 > - **Sound person** — handheld boom mic, at least one short film before
 > - **Someone who can do basic color grading** in DaVinci Resolve. Can be done remotely after the shoot.
@@ -97,7 +98,7 @@ User hits "Post." That's it. The system extracts skills needed (Kubernetes, ingr
 
 **Reciprocal matching**: "Happy to return the favor if you need help with Python/FastAPI" is detected as a skill exchange offer. The top match (Kai, 0.93) has "looking for Python help for a side project" in his profile — mutual benefit that only text + deep matching can discover.
 
-**Negotiations resolved**: who (skill matching + reciprocity), when (mornings or after 17h), where (Berlin, remote OK), how ("pair programming, not outsourced" — a *style* constraint no form field captures).
+**Negotiations resolved**: who (skill matching + reciprocity), when (mornings or after 17h), where (Berlin, remote OK), how ("pair programming, not outsourced" — a _style_ constraint no form field captures).
 
 ### Chess — three words and it works
 
@@ -111,7 +112,7 @@ The system extracts activity, skill level, location. Post-write nudges offer one
 
 **Open + auto-accept**: This posting is so minimal that the natural flow is: leave it open on Discover, let people self-select. Thomas browses, sees "Chess — Intermediate, Munich, Evenings", taps "Join." He's in immediately. Two taps for the joiner, zero management for the poster.
 
-**The lesson**: Three words produce a matchable posting. Richer text produces *better* matches. The system works at any detail level but rewards richer input.
+**The lesson**: Three words produce a matchable posting. Richer text produces _better_ matches. The system works at any detail level but rewards richer input.
 
 ### Finding a stranger for a specific activity
 
@@ -153,6 +154,7 @@ During the hackathon: "Who's handling the Figma mockups by tonight?" Posted with
 **What nesting provides**: The channel scoped discovery to relevant people. The group scoped coordination to the team. Each child posting inherited context — participants, project topic, location — so the poster only had to write the new thing they needed.
 
 **Negotiations resolved at each level**:
+
 - Channel level: who is in scope (channel members)
 - Team posting: who specifically (matching on skills within channel), what (the project)
 - Planning call: when (calendar overlap on the known team)
@@ -286,18 +288,18 @@ Ask one person — they're busy. Ask another — no reply. Ask a third — "what
 
 ### Compression summary
 
-| Pattern | Typical messages | With Mesh | Key mechanism |
-|---|---|---|---|
-| Time negotiation | 6-8 | 0 (1 tap) | Calendar + preferences + acceptance card |
-| Availability check | 4-10+ | 0 | Calendar pre-filtering + sequential invite |
-| Location exchange | 4-5 | 0 | `\|\|hidden\|\|` |
-| Role clarification | 6-8 | 1 tap | `\|\|?\|\|` prompts + multi-role extraction |
-| Preparation/logistics | 5-6 | 0 | `\|\|hidden\|\|` |
-| Confirmation/reminder | 2-3 | 0 | Calendar auto-creation + reminders |
-| Renegotiation | 3-12 | 1+1 tap | Suggest different time + calendar re-compute |
-| Introduction/context | 6+ | 0 | Text-first posting + match explanation |
-| Recurrence | 4-8 | 1 tap | Repost + participant notification |
-| Cancellation | 3-8+ | 0 (auto) | Waitlist + auto-promotion + calendar sync |
+| Pattern               | Typical messages | With Mesh | Key mechanism                                |
+| --------------------- | ---------------- | --------- | -------------------------------------------- |
+| Time negotiation      | 6-8              | 0 (1 tap) | Calendar + preferences + acceptance card     |
+| Availability check    | 4-10+            | 0         | Calendar pre-filtering + sequential invite   |
+| Location exchange     | 4-5              | 0         | `\|\|hidden\|\|`                             |
+| Role clarification    | 6-8              | 1 tap     | `\|\|?\|\|` prompts + multi-role extraction  |
+| Preparation/logistics | 5-6              | 0         | `\|\|hidden\|\|`                             |
+| Confirmation/reminder | 2-3              | 0         | Calendar auto-creation + reminders           |
+| Renegotiation         | 3-12             | 1+1 tap   | Suggest different time + calendar re-compute |
+| Introduction/context  | 6+               | 0         | Text-first posting + match explanation       |
+| Recurrence            | 4-8              | 1 tap     | Repost + participant notification            |
+| Cancellation          | 3-8+             | 0 (auto)  | Waitlist + auto-promotion + calendar sync    |
 
 **Average coordination: ~30-50 messages reduced to ~1-3 taps.**
 
@@ -311,19 +313,19 @@ Every use case involves the same set of negotiations — who, when, where, what,
 
 The key difference between use cases isn't a type distinction — it's **which negotiations dominate** and **how many rounds** are needed:
 
-| Use case | Primary negotiation | Rounds | Nesting |
-|---|---|---|---|
-| Coffee now | When (scheduling) | 1 | Flat |
-| Spanish partner | Who (deep compatibility) | 1 | Flat |
-| Short film crew | Who + what (roles) | 1 | Flat |
-| Copy-paste (k8s) | Who (skill + reciprocity) | 1 | Flat |
-| Chess (minimal) | Who (self-selection) | 1 | Flat |
-| Tennis with stranger | Who + when | 1 | Flat |
-| Quick call | When (scheduling) | 1 | Flat |
-| Friday dinner | When (N-way overlap) | 1 | Flat (group) |
-| Hackathon team | Who + what (roles, vision) | 1-2 | Channel -> group |
-| Recurring practice | When (per instance) | Ongoing, each round is 1 tap | Parent -> weekly children |
-| Course project | Who initially, then when repeatedly | Ongoing | Parent -> children over semester |
-| Mentorship | Who (deep compatibility) | 1 for matching, ongoing for sessions | Channel -> pair -> sessions |
+| Use case             | Primary negotiation                 | Rounds                               | Nesting                          |
+| -------------------- | ----------------------------------- | ------------------------------------ | -------------------------------- |
+| Coffee now           | When (scheduling)                   | 1                                    | Flat                             |
+| Spanish partner      | Who (deep compatibility)            | 1                                    | Flat                             |
+| Short film crew      | Who + what (roles)                  | 1                                    | Flat                             |
+| Copy-paste (k8s)     | Who (skill + reciprocity)           | 1                                    | Flat                             |
+| Chess (minimal)      | Who (self-selection)                | 1                                    | Flat                             |
+| Tennis with stranger | Who + when                          | 1                                    | Flat                             |
+| Quick call           | When (scheduling)                   | 1                                    | Flat                             |
+| Friday dinner        | When (N-way overlap)                | 1                                    | Flat (group)                     |
+| Hackathon team       | Who + what (roles, vision)          | 1-2                                  | Channel -> group                 |
+| Recurring practice   | When (per instance)                 | Ongoing, each round is 1 tap         | Parent -> weekly children        |
+| Course project       | Who initially, then when repeatedly | Ongoing                              | Parent -> children over semester |
+| Mentorship           | Who (deep compatibility)            | 1 for matching, ongoing for sessions | Channel -> pair -> sessions      |
 
 Nesting reduces effort over time: the first posting requires describing everything, but subsequent coordination within the group is nearly frictionless because the context is already established.
