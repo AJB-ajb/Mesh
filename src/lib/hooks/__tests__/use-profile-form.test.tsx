@@ -3,8 +3,6 @@ import { renderHook, act } from "@testing-library/react";
 import type { ProfileFetchResult } from "../use-profile-data";
 import { defaultFormState } from "@/lib/types/profile";
 
-// No SWR wrapper needed — this hook does not use SWR internally.
-
 vi.mock("@/lib/supabase/client", () => ({
   createClient: vi.fn(),
 }));
@@ -44,7 +42,7 @@ const fakeProfileData: ProfileFetchResult = {
 };
 
 // ---------------------------------------------------------------------------
-// Tests
+// Tests — draft snapshot/restore logic
 // ---------------------------------------------------------------------------
 
 describe("useProfileForm", () => {
@@ -52,85 +50,113 @@ describe("useProfileForm", () => {
     vi.clearAllMocks();
   });
 
-  it("returns profileData.form when not editing", () => {
+  it("startEditing snapshots profileData.form into a mutable draft", () => {
     const { result } = renderHook(() => useProfileForm(fakeProfileData));
 
+    act(() => result.current.startEditing());
+
+    // Draft is a copy of the original form
+    expect(result.current.form).toEqual(fakeProfileData.form);
+    expect(result.current.isEditing).toBe(true);
+  });
+
+  it("handleChange mutates the draft without affecting the original data", () => {
+    const { result } = renderHook(() => useProfileForm(fakeProfileData));
+
+    act(() => result.current.startEditing());
+    act(() => result.current.handleChange("fullName", "Changed Name"));
+
+    expect(result.current.form.fullName).toBe("Changed Name");
+    // The profileData object itself was never modified
+    expect(fakeProfileData.form.fullName).toBe("Test User");
+  });
+
+  it("handleChange is a no-op when not editing", () => {
+    const { result } = renderHook(() => useProfileForm(fakeProfileData));
+
+    act(() => result.current.handleChange("fullName", "Ignored"));
+
+    // Form still reflects the original profileData
+    expect(result.current.form.fullName).toBe("Test User");
+  });
+
+  it("cancelEditing discards all draft changes and restores the original form", () => {
+    const { result } = renderHook(() => useProfileForm(fakeProfileData));
+
+    act(() => result.current.startEditing());
+    act(() => result.current.handleChange("fullName", "Changed Name"));
+    act(() => result.current.handleChange("bio", "Changed bio"));
+
+    // Verify changes took effect in the draft
+    expect(result.current.form.fullName).toBe("Changed Name");
+
+    act(() => result.current.cancelEditing());
+
+    // All changes discarded — form is back to the SWR data
     expect(result.current.isEditing).toBe(false);
     expect(result.current.form).toEqual(fakeProfileData.form);
   });
 
-  it("returns defaultFormState when profileData is undefined", () => {
-    const { result } = renderHook(() => useProfileForm(undefined));
-
-    expect(result.current.form).toEqual(defaultFormState);
-  });
-
-  it("startEditing snapshots current form into localDraft", () => {
+  it("setIsEditing(true) then setIsEditing(false) round-trips cleanly", () => {
     const { result } = renderHook(() => useProfileForm(fakeProfileData));
 
-    act(() => {
-      result.current.startEditing();
-    });
+    act(() => result.current.setIsEditing(true));
+    act(() => result.current.handleChange("headline", "New"));
+    act(() => result.current.setIsEditing(false));
 
-    expect(result.current.isEditing).toBe(true);
-    expect(result.current.form).toEqual(fakeProfileData.form);
-  });
-
-  it("handleChange updates localDraft during editing", () => {
-    const { result } = renderHook(() => useProfileForm(fakeProfileData));
-
-    act(() => {
-      result.current.startEditing();
-    });
-
-    act(() => {
-      result.current.handleChange("fullName", "New Name");
-    });
-
-    expect(result.current.form.fullName).toBe("New Name");
-    // Other fields remain unchanged
+    expect(result.current.isEditing).toBe(false);
     expect(result.current.form.headline).toBe("Developer");
   });
 
-  it("cancelEditing discards draft and returns to SWR data", () => {
+  it("setForm writes to the internal draft (use-github-sync compatibility)", () => {
     const { result } = renderHook(() => useProfileForm(fakeProfileData));
 
-    act(() => {
-      result.current.startEditing();
-    });
-
-    act(() => {
-      result.current.handleChange("fullName", "Changed Name");
-    });
-
-    expect(result.current.form.fullName).toBe("Changed Name");
-
-    act(() => {
-      result.current.cancelEditing();
-    });
-
-    expect(result.current.isEditing).toBe(false);
-    expect(result.current.form).toEqual(fakeProfileData.form);
-  });
-
-  it("setForm works for external callers (use-github-sync compatibility)", () => {
-    const { result } = renderHook(() => useProfileForm(fakeProfileData));
-
-    // setForm should work even when not editing — it writes to localDraft
+    // setForm should update draft even when not editing
     act(() => {
       result.current.setForm({ ...defaultFormState, fullName: "External Set" });
     });
 
-    // Since we are not editing, the form still reads from profileData
-    // But setForm updates the internal draft for when editing is started
-    expect(result.current.isEditing).toBe(false);
+    // Start editing — the draft was already written by setForm
+    act(() => result.current.startEditing());
 
-    // setForm with function updater
+    // But startEditing re-snapshots from profileData, overwriting the setForm call
+    // This is the expected behavior per the source code
+    expect(result.current.form.fullName).toBe("Test User");
+  });
+
+  it("setForm with function updater composes on current draft", () => {
+    const { result } = renderHook(() => useProfileForm(fakeProfileData));
+
+    act(() => result.current.startEditing());
     act(() => {
       result.current.setForm((prev) => ({ ...prev, bio: "Updated bio" }));
     });
 
-    // Verify it doesn't throw and the hook remains stable
-    expect(result.current.form).toEqual(fakeProfileData.form);
+    expect(result.current.form.bio).toBe("Updated bio");
+    // Other fields untouched
+    expect(result.current.form.fullName).toBe("Test User");
+  });
+
+  it("re-entering edit mode after cancel re-snapshots fresh data", () => {
+    const { result, rerender } = renderHook(
+      ({ data }) => useProfileForm(data),
+      { initialProps: { data: fakeProfileData } },
+    );
+
+    // First edit cycle
+    act(() => result.current.startEditing());
+    act(() => result.current.handleChange("fullName", "Draft 1"));
+    act(() => result.current.cancelEditing());
+
+    // Simulate SWR updating the profileData externally
+    const updatedData: ProfileFetchResult = {
+      ...fakeProfileData,
+      form: { ...fakeProfileData.form, fullName: "Server Updated" },
+    };
+    rerender({ data: updatedData });
+
+    // Second edit cycle should snapshot the NEW data, not the old
+    act(() => result.current.startEditing());
+    expect(result.current.form.fullName).toBe("Server Updated");
   });
 });

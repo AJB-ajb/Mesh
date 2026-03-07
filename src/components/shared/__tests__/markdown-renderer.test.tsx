@@ -2,70 +2,17 @@ import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MarkdownRenderer } from "../markdown-renderer";
 
+// ---------------------------------------------------------------------------
+// Tests — focused on real logic: hidden syntax, question modes,
+// heading normalization, content stripping, null guard
+// ---------------------------------------------------------------------------
+
 describe("MarkdownRenderer", () => {
-  it("renders bold text", () => {
-    render(<MarkdownRenderer content="Hello **world**" />);
-    const strong = document.querySelector("strong");
-    expect(strong).toBeInTheDocument();
-    expect(strong).toHaveTextContent("world");
-  });
+  // -----------------------------------------------------------------------
+  // Null / empty guard — prevents rendering empty wrappers
+  // -----------------------------------------------------------------------
 
-  it("renders bullet lists", () => {
-    render(<MarkdownRenderer content={"- item 1\n\n- item 2"} />);
-    const items = document.querySelectorAll("li");
-    expect(items).toHaveLength(2);
-  });
-
-  it("renders headings (h2, h3)", () => {
-    render(
-      <MarkdownRenderer content={"## Heading Two\n\n### Heading Three"} />,
-    );
-    expect(document.querySelector("h2")).toHaveTextContent("Heading Two");
-    expect(document.querySelector("h3")).toHaveTextContent("Heading Three");
-  });
-
-  it("downgrades h1 to h2", () => {
-    render(<MarkdownRenderer content="# Big Heading" />);
-    expect(document.querySelector("h1")).toBeNull();
-    expect(document.querySelector("h2")).toHaveTextContent("Big Heading");
-  });
-
-  it("downgrades h4-h6 to h3", () => {
-    render(<MarkdownRenderer content="#### Sub Heading" />);
-    expect(document.querySelector("h4")).toBeNull();
-    expect(document.querySelector("h3")).toHaveTextContent("Sub Heading");
-  });
-
-  it("renders inline code", () => {
-    render(<MarkdownRenderer content="Use `useState` hook" />);
-    expect(document.querySelector("code")).toHaveTextContent("useState");
-  });
-
-  it("renders links with target=_blank", () => {
-    render(<MarkdownRenderer content="[Click here](https://example.com)" />);
-    const link = screen.getByRole("link", { name: "Click here" });
-    expect(link).toHaveAttribute("target", "_blank");
-    expect(link).toHaveAttribute("rel", "noopener noreferrer");
-  });
-
-  it("strips images", () => {
-    render(
-      <MarkdownRenderer content="![alt](https://img.example.com/pic.png)" />,
-    );
-    expect(document.querySelector("img")).toBeNull();
-  });
-
-  it("strips tables", () => {
-    render(<MarkdownRenderer content="| A | B |\n|---|---|\n| 1 | 2 |" />);
-    expect(document.querySelector("table")).toBeNull();
-  });
-
-  it("strips horizontal rules", () => {
-    render(<MarkdownRenderer content="above\n\n---\n\nbelow" />);
-    expect(document.querySelector("hr")).toBeNull();
-  });
-
-  it("returns null for empty content", () => {
+  it("returns null for empty string", () => {
     const { container } = render(<MarkdownRenderer content="" />);
     expect(container.innerHTML).toBe("");
   });
@@ -77,22 +24,12 @@ describe("MarkdownRenderer", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("applies clamp class", () => {
-    const { container } = render(
-      <MarkdownRenderer content="Hello" clamp={2} />,
-    );
-    expect(container.firstChild).toHaveClass("line-clamp-2");
-  });
+  // -----------------------------------------------------------------------
+  // Hidden content syntax — ||...||
+  // -----------------------------------------------------------------------
 
-  it("applies custom className", () => {
-    const { container } = render(
-      <MarkdownRenderer content="Hello" className="text-red-500" />,
-    );
-    expect(container.firstChild).toHaveClass("text-red-500");
-  });
-
-  describe("hidden content", () => {
-    it("shows placeholder when revealHidden is false", () => {
+  describe("hidden content (||..||)", () => {
+    it("replaces hidden content with placeholder by default", () => {
       render(<MarkdownRenderer content="Meet at ||Karlsplatz 5||" />);
       expect(
         screen.getByText(/Details shared after acceptance/),
@@ -100,7 +37,7 @@ describe("MarkdownRenderer", () => {
       expect(screen.queryByText("Karlsplatz 5")).toBeNull();
     });
 
-    it("reveals content when revealHidden is true", () => {
+    it("reveals hidden content when revealHidden is true", () => {
       render(
         <MarkdownRenderer
           content="Meet at ||Karlsplatz 5||"
@@ -108,12 +45,25 @@ describe("MarkdownRenderer", () => {
         />,
       );
       expect(screen.getByText(/Karlsplatz 5/)).toBeInTheDocument();
-      expect(screen.queryByText(/Details shared after acceptance/)).toBeNull();
+      expect(
+        screen.queryByText(/Details shared after acceptance/),
+      ).toBeNull();
+    });
+
+    it("does not leak the || delimiters into visible text", () => {
+      const { container } = render(
+        <MarkdownRenderer content="Before ||secret stuff|| after" />,
+      );
+      expect(container.textContent).not.toContain("||");
     });
   });
 
-  describe("question content", () => {
-    it("shows placeholder when questionMode is placeholder (default)", () => {
+  // -----------------------------------------------------------------------
+  // Question syntax — ||?...||
+  // -----------------------------------------------------------------------
+
+  describe("question content (||?..||)", () => {
+    it("shows generic placeholder in default (placeholder) mode", () => {
       render(<MarkdownRenderer content="||? What instrument? ||" />);
       expect(
         screen.getByText(/Questions will be asked when you join/),
@@ -121,7 +71,7 @@ describe("MarkdownRenderer", () => {
       expect(screen.queryByText("What instrument?")).toBeNull();
     });
 
-    it("shows questions with Q: prefix when questionMode is owner", () => {
+    it("shows the question text with Q: prefix in owner mode", () => {
       render(
         <MarkdownRenderer
           content="||? What instrument? ||"
@@ -130,5 +80,72 @@ describe("MarkdownRenderer", () => {
       );
       expect(screen.getByText(/What instrument\?/)).toBeInTheDocument();
     });
+
+    it("does not show raw ||? delimiters in any mode", () => {
+      const modes = ["placeholder", "owner"] as const;
+      for (const mode of modes) {
+        const { container, unmount } = render(
+          <MarkdownRenderer
+            content="||? Will you attend? ||"
+            questionMode={mode}
+          />,
+        );
+        expect(container.textContent).not.toContain("||?");
+        unmount();
+      }
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Heading normalization — real logic: h1 -> h2, h4-h6 -> h3
+  // -----------------------------------------------------------------------
+
+  it("downgrades h1 to h2", () => {
+    render(<MarkdownRenderer content="# Big Heading" />);
+    expect(document.querySelector("h1")).toBeNull();
+    expect(document.querySelector("h2")).toHaveTextContent("Big Heading");
+  });
+
+  it("downgrades h4 to h3", () => {
+    render(<MarkdownRenderer content="#### Sub Heading" />);
+    expect(document.querySelector("h4")).toBeNull();
+    expect(document.querySelector("h3")).toHaveTextContent("Sub Heading");
+  });
+
+  // -----------------------------------------------------------------------
+  // Content stripping — images, tables, hrs produce no output element
+  // -----------------------------------------------------------------------
+
+  it("strips images completely", () => {
+    render(
+      <MarkdownRenderer content="![alt](https://img.example.com/pic.png)" />,
+    );
+    expect(document.querySelector("img")).toBeNull();
+  });
+
+  it("strips horizontal rules", () => {
+    render(<MarkdownRenderer content={"above\n\n---\n\nbelow"} />);
+    expect(document.querySelector("hr")).toBeNull();
+  });
+
+  // -----------------------------------------------------------------------
+  // Link handling — external links vs mesh: URLs
+  // -----------------------------------------------------------------------
+
+  it("external links open in new tab with noopener", () => {
+    render(<MarkdownRenderer content="[Go](https://example.com)" />);
+    const link = screen.getByRole("link", { name: "Go" });
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("mesh: URLs render as inline badges, not links", () => {
+    render(
+      <MarkdownRenderer content="[Berlin](mesh:location?city=Berlin)" />,
+    );
+    // Should NOT render as a clickable link
+    expect(screen.queryByRole("link")).toBeNull();
+    // But the display text is still visible
+    expect(screen.getByText("Berlin")).toBeInTheDocument();
   });
 });

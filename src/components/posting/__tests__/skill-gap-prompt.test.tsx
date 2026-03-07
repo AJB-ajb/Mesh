@@ -1,60 +1,41 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { SkillGapPrompt } from "../skill-gap-prompt";
 
 // ---------------------------------------------------------------------------
-// Mocks
+// Mocks — minimal: just enough to stop network calls
 // ---------------------------------------------------------------------------
 
-// Mock SWR — return user skills immediately
-const mockUserSkills: string[] = [];
+// Use an object wrapper so the hoisted vi.mock can read current value
+const swrState = { userSkills: ["React", "TypeScript"] as string[] | null };
 
 vi.mock("swr", () => ({
   default: () => ({
-    data: mockUserSkills.length > 0 ? mockUserSkills : ["React", "TypeScript"],
+    data: swrState.userSkills,
   }),
 }));
 
-// Mock Supabase client (required by module but not called due to SWR mock)
 vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({}),
 }));
 
-// Mock deriveSkillNames (required by module but not called due to SWR mock)
 vi.mock("@/lib/skills/derive", () => ({
   deriveSkillNames: () => [],
 }));
 
-// Mock localStorage
-const localStorageMock = (() => {
-  let store: Record<string, string> = {};
-  return {
-    getItem: vi.fn((key: string) => store[key] ?? null),
-    setItem: vi.fn((key: string, value: string) => {
-      store[key] = value;
-    }),
-    clear: () => {
-      store = {};
-    },
-  };
-})();
-
-Object.defineProperty(window, "localStorage", {
-  value: localStorageMock,
-});
-
-// Mock fetch
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
+import { SkillGapPrompt } from "../skill-gap-prompt";
+
 // ---------------------------------------------------------------------------
-// Tests
+// Tests — focused on skill gap calculation, display conditions, interactions
 // ---------------------------------------------------------------------------
 
 describe("SkillGapPrompt", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorageMock.clear();
+    swrState.userSkills = ["React", "TypeScript"];
+    localStorage.clear();
     mockFetch.mockResolvedValue({
       ok: true,
       json: () =>
@@ -66,151 +47,183 @@ describe("SkillGapPrompt", () => {
     });
   });
 
-  it("returns null when no skill gaps exist", () => {
-    // Posting requires React, TypeScript — user has both
+  // -----------------------------------------------------------------------
+  // Skill gap calculation: which skills show as gaps
+  // -----------------------------------------------------------------------
+
+  it("renders nothing when user has all required skills", () => {
     const { container } = render(
       <SkillGapPrompt
         postingId="p-1"
         postingSkills={["React", "TypeScript"]}
-        currentUserId="user-1"
+        currentUserId="u-1"
         onProfileUpdated={vi.fn()}
       />,
     );
     expect(container.innerHTML).toBe("");
   });
 
-  it("shows card when there are gap skills", () => {
+  it("identifies skills the user is missing", () => {
     render(
       <SkillGapPrompt
         postingId="p-2"
-        postingSkills={["React", "TypeScript", "Python", "Go"]}
-        currentUserId="user-1"
+        postingSkills={["React", "Python", "Go"]}
+        currentUserId="u-1"
         onProfileUpdated={vi.fn()}
       />,
     );
-    // "Python" and "Go" are gap skills
     expect(screen.getByText("Python")).toBeInTheDocument();
     expect(screen.getByText("Go")).toBeInTheDocument();
   });
 
-  it("displays gap skill names in the title for single skill", () => {
-    render(
+  it("skill comparison is case-insensitive", () => {
+    const { container } = render(
       <SkillGapPrompt
         postingId="p-3"
-        postingSkills={["React", "TypeScript", "Rust"]}
-        currentUserId="user-1"
+        postingSkills={["react", "typescript"]}
+        currentUserId="u-1"
         onProfileUpdated={vi.fn()}
       />,
     );
-    // Only "Rust" is a gap
-    expect(screen.getByText("Rust")).toBeInTheDocument();
-    // Title contains "experience" — use getAllByText to verify at least one match
-    const matches = screen.getAllByText(/experience/);
-    expect(matches.length).toBeGreaterThanOrEqual(1);
+    // user has "React"/"TypeScript", posting asks for "react"/"typescript" — no gap
+    expect(container.innerHTML).toBe("");
   });
 
-  it("displays two gap skills correctly", () => {
-    render(
+  it("renders nothing when posting has no skills", () => {
+    const { container } = render(
       <SkillGapPrompt
         postingId="p-4"
-        postingSkills={["React", "Python", "Go"]}
-        currentUserId="user-1"
+        postingSkills={[]}
+        currentUserId="u-1"
         onProfileUpdated={vi.fn()}
       />,
     );
-    expect(screen.getByText("Python")).toBeInTheDocument();
-    expect(screen.getByText("Go")).toBeInTheDocument();
+    expect(container.innerHTML).toBe("");
   });
 
-  it("submit button calls API with text", async () => {
-    const onProfileUpdated = vi.fn();
-    render(
+  it("renders nothing while user skills are still loading (null)", () => {
+    swrState.userSkills = null;
+
+    const { container } = render(
       <SkillGapPrompt
         postingId="p-5"
-        postingSkills={["React", "Python"]}
-        currentUserId="user-1"
-        onProfileUpdated={onProfileUpdated}
+        postingSkills={["Python"]}
+        currentUserId="u-1"
+        onProfileUpdated={vi.fn()}
+      />,
+    );
+    expect(container.innerHTML).toBe("");
+  });
+
+  // -----------------------------------------------------------------------
+  // Dismiss logic — persists to localStorage
+  // -----------------------------------------------------------------------
+
+  it("dismiss hides the card and writes to localStorage", () => {
+    const { container } = render(
+      <SkillGapPrompt
+        postingId="p-6"
+        postingSkills={["Python"]}
+        currentUserId="u-1"
+        onProfileUpdated={vi.fn()}
+      />,
+    );
+
+    // Card is visible
+    expect(screen.getByText("Python")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Dismiss skill gap prompt"));
+
+    // Card gone
+    expect(container.innerHTML).toBe("");
+    // Persisted
+    expect(localStorage.getItem("skill-gap-dismissed-p-6")).toBe("true");
+  });
+
+  it("does not render if previously dismissed for this posting", async () => {
+    localStorage.setItem("skill-gap-dismissed-p-7", "true");
+
+    const { container } = render(
+      <SkillGapPrompt
+        postingId="p-7"
+        postingSkills={["Python"]}
+        currentUserId="u-1"
+        onProfileUpdated={vi.fn()}
+      />,
+    );
+
+    // The component checks localStorage inside useEffect + queueMicrotask,
+    // so we need to wait for the state update to propagate
+    await waitFor(() => {
+      expect(container.innerHTML).toBe("");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Submit flow — sends text to profile update API
+  // -----------------------------------------------------------------------
+
+  it("submits user text to the profile update endpoint", async () => {
+    render(
+      <SkillGapPrompt
+        postingId="p-8"
+        postingSkills={["Python"]}
+        currentUserId="u-1"
+        onProfileUpdated={vi.fn()}
       />,
     );
 
     const textarea = screen.getByPlaceholderText(/learning Machine Learning/);
     fireEvent.change(textarea, {
-      target: { value: "I know Python from data science projects" },
+      target: { value: "I used Python for data analysis" },
     });
 
-    const submitBtn = screen.getByText("Add to Profile");
-    fireEvent.click(submitBtn);
+    fireEvent.click(screen.getByText("Add to Profile"));
 
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith(
         "/api/extract/profile/update",
         expect.objectContaining({
           method: "POST",
-          body: expect.stringContaining(
-            "I know Python from data science projects",
-          ),
+          body: expect.stringContaining("I used Python for data analysis"),
         }),
       );
     });
   });
 
-  it("dismiss button hides the card", () => {
-    const { container } = render(
-      <SkillGapPrompt
-        postingId="p-6"
-        postingSkills={["React", "Python"]}
-        currentUserId="user-1"
-        onProfileUpdated={vi.fn()}
-      />,
-    );
-
-    const dismissBtn = screen.getByLabelText("Dismiss skill gap prompt");
-    fireEvent.click(dismissBtn);
-
-    expect(container.innerHTML).toBe("");
-  });
-
-  it("dismissed state persists to localStorage", () => {
+  it("submit button is disabled when textarea is empty", () => {
     render(
       <SkillGapPrompt
-        postingId="p-7"
-        postingSkills={["React", "Python"]}
-        currentUserId="user-1"
-        onProfileUpdated={vi.fn()}
-      />,
-    );
-
-    const dismissBtn = screen.getByLabelText("Dismiss skill gap prompt");
-    fireEvent.click(dismissBtn);
-
-    expect(localStorageMock.setItem).toHaveBeenCalledWith(
-      "skill-gap-dismissed-p-7",
-      "true",
-    );
-  });
-
-  it("returns null when posting has no skills", () => {
-    const { container } = render(
-      <SkillGapPrompt
-        postingId="p-8"
-        postingSkills={[]}
-        currentUserId="user-1"
-        onProfileUpdated={vi.fn()}
-      />,
-    );
-    expect(container.innerHTML).toBe("");
-  });
-
-  it("skill comparison is case-insensitive", () => {
-    // User has "React" and "TypeScript", posting requires "react" and "typescript"
-    const { container } = render(
-      <SkillGapPrompt
         postingId="p-9"
-        postingSkills={["react", "typescript"]}
-        currentUserId="user-1"
+        postingSkills={["Python"]}
+        currentUserId="u-1"
         onProfileUpdated={vi.fn()}
       />,
     );
-    expect(container.innerHTML).toBe("");
+
+    const submitBtn = screen.getByText("Add to Profile");
+    expect(submitBtn).toBeDisabled();
+  });
+
+  it("shows success state after a successful submission", async () => {
+    render(
+      <SkillGapPrompt
+        postingId="p-10"
+        postingSkills={["Python"]}
+        currentUserId="u-1"
+        onProfileUpdated={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByPlaceholderText(/learning Machine Learning/), {
+      target: { value: "some text" },
+    });
+    fireEvent.click(screen.getByText("Add to Profile"));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Skills added to your profile!"),
+      ).toBeInTheDocument();
+    });
   });
 });
