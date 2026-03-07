@@ -13,22 +13,28 @@ Promote `dev` to `main`, run the full test suite (fixing any failures), apply mi
 Before anything else, verify the starting conditions.
 
 1. **On `dev` branch** in the main repo (`/home/ajb/repos/Mesh`):
+
    ```
    git branch --show-current
    ```
+
    If not on `dev`, switch to it. If there are uncommitted changes, abort and tell the user to commit or stash first.
 
 2. **Dev is up to date with remote**:
+
    ```
    git fetch origin
    git status -uno
    ```
+
    If `dev` is behind `origin/dev`, pull first. If ahead, push first (ask the user).
 
 3. **Check what's new since last release** — find the diff between `main` and `dev`:
+
    ```
    git log main..dev --oneline
    ```
+
    If there are no commits, abort — nothing to release.
 
 4. **Show the user a summary** of what will be released: commit count, migration count, and a brief list of notable changes. Ask for confirmation before proceeding.
@@ -38,34 +44,51 @@ Before anything else, verify the starting conditions.
 All tests must pass before opening the PR. Run them sequentially so failures are easy to diagnose.
 
 ### 2a. Type check
+
 ```
 pnpm tsc --noEmit
 ```
 
 ### 2b. Lint
+
 ```
 pnpm lint
 ```
 
 ### 2c. Unit tests
+
 ```
 pnpm test:run
 ```
 
 ### 2d. Build
+
 ```
 pnpm build
 ```
+
 The build must succeed — it catches SSR issues, missing imports, and Suspense boundary problems that unit tests won't find.
 
 ### 2e. E2E tests
+
 ```
 pnpm test:e2e
 ```
 
+### 2f. pgTAP (RLS tests)
+
+```bash
+source .env
+PW=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$SUPABASE_DB_PASSWORD', safe=''))")
+supabase test db --db-url "postgresql://postgres:${PW}@db.wcfpmyiaauclgugjrntu.supabase.co:5432/postgres"
+```
+
+Ignore failures in tests with hardcoded row counts (e.g. `01_profiles_rls.sql` expecting 3 profiles) — these are known false positives against the remote dev DB. All RLS policy logic tests must pass.
+
 ### Handling failures
 
 If any step fails:
+
 1. Analyze the failure and determine the root cause.
 2. Create a worktree (`git worktree add ../Mesh-fix/release-fixes -b fix/release-fixes dev`) and fix the issue there.
 3. Land the fix back to `dev` using the `/land` skill.
@@ -79,16 +102,19 @@ The goal is a green test suite on `dev` before the PR is opened — the PR shoul
 Compare migration status between local and the **production** Supabase project.
 
 1. **Save the currently linked project ref** so we can restore it later:
+
    ```
    cat supabase/.temp/project-ref
    ```
 
 2. **Link to production**:
+
    ```
    npx supabase link --project-ref jirgkhjdxahfsgqxprhh
    ```
 
 3. **List migration status**:
+
    ```
    npx supabase migration list --linked
    ```
@@ -105,6 +131,7 @@ Do NOT push migrations yet — that happens after the PR is merged (step 6).
 ## 4. Version Bump
 
 Determine the version bump from `$ARGUMENTS` or infer it:
+
 - **major** — breaking changes or major milestones
 - **minor** — new features (default if migrations or new features are present)
 - **patch** — bug fixes only
@@ -166,28 +193,33 @@ Tell the user the PR URL and ask them to review and merge when ready.
 After the user confirms the PR is merged:
 
 1. **Pull main**:
+
    ```
    git checkout main
    git pull
    ```
 
 2. **Switch back to dev** and fast-forward it:
+
    ```
    git checkout dev
    git pull
    ```
 
 3. **Link to production**:
+
    ```
    npx supabase link --project-ref jirgkhjdxahfsgqxprhh
    ```
 
 4. **Push migrations** (if any were pending):
+
    ```
    npx supabase db push
    ```
 
 5. **Re-link to dev project**:
+
    ```
    npx supabase link --project-ref wcfpmyiaauclgugjrntu
    ```

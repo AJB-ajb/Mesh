@@ -1,7 +1,8 @@
 -- pgTAP tests for friendships and friend_asks RLS policies
 
 BEGIN;
-SELECT plan(10);
+SET search_path TO extensions, public, auth;
+SELECT plan(14);
 SELECT tests.create_test_users();
 
 -- Seed: Alice sends friend request to Bob
@@ -114,6 +115,54 @@ SELECT is(
   (SELECT count(*)::int FROM public.friend_asks),
   0,
   'Carol cannot see any friend_asks'
+);
+
+-- ============================================
+-- Friend asks UPDATE: invitee can update (accept/decline)
+-- ============================================
+
+SELECT tests.authenticate_as(tests.bob());
+SET LOCAL ROLE authenticated;
+SELECT lives_ok(
+  $$UPDATE public.friend_asks SET status = 'accepted' WHERE id = '20000000-0000-0000-0000-000000000001'$$,
+  'Bob (invitee in ordered_friend_list) can update friend_ask status'
+);
+
+SELECT is(
+  (SELECT status FROM public.friend_asks WHERE id = '20000000-0000-0000-0000-000000000001'),
+  'accepted',
+  'Bob update actually changed the status to accepted'
+);
+
+-- Reset status for next test
+SELECT tests.clear_authentication();
+RESET ROLE;
+UPDATE public.friend_asks SET status = 'pending' WHERE id = '20000000-0000-0000-0000-000000000001';
+
+-- Outsider cannot update
+SELECT tests.authenticate_as(tests.carol());
+SET LOCAL ROLE authenticated;
+UPDATE public.friend_asks SET status = 'cancelled' WHERE id = '20000000-0000-0000-0000-000000000001';
+
+-- Verify status unchanged (Carol's update was silently dropped by RLS)
+SELECT tests.clear_authentication();
+RESET ROLE;
+SELECT is(
+  (SELECT status FROM public.friend_asks WHERE id = '20000000-0000-0000-0000-000000000001'),
+  'pending',
+  'Carol (outsider) cannot update friend_ask — status unchanged'
+);
+
+-- ============================================
+-- Friend asks UPDATE: invitee cannot modify structural columns
+-- ============================================
+
+SELECT tests.authenticate_as(tests.bob());
+SET LOCAL ROLE authenticated;
+SELECT throws_ok(
+  $$UPDATE public.friend_asks SET creator_id = 'b0000000-0000-0000-0000-000000000002' WHERE id = '20000000-0000-0000-0000-000000000001'$$,
+  NULL,
+  'Bob (invitee) cannot change creator_id — trigger blocks it'
 );
 
 SELECT * FROM finish();
