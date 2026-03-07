@@ -102,6 +102,10 @@ public/swe-worker*
 # Sentry
 .sentryclirc
 
+# Report screenshots (binary, not tracked)
+.reports/screenshots/*
+!.reports/screenshots/.gitkeep
+
 # Test artifacts
 test-results/
 unit-test-results/
