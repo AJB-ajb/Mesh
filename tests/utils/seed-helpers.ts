@@ -136,6 +136,35 @@ export async function seedMatch(
 }
 
 /**
+ * Seed a friend_ask directly into the database
+ */
+export async function seedFriendAskDirect(friendAskData: {
+  posting_id: string;
+  creator_id: string;
+  ordered_friend_list: string[];
+  pending_invitees?: string[];
+  invite_mode?: "sequential" | "parallel";
+  status?: string;
+  current_request_index?: number;
+}): Promise<{ id: string }> {
+  if (!supabaseAdmin) {
+    throw new Error("SUPABASE_SECRET_KEY required for seedFriendAskDirect");
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("friend_asks")
+    .insert(friendAskData)
+    .select("id")
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to seed friend_ask: ${error.message}`);
+  }
+
+  return data;
+}
+
+/**
  * Clean up test data by deleting a user (cascading deletes handle the rest)
  */
 export async function cleanupTestData(userId: string): Promise<void> {
