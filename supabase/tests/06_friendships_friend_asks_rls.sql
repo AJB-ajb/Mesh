@@ -1,6 +1,7 @@
 -- pgTAP tests for friendships and friend_asks RLS policies
 
 BEGIN;
+SET search_path TO extensions, public, auth;
 SELECT plan(13);
 SELECT tests.create_test_users();
 
