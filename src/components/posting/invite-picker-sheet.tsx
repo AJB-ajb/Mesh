@@ -6,7 +6,6 @@ import {
   X,
   UserPlus,
   Search,
-  Check,
   Sparkles,
 } from "lucide-react";
 
@@ -126,7 +125,10 @@ export function InvitePickerSheet({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={(isOpen) => {
+      if (!isOpen) setFilter("");
+      onOpenChange(isOpen);
+    }}>
       <SheetContent
         side="bottom"
         className="max-h-[85vh] rounded-t-xl"
@@ -154,8 +156,8 @@ export function InvitePickerSheet({
             <div className="space-y-1">
               <p className="text-xs font-medium text-muted-foreground">
                 {inviteMode === "sequential"
-                  ? "Ask order (drag to reorder)"
-                  : "Selected connections"}
+                  ? labels.invite.pickerAskOrder
+                  : labels.invite.pickerSelected}
               </p>
               {selectedConnections.map((connection, index) => (
                 <div
@@ -261,11 +263,7 @@ export function InvitePickerSheet({
                   onClick={() => addConnection(connection)}
                   className="flex w-full items-center gap-3 rounded-md p-2 text-left text-sm transition-colors hover:bg-accent/50"
                 >
-                  <div className="flex size-4 shrink-0 items-center justify-center rounded border border-muted-foreground">
-                    {selectedIds.has(connection.user_id) && (
-                      <Check className="size-3" />
-                    )}
-                  </div>
+                  <UserPlus className="size-4 text-muted-foreground shrink-0" />
                   <span className="truncate">{connection.full_name}</span>
                 </button>
               ))}

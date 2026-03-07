@@ -1176,6 +1176,8 @@ export const labels = {
     pickerSuggested: "Suggested",
     pickerDone: "Done",
     pickerInviteMore: "Invite more",
+    pickerAskOrder: "Ask order (drag to reorder)",
+    pickerSelected: "Selected connections",
   },
 
   // ---------------------------------------------------------------------------

@@ -109,6 +109,7 @@ export function PostingOwnerManageView() {
               <PostingContextBar
                 state={contextBar}
                 onChange={handleContextBarChange}
+                currentUserId={currentUserId ?? undefined}
               />
             </div>
           )}
