@@ -79,7 +79,7 @@ pnpm test:e2e
 
 ```bash
 source .env
-PW=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$SUPABASE_DB_PASSWORD', safe='')")
+PW=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$SUPABASE_DB_PASSWORD', safe=''))")
 supabase test db --db-url "postgresql://postgres:${PW}@db.wcfpmyiaauclgugjrntu.supabase.co:5432/postgres"
 ```
 
