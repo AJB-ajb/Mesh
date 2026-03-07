@@ -119,15 +119,15 @@ mesh/
 
 ### Deployment
 
-Deploy to [Vercel](https://vercel.com) (recommended). See [Vercel Deployment Guide](./docs/vercel-deployment.md) for detailed instructions.
+Deploy to [Vercel](https://vercel.com) (recommended). See [Vercel Deployment Guide](./docs/runbooks/vercel-deployment.md) for detailed instructions.
 
 ### Documentation
 
+- [Product Spec Index](./spec/README.md)
 - [Architecture Overview](./docs/architecture.md)
 - [Data Model](./docs/data-model.md)
 - [External Services](./docs/services.md)
-- [Vercel Deployment Guide](./docs/vercel-deployment.md)
-- [Product Spec](./spec/mesh.md)
+- [Vercel Deployment Guide](./docs/runbooks/vercel-deployment.md)
 
 ## License
 
