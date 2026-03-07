@@ -1,10 +1,12 @@
 # UX Spec
 
+> UX principles, layout architecture, page structure, interaction patterns, and voice & tone.
+
 ## Design Principles
 
 1. **Minimal friction** — no required configuration, one-click OAuth, 30-second onboarding (see below)
 2. **Fast, simple, efficient usage**
-   - **Text-first:** the default input is a single text field — write what you want, post it, done. Structure is derived from text, not inputted through forms. See [text_first_rewrite.md](../.prompts/text_first_rewrite.md).
+   - **Text-first:** the default input is a single text field — write what you want, post it, done. Structure is derived from text, not inputted through forms. See [1-text-first.md](1-text-first.md).
    - **Keyboard-first:** text fields are navigable and completable via keyboard (Tab, Enter, shortcuts)
 3. **Idea-first** — start from what you want to do, not from building a profile
 4. **Natural language interface** — voice and text input, AI extracts structured data
@@ -135,7 +137,7 @@ Target: a not-yet-registered user with a written project description can post in
 3. Paste project description into free-form field
 4. Post
 
-Personal profile configuration is **not required** to create a posting. It can be completed later to improve matching quality. See [vision.md](vision.md) for the product reasoning behind this.
+Personal profile configuration is **not required** to create a posting. It can be completed later to improve matching quality. See [0-vision.md](0-vision.md) for the product reasoning behind this.
 
 ## Page Layouts
 
@@ -147,7 +149,7 @@ Single unified feed replacing the old Postings (Discover tab), Matches, and Book
 - **Sort control:** match score (default), newest, etc.
 - **Saved filter:** toggle to show only bookmarked postings
 - **Filter panel** (collapsible): category, visibility (public/private), location, team size, time commitment
-- **Posting cards** in a flat list — text-first rendering (see [text_first_rewrite.md §6](../.prompts/todo/text_first_rewrite.md)):
+- **Posting cards** in a flat list — text-first rendering (see [1-text-first.md](1-text-first.md)):
   - Creator name + time ago (top, like a message sender)
   - Posting text as primary content (3–4 lines, not truncated to 2)
   - Title is the first line of text (rendered slightly bolder), not a separate field
@@ -192,7 +194,7 @@ Tabs that are not yet relevant are shown but disabled.
 
 ### Active (`/active`)
 
-List of projects where min team size has been reached — both created and joined. With the nested posting model (see [nested-postings.md](nested-postings.md)), Active becomes the hub for ongoing coordination: each group shows its child postings (meetings, task assignments, updates) in a Coordination section alongside Chat.
+List of projects where min team size has been reached — both created and joined. With the nested posting model (see [nested-postings.md](1-nested-postings.md)), Active becomes the hub for ongoing coordination: each group shows its child postings (meetings, task assignments, updates) in a Coordination section alongside Chat.
 
 - **Project/group cards** showing:
   - Title, team fill `current / min (max)`
@@ -285,7 +287,7 @@ Not a page — lives in the **header bell icon** as a dropdown.
 
 ### Text-First Input (v0.3+)
 
-The posting and profile input paradigm is text-first. See [text_first_rewrite.md](../.prompts/todo/text_first_rewrite.md) for the full spec. Key changes:
+The posting and profile input paradigm is text-first. See [1-text-first.md](1-text-first.md) for the full spec. Key changes:
 
 - **Primary input is a text field**, not a multi-step form. Write what you want, post it, done.
 - **Structure is derived, not inputted.** LLM extracts metadata (skills, time, location, category) from text in the background after posting.

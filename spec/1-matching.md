@@ -1,8 +1,10 @@
 # Matching
 
+> How users and postings are matched — dimensions, scoring, two-stage pipeline, deep LLM evaluation.
+
 ## Overview
 
-This document defines how users and postings are matched based on compatibility. The goal is not perfect matching — just better than random chance.
+The goal is not perfect matching — just better than random chance.
 
 ### Design Principles
 
@@ -24,7 +26,7 @@ This document defines how users and postings are matched based on compatibility.
   2. Soft scoring on remaining candidates
 - Semantic matching via pgvector for embedding similarity (posting descriptions, tags, natural language criteria)
 - Keep raw inputs (e.g., "prefer Monday evening") for user editing and display
-- **Context-scoped matching**: Candidate pool narrows by posting context — global for top-level postings, channel members for channel children, no matching for small group sub-postings. See [nested-postings.md](nested-postings.md) Section 8.
+- **Context-scoped matching**: Candidate pool narrows by posting context — global for top-level postings, channel members for channel children, no matching for small group sub-postings. See [nested-postings.md](1-nested-postings.md) Section 8.
 
 ### User Experience
 
@@ -57,7 +59,7 @@ Preferred collaboration mode (person-level default, can be overridden per postin
 - **Collaboration intensity** (0-10 scale): From fully independent to constant joint work
 - **Preferred activities**: Pair programming, whiteboarding, async review, brainstorming, etc.
 
-This is one of the most significant interpersonal differences in collaborative work (see [vision.md](vision.md)).
+This is one of the most significant interpersonal differences in collaborative work (see [vision.md](0-vision.md)).
 
 #### Location Mode
 
@@ -69,7 +71,7 @@ Where collaboration or activity happens (person-level default, can be overridden
 
 #### Availability
 
-See [availability-calendar.md](availability-calendar.md) for the full availability spec including minute-level windows, calendar sync, and overlap scoring.
+See [availability-calendar.md](1-availability.md) for the full availability spec including minute-level windows, calendar sync, and overlap scoring.
 
 ---
 
@@ -80,7 +82,7 @@ See [availability-calendar.md](availability-calendar.md) for the full availabili
 - **Category**:
   - Coarse categories (for fast filtering): Study, Hackathon, Personal, Professional, Social
   - Free-form tags/keywords (matched via overlap or pgvector embedding similarity)
-- **Parent posting**: Child postings are scoped to their parent's participants. Replaces the deprecated `context_identifier` string field. See [nested-postings.md](nested-postings.md).
+- **Parent posting**: Child postings are scoped to their parent's participants. Replaces the deprecated `context_identifier` string field. See [nested-postings.md](1-nested-postings.md).
 - **Natural language criteria**: Optional, stored as pgvector embeddings for semantic matching beyond structured dimensions
 - **Capacity**: How many people the poster is looking for (default: 1)
 - **Deadline**: When the posting closes to new join requests
@@ -194,7 +196,7 @@ Users can adjust weights to reflect their priorities.
 
 ### Stage 2: Deep Match — LLM Evaluation (v0.5)
 
-> Added by the text-first rewrite. See [text_first_rewrite.md](../.prompts/todo/text_first_rewrite.md) §7.
+> See [1-text-first.md](1-text-first.md) for the text-first matching philosophy.
 
 For the top ~10–20 candidates from Stages 1–2, an LLM evaluates the full text of both sides for nuanced compatibility that structured data can't capture (communication style, project approach, complementary experience).
 

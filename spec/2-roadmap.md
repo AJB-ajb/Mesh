@@ -1,5 +1,7 @@
 # Roadmap
 
+> Milestone tracking, implementation status, and version history. The only place with checkboxes and version numbers.
+
 ## Version & Status
 
 - **Current version**: 0.5.0
@@ -90,7 +92,7 @@
 - [x] Project group chat — group messaging per posting (Project tab), distinct from 1:1 DMs
 - [x] Connections page — split layout: connection list with DMs, pending requests, add/QR/share
 - [x] Connection improvements — QR code, share profile link, connect button, search by name/email
-- [x] Availability input & matching — minute-level windows, quick/detailed mode, overlap scoring. Phases 1–2 of [availability-calendar spec](availability-calendar.md)
+- [x] Availability input & matching — minute-level windows, quick/detailed mode, overlap scoring. Phases 1–2 of [availability-calendar spec](1-availability.md)
 
 ### Text-First Posting & Navigation (v0.3)
 
@@ -139,11 +141,11 @@
 
 ## Milestones
 
-> **Direction**: The text-first rewrite ([text_first_rewrite.md](../.prompts/todo/text_first_rewrite.md)) is the primary design document. Milestones are organized around its phases. Where this roadmap and the text-first spec conflict, the text-first spec takes precedence.
+> **Direction**: [1-text-first.md](1-text-first.md) defines the text-first philosophy. Milestones are organized around its phases. Where this roadmap and the behavior specs conflict, the specs take precedence.
 
 ### v0.6 — Text-First Rendering & Syntax
 
-The editor and rendering system adopt the new markdown syntax (`mesh:` links, `||hidden||`, `||?||`) and the text-first card rendering philosophy. See [text_first_rewrite.md](../.prompts/todo/text_first_rewrite.md) §3a, §3b, §6.
+The editor and rendering system adopt the new markdown syntax (`mesh:` links, `||hidden||`, `||?||`) and the text-first card rendering philosophy. See [1-text-first.md](1-text-first.md) §3a, §3b, §6.
 
 | Feature                        | Issue | Effort | Description                                                                                                                                                                                                                                     |
 | ------------------------------ | ----- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -165,7 +167,7 @@ The editor and rendering system adopt the new markdown syntax (`mesh:` links, `|
 
 ### v0.7 — Command Palette & Coordination
 
-Expand slash commands into a full command palette. Add link invites and repost for coordination efficiency. See [text_first_rewrite.md](../.prompts/todo/text_first_rewrite.md) §4.
+Expand slash commands into a full command palette. Add link invites and repost for coordination efficiency. See [1-text-first.md](1-text-first.md) §4.
 
 | Feature                         | Issue | Effort    | Description                                                                                                      |
 | ------------------------------- | ----- | --------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -180,7 +182,7 @@ Expand slash commands into a full command palette. Add link invites and repost f
 
 ### v0.8 — Smart Acceptance & Calendar
 
-LLM-generated acceptance flow that eliminates post-acceptance back-and-forth. See [text_first_rewrite.md](../.prompts/todo/text_first_rewrite.md) §11.
+LLM-generated acceptance flow that eliminates post-acceptance back-and-forth. See [1-text-first.md](1-text-first.md) §11.
 
 | Feature                         | Issue | Effort       | Description                                                                                                          |
 | ------------------------------- | ----- | ------------ | -------------------------------------------------------------------------------------------------------------------- |
@@ -211,7 +213,7 @@ Minimal native Android shell wrapping the hosted web app. iOS deferred — PWA c
 | Feature               | Issue | Effort       | Description                                                                                                                                                      |
 | --------------------- | ----- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Email + push notifs   | #14   | Large        | Email and push delivery channels (in-app already implemented)                                                                                                    |
-| Channels              | #27   | Medium-Large | Shared posting contexts for hackathons, courses, orgs. Subsumed by [nested-postings.md](nested-postings.md) — channels are parent postings with open membership. |
+| Channels              | #27   | Medium-Large | Shared posting contexts for hackathons, courses, orgs. Subsumed by [nested-postings.md](1-nested-postings.md) — channels are parent postings with open membership. |
 | Match pre-computation | #13   | Large        | Background pre-computation for instant match results at scale                                                                                                    |
 | LLM cost tiering      | —     | Medium       | Tier models by feature: cheap for format, mid for extraction, high for deep matching                                                                             |
 | Production hardening  | —     | Large        | Performance audit, error monitoring, rate limiting, security review                                                                                              |
@@ -223,7 +225,7 @@ Minimal native Android shell wrapping the hosted web app. iOS deferred — PWA c
 | Posting images               | #29   | Medium       | Upload and display images on postings (Supabase Storage)                                                                                                                               |
 | Ghost text (LLM suggestions) | —     | Medium       | Context-aware inline suggestions as user types, including prefilled slash commands                                                                                                     |
 | Auto-translation             | —     | Medium-Large | Posts auto-translated based on user language settings                                                                                                                                  |
-| Recurring postings           | —     | Medium       | `/recur weekly tue` — auto-create posting instances on schedule. Uses nested posting model: instances are children of a standing parent. See [nested-postings.md](nested-postings.md). |
+| Recurring postings           | —     | Medium       | `/recur weekly tue` — auto-create posting instances on schedule. Uses nested posting model: instances are children of a standing parent. See [nested-postings.md](1-nested-postings.md). |
 | Daily digest                 | —     | Medium       | Cron-based email digest of new relevant postings (Resend)                                                                                                                              |
 
 ---

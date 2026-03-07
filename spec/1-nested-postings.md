@@ -1,6 +1,6 @@
 # Nested Postings & Coordination Contexts
 
-> **Scope**: This document specifies the nested posting model — how postings serve as coordination contexts that can contain sub-postings, replacing several separate concepts (channels, context identifiers, meeting proposals) with a single general mechanism. It amends `spec/matching.md`, `spec/terminology.md`, `spec/ux.md`, and the channel/context-identifier features in `spec/mesh.md` and `spec/roadmap.md`.
+> Nested posting model — how postings serve as coordination contexts with sub-postings, replacing channels, context identifiers, and meeting proposals with a single parent-child mechanism.
 
 ---
 
@@ -47,7 +47,7 @@ The nested posting model unifies several previously separate concepts:
 | Channels (v1.0 roadmap) | Parent postings with open membership and many children |
 | Meeting proposals | Conceptually a child posting (see [Section 6](#6-meeting-proposals)) |
 | Recurring posting instances | Children of a standing parent posting |
-| "Defaults from other postings" (matching.md) | Context inheritance via parent |
+| "Defaults from other postings" (1-matching.md) | Context inheritance via parent |
 
 One relationship (`parent_posting_id`) replaces all of these.
 
@@ -504,13 +504,13 @@ Phase 1 is the foundation. Everything else builds on a single FK column.
 
 ## 14. Integration Points
 
-- **`spec/matching.md`**: Candidate pool narrows by context (`parent.participants ?? all_users`). Fast filter gets lighter as context narrows. Deep match receives parent chain as additional context. See [Section 8](#8-matching-in-the-nested-model).
-- **`spec/scheduling-intelligence.md`**: Slot generation works the same but inherits context. A child posting "meet Thursday?" within a group auto-scopes to the group's members for calendar overlap. The scheduling intelligence layer receives parent context for smarter suggestions.
-- **`spec/availability-calendar.md`**: Team scheduling (Part C) naturally maps to child postings — the "propose a meeting" flow is a child posting negotiating "when."
-- **`.prompts/todo/text_first_rewrite.md`**: Composition UX aligns with text-first philosophy — same editor everywhere, context determines scope. Slash commands work in child postings with inherited context.
-- **`spec/ux.md`**: Posts page (Joined filter) gains group view with coordination section. Discover gains context-scoped mode.
-- **`spec/terminology.md`**: New terms: "group" (small parent posting), "channel" (large parent posting). `context_identifier` deprecated.
-- **`spec/roadmap.md`**: Channels (v1.0) and recurring postings (v1.1) are subsumed by this model and can be reprioritized.
+- **[1-matching.md](1-matching.md)**: Candidate pool narrows by context (`parent.participants ?? all_users`). Fast filter gets lighter as context narrows. Deep match receives parent chain as additional context. See [Section 8](#8-matching-in-the-nested-model).
+- **[1-scheduling.md](1-scheduling.md)**: Slot generation works the same but inherits context. A child posting "meet Thursday?" within a group auto-scopes to the group's members for calendar overlap.
+- **[1-availability.md](1-availability.md)**: Team scheduling (Part C) naturally maps to child postings — the "propose a meeting" flow is a child posting negotiating "when."
+- **[1-text-first.md](1-text-first.md)**: Composition UX aligns with text-first philosophy — same editor everywhere, context determines scope. Slash commands work in child postings with inherited context.
+- **[1-ux.md](1-ux.md)**: Posts page (Joined filter) gains group view with coordination section. Discover gains context-scoped mode.
+- **[1-terminology.md](1-terminology.md)**: New terms: "group" (small parent posting), "channel" (large parent posting). `context_identifier` deprecated.
+- **[2-roadmap.md](2-roadmap.md)**: Channels (v1.0) and recurring postings (v1.1) are subsumed by this model and can be reprioritized.
 
 ---
 
