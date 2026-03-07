@@ -163,7 +163,7 @@ function MobilePicker({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="overflow-y-auto scrollbar-none"
+        className="overflow-y-auto scrollbar-hide"
         style={{
           height: VISIBLE_ITEMS * ITEM_HEIGHT,
           scrollSnapType: "y mandatory",

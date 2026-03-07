@@ -157,6 +157,19 @@ export function UnifiedPostingCard({
     locationName ?? null,
   );
 
+  // Strip first line from description when it was used as the title (avoid duplication)
+  const displayDescription = (() => {
+    if (!description || title) return description;
+    const firstLine = description.split(/\n/)[0]?.trim() ?? "";
+    if (!firstLine) return description;
+    const extracted = extractTitleFromDescription(description);
+    if (displayTitle === extracted) {
+      const rest = description.slice(description.indexOf("\n") + 1).trim();
+      return rest || description;
+    }
+    return description;
+  })();
+
   // Posting link
   const postingHref = isFull
     ? activeTab === "discover"
@@ -202,7 +215,7 @@ export function UnifiedPostingCard({
 
             {/* Description — clamped to 2 lines */}
             <MarkdownRenderer
-              content={description}
+              content={displayDescription}
               clamp={2}
               className="mt-1 text-muted-foreground"
             />
@@ -463,7 +476,7 @@ export function UnifiedPostingCard({
 
         {/* Description — clamped responsively */}
         <MarkdownRenderer
-          content={description}
+          content={displayDescription}
           className="text-muted-foreground line-clamp-2 md:line-clamp-4"
         />
 
