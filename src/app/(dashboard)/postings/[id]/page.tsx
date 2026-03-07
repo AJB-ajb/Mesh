@@ -57,7 +57,7 @@ function PostingDetailInner() {
   // Determine active tab from URL or context
   const tabParam = searchParams.get("tab");
   const defaultTab =
-    tabParam === "edit" || tabParam === "manage" || tabParam === "project"
+    tabParam === "manage" || tabParam === "project"
       ? tabParam
       : "manage";
   const [activeTab, setActiveTab] = useState(defaultTab);

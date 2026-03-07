@@ -8,8 +8,7 @@ import { useExtractionReview } from "@/lib/hooks/use-extraction-review";
 import { usePostingCoreContext } from "./posting-core-context";
 import { PostingDetailHeader } from "./posting-detail-header";
 import { ExtractionReviewCard } from "./extraction-review-card";
-import { PostingEditTab } from "./posting-edit-tab";
-import { PostingManageTab } from "./posting-manage-tab";
+import { PostingOwnerManageView } from "./posting-owner-manage-view";
 import { PostingActivityTab } from "./posting-activity-tab";
 
 export function PostingOwnerView() {
@@ -58,9 +57,6 @@ export function PostingOwnerView() {
         }}
       >
         <TabsList variant="line">
-          <TabsTrigger value="edit">
-            {labels.postingDetail.tabs.edit}
-          </TabsTrigger>
           <TabsTrigger value="manage">
             {labels.postingDetail.tabs.manage}
           </TabsTrigger>
@@ -75,12 +71,8 @@ export function PostingOwnerView() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="edit">
-          <PostingEditTab />
-        </TabsContent>
-
         <TabsContent value="manage">
-          <PostingManageTab />
+          <PostingOwnerManageView />
         </TabsContent>
 
         <TabsContent value="project">
