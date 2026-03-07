@@ -32,5 +32,13 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "public/sw.js", "scripts", "tests/e2e", "tests/utils/factories", "tests/utils/seed-helpers.ts"]
+  "exclude": [
+    "node_modules",
+    "public/sw.js",
+    "scripts",
+    "tests/e2e",
+    "tests/e2e-full",
+    "tests/utils/factories",
+    "tests/utils/seed-helpers.ts"
+  ]
 }

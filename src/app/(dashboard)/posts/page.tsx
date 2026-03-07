@@ -67,7 +67,7 @@ function PostsContent() {
       </div>
 
       {/* Filter chips */}
-      <div className="flex gap-3 overflow-x-auto scrollbar-hide">
+      <div className="flex flex-wrap gap-2">
         {FILTERS.map((filter) => (
           <button
             key={filter}

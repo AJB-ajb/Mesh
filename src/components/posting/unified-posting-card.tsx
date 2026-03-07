@@ -431,7 +431,7 @@ export function UnifiedPostingCard({
           </div>
 
           {/* Action buttons */}
-          <div className="flex flex-col gap-2 w-full sm:flex-row sm:w-auto">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             {!isOwner && onToggleBookmark && (
               <Button
                 variant="ghost"
@@ -477,7 +477,7 @@ export function UnifiedPostingCard({
         {/* Description — clamped responsively */}
         <MarkdownRenderer
           content={displayDescription}
-          className="text-muted-foreground line-clamp-2 md:line-clamp-4"
+          className="text-muted-foreground line-clamp-1 sm:line-clamp-2 md:line-clamp-4"
         />
 
         {/* Compatibility Breakdown (collapsible) */}
@@ -526,7 +526,7 @@ export function UnifiedPostingCard({
         )}
 
         {/* Meta line */}
-        <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
           {teamSizeMax != null && (
             <span className="flex items-center gap-1.5">
               <Users className="size-4" />
