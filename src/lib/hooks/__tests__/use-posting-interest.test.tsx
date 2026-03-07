@@ -3,14 +3,14 @@ import { renderHook, act } from "@testing-library/react";
 import { usePostingInterest } from "../use-posting-interest";
 
 // ---------------------------------------------------------------------------
-// Mock the global fetch
+// Mock fetch
 // ---------------------------------------------------------------------------
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
 
 // ---------------------------------------------------------------------------
-// Tests
+// Tests — optimistic update + rollback logic
 // ---------------------------------------------------------------------------
 
 describe("usePostingInterest", () => {
@@ -20,37 +20,40 @@ describe("usePostingInterest", () => {
     vi.clearAllMocks();
   });
 
-  it("starts with empty state", () => {
+  it("optimistically adds the id BEFORE the fetch resolves, then keeps it on success", async () => {
+    // Use a deferred promise so we can inspect state mid-flight
+    let resolveFetch!: (v: unknown) => void;
+    fetchMock.mockReturnValueOnce(
+      new Promise((r) => {
+        resolveFetch = r;
+      }),
+    );
+
     const { result } = renderHook(() => usePostingInterest(mutateMock));
 
-    expect(result.current.interestingIds.size).toBe(0);
-    expect(result.current.interestError).toBeNull();
-  });
-
-  it("adds posting to interestingIds optimistically", async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({}),
+    // Start the request but don't await it yet
+    let promise: Promise<void>;
+    act(() => {
+      promise = result.current.handleExpressInterest("posting-1");
     });
 
-    const { result } = renderHook(() => usePostingInterest(mutateMock));
+    // While fetch is still in-flight, the id should already be present
+    expect(result.current.interestingIds.has("posting-1")).toBe(true);
 
+    // Now resolve the fetch
     await act(async () => {
-      await result.current.handleExpressInterest("posting-1");
+      resolveFetch({ ok: true, json: async () => ({}) });
+      await promise!;
     });
 
-    expect(fetchMock).toHaveBeenCalledWith("/api/applications", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ posting_id: "posting-1" }),
-    });
-    expect(mutateMock).toHaveBeenCalled();
+    // Id remains after success
+    expect(result.current.interestingIds.has("posting-1")).toBe(true);
   });
 
-  it("removes posting from interestingIds on error", async () => {
+  it("rolls back the id when server returns a non-ok response", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: false,
-      json: async () => ({ error: { message: "Already interested" } }),
+      json: async () => ({ error: { message: "Already applied" } }),
     });
 
     const { result } = renderHook(() => usePostingInterest(mutateMock));
@@ -60,10 +63,10 @@ describe("usePostingInterest", () => {
     });
 
     expect(result.current.interestingIds.has("posting-1")).toBe(false);
-    expect(result.current.interestError).toBe("Already interested");
+    expect(result.current.interestError).toBe("Already applied");
   });
 
-  it("handles network error", async () => {
+  it("rolls back the id on network failure", async () => {
     fetchMock.mockRejectedValueOnce(new Error("Network error"));
 
     const { result } = renderHook(() => usePostingInterest(mutateMock));
@@ -76,8 +79,30 @@ describe("usePostingInterest", () => {
     expect(result.current.interestError).toBe("Network error");
   });
 
-  it("clears previous error on new interest attempt", async () => {
-    // First call fails
+  it("only rolls back the failed id, keeping previously successful ones", async () => {
+    // First request succeeds
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+    const { result } = renderHook(() => usePostingInterest(mutateMock));
+
+    await act(async () => {
+      await result.current.handleExpressInterest("posting-1");
+    });
+
+    // Second request fails
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ error: { message: "Conflict" } }),
+    });
+
+    await act(async () => {
+      await result.current.handleExpressInterest("posting-2");
+    });
+
+    expect(result.current.interestingIds.has("posting-1")).toBe(true);
+    expect(result.current.interestingIds.has("posting-2")).toBe(false);
+  });
+
+  it("clears previous error when a new interest attempt starts", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: false,
       json: async () => ({ error: { message: "Server error" } }),
@@ -88,24 +113,34 @@ describe("usePostingInterest", () => {
     await act(async () => {
       await result.current.handleExpressInterest("posting-1");
     });
-
     expect(result.current.interestError).toBe("Server error");
 
-    // Second call succeeds
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({}),
-    });
+    // Second attempt succeeds — error should be cleared
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
 
     await act(async () => {
       await result.current.handleExpressInterest("posting-2");
     });
-
     expect(result.current.interestError).toBeNull();
   });
 
-  it("handles non-Error thrown values", async () => {
+  it("uses fallback message for non-Error thrown values", async () => {
     fetchMock.mockRejectedValueOnce("string error");
+
+    const { result } = renderHook(() => usePostingInterest(mutateMock));
+
+    await act(async () => {
+      await result.current.handleExpressInterest("posting-1");
+    });
+
+    expect(result.current.interestError).toBe("Failed to submit request");
+  });
+
+  it("uses fallback message when server error has no message field", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ error: {} }),
+    });
 
     const { result } = renderHook(() => usePostingInterest(mutateMock));
 

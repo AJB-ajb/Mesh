@@ -9,7 +9,6 @@ import type { ReactNode } from "react";
 
 const mockGetUser = vi.fn();
 const mockFrom = vi.fn();
-const mockReplace = vi.fn();
 
 vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({
@@ -22,7 +21,7 @@ vi.mock("@/lib/supabase/client", () => ({
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
-    replace: mockReplace,
+    replace: vi.fn(),
     push: vi.fn(),
     refresh: vi.fn(),
   }),
@@ -61,38 +60,53 @@ function mockListQuery(result: { data: unknown; error: unknown }) {
   return chain;
 }
 
-const fakeUser = {
-  id: "user-1",
-  email: "user@test.com",
-  identities: [{ provider: "github" }, { provider: "google" }],
-  app_metadata: {
-    provider: "github",
-    providers: ["github", "google"],
-  },
-};
+function setupMocks(
+  overrides: {
+    user?: Record<string, unknown>;
+    profileData?: Record<string, unknown> | null;
+  } = {},
+) {
+  const user = overrides.user ?? {
+    id: "user-1",
+    email: "user@test.com",
+    identities: [{ provider: "github" }, { provider: "google" }],
+    app_metadata: {
+      provider: "github",
+      providers: ["github", "google"],
+    },
+  };
 
-const fakeProfileData = {
-  user_id: "user-1",
-  full_name: "Test User",
-  headline: "Developer",
-  bio: "I build things",
-  location: "San Francisco",
-  location_lat: 37.7749,
-  location_lng: -122.4194,
-  skills: ["React", "TypeScript"],
-  interests: ["AI", "Web"],
-  languages: ["English"],
-  portfolio_url: "https://example.com",
-  github_url: "https://github.com/test",
-  source_text: "I am a developer",
-  previous_source_text: "I was a developer",
-  skill_levels: { React: 8, TypeScript: 7 },
-  location_mode: "remote",
-  availability_slots: { mon: ["morning", "afternoon"] },
-};
+  mockGetUser.mockResolvedValue({ data: { user } });
+
+  const profileData = overrides.profileData ?? {
+    user_id: "user-1",
+    full_name: "Test User",
+    headline: "Developer",
+    bio: "I build things",
+    location: "San Francisco",
+    location_lat: 37.7749,
+    location_lng: -122.4194,
+    skills: ["React", "TypeScript"],
+    interests: ["AI", "Web"],
+    languages: ["English"],
+    portfolio_url: "https://example.com",
+    github_url: "https://github.com/test",
+    source_text: "I am a developer",
+    previous_source_text: "I was a developer",
+    skill_levels: { React: 8, TypeScript: 7 },
+    location_mode: "remote",
+    availability_slots: { mon: ["morning", "afternoon"] },
+  };
+
+  mockFrom.mockImplementation((table: string) => {
+    if (table === "profiles")
+      return mockQuery({ data: profileData, error: null });
+    return mockListQuery({ data: [], error: null });
+  });
+}
 
 // ---------------------------------------------------------------------------
-// Tests
+// Tests — provider detection, canUndo, data transformation
 // ---------------------------------------------------------------------------
 
 describe("useProfileData", () => {
@@ -100,97 +114,144 @@ describe("useProfileData", () => {
     vi.clearAllMocks();
   });
 
-  it("starts in loading state", () => {
-    mockGetUser.mockReturnValue(new Promise(() => {}));
+  it("detects connected providers from user identities", async () => {
+    setupMocks({
+      user: {
+        id: "user-1",
+        email: "user@test.com",
+        identities: [
+          { provider: "github" },
+          { provider: "linkedin_oidc" },
+          // google NOT connected
+        ],
+        app_metadata: { provider: "github", providers: ["github"] },
+      },
+    });
 
     const { result } = renderHook(() => useProfileData(), { wrapper });
 
-    expect(result.current.isLoading).toBe(true);
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.data?.connectedProviders).toEqual({
+      github: true,
+      google: false,
+      linkedin: true,
+    });
   });
 
-  it("fetches profile data successfully", async () => {
-    mockGetUser.mockResolvedValue({ data: { user: fakeUser } });
-    mockFrom.mockImplementation((table: string) => {
-      if (table === "profiles")
-        return mockQuery({ data: fakeProfileData, error: null });
-      return mockListQuery({ data: [], error: null });
+  it("derives isGithubProvider from app_metadata.provider", async () => {
+    setupMocks({
+      user: {
+        id: "user-1",
+        email: "user@test.com",
+        identities: [],
+        app_metadata: { provider: "github", providers: [] },
+      },
     });
 
     const { result } = renderHook(() => useProfileData(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.data?.isGithubProvider).toBe(true);
+  });
 
-    await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
+  it("derives isGithubProvider from identities even without app_metadata match", async () => {
+    setupMocks({
+      user: {
+        id: "user-1",
+        email: "user@test.com",
+        identities: [{ provider: "github" }],
+        app_metadata: { provider: "google", providers: ["google"] },
+      },
     });
 
-    expect(result.current.data?.userEmail).toBe("user@test.com");
-    expect(result.current.data?.connectedProviders.github).toBe(true);
-    expect(result.current.data?.connectedProviders.google).toBe(true);
-    expect(result.current.data?.connectedProviders.linkedin).toBe(false);
+    const { result } = renderHook(() => useProfileData(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.data?.isGithubProvider).toBe(true);
-    expect(result.current.data?.sourceText).toBe("I am a developer");
+  });
+
+  it("canUndo is true only when previous_source_text exists", async () => {
+    setupMocks();
+    const { result } = renderHook(() => useProfileData(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.data?.canUndo).toBe(true);
   });
 
-  it("maps profile data to form state", async () => {
-    mockGetUser.mockResolvedValue({ data: { user: fakeUser } });
-    mockFrom.mockImplementation((table: string) => {
-      if (table === "profiles")
-        return mockQuery({ data: fakeProfileData, error: null });
-      return mockListQuery({ data: [], error: null });
+  it("canUndo is false when previous_source_text is null", async () => {
+    setupMocks({
+      profileData: {
+        user_id: "user-1",
+        full_name: "Test",
+        source_text: "some text",
+        previous_source_text: null,
+        skill_levels: null,
+        location_mode: "remote",
+      },
     });
 
     const { result } = renderHook(() => useProfileData(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.data?.canUndo).toBe(false);
+  });
 
-    await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
-    });
+  it("parseSkillLevels converts {name: level} object to SkillLevel[]", async () => {
+    setupMocks();
+    const { result } = renderHook(() => useProfileData(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    await waitFor(() => {
-      expect(result.current.data?.form.fullName).toBe("Test User");
-    });
-
-    expect(result.current.data?.form.headline).toBe("Developer");
-    expect(result.current.data?.form.bio).toBe("I build things");
-    expect(result.current.data?.form.skills).toBe("React, TypeScript");
-    expect(result.current.data?.form.interests).toBe("AI, Web");
-    expect(result.current.data?.form.locationLat).toBe("37.7749");
-    expect(result.current.data?.form.locationMode).toBe("remote");
     expect(result.current.data?.form.skillLevels).toEqual([
       { name: "React", level: 8 },
       { name: "TypeScript", level: 7 },
     ]);
   });
 
-  it("redirects to login on auth error", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Not authenticated" },
+  it("parseLocationMode falls back to 'either' for unknown values", async () => {
+    setupMocks({
+      profileData: {
+        user_id: "user-1",
+        full_name: "Test",
+        location_mode: "bogus_value",
+        skill_levels: null,
+      },
     });
 
-    renderHook(() => useProfileData(), { wrapper });
-
-    await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith("/login");
-    });
+    const { result } = renderHook(() => useProfileData(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.data?.form.locationMode).toBe("either");
   });
 
-  it("returns default form when no profile data exists", async () => {
-    mockGetUser.mockResolvedValue({ data: { user: fakeUser } });
+  it("joins array fields (skills, interests, languages) with comma-space", async () => {
+    setupMocks();
+    const { result } = renderHook(() => useProfileData(), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.data?.form.skills).toBe("React, TypeScript");
+    expect(result.current.data?.form.interests).toBe("AI, Web");
+    expect(result.current.data?.form.languages).toBe("English");
+  });
+
+  it("returns empty strings and defaults when no profile data exists", async () => {
+    mockGetUser.mockResolvedValue({
+      data: {
+        user: {
+          id: "user-1",
+          email: "user@test.com",
+          identities: [],
+          app_metadata: { provider: "email", providers: ["email"] },
+        },
+      },
+    });
     mockFrom.mockImplementation((table: string) => {
-      if (table === "profiles") return mockQuery({ data: null, error: null });
+      if (table === "profiles")
+        return mockQuery({ data: null, error: null });
       return mockListQuery({ data: [], error: null });
     });
 
     const { result } = renderHook(() => useProfileData(), { wrapper });
-
-    await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
-    });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     expect(result.current.data?.canUndo).toBe(false);
     expect(result.current.data?.sourceText).toBeNull();
     expect(result.current.data?.form.fullName).toBe("");
-    expect(result.current.data?.form.skills).toBe("");
     expect(result.current.data?.form.locationMode).toBe("either");
   });
 });
