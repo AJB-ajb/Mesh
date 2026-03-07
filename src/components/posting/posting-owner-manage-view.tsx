@@ -22,7 +22,7 @@ function defaultExpiresAt(): string {
 
 export function PostingOwnerManageView() {
   const { posting, postingId, currentUserId } = usePostingCoreContext();
-  const { isApplyingUpdate, onApplyUpdate, onUndoUpdate, form, onFormChange } =
+  const { isApplyingUpdate, onApplyUpdate, onUndoUpdate, onFormChange } =
     usePostingEditContext();
 
   const [showEdit, setShowEdit] = useState(false);
