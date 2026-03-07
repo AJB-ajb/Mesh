@@ -58,7 +58,7 @@ The system extracts location, time, vibe. Quick chips confirm coordinates with o
 >
 > Would be great if you're into travel or music — gives us something to actually talk about beyond grammar drills.
 
-The system extracts CEFR levels (B1-B2) for fast filtering. But the _context_ around them — "so we can actually have real conversations" — drives the deep match. "Trip to Colombia" is matching gold: a native speaker from Bogota who loves salsa scores 0.92; a C2-certified grammar teacher with no shared interests scores 0.61.
+The system extracts CEFR levels (B1-B2) for fast filtering. But the _context_ around them — "so we can actually have real conversations" — drives the deep match. "Trip to Colombia" connects with a native speaker from Bogota who loves salsa (0.92) over a C2-certified grammar teacher with no shared interests (0.61).
 
 **Dual-track invite**: Sequential invite runs for top matches AND the posting stays open on Discover. An organic applicant (Carlos) requests to join and is waitlisted. When the sequential match (Ana) later withdraws, Carlos is auto-promoted from the waitlist — his application wasn't wasted.
 
