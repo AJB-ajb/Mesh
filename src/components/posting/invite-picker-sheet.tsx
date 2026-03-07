@@ -252,7 +252,7 @@ export function InvitePickerSheet({
           {/* Available connections */}
           {isLoading ? (
             <div className="py-4 text-center text-sm text-muted-foreground">
-              Loading...
+              {labels.common.loading}
             </div>
           ) : filteredConnections.length > 0 ? (
             <div className="space-y-1">
