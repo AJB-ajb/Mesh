@@ -31,7 +31,6 @@ import {
   SettingPicker,
   type SettingOption,
 } from "@/components/shared/setting-picker";
-import type { InvitedUser } from "@/components/shared/inline-invite-picker";
 import { InvitePickerSheet } from "@/components/posting/invite-picker-sheet";
 import {
   PostingContextBar,
