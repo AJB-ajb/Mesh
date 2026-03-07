@@ -31,14 +31,12 @@ import {
   SettingPicker,
   type SettingOption,
 } from "@/components/shared/setting-picker";
-import {
-  InlineInvitePicker,
-  type InvitedUser,
-} from "@/components/shared/inline-invite-picker";
+import { InvitePickerSheet } from "@/components/posting/invite-picker-sheet";
 import {
   PostingContextBar,
   type ContextBarState,
 } from "@/components/posting/posting-context-bar";
+import { useProfileData } from "@/lib/hooks/use-profile-data";
 import { autoFormat, autoClean } from "@/lib/text-tools-api";
 import { meshLinkExtension } from "@/components/editor/extensions/mesh-link-plugin";
 import { hiddenSyntaxExtension } from "@/components/editor/extensions/hidden-syntax-plugin";
@@ -102,6 +100,8 @@ function NewPostingPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const parentId = searchParams.get("parent") ?? "";
+  const { data: profileData } = useProfileData();
+  const currentUserId = profileData?.profileId ?? "";
   const [text, setText] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -503,22 +503,30 @@ function NewPostingPageInner() {
         />
       )}
 
-      {/* /invite command opens inline invite picker */}
-      {slash.activeOverlay === "invite" && (
-        <InlineInvitePicker
-          position={getPickerPosition()}
-          selected={contextBar.invitedUsers}
-          onDone={(users: InvitedUser[]) => {
-            setContextBar((prev) => ({ ...prev, invitedUsers: users }));
+      {/* /invite command opens invite picker sheet */}
+      <InvitePickerSheet
+        open={slash.activeOverlay === "invite"}
+        onOpenChange={(open) => {
+          if (!open) {
             slash.closeOverlay();
             editorRef.current?.focus();
-          }}
-          onClose={() => {
-            slash.closeOverlay();
-            editorRef.current?.focus();
-          }}
-        />
-      )}
+          }
+        }}
+        selectedConnections={contextBar.invitedUsers.map((u) => ({
+          user_id: u.user_id,
+          full_name: u.full_name,
+        }))}
+        onChange={(connections) => {
+          setContextBar((prev) => ({
+            ...prev,
+            invitedUsers: connections.map((c) => ({
+              user_id: c.user_id,
+              full_name: c.full_name,
+            })),
+          }));
+        }}
+        currentUserId={currentUserId}
+      />
       {/* eslint-enable react-hooks/refs */}
 
       {/* Compact toolbar: TextTools + Post button */}
@@ -534,7 +542,7 @@ function NewPostingPageInner() {
       </div>
 
       {/* Context bar (replaces PostingFormCard) */}
-      <PostingContextBar state={contextBar} onChange={setContextBar} />
+      <PostingContextBar state={contextBar} onChange={setContextBar} currentUserId={currentUserId} />
 
       {/* Mobile markdown toolbar */}
       <MarkdownToolbar

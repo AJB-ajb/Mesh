@@ -44,6 +44,8 @@ export function CreatePostingFab() {
     pathname === "/postings/new" ||
     pathname.startsWith("/postings/") ||
     pathname === "/profile" ||
+    pathname === "/settings" ||
+    pathname === "/connections" ||
     keyboardVisible
   )
     return null;
