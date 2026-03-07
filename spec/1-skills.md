@@ -1,12 +1,14 @@
 # Skills
 
+> Skill tree design, LLM-maintained taxonomy, per-skill matching, and integration with profiles/postings.
+
 ## Overview
 
 Skills in Mesh are organized as a **tree** — a hierarchy where each skill has exactly one parent. The tree enables hierarchical filtering (search "Music" → find Piano, Guitar, etc.), consistent skill naming, and meaningful skill-level matching per domain.
 
 The tree is **LLM-maintained**: new skills are added automatically following clear guidelines, while structural reorganization uses a more capable model with human oversight.
 
-See [matching.md](matching.md) for how skill levels feed into compatibility scoring.
+See [matching.md](1-matching.md) for how skill levels feed into compatibility scoring.
 
 ### Why a Tree (not a DAG)
 
@@ -377,13 +379,13 @@ Skill-level scoring becomes per-skill instead of averaged:
 - Score per skill: `1 - |user_level - required_level| / 10`
 - Aggregate: average across required skills (or minimum, TBD)
 
-The hierarchical inference mentioned in [matching.md](matching.md) ("extrapolates missing levels if necessary") becomes implementable: if a user has "Programming: 7" but no "Python" level, walk down the tree and infer Python ≈ 7 (discounted by depth distance).
+The hierarchical inference mentioned in [matching.md](1-matching.md) ("extrapolates missing levels if necessary") becomes implementable: if a user has "Programming: 7" but no "Python" level, walk down the tree and infer Python ≈ 7 (discounted by depth distance).
 
 ---
 
 ## UI & Input
 
-> Updated for the text-first rewrite. See [text_first_rewrite.md](../.prompts/text_first_rewrite.md) §2, §4.
+> See [1-text-first.md](1-text-first.md) for the text-first input philosophy.
 
 ### Text-First Skill Input (Primary)
 

@@ -1,6 +1,6 @@
 # Vision & Philosophy
 
-This document captures the high-level product philosophy, motivations, and strategic insights behind Mesh. It complements the technical specs ([mesh.md](mesh.md), [ux.md](ux.md), [matching.md](matching.md), [use-cases.md](use-cases.md)) with subjective and motivational reasoning.
+> Product philosophy, core insights, target audiences, and strategic reasoning behind Mesh.
 
 ## Why Not Messaging Apps?
 
@@ -33,7 +33,7 @@ This is why postings nest. A posting is a coordination context — a bundle of n
 
 The result: coordination that would take dozens of messages — spread across days, losing momentum — collapses into a few taps. Not because the app is doing something magical, but because it understands the structure of what's being negotiated and can act on it.
 
-See [nested-postings.md](nested-postings.md) for the technical model. See [use-cases.md](use-cases.md) for walkthroughs.
+See [nested-postings.md](1-nested-postings.md) for the technical model. See [use-cases.md](0-use-cases.md) for walkthroughs.
 
 ## Effectiveness Over Engagement
 

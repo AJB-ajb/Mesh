@@ -1,8 +1,6 @@
 # Terminology
 
-Canonical reference for all user-facing terminology in Mesh. When implementing UI labels, spec updates, or translations, always refer to this document.
-
-See also: [mesh.md](mesh.md) (product overview), [ux.md](ux.md) (UX spec), [matching.md](matching.md) (matching algorithm).
+> Canonical terms, naming decisions, and reasoning — the reference for all user-facing labels.
 
 ## Translation Note
 
@@ -135,11 +133,11 @@ Use "group" for small parent postings (2-8 members) and "channel" for large pare
 - **Group**: a posting where multiple people coordinate over time. Members can post updates, propose meetings, and chat within the group.
 - **Channel**: a shared space (hackathon, course, community) where members create postings. Join via link or QR code. Child postings are discoverable within the channel.
 
-These replace the `context_identifier` field, which was a string approximation of what should be a real entity with members, a description, and a lifecycle. See [nested-postings.md](nested-postings.md).
+These replace the `context_identifier` field, which was a string approximation of what should be a real entity with members, a description, and a lifecycle. See [nested-postings.md](1-nested-postings.md).
 
 ### Context Identifier (deprecated)
 
-The `context_identifier` field (a free-text string like "XHacks 2026" for exact-match filtering) is replaced by the nested posting model. The context becomes a parent posting — a real entity you can join, browse, and share — rather than a string label. See [nested-postings.md](nested-postings.md) Section 2.
+The `context_identifier` field (a free-text string like "XHacks 2026" for exact-match filtering) is replaced by the nested posting model. The context becomes a parent posting — a real entity you can join, browse, and share — rather than a string label. See [nested-postings.md](1-nested-postings.md) Section 2.
 
 ---
 

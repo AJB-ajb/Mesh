@@ -1,5 +1,7 @@
 # Testing
 
+> Testing philosophy, test users, and guidelines for writing effective tests.
+
 ## Test Users
 
 Two standard accounts for manual and AI-assisted testing. Both share the same password stored in `.env` as `TEST_USER_PASSWORD`.

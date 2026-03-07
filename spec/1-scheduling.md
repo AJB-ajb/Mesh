@@ -1,6 +1,6 @@
 # Scheduling Intelligence
 
-> **Scope**: This document specifies the scheduling intelligence layer — how the system generates smart time slot suggestions, incorporates user scheduling preferences, and coordinates group scheduling. It builds on `spec/availability-calendar.md` (calendar sync, overlap scoring) and amends the smart acceptance flow in `.prompts/todo/text_first_rewrite.md` §11.
+> Scheduling intelligence — smart time slot generation, user scheduling preferences, and group coordination. Builds on [1-availability.md](1-availability.md).
 
 ---
 
@@ -405,6 +405,6 @@ If a participant's calendar changes after accepting (new meeting added):
 ## 7. Integration Points
 
 - **`spec/availability-calendar.md`**: Provides the calendar data (sync, free/busy, overlap scoring). This spec adds the intelligence layer on top.
-- **`.prompts/todo/text_first_rewrite.md` §11 (Smart acceptance flow)**: The acceptance card UI is defined there. This spec defines how time slots are generated for that card.
-- **Matching (`spec/matching.md`)**: Scheduling preferences text is readable by the deep match LLM, so "nothing before 10am" naturally influences match scores for early-morning postings. This is emergent, not a separate mechanism.
-- **Nested postings (`spec/nested-postings.md`)**: Scheduling intelligence works the same for child postings but inherits context. A child posting "meet Thursday?" within a group auto-scopes to the group's members for calendar overlap. The LLM receives parent context for smarter slot suggestions.
+- **[1-text-first.md](1-text-first.md)**: The acceptance card is part of the text-first flow. This spec defines how time slots are generated for that card.
+- **Matching ([1-matching.md](1-matching.md))**: Scheduling preferences text is readable by the deep match LLM, so "nothing before 10am" naturally influences match scores for early-morning postings. This is emergent, not a separate mechanism.
+- **Nested postings ([1-nested-postings.md](1-nested-postings.md))**: Scheduling intelligence works the same for child postings but inherits context. A child posting "meet Thursday?" within a group auto-scopes to the group's members for calendar overlap. The LLM receives parent context for smarter slot suggestions.

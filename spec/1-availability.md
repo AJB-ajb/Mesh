@@ -1,5 +1,7 @@
 # Availability & Calendar
 
+> Availability windows, external calendar sync, overlap matching, and in-posting team scheduling.
+
 ## Overview
 
 Three-part feature: (A) minute-level availability windows with overlap matching, (B) external calendar sync, (C) in-posting team scheduling.
