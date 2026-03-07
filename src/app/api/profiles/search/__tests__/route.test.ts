@@ -16,6 +16,7 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 import { GET } from "../route";
+import { testRequiresAuth } from "tests/utils/route-test-helpers";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -34,16 +35,7 @@ describe("GET /api/profiles/search", () => {
     vi.clearAllMocks();
   });
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Unauthorized" },
-    });
-
-    const req = makeRequest("Alice");
-    const res = await GET(req, { params: Promise.resolve({}) });
-    expect(res.status).toBe(401);
-  });
+  testRequiresAuth(GET, () => makeRequest("Alice"), { params: Promise.resolve({}) }, mockGetUser);
 
   it("returns 400 when query is too short", async () => {
     mockGetUser.mockResolvedValue({

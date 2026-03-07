@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
+import { testRequiresAuth } from "tests/utils/route-test-helpers";
 
 // ---------- Env mock ----------
 const originalEnv = process.env.DEEPGRAM_API_KEY;
@@ -41,20 +42,12 @@ describe("POST /api/transcribe", () => {
     }
   });
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Unauthorized" },
-    });
-
-    const req = new Request("http://localhost/api/transcribe", {
-      method: "POST",
-      body: new ArrayBuffer(10),
-    });
-
-    const res = await POST(req, routeContext);
-    expect(res.status).toBe(401);
-  });
+  testRequiresAuth(
+    POST,
+    () => new Request("http://localhost/api/transcribe", { method: "POST", body: new ArrayBuffer(10) }),
+    routeContext,
+    mockGetUser,
+  );
 
   it("returns 500 when DEEPGRAM_API_KEY is not set", async () => {
     delete process.env.DEEPGRAM_API_KEY;

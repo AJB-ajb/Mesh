@@ -23,6 +23,7 @@ vi.mock("@/lib/matching/profile-to-posting", () => ({
 }));
 
 import { buildChain, authedUser } from "tests/utils/supabase-mock";
+import { testRequiresAuth } from "tests/utils/route-test-helpers";
 
 import { GET } from "../route";
 
@@ -32,14 +33,7 @@ const routeCtx = { params: Promise.resolve({}) };
 describe("GET /api/matches/for-me", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await GET(makeReq(), routeCtx);
-    expect(res.status).toBe(401);
-  });
+  testRequiresAuth(GET, makeReq, routeCtx, mockGetUser);
 
   it("returns empty matches when profile not found", async () => {
     authedUser(mockGetUser);

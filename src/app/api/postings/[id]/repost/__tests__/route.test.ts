@@ -13,6 +13,7 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 import { buildChain, authedUser } from "tests/utils/supabase-mock";
+import { testRequiresAuth, testRequiresResource, testRequiresOwnership } from "tests/utils/route-test-helpers";
 
 const { POST } = await import("@/app/api/postings/[id]/repost/route");
 
@@ -37,30 +38,9 @@ const routeCtx = { params: Promise.resolve({ id: "posting-1" }) };
 describe("POST /api/postings/[id]/repost", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await POST(makeReq({ days: 7 }), routeCtx);
-    expect(res.status).toBe(401);
-  });
-
-  it("returns 404 when posting not found", async () => {
-    authedUser(mockGetUser);
-    mockFrom.mockReturnValue(
-      buildChain({ data: null, error: { message: "not found" } }),
-    );
-
-    const res = await POST(makeReq({ days: 7 }), routeCtx);
-    const body = await res.json();
-
-    expect(res.status).toBe(404);
-    expect(body.error.code).toBe("NOT_FOUND");
-  });
-
-  it("returns 403 when user is not the creator", async () => {
-    authedUser(mockGetUser);
+  testRequiresAuth(POST, () => makeReq({ days: 7 }), routeCtx, mockGetUser);
+  testRequiresResource(POST, () => makeReq({ days: 7 }), routeCtx, mockGetUser, mockFrom);
+  testRequiresOwnership(POST, () => makeReq({ days: 7 }), routeCtx, mockGetUser, () => {
     mockFrom.mockReturnValue(
       buildChain({
         data: {
@@ -72,12 +52,6 @@ describe("POST /api/postings/[id]/repost", () => {
         error: null,
       }),
     );
-
-    const res = await POST(makeReq({ days: 7 }), routeCtx);
-    const body = await res.json();
-
-    expect(res.status).toBe(403);
-    expect(body.error.code).toBe("FORBIDDEN");
   });
 
   it("returns 400 when posting is not expired", async () => {

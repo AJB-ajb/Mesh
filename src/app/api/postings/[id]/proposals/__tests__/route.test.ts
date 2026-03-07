@@ -5,6 +5,7 @@ import {
   buildCountChain,
   authedUser,
 } from "tests/utils/supabase-mock";
+import { testRequiresAuth, testRequiresOwnership } from "tests/utils/route-test-helpers";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -44,14 +45,7 @@ function makePostReq(body: Record<string, unknown>) {
 describe("GET /api/postings/[id]/proposals", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await GET(makeGetReq(), routeCtx);
-    expect(res.status).toBe(401);
-  });
+  testRequiresAuth(GET, makeGetReq, routeCtx, mockGetUser);
 
   it("returns 403 when user is not a team member", async () => {
     authedUser(mockGetUser);
@@ -86,26 +80,14 @@ describe("POST /api/postings/[id]/proposals", () => {
     endTime: "2026-03-10T11:00:00Z",
   };
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await POST(makePostReq(validBody), routeCtx);
-    expect(res.status).toBe(401);
-  });
-
-  it("returns 403 when user is not posting owner", async () => {
-    authedUser(mockGetUser);
+  testRequiresAuth(POST, () => makePostReq(validBody), routeCtx, mockGetUser);
+  testRequiresOwnership(POST, () => makePostReq(validBody), routeCtx, mockGetUser, () => {
     mockFrom.mockReturnValue(
       buildChain({
         data: { id: "posting-1", creator_id: "other-user" },
         error: null,
       }),
     );
-
-    const res = await POST(makePostReq(validBody), routeCtx);
-    expect(res.status).toBe(403);
   });
 
   it("returns 400 when startTime or endTime is missing", async () => {

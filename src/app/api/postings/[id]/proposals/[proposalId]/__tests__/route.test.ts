@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { buildChain, authedUser } from "tests/utils/supabase-mock";
+import { testRequiresAuth, testRequiresOwnership } from "tests/utils/route-test-helpers";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -42,26 +43,14 @@ function makePatchReq(body: Record<string, unknown>) {
 describe("PATCH /api/postings/[id]/proposals/[proposalId]", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await PATCH(makePatchReq({ status: "confirmed" }), routeCtx);
-    expect(res.status).toBe(401);
-  });
-
-  it("returns 403 when user is not posting owner", async () => {
-    authedUser(mockGetUser);
+  testRequiresAuth(PATCH, () => makePatchReq({ status: "confirmed" }), routeCtx, mockGetUser);
+  testRequiresOwnership(PATCH, () => makePatchReq({ status: "confirmed" }), routeCtx, mockGetUser, () => {
     mockFrom.mockReturnValue(
       buildChain({
         data: { id: "posting-1", creator_id: "other-user" },
         error: null,
       }),
     );
-
-    const res = await PATCH(makePatchReq({ status: "confirmed" }), routeCtx);
-    expect(res.status).toBe(403);
   });
 
   it("returns 400 for invalid status", async () => {

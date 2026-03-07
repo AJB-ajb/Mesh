@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { buildChain, authedUser } from "tests/utils/supabase-mock";
+import { testRequiresAuth, testRequiresResource, testRequiresOwnership } from "tests/utils/route-test-helpers";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -34,36 +35,15 @@ const routeCtx = { params: Promise.resolve({ id: "posting-1" }) };
 describe("PATCH /api/postings/[id]", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await PATCH(makePatchReq(), routeCtx);
-    expect(res.status).toBe(401);
-  });
-
-  it("returns 404 when posting not found", async () => {
-    authedUser(mockGetUser);
-    mockFrom.mockReturnValue(
-      buildChain({ data: null, error: { message: "not found" } }),
-    );
-
-    const res = await PATCH(makePatchReq(), routeCtx);
-    expect(res.status).toBe(404);
-  });
-
-  it("returns 403 when user is not the creator", async () => {
-    authedUser(mockGetUser);
+  testRequiresAuth(PATCH, makePatchReq, routeCtx, mockGetUser);
+  testRequiresResource(PATCH, makePatchReq, routeCtx, mockGetUser, mockFrom);
+  testRequiresOwnership(PATCH, makePatchReq, routeCtx, mockGetUser, () => {
     mockFrom.mockReturnValue(
       buildChain({
         data: { id: "posting-1", creator_id: "other-user" },
         error: null,
       }),
     );
-
-    const res = await PATCH(makePatchReq(), routeCtx);
-    expect(res.status).toBe(403);
   });
 
   it("updates posting successfully", async () => {
@@ -128,36 +108,15 @@ describe("PATCH /api/postings/[id]", () => {
 describe("DELETE /api/postings/[id]", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await DELETE(makeDeleteReq(), routeCtx);
-    expect(res.status).toBe(401);
-  });
-
-  it("returns 404 when posting not found", async () => {
-    authedUser(mockGetUser);
-    mockFrom.mockReturnValue(
-      buildChain({ data: null, error: { message: "not found" } }),
-    );
-
-    const res = await DELETE(makeDeleteReq(), routeCtx);
-    expect(res.status).toBe(404);
-  });
-
-  it("returns 403 when user is not the creator", async () => {
-    authedUser(mockGetUser);
+  testRequiresAuth(DELETE, makeDeleteReq, routeCtx, mockGetUser);
+  testRequiresResource(DELETE, makeDeleteReq, routeCtx, mockGetUser, mockFrom);
+  testRequiresOwnership(DELETE, makeDeleteReq, routeCtx, mockGetUser, () => {
     mockFrom.mockReturnValue(
       buildChain({
         data: { id: "posting-1", creator_id: "other-user" },
         error: null,
       }),
     );
-
-    const res = await DELETE(makeDeleteReq(), routeCtx);
-    expect(res.status).toBe(403);
   });
 
   it("deletes posting successfully", async () => {

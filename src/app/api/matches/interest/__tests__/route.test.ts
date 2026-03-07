@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { buildChain, mockTables } from "tests/utils/supabase-mock";
+import { testRequiresAuth } from "tests/utils/route-test-helpers";
 
 // Mock supabase server client
 const mockGetUser = vi.fn();
@@ -36,19 +37,7 @@ describe("POST /api/matches/interest", () => {
     });
   });
 
-  it("returns 401 when user is not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Not authenticated" },
-    });
-
-    const req = makeRequest({ posting_id: "posting-1" });
-    const response = await POST(req, { params: Promise.resolve({}) });
-    const body = await response.json();
-
-    expect(response.status).toBe(401);
-    expect(body.error.code).toBe("UNAUTHORIZED");
-  });
+  testRequiresAuth(POST, () => makeRequest({ posting_id: "posting-1" }), { params: Promise.resolve({}) }, mockGetUser);
 
   it("returns 400 when posting_id is a number", async () => {
     const req = makeRequest({ posting_id: 123 });

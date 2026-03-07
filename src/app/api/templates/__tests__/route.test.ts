@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { testRequiresAuth } from "tests/utils/route-test-helpers";
 
 const mockGetUser = vi.fn();
 const mockSelect = vi.fn();
@@ -34,15 +35,7 @@ describe("GET /api/templates", () => {
     mockEq.mockReturnValue({ order: mockOrder });
   });
 
-  it("returns 401 for unauthenticated user", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Not authenticated" },
-    });
-
-    const res = await GET(makeRequest(), { params: Promise.resolve({}) });
-    expect(res.status).toBe(401);
-  });
+  testRequiresAuth(GET, makeRequest, { params: Promise.resolve({}) }, mockGetUser);
 
   it("returns templates for authenticated user", async () => {
     mockGetUser.mockResolvedValue({

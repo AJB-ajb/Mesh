@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { testRequiresAuth, testRequiresResource, testRequiresOwnership } from "tests/utils/route-test-helpers";
 
 // --- Mocks ---
 const mockGetUser = vi.fn();
@@ -76,44 +77,20 @@ describe("PATCH /api/matches/[id]/accept", () => {
     });
   });
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Not authenticated" },
-    });
-
-    const res = await PATCH(req, routeContext);
-    expect(res.status).toBe(401);
-  });
-
-  it("returns 404 when match not found", async () => {
-    const chain = buildChain({ data: null, error: { message: "not found" } });
-    mockFrom.mockReturnValue(chain);
-
-    const res = await PATCH(req, routeContext);
-    const body = await res.json();
-
-    expect(res.status).toBe(404);
-    expect(body.error.code).toBe("NOT_FOUND");
-  });
-
-  it("returns 403 when user is not the posting creator", async () => {
-    const chain = buildChain({
-      data: {
-        id: "match-1",
-        status: "applied",
-        project_id: "posting-1",
-        posting: { creator_id: "other-user", team_size_max: 3 },
-      },
-      error: null,
-    });
-    mockFrom.mockReturnValue(chain);
-
-    const res = await PATCH(req, routeContext);
-    const body = await res.json();
-
-    expect(res.status).toBe(403);
-    expect(body.error.code).toBe("FORBIDDEN");
+  testRequiresAuth(PATCH, () => req, routeContext, mockGetUser);
+  testRequiresResource(PATCH, () => req, routeContext, mockGetUser, mockFrom);
+  testRequiresOwnership(PATCH, () => req, routeContext, mockGetUser, () => {
+    mockFrom.mockReturnValue(
+      buildChain({
+        data: {
+          id: "match-1",
+          status: "applied",
+          project_id: "posting-1",
+          posting: { creator_id: "other-user", team_size_max: 3 },
+        },
+        error: null,
+      }),
+    );
   });
 
   it("returns 400 when match is not in applied status", async () => {

@@ -13,6 +13,7 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 import { buildChain, authedUser } from "tests/utils/supabase-mock";
+import { testRequiresAuth, testRequiresResource, testRequiresOwnership } from "tests/utils/route-test-helpers";
 
 import { GET, POST } from "../route";
 
@@ -25,14 +26,7 @@ const routeCtx = { params: Promise.resolve({}) };
 describe("GET /api/friend-ask", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await GET(makeReq("/api/friend-ask"), routeCtx);
-    expect(res.status).toBe(401);
-  });
+  testRequiresAuth(GET, () => makeReq("/api/friend-ask"), routeCtx, mockGetUser);
 
   it("returns friend-asks for the authenticated user", async () => {
     authedUser(mockGetUser);
@@ -83,42 +77,18 @@ describe("POST /api/friend-ask", () => {
     expect(body.error.code).toBe("VALIDATION");
   });
 
-  it("returns 404 when posting not found", async () => {
-    authedUser(mockGetUser);
-    mockFrom.mockReturnValue(
-      buildChain({ data: null, error: { message: "not found" } }),
-    );
+  testRequiresResource(POST, () => makeReq("/api/friend-ask", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ posting_id: "nope", ordered_friend_list: ["u2"] }),
+  }), routeCtx, mockGetUser, mockFrom);
 
-    const res = await POST(
-      makeReq("/api/friend-ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          posting_id: "nope",
-          ordered_friend_list: ["u2"],
-        }),
-      }),
-      routeCtx,
-    );
-    expect(res.status).toBe(404);
-  });
-
-  it("returns 403 when posting belongs to another user", async () => {
-    authedUser(mockGetUser);
-    const posting = { id: "p1", creator_id: "other-user", mode: "open" };
-    mockFrom.mockReturnValue(buildChain({ data: posting, error: null }));
-
-    const res = await POST(
-      makeReq("/api/friend-ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ posting_id: "p1", ordered_friend_list: ["u2"] }),
-      }),
-      routeCtx,
-    );
-    const body = await res.json();
-    expect(res.status).toBe(403);
-    expect(body.error.code).toBe("FORBIDDEN");
+  testRequiresOwnership(POST, () => makeReq("/api/friend-ask", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ posting_id: "p1", ordered_friend_list: ["u2"] }),
+  }), routeCtx, mockGetUser, () => {
+    mockFrom.mockReturnValue(buildChain({ data: { id: "p1", creator_id: "other-user", mode: "open" }, error: null }));
   });
 
   it("returns 409 when active friend-ask already exists", async () => {
