@@ -36,6 +36,7 @@ import {
   PostingContextBar,
   type ContextBarState,
 } from "@/components/posting/posting-context-bar";
+import { useProfileData } from "@/lib/hooks/use-profile-data";
 import { autoFormat, autoClean } from "@/lib/text-tools-api";
 import { meshLinkExtension } from "@/components/editor/extensions/mesh-link-plugin";
 import { hiddenSyntaxExtension } from "@/components/editor/extensions/hidden-syntax-plugin";
@@ -99,6 +100,8 @@ function NewPostingPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const parentId = searchParams.get("parent") ?? "";
+  const { data: profileData } = useProfileData();
+  const currentUserId = profileData?.profileId ?? "";
   const [text, setText] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -522,7 +525,7 @@ function NewPostingPageInner() {
             })),
           }));
         }}
-        currentUserId=""
+        currentUserId={currentUserId}
       />
       {/* eslint-enable react-hooks/refs */}
 
@@ -539,7 +542,7 @@ function NewPostingPageInner() {
       </div>
 
       {/* Context bar (replaces PostingFormCard) */}
-      <PostingContextBar state={contextBar} onChange={setContextBar} />
+      <PostingContextBar state={contextBar} onChange={setContextBar} currentUserId={currentUserId} />
 
       {/* Mobile markdown toolbar */}
       <MarkdownToolbar

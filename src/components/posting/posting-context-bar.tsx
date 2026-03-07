@@ -36,6 +36,7 @@ export interface ContextBarState {
 interface PostingContextBarProps {
   state: ContextBarState;
   onChange: (state: ContextBarState) => void;
+  currentUserId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -97,7 +98,7 @@ function buildSummary(state: ContextBarState): string {
 // Component
 // ---------------------------------------------------------------------------
 
-export function PostingContextBar({ state, onChange }: PostingContextBarProps) {
+export function PostingContextBar({ state, onChange, currentUserId = "" }: PostingContextBarProps) {
   const l = labels.contextBar;
   const [showInvitePicker, setShowInvitePicker] = useState(false);
 
@@ -264,7 +265,7 @@ export function PostingContextBar({ state, onChange }: PostingContextBarProps) {
             })),
           });
         }}
-        currentUserId=""
+        currentUserId={currentUserId}
       />
     </div>
   );
