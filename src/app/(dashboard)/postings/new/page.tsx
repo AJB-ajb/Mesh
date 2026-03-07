@@ -31,10 +31,8 @@ import {
   SettingPicker,
   type SettingOption,
 } from "@/components/shared/setting-picker";
-import {
-  InlineInvitePicker,
-  type InvitedUser,
-} from "@/components/shared/inline-invite-picker";
+import type { InvitedUser } from "@/components/shared/inline-invite-picker";
+import { InvitePickerSheet } from "@/components/posting/invite-picker-sheet";
 import {
   PostingContextBar,
   type ContextBarState,
@@ -503,22 +501,30 @@ function NewPostingPageInner() {
         />
       )}
 
-      {/* /invite command opens inline invite picker */}
-      {slash.activeOverlay === "invite" && (
-        <InlineInvitePicker
-          position={getPickerPosition()}
-          selected={contextBar.invitedUsers}
-          onDone={(users: InvitedUser[]) => {
-            setContextBar((prev) => ({ ...prev, invitedUsers: users }));
+      {/* /invite command opens invite picker sheet */}
+      <InvitePickerSheet
+        open={slash.activeOverlay === "invite"}
+        onOpenChange={(open) => {
+          if (!open) {
             slash.closeOverlay();
             editorRef.current?.focus();
-          }}
-          onClose={() => {
-            slash.closeOverlay();
-            editorRef.current?.focus();
-          }}
-        />
-      )}
+          }
+        }}
+        selectedConnections={contextBar.invitedUsers.map((u) => ({
+          user_id: u.user_id,
+          full_name: u.full_name,
+        }))}
+        onChange={(connections) => {
+          setContextBar((prev) => ({
+            ...prev,
+            invitedUsers: connections.map((c) => ({
+              user_id: c.user_id,
+              full_name: c.full_name,
+            })),
+          }));
+        }}
+        currentUserId=""
+      />
       {/* eslint-enable react-hooks/refs */}
 
       {/* Compact toolbar: TextTools + Post button */}

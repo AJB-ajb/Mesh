@@ -1169,6 +1169,13 @@ export const labels = {
       `Waiting on ${pending} of ${total} connections`,
     modeInfoLabel: "How invite modes work",
     advancedSettings: "Advanced settings",
+    pickerTitle: "Invite people",
+    pickerSearch: "Search connections...",
+    pickerNoConnections: "No connections yet",
+    pickerNoMatches: "No matches",
+    pickerSuggested: "Suggested",
+    pickerDone: "Done",
+    pickerInviteMore: "Invite more",
   },
 
   // ---------------------------------------------------------------------------
