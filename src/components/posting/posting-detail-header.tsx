@@ -113,13 +113,17 @@ export function PostingDetailHeader() {
         <div className="space-y-2">
           <div className="flex flex-col gap-2">
             {isOwner ? (
-              <input
+              <textarea
                 value={form.title}
                 onChange={(e) => onFormChange("title", e.target.value)}
-                className="text-2xl font-bold flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.preventDefault();
+                }}
+                rows={1}
+                className="text-2xl font-bold w-full rounded-md border border-input bg-background px-3 py-2 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none field-sizing-content max-h-[4.5rem]"
               />
             ) : (
-              <h1 className="text-3xl font-bold tracking-tight">
+              <h1 className="text-3xl font-bold tracking-tight line-clamp-2">
                 {stripTitleMarkdown(posting.title)}
               </h1>
             )}

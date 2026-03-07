@@ -971,6 +971,7 @@ export const labels = {
     sharePosting: "Share Posting",
     reportIssue: "Report Issue",
     shareTitle: "Check out this posting on Mesh",
+    editPosting: "Edit posting",
 
     // Error messages
     errorUpdatePosting: "Failed to update posting. Please try again.",
@@ -1168,6 +1169,15 @@ export const labels = {
       `Waiting on ${pending} of ${total} connections`,
     modeInfoLabel: "How invite modes work",
     advancedSettings: "Advanced settings",
+    pickerTitle: "Invite people",
+    pickerSearch: "Search connections...",
+    pickerNoConnections: "No connections yet",
+    pickerNoMatches: "No matches",
+    pickerSuggested: "Suggested",
+    pickerDone: "Done",
+    pickerInviteMore: "Invite more",
+    pickerAskOrder: "Ask order (drag to reorder)",
+    pickerSelected: "Selected connections",
   },
 
   // ---------------------------------------------------------------------------

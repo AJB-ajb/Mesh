@@ -8,17 +8,19 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { labels } from "@/lib/labels";
 import {
-  InlineInvitePicker,
-  type InvitedUser,
-} from "@/components/shared/inline-invite-picker";
-import {
   PostingSettingsRow,
   type PostingSettings,
 } from "./posting-settings-row";
+import { InvitePickerSheet } from "./invite-picker-sheet";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+
+export interface InvitedUser {
+  user_id: string;
+  full_name: string;
+}
 
 export interface ContextBarState {
   /** Parent posting (group context) */
@@ -38,6 +40,7 @@ export interface ContextBarState {
 interface PostingContextBarProps {
   state: ContextBarState;
   onChange: (state: ContextBarState) => void;
+  currentUserId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -99,11 +102,9 @@ function buildSummary(state: ContextBarState): string {
 // Component
 // ---------------------------------------------------------------------------
 
-export function PostingContextBar({ state, onChange }: PostingContextBarProps) {
+export function PostingContextBar({ state, onChange, currentUserId = "" }: PostingContextBarProps) {
   const l = labels.contextBar;
   const [showInvitePicker, setShowInvitePicker] = useState(false);
-  const [inviteButtonRef, setInviteButtonRef] =
-    useState<HTMLButtonElement | null>(null);
 
   const update = useCallback(
     (partial: Partial<ContextBarState>) => onChange({ ...state, ...partial }),
@@ -126,13 +127,6 @@ export function PostingContextBar({ state, onChange }: PostingContextBarProps) {
   const handleRevokeLink = useCallback(() => {
     update({ linkToken: null });
   }, [update]);
-
-  // Invite picker position (relative to button)
-  const getInvitePickerPosition = () => {
-    if (!inviteButtonRef) return { top: 200, left: 100 };
-    const rect = inviteButtonRef.getBoundingClientRect();
-    return { top: rect.bottom + 4, left: rect.left };
-  };
 
   // Remove invited user
   const removeInvitedUser = (userId: string) => {
@@ -178,7 +172,6 @@ export function PostingContextBar({ state, onChange }: PostingContextBarProps) {
             </span>
           ))}
           <button
-            ref={setInviteButtonRef}
             type="button"
             onClick={() => setShowInvitePicker(true)}
             className="text-xs text-primary hover:underline"
@@ -258,18 +251,26 @@ export function PostingContextBar({ state, onChange }: PostingContextBarProps) {
         onChange={(settings) => update({ settings })}
       />
 
-      {/* Invite picker overlay */}
-      {showInvitePicker && (
-        <InlineInvitePicker
-          position={getInvitePickerPosition()}
-          selected={state.invitedUsers}
-          onDone={(users) => {
-            update({ invitedUsers: users });
-            setShowInvitePicker(false);
-          }}
-          onClose={() => setShowInvitePicker(false)}
-        />
-      )}
+      {/* Invite picker sheet */}
+      <InvitePickerSheet
+        open={showInvitePicker}
+        onOpenChange={(open) => {
+          setShowInvitePicker(open);
+        }}
+        selectedConnections={state.invitedUsers.map((u) => ({
+          user_id: u.user_id,
+          full_name: u.full_name,
+        }))}
+        onChange={(connections) => {
+          update({
+            invitedUsers: connections.map((c) => ({
+              user_id: c.user_id,
+              full_name: c.full_name,
+            })),
+          });
+        }}
+        currentUserId={currentUserId}
+      />
     </div>
   );
 }
