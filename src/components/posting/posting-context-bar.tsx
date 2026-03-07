@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { labels } from "@/lib/labels";
-import type { InvitedUser } from "@/components/shared/inline-invite-picker";
 import {
   PostingSettingsRow,
   type PostingSettings,
@@ -17,6 +16,11 @@ import { InvitePickerSheet } from "./invite-picker-sheet";
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+
+export interface InvitedUser {
+  user_id: string;
+  full_name: string;
+}
 
 export interface ContextBarState {
   /** Parent posting (group context) */
