@@ -60,10 +60,10 @@ Check if the branch introduced any new migration files:
 git diff dev~1..dev --name-only -- supabase/migrations/
 ```
 
-If new migrations exist, apply them to the dev Supabase project:
+If new migrations exist, apply them to the dev Supabase project. Unset `SUPABASE_DB_PASSWORD` so the CLI uses stored credentials from `supabase link` (`.env` sets this to the dev password which can conflict):
 
 ```
-supabase db push
+SUPABASE_DB_PASSWORD= supabase db push
 ```
 
 If `db push` fails, report the error — the merge and push already succeeded, but the database is out of sync. The user must fix the migration before deploying.
