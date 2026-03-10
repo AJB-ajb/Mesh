@@ -53,10 +53,19 @@ const POSTING_COLUMNS =
   "id, title, description, status, category, team_size_min, team_size_max, created_at, creator_id" as const;
 
 // ---------------------------------------------------------------------------
+// Enriched posting row (includes counts for joined postings)
+// ---------------------------------------------------------------------------
+
+type EnrichedPostingRow = PostingRow & {
+  acceptedCount: number;
+  unreadCount: number;
+};
+
+// ---------------------------------------------------------------------------
 // Joined-postings fetcher (accepted applications — all, not just "active")
 // ---------------------------------------------------------------------------
 
-async function fetchJoinedPostings(): Promise<PostingRow[]> {
+async function fetchJoinedPostings(): Promise<EnrichedPostingRow[]> {
   const { supabase, user } = await getUserOrThrow();
 
   const { data: applications } = await supabase
@@ -69,12 +78,41 @@ async function fetchJoinedPostings(): Promise<PostingRow[]> {
   const postingIds = (applications ?? []).map((a) => a.posting_id);
   if (postingIds.length === 0) return [];
 
-  const { data: postings } = await supabase
-    .from("postings")
-    .select(POSTING_COLUMNS)
-    .in("id", postingIds);
+  // Fetch postings and accepted-application counts in parallel
+  const [{ data: postings }, { data: acceptedApps }] = await Promise.all([
+    supabase.from("postings").select(POSTING_COLUMNS).in("id", postingIds),
+    supabase
+      .from("applications")
+      .select("posting_id")
+      .in("posting_id", postingIds)
+      .eq("status", "accepted"),
+  ]);
 
-  return (postings ?? []) as PostingRow[];
+  const countByPosting = new Map<string, number>();
+  for (const app of acceptedApps ?? []) {
+    countByPosting.set(
+      app.posting_id,
+      (countByPosting.get(app.posting_id) ?? 0) + 1,
+    );
+  }
+
+  // Fetch unread group message counts
+  const unreadByPosting = new Map<string, number>();
+  if (postingIds.length > 0) {
+    const { data: unreadRows } = await supabase.rpc(
+      "unread_group_message_counts",
+      { p_posting_ids: postingIds, p_user_id: user.id },
+    );
+    for (const row of unreadRows ?? []) {
+      unreadByPosting.set(row.posting_id, Number(row.unread_count));
+    }
+  }
+
+  return ((postings ?? []) as PostingRow[]).map((p) => ({
+    ...p,
+    acceptedCount: countByPosting.get(p.id) ?? 0,
+    unreadCount: unreadByPosting.get(p.id) ?? 0,
+  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -197,7 +235,7 @@ export function usePostsPage() {
 
     // Helper to push a posting row with a given role
     const pushPosting = (
-      p: PostingRow,
+      p: PostingRow | EnrichedPostingRow,
       role: PostsCardData["role"],
       href: string,
     ) => {
@@ -215,6 +253,9 @@ export function usePostsPage() {
         creatorId: p.creator_id,
         role,
         href,
+        ...("acceptedCount" in p
+          ? { acceptedCount: p.acceptedCount, unreadCount: p.unreadCount }
+          : {}),
       });
     };
 
