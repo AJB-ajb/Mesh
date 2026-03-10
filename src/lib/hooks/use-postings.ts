@@ -38,6 +38,7 @@ type Posting = {
   status: string;
   created_at: string;
   creator_id: string;
+  auto_accept: boolean;
   profiles?: {
     full_name: string | null;
     user_id: string;

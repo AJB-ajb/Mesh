@@ -1913,6 +1913,8 @@ export const labels = {
     typeAnswer: "Type your answer...",
     yes: "Yes",
     no: "No",
+    dialogTitle: "Join this posting",
+    dialogDescription: "Review details and confirm joining",
   },
 
   // ---------------------------------------------------------------------------

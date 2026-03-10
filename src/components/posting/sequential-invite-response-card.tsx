@@ -5,8 +5,10 @@ import { Check, X, Loader2, ListOrdered } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AcceptanceDialog } from "@/components/posting/acceptance-dialog";
 import { createClient } from "@/lib/supabase/client";
 import { labels } from "@/lib/labels";
+import type { ApplicationResponses } from "@/lib/types/acceptance-card";
 
 interface SequentialInviteResponseCardProps {
   postingId: string;
@@ -27,6 +29,7 @@ export function SequentialInviteResponseCard({
   const [state, setState] = useState<InviteState>({ type: "loading" });
   const [isResponding, setIsResponding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAcceptanceDialog, setShowAcceptanceDialog] = useState(false);
 
   // Check if the current user has a pending invite for this posting
   useEffect(() => {
@@ -84,7 +87,10 @@ export function SequentialInviteResponseCard({
           // Sequential: check pending_invitees
           const pendingInvitees: string[] = fa.pending_invitees ?? [];
 
-          if (fa.status === "pending" && pendingInvitees.includes(currentUserId)) {
+          if (
+            fa.status === "pending" &&
+            pendingInvitees.includes(currentUserId)
+          ) {
             setState({ type: "pending", friendAskId: fa.id });
             return;
           }
@@ -141,6 +147,39 @@ export function SequentialInviteResponseCard({
         setState({ type: action === "accept" ? "accepted" : "declined" });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong");
+      } finally {
+        setIsResponding(false);
+      }
+    },
+    [state],
+  );
+
+  const handleAcceptWithResponses = useCallback(
+    async (_postingId: string, responses: ApplicationResponses) => {
+      if (state.type !== "pending") return;
+
+      setIsResponding(true);
+      setError(null);
+
+      try {
+        const res = await fetch(
+          `/api/friend-ask/${state.friendAskId}/respond`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "accept", responses }),
+          },
+        );
+
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error?.message || "Failed to respond");
+        }
+
+        setState({ type: "accepted" });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Something went wrong");
+        throw err; // Re-throw so AcceptanceDialog knows it failed
       } finally {
         setIsResponding(false);
       }
@@ -215,7 +254,7 @@ export function SequentialInviteResponseCard({
 
         <div className="flex gap-2">
           <Button
-            onClick={() => handleRespond("accept")}
+            onClick={() => setShowAcceptanceDialog(true)}
             disabled={isResponding}
           >
             {isResponding ? (
@@ -233,6 +272,12 @@ export function SequentialInviteResponseCard({
             {labels.invite.declineButton}
           </Button>
         </div>
+
+        <AcceptanceDialog
+          postingId={showAcceptanceDialog ? postingId : null}
+          onClose={() => setShowAcceptanceDialog(false)}
+          onSubmit={handleAcceptWithResponses}
+        />
       </CardContent>
     </Card>
   );

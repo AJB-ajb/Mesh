@@ -2,20 +2,30 @@ import { withAuth } from "@/lib/api/with-auth";
 import { logFireAndForget } from "@/lib/api/fire-and-forget";
 import { notifyIfPreferred } from "@/lib/api/notify-if-preferred";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
-import { INVITE_RECEIVED, INVITE_ACCEPTED, INVITE_DECLINED } from "@/lib/notifications/events";
+import {
+  INVITE_RECEIVED,
+  INVITE_ACCEPTED,
+  INVITE_DECLINED,
+} from "@/lib/notifications/events";
 
 /**
  * POST /api/friend-ask/[id]/respond
  * Respond to an invite (accept or decline).
- * Body: { action: "accept" | "decline" }
+ * Body: { action: "accept" | "decline", responses?: object }
  *
  * Sequential mode: only the currently-invited connection can respond.
  * Parallel mode: any connection in the list who hasn't declined can respond.
+ *
+ * On accept, also creates an application row (status "accepted") so the
+ * user appears as a team member via get_posting_team_member_ids().
  */
 export const POST = withAuth(async (req, { user, supabase, params }) => {
   const { id } = params;
 
-  const { action } = await parseBody<{ action?: string }>(req);
+  const { action, responses } = await parseBody<{
+    action?: string;
+    responses?: Record<string, unknown>;
+  }>(req);
 
   if (!action || !["accept", "decline"].includes(action)) {
     throw new AppError(
@@ -122,6 +132,29 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     );
   };
 
+  // Helper: create an application row on accept so the user appears as a team member.
+  // Uses upsert to handle the UNIQUE(posting_id, applicant_id) constraint gracefully.
+  // If a "pending" self-application already exists, this intentionally upgrades it to
+  // "accepted" — an invite acceptance should override a self-application.
+  const createApplicationOnAccept = async () => {
+    const { error: upsertError } = await supabase.from("applications").upsert(
+      {
+        posting_id: friendAsk.posting_id,
+        applicant_id: user.id,
+        status: "accepted",
+        ...(responses && typeof responses === "object" ? { responses } : {}),
+      },
+      { onConflict: "posting_id,applicant_id" },
+    );
+    if (upsertError) {
+      console.error(
+        "Failed to upsert application on invite accept:",
+        upsertError,
+      );
+      throw new AppError("INTERNAL", upsertError.message, 500);
+    }
+  };
+
   // =========================================================================
   // ACCEPT
   // =========================================================================
@@ -143,6 +176,8 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
           "Failed to read back updated invite",
           404,
         );
+
+      await createApplicationOnAccept();
 
       notifyCreator(
         INVITE_ACCEPTED.title,
@@ -170,6 +205,8 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
         "Failed to read back updated invite",
         404,
       );
+
+    await createApplicationOnAccept();
 
     notifyCreator(
       INVITE_ACCEPTED.title,
