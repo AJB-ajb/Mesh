@@ -51,6 +51,32 @@ function SignUpForm() {
       return;
     }
 
+    // Check if this email is already registered via an OAuth provider
+    try {
+      const checkRes = await fetch("/api/auth/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const checkData = await checkRes.json();
+      if (checkData.exists && checkData.providers?.length > 0) {
+        const providerNames = (checkData.providers as string[]).map((p) =>
+          p === "google"
+            ? "Google"
+            : p === "github"
+              ? "GitHub"
+              : p === "linkedin_oidc"
+                ? "LinkedIn"
+                : p,
+        );
+        setError(labels.auth.signup.errorDuplicateEmail(providerNames));
+        setIsLoading(false);
+        return;
+      }
+    } catch {
+      // If the check fails, proceed with signup — Supabase will handle it
+    }
+
     const supabase = createClient();
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,

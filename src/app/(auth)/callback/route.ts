@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Trigger async GitHub profile sync
@@ -52,6 +53,53 @@ export async function GET(request: Request) {
       if (hasGithubIdentity) {
         // Trigger GitHub profile extraction in background (async)
         triggerGitHubSync(origin);
+      }
+
+      // --- Duplicate account detection ---
+      // Check if another auth.users record shares this email (created by a
+      // different provider). If so, this OAuth sign-in created a duplicate.
+      // Redirect the user to login with their original method instead.
+      if (!isLinking && user.email) {
+        try {
+          const admin = createAdminClient();
+          // Search through users to find duplicates with the same email
+          let page = 1;
+          const perPage = 100;
+          let foundDuplicate = false;
+
+          outer: while (true) {
+            const { data: listData } = await admin.auth.admin.listUsers({
+              page,
+              perPage,
+            });
+            if (!listData) break;
+
+            for (const otherUser of listData.users) {
+              if (
+                otherUser.email?.toLowerCase() === user.email!.toLowerCase() &&
+                otherUser.id !== user.id
+              ) {
+                foundDuplicate = true;
+                break outer;
+              }
+            }
+
+            if (listData.users.length < perPage) break;
+            page++;
+          }
+
+          if (foundDuplicate) {
+            // Sign out the duplicate session so the user can't proceed
+            await supabase.auth.signOut();
+            const errorMsg = encodeURIComponent(
+              "An account already exists with this email using a different sign-in method. Please sign in with your original method, then link additional providers in Settings.",
+            );
+            return NextResponse.redirect(`${origin}/login?error=${errorMsg}`);
+          }
+        } catch (err) {
+          // Log but don't block the flow if duplicate detection fails
+          console.error("[OAuth Callback] Duplicate detection failed:", err);
+        }
       }
 
       // If this was an account linking flow, redirect to settings

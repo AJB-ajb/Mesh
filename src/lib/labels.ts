@@ -739,6 +739,12 @@ export const labels = {
       checkEmail: "Check your email to confirm your account.",
       errorPasswordMismatch: "Passwords do not match.",
       errorPasswordLength: "Password must be at least 6 characters.",
+      errorDuplicateEmail: (providers: string[]) =>
+        `This email is already registered via ${providers.join(", ")}. Please sign in with ${providers[0]} instead, then link your email/password in Settings.`,
+    },
+    callback: {
+      duplicateAccountError:
+        "An account already exists with this email using a different sign-in method. Please sign in with your original method, then link additional providers in Settings.",
     },
     forgotPassword: {
       title: "Forgot password?",
