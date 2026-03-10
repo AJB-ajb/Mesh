@@ -34,17 +34,19 @@ Extract as much relevant information as possible from the provided text, which c
 - A resume snippet
 - Any text describing a developer
 
-Be thorough in extracting skills - look for programming languages, frameworks, tools, and technologies.
+Extract concrete technical skills only — programming languages, frameworks, libraries, tools, platforms, and databases.
+Do NOT include soft skills (e.g., "mentoring", "communication"), methodologies (e.g., "agile"), or abstract topics (e.g., "data processing", "API integration") as skills.
 If information is not explicitly stated, make reasonable inferences based on context.
 
 For availability, extract UNAVAILABILITY windows — times the person is NOT available (blocked time).
+Create separate windows for each distinct reason or time block — do not merge adjacent blocks that have different causes (e.g., work hours 540-1020 and gym 1080-1320 should be two separate windows, not one 540-1320 block).
 - "Busy weekday evenings" → Monday-Friday, 1080-1440 (6pm-midnight) as blocked windows
 - "Not free Saturday 2-4pm" → day 5, 840-960 as a blocked window
 - "Available mornings except Tuesday" → invert: Tuesday morning (360-720) is blocked
 - If the text says they ARE available at certain times, invert to find blocked windows
 - Days: 0=Monday, 1=Tuesday, 2=Wednesday, 3=Thursday, 4=Friday, 5=Saturday, 6=Sunday
 - Minutes from midnight: 12am=0, 6am=360, 9am=540, 12pm=720, 3pm=900, 5pm=1020, 6pm=1080, 9pm=1260, midnight=1440
-If a timezone is mentioned (e.g., "EST", "Berlin time"), extract it as an IANA timezone string.`,
+Always look for timezone hints anywhere in the text — abbreviations (EST, PST, CET, GMT+2), city references ("Berlin time"), or IANA strings. Convert abbreviations to IANA format (e.g., EST → America/New_York, CET → Europe/Berlin, IST → Asia/Kolkata).`,
 );
 
 export const PROFILE_UPDATE_SYSTEM_PROMPT = buildUpdatePrompt(
@@ -70,10 +72,16 @@ Extract as much relevant information as possible from the provided text, which c
 - A hackathon project pitch
 - Any text describing a posting that needs collaborators
 
-Be thorough in extracting skills - look for programming languages, frameworks, tools, and technologies.
+Extract concrete technical skills only — programming languages, frameworks, libraries, tools, platforms, and databases.
+Do NOT include abstract topics (e.g., "data processing", "API integration", "emissions modeling") or job roles as skills.
 Categorize the posting as study, hackathon, personal, professional, or social based on context.
-Infer team size range from context if not explicitly stated.
 Create a clear, concise title if one isn't provided. Titles must be plain text — never include markdown syntax like heading prefixes (##).
+
+For team size, ALWAYS extract both team_size_min and team_size_max:
+- If a range is stated ("2-3 people"), use that range.
+- If one number is given ("need 2 devs"), set min and max to that number (+ the poster if they are clearly part of the team).
+- If not stated, infer from context: "study buddy" → 2-2, "small group" → 2-4, "team" → 3-5.
+- Count all team members including the poster when they describe themselves as part of the team.
 
 For visibility:
 - Default to "public" unless the poster explicitly mentions wanting to invite specific people or keep it private.
@@ -91,7 +99,7 @@ For scheduling/availability:
 - Days: 0=Monday, 1=Tuesday, ..., 6=Sunday
 - Examples: "Tuesday and Thursday evenings" → recurring with day 1 and 3, 1080-1440
   "Weekends 10am-2pm" → day 5 and 6, 600-840
-If a timezone is mentioned, extract as IANA timezone (e.g., "America/New_York").`,
+Always look for timezone hints anywhere in the text — abbreviations (EST, PST, CET, GMT+2), city references, or IANA strings. Convert abbreviations to IANA format (e.g., EST → America/New_York, CET → Europe/Berlin).`,
 );
 
 export const POSTING_UPDATE_SYSTEM_PROMPT = buildUpdatePrompt(
