@@ -27,6 +27,8 @@ interface SmartAcceptanceCardProps {
   onSubmit: (responses: ApplicationResponses) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
+  /** When true, removes outer border/bg/padding/max-width for embedding inside a Dialog. */
+  embedded?: boolean;
 }
 
 type CardState = "loading" | "ready" | "fallback";
@@ -36,6 +38,7 @@ export function SmartAcceptanceCard({
   onSubmit,
   onCancel,
   isSubmitting,
+  embedded = false,
 }: SmartAcceptanceCardProps) {
   const [cardState, setCardState] = useState<CardState>("loading");
   const [cardData, setCardData] = useState<AcceptanceCardData | null>(null);
@@ -134,10 +137,20 @@ export function SmartAcceptanceCard({
     await onSubmit(responses);
   };
 
+  const wrapperClass = embedded
+    ? "flex flex-col gap-4 w-full"
+    : "flex flex-col gap-4 rounded-lg border border-border bg-card p-5 w-full max-w-md";
+
   // Loading state
   if (cardState === "loading") {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-card p-6 w-full max-w-md">
+      <div
+        className={
+          embedded
+            ? "flex flex-col items-center gap-3 w-full"
+            : "flex flex-col items-center gap-3 rounded-lg border border-border bg-card p-6 w-full max-w-md"
+        }
+      >
         <Loader2 className="size-5 animate-spin text-muted-foreground" />
         <p className="text-sm text-muted-foreground">
           {labels.acceptanceCard.loading}
@@ -202,7 +215,7 @@ export function SmartAcceptanceCard({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5 w-full max-w-md">
+    <div className={wrapperClass}>
       <p className="text-sm font-medium">{labels.acceptanceCard.title}</p>
 
       {/* Time section */}

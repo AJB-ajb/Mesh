@@ -24,7 +24,9 @@ import { UnifiedPostingCard } from "@/components/posting";
 import { stripTitleMarkdown } from "@/lib/format";
 import { PostingFilters } from "@/components/posting/posting-filters";
 import { EmptyState } from "@/components/ui/empty-state";
+import { AcceptanceDialog } from "@/components/posting/acceptance-dialog";
 import { createClient } from "@/lib/supabase/client";
+import type { ApplicationResponses } from "@/lib/types/acceptance-card";
 
 type SortOption = "recent" | "match";
 
@@ -109,8 +111,28 @@ function DiscoverContent() {
     clearNlFilters();
   };
 
-  const { interestingIds, interestError, handleExpressInterest } =
-    usePostingInterest(mutate);
+  const { interestingIds, interestError } = usePostingInterest(mutate);
+
+  // Acceptance dialog state: which posting is being joined
+  const [acceptancePostingId, setAcceptancePostingId] = useState<string | null>(
+    null,
+  );
+
+  const handleAcceptanceSubmit = useCallback(
+    async (postingId: string, responses: ApplicationResponses) => {
+      const res = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ posting_id: postingId, responses }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error?.message || "Failed to submit request");
+      }
+      await mutate();
+    },
+    [mutate],
+  );
 
   const { bookmarkedIds, toggleBookmark } = useBookmarks();
 
@@ -312,7 +334,7 @@ function DiscoverContent() {
                 isAlreadyInterested={isAlreadyInterested}
                 isInteresting={isInteresting}
                 showInterestButton={showInterestButton}
-                onExpressInterest={handleExpressInterest}
+                onExpressInterest={setAcceptancePostingId}
                 activeTab="discover"
                 isBookmarked={bookmarkedIds.has(posting.id)}
                 onToggleBookmark={toggleBookmark}
@@ -321,6 +343,12 @@ function DiscoverContent() {
           })}
         </div>
       )}
+
+      <AcceptanceDialog
+        postingId={acceptancePostingId}
+        onClose={() => setAcceptancePostingId(null)}
+        onSubmit={handleAcceptanceSubmit}
+      />
     </div>
   );
 }
