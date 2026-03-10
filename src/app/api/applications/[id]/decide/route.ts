@@ -1,4 +1,5 @@
 import { withAuth } from "@/lib/api/with-auth";
+import { logFireAndForget } from "@/lib/api/fire-and-forget";
 import { notifyIfPreferred } from "@/lib/api/notify-if-preferred";
 import { markPostingFilledIfFull } from "@/lib/api/posting-fulfillment";
 import { apiSuccess, parseBody, AppError } from "@/lib/errors";
@@ -45,18 +46,21 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
       ? ("application_accepted" as const)
       : ("application_rejected" as const);
 
-  notifyIfPreferred(supabase, application.applicant_id, notifType, {
-    userId: application.applicant_id,
-    type: notifType,
-    title: body.status === "accepted" ? APPLICATION_ACCEPTED.title : APPLICATION_REJECTED.title,
-    body:
-      body.status === "accepted"
-        ? `Your request to join "${posting.title}" has been accepted!`
-        : `Your request to join "${posting.title}" was not selected.`,
-    relatedPostingId: posting.id,
-    relatedApplicationId: applicationId,
-    relatedUserId: posting.creator_id,
-  });
+  logFireAndForget(
+    notifyIfPreferred(supabase, application.applicant_id, notifType, {
+      userId: application.applicant_id,
+      type: notifType,
+      title: body.status === "accepted" ? APPLICATION_ACCEPTED.title : APPLICATION_REJECTED.title,
+      body:
+        body.status === "accepted"
+          ? `Your request to join "${posting.title}" has been accepted!`
+          : `Your request to join "${posting.title}" was not selected.`,
+      relatedPostingId: posting.id,
+      relatedApplicationId: applicationId,
+      relatedUserId: posting.creator_id,
+    }),
+    "application-decide-notification",
+  );
 
   // If accepting, check if team is now full
   if (body.status === "accepted") {
