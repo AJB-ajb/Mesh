@@ -29,6 +29,15 @@ ln -s /home/ajb/repos/Mesh/.env ../Mesh-<branch-name>/.env
 cd ../Mesh-<branch-name>
 ```
 
+## Supabase Gotchas
+
+- **`supabase db push` to production fails with wrong password**: `.env` sets `SUPABASE_DB_PASSWORD` to the **dev** DB password. The CLI auto-reads this and sends it to whichever host you're linked to. When linked to production, it sends the dev password → auth failure. Fix: unset it so the CLI uses stored credentials from `supabase link`:
+  ```
+  SUPABASE_DB_PASSWORD= supabase db push
+  ```
+- **Use `supabase` not `npx supabase`**: Both resolve to the same version, but `npx` adds overhead and can behave differently with interactive prompts.
+- **pgTAP `supabase test db`**: The dev DB password contains `$` and `!` which bash interprets. Use Python `subprocess` to bypass shell escaping (see release skill for details).
+
 ## End-of-Session Hygiene
 
 Before ending a session where files were modified, check `git status`. If there are uncommitted changes, ask the user whether to commit them. Do not leave modified files uncommitted without the user's awareness.
