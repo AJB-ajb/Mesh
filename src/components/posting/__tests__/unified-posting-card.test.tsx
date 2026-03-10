@@ -149,7 +149,7 @@ describe("UnifiedPostingCard -- full variant", () => {
 
   it("renders meta line with team size, time, and location", () => {
     render(<UnifiedPostingCard {...fullBaseProps} />);
-    expect(screen.getByText(/Looking for 5/)).toBeInTheDocument();
+    expect(screen.getByText(/Looking for 4/)).toBeInTheDocument();
     expect(screen.getByText("2 weeks")).toBeInTheDocument();
     expect(screen.getByText("Remote")).toBeInTheDocument();
   });

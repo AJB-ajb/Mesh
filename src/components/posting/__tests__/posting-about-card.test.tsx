@@ -112,13 +112,13 @@ describe("PostingAboutCard", () => {
 
   it("renders team size in view mode", () => {
     renderWithContext();
-    expect(screen.getByText(/Min 1 · Looking for 3/)).toBeInTheDocument();
+    expect(screen.getByText(/1–3 total · Looking for 2/)).toBeInTheDocument();
   });
 
   it("renders team size with different min/max values", () => {
     const posting = { ...basePosting, team_size_min: 2, team_size_max: 5 };
     renderWithContext(posting);
-    expect(screen.getByText(/Min 2 · Looking for 5/)).toBeInTheDocument();
+    expect(screen.getByText(/2–5 total · Looking for 4/)).toBeInTheDocument();
   });
 
   it("renders estimated time", () => {
