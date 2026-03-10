@@ -163,7 +163,7 @@ Determine the version bump from `$ARGUMENTS` or infer it:
 2. Compute the new version.
 3. Show the user: `Bumping version: 0.5.0 -> 0.6.0 (minor)`. Ask for confirmation.
 4. Update the `version` field in `package.json`.
-5. Update `spec/roadmap.md` — set the "Current version" line to the new version and "Last updated" to today's date.
+5. Update `spec/2-roadmap.md` — set the "Current version" line to the new version and "Last updated" to today's date.
 6. Commit the version bump on `dev`:
    ```
    git add package.json spec/roadmap.md

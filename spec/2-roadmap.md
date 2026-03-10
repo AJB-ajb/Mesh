@@ -4,8 +4,8 @@
 
 ## Version & Status
 
-- **Current version**: 0.5.0
-- **Last updated**: 2026-03-01
+- **Current version**: 0.6.0
+- **Last updated**: 2026-03-10
 - **Versioning**: Milestone-based semver (`MAJOR.MINOR.PATCH`). See [Update Protocol](#update-protocol).
 
 ---
@@ -210,23 +210,31 @@ Minimal native Android shell wrapping the hosted web app. iOS deferred — PWA c
 
 ### v1.0 — Launch
 
-| Feature               | Issue | Effort       | Description                                                                                                                                                      |
-| --------------------- | ----- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Email + push notifs   | #14   | Large        | Email and push delivery channels (in-app already implemented)                                                                                                    |
+| Feature               | Issue | Effort       | Description                                                                                                                                                        |
+| --------------------- | ----- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Email + push notifs   | #14   | Large        | Email and push delivery channels (in-app already implemented)                                                                                                      |
 | Channels              | #27   | Medium-Large | Shared posting contexts for hackathons, courses, orgs. Subsumed by [nested-postings.md](1-nested-postings.md) — channels are parent postings with open membership. |
-| Match pre-computation | #13   | Large        | Background pre-computation for instant match results at scale                                                                                                    |
-| LLM cost tiering      | —     | Medium       | Tier models by feature: cheap for format, mid for extraction, high for deep matching                                                                             |
-| Production hardening  | —     | Large        | Performance audit, error monitoring, rate limiting, security review                                                                                              |
+| Match pre-computation | #13   | Large        | Background pre-computation for instant match results at scale                                                                                                      |
+| LLM cost tiering      | —     | Medium       | Tier models by feature: cheap for format, mid for extraction, high for deep matching                                                                               |
+| Production hardening  | —     | Large        | Performance audit, error monitoring, rate limiting, security review                                                                                                |
 
 ### v1.1 — Post-Launch
 
-| Feature                      | Issue | Effort       | Description                                                                                                                                                                            |
-| ---------------------------- | ----- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Posting images               | #29   | Medium       | Upload and display images on postings (Supabase Storage)                                                                                                                               |
-| Ghost text (LLM suggestions) | —     | Medium       | Context-aware inline suggestions as user types, including prefilled slash commands                                                                                                     |
-| Auto-translation             | —     | Medium-Large | Posts auto-translated based on user language settings                                                                                                                                  |
+| Feature                      | Issue | Effort       | Description                                                                                                                                                                              |
+| ---------------------------- | ----- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Posting images               | #29   | Medium       | Upload and display images on postings (Supabase Storage)                                                                                                                                 |
+| Ghost text (LLM suggestions) | —     | Medium       | Context-aware inline suggestions as user types, including prefilled slash commands                                                                                                       |
+| Auto-translation             | —     | Medium-Large | Posts auto-translated based on user language settings                                                                                                                                    |
 | Recurring postings           | —     | Medium       | `/recur weekly tue` — auto-create posting instances on schedule. Uses nested posting model: instances are children of a standing parent. See [nested-postings.md](1-nested-postings.md). |
-| Daily digest                 | —     | Medium       | Cron-based email digest of new relevant postings (Resend)                                                                                                                              |
+| Daily digest                 | —     | Medium       | Cron-based email digest of new relevant postings (Resend)                                                                                                                                |
+
+---
+
+## Explorations
+
+Design areas that need deeper thinking before they become milestones. See `designs/` for detailed notes.
+
+- **Continuous profile building & failure-driven context capture** — profiles grow from usage (postings, acceptances, rejections) rather than upfront forms. Coordination failures (no matches, cancelled invites, exhausted sequences) become prompts for adding constraints or profile context. See `designs/continuous-profile-and-failure-recovery.md`.
 
 ---
 
