@@ -61,6 +61,8 @@ export function FeedbackWidget() {
 
   // Screenshot state — array of entries
   const [screenshots, setScreenshots] = useState<ScreenshotEntry[]>([]);
+  const screenshotsRef = useRef(screenshots);
+  screenshotsRef.current = screenshots;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const anyUploading = screenshots.some((s) => s.uploading);
@@ -84,59 +86,54 @@ export function FeedbackWidget() {
     [setOpen, resetForm],
   );
 
-  const uploadFile = useCallback(
-    async (file: File) => {
-      if (!ALLOWED_TYPES.includes(file.type)) return;
+  const uploadFile = useCallback(async (file: File) => {
+    if (!ALLOWED_TYPES.includes(file.type)) return;
 
-      if (screenshots.length >= MAX_SCREENSHOTS) {
-        setError(labels.feedback.screenshotLimitReached);
+    if (screenshotsRef.current.length >= MAX_SCREENSHOTS) {
+      setError(labels.feedback.screenshotLimitReached);
+      return;
+    }
+
+    const entryId = crypto.randomUUID();
+
+    // Add preview entry synchronously using object URL (no FileReader race)
+    const preview = URL.createObjectURL(file);
+    setScreenshots((prev) => [
+      ...prev,
+      { url: null, preview, uploading: true, id: entryId },
+    ]);
+
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("screenshot", file);
+      const res = await fetch("/api/feedback/screenshot", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        setError(labels.feedback.screenshotError);
+        setScreenshots((prev) => prev.filter((s) => s.id !== entryId));
+        URL.revokeObjectURL(preview);
         return;
       }
 
-      const entryId = crypto.randomUUID();
-
-      // Show local preview immediately
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const preview = ev.target?.result as string;
-        setScreenshots((prev) => [
-          ...prev,
-          { url: null, preview, uploading: true, id: entryId },
-        ]);
-      };
-      reader.readAsDataURL(file);
-
-      setError(null);
-
-      try {
-        const formData = new FormData();
-        formData.append("screenshot", file);
-        const res = await fetch("/api/feedback/screenshot", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!res.ok) {
-          setError(labels.feedback.screenshotError);
-          setScreenshots((prev) => prev.filter((s) => s.id !== entryId));
-          return;
-        }
-
-        const json = await res.json();
-        setScreenshots((prev) =>
-          prev.map((s) =>
-            s.id === entryId ? { ...s, url: json.url, uploading: false } : s,
-          ),
-        );
-      } catch {
-        setError(labels.feedback.screenshotError);
-        setScreenshots((prev) => prev.filter((s) => s.id !== entryId));
-      } finally {
-        if (fileInputRef.current) fileInputRef.current.value = "";
-      }
-    },
-    [screenshots.length],
-  );
+      const json = await res.json();
+      setScreenshots((prev) =>
+        prev.map((s) =>
+          s.id === entryId ? { ...s, url: json.url, uploading: false } : s,
+        ),
+      );
+    } catch {
+      setError(labels.feedback.screenshotError);
+      setScreenshots((prev) => prev.filter((s) => s.id !== entryId));
+      URL.revokeObjectURL(preview);
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, []);
 
   const handleScreenshotSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -191,7 +188,13 @@ export function FeedbackWidget() {
   }, [open, atLimit, uploadFile]);
 
   const removeScreenshot = useCallback((id: string) => {
-    setScreenshots((prev) => prev.filter((s) => s.id !== id));
+    setScreenshots((prev) => {
+      const entry = prev.find((s) => s.id === id);
+      if (entry?.preview.startsWith("blob:")) {
+        URL.revokeObjectURL(entry.preview);
+      }
+      return prev.filter((s) => s.id !== id);
+    });
   }, []);
 
   const handleSubmit = useCallback(async () => {

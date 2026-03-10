@@ -53,6 +53,36 @@ export const POST = withAuth(
       }
     }
 
+    // Validate screenshot_urls
+    if (screenshot_urls !== undefined && screenshot_urls !== null) {
+      if (!Array.isArray(screenshot_urls)) {
+        return apiError("VALIDATION", "screenshot_urls must be an array", 400);
+      }
+      if (screenshot_urls.length > 5) {
+        return apiError(
+          "VALIDATION",
+          "screenshot_urls must contain at most 5 elements",
+          400,
+        );
+      }
+      for (const url of screenshot_urls) {
+        if (typeof url !== "string" || url.trim().length === 0) {
+          return apiError(
+            "VALIDATION",
+            "Each screenshot URL must be a non-empty string",
+            400,
+          );
+        }
+        if (!url.startsWith("http")) {
+          return apiError(
+            "VALIDATION",
+            "Each screenshot URL must be a valid URL starting with http",
+            400,
+          );
+        }
+      }
+    }
+
     const { data, error } = await supabase
       .from("feedback")
       .insert({
