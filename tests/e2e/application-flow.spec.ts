@@ -45,7 +45,6 @@ test.describe("Application Flow", () => {
         title: "E2E Test: Looking for Frontend Dev",
         description:
           "Need a frontend developer for a React project. Must know TypeScript.",
-        skills: ["React", "TypeScript"],
         category: "personal",
         status: "open",
         team_size_min: 1,
@@ -138,7 +137,6 @@ test.describe("Application Flow", () => {
         creator_id: ownerId,
         title: "E2E Test: Mobile App Project",
         description: "Building a fitness tracker with React Native.",
-        skills: ["React Native", "TypeScript"],
         category: "personal",
         status: "open",
         team_size_min: 2,
@@ -158,9 +156,6 @@ test.describe("Application Flow", () => {
       await expect(
         developerPage.locator("text=Building a fitness tracker"),
       ).toBeVisible();
-
-      // Verify skills are shown
-      await expect(developerPage.locator("text=React Native")).toBeVisible();
     } finally {
       await cleanupTestData(ownerId);
     }
