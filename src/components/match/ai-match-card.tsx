@@ -96,19 +96,19 @@ export function AiMatchCard({ match, isApplying, onApply }: AiMatchCardProps) {
               ) : (
                 <Check className="h-4 w-4" />
               )}
-              Request to join
+              {labels.aiMatchCard.requestToJoin}
             </Button>
           )}
           {match.status === "applied" && (
             <Button variant="secondary" disabled>
-              Request sent
+              {labels.aiMatchCard.requestSent}
             </Button>
           )}
           {match.status === "accepted" && (
             <Button asChild>
               <Link href={`/inbox`}>
                 <MessageSquare className="h-4 w-4" />
-                Message Team
+                {labels.aiMatchCard.messageTeam}
               </Link>
             </Button>
           )}

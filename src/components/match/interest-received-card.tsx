@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BadgeList } from "@/components/ui/badge-list";
 import { getInitials, formatTimeAgo } from "@/lib/format";
 import { RelativeTime } from "@/components/ui/relative-time";
+import { labels } from "@/lib/labels";
 import type { InterestReceived } from "@/lib/hooks/use-interests";
 
 const statusColors = {
@@ -32,7 +33,7 @@ export function InterestReceivedCard({ interest }: InterestReceivedCardProps) {
               <span
                 className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors.interested}`}
               >
-                Interested
+                {labels.interestReceived.interested}
               </span>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -77,7 +78,7 @@ export function InterestReceivedCard({ interest }: InterestReceivedCardProps) {
         <div className="flex flex-wrap gap-2">
           {posting && (
             <Button variant="outline" asChild>
-              <Link href={`/postings/${posting.id}`}>View Posting</Link>
+              <Link href={`/postings/${posting.id}`}>{labels.interestReceived.viewPosting}</Link>
             </Button>
           )}
         </div>
