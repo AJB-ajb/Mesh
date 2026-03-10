@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { buildChain, authedUser } from "tests/utils/supabase-mock";
+import { testRequiresAuth, testRequiresResource, testRequiresOwnership } from "tests/utils/route-test-helpers";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -30,41 +31,20 @@ const routeCtx = { params: Promise.resolve({ id: "app-1" }) };
 describe("PATCH /api/applications/[id]/withdraw", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await PATCH(makeReq(), routeCtx);
-    expect(res.status).toBe(401);
-  });
+  testRequiresAuth(PATCH, makeReq, routeCtx, mockGetUser);
 
-  it("returns 404 when application not found", async () => {
-    authedUser(mockGetUser);
-    mockFrom.mockReturnValue(
-      buildChain({ data: null, error: { message: "not found" } }),
-    );
+  testRequiresResource(PATCH, makeReq, routeCtx, mockGetUser, mockFrom);
 
-    const res = await PATCH(makeReq(), routeCtx);
-    expect(res.status).toBe(404);
-  });
-
-  it("returns 403 when user is not the applicant", async () => {
-    authedUser(mockGetUser);
-    mockFrom.mockReturnValue(
-      buildChain({
-        data: {
-          id: "app-1",
-          applicant_id: "other-user",
-          posting_id: "posting-1",
-          status: "pending",
-        },
-        error: null,
-      }),
-    );
-
-    const res = await PATCH(makeReq(), routeCtx);
-    expect(res.status).toBe(403);
+  testRequiresOwnership(PATCH, makeReq, routeCtx, mockGetUser, () => {
+    mockFrom.mockReturnValue(buildChain({
+      data: {
+        id: "app-1",
+        applicant_id: "other-user",
+        posting_id: "posting-1",
+        status: "pending",
+      },
+      error: null,
+    }));
   });
 
   it("returns 400 when application is not withdrawable", async () => {

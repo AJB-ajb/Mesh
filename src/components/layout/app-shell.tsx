@@ -24,7 +24,7 @@ export function AppShell({ children, className }: AppShellProps) {
           <Header />
           <main
             id="main-content"
-            className={cn("flex-1 p-4 sm:p-6 pb-20 md:pb-6", className)}
+            className={cn("flex-1 p-4 pb-20 sm:p-6 md:pb-6", className)}
             role="main"
             tabIndex={-1}
           >

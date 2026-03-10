@@ -52,7 +52,23 @@ git push
 
 If push fails, report the error and stop.
 
-## 5. Clean Up
+## 5. Apply Migrations
+
+Check if the branch introduced any new migration files:
+
+```
+git diff dev~1..dev --name-only -- supabase/migrations/
+```
+
+If new migrations exist, apply them to the dev Supabase project:
+
+```
+supabase db push
+```
+
+If `db push` fails, report the error — the merge and push already succeeded, but the database is out of sync. The user must fix the migration before deploying.
+
+## 6. Clean Up
 
 1. Remove the worktree:
    ```
@@ -71,7 +87,7 @@ If push fails, report the error and stop.
    git fetch --prune origin
    ```
 
-## 6. Housekeeping
+## 7. Housekeeping
 
 ### Clean up orphaned worktree-agent branches
 
@@ -99,12 +115,13 @@ Run `git stash list --format='%gd | %ci | %s'`. If there are stashes:
 
 If there are no stashes, report "No stashes."
 
-## 7. Confirm
+## 8. Confirm
 
 Report what was done:
 
 - Branch merged
 - Pushed to remote
+- Migrations applied (count, or "none")
 - Worktree removed
 - Local branch deleted
 - Remote branch deleted

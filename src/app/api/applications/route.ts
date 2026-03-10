@@ -1,9 +1,11 @@
 import { withAuth } from "@/lib/api/with-auth";
+import { logFireAndForget } from "@/lib/api/fire-and-forget";
 import { notifyIfPreferred } from "@/lib/api/notify-if-preferred";
 import { markPostingFilledIfFull } from "@/lib/api/posting-fulfillment";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import {
   getPosting,
+  getProfile,
   getApplicationForPosting,
   createApplication,
   countApplicationsByStatus,
@@ -26,6 +28,19 @@ export const POST = withAuth(async (req, { user, supabase }) => {
 
   if (!posting_id || typeof posting_id !== "string") {
     throw new AppError("VALIDATION", "posting_id is required", 400);
+  }
+
+  // Ensure a profile row exists (FK target for applicant_id).
+  // If the user authenticated but never completed onboarding, create a stub
+  // so the join request always succeeds.
+  let profile = await getProfile(supabase, user.id);
+  if (!profile) {
+    const { data: stub } = await supabase
+      .from("profiles")
+      .upsert({ user_id: user.id }, { onConflict: "user_id" })
+      .select("*")
+      .single();
+    profile = stub;
   }
 
   // Fetch the posting
@@ -64,6 +79,35 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     );
   }
 
+  // Check for active invite where user is an invitee
+  const { data: activeInvite } = await supabase
+    .from("friend_asks")
+    .select(
+      "id, pending_invitees, ordered_friend_list, invite_mode, declined_list",
+    )
+    .eq("posting_id", posting_id)
+    .in("status", ["pending", "accepted"])
+    .limit(1)
+    .maybeSingle();
+
+  if (activeInvite) {
+    const inviteMode = activeInvite.invite_mode ?? "sequential";
+    const declinedList: string[] = activeInvite.declined_list ?? [];
+    const isInvited =
+      inviteMode === "parallel"
+        ? activeInvite.ordered_friend_list.includes(user.id) &&
+          !declinedList.includes(user.id)
+        : ((activeInvite.pending_invitees as string[]) ?? []).includes(user.id);
+
+    if (isInvited) {
+      throw new AppError(
+        "CONFLICT",
+        "You have a pending invite for this posting. Please respond to the invite instead.",
+        409,
+      );
+    }
+  }
+
   // Determine initial status
   const isFilled = posting.status === "filled";
   const isAutoAccept = posting.auto_accept === true;
@@ -94,13 +138,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
 
   // --- Notifications ---
 
-  const { data: applicantProfile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("user_id", user.id)
-    .single();
-
-  const applicantName = applicantProfile?.full_name || "Someone";
+  const applicantName = profile?.full_name || user.email || "Someone";
 
   const notifTitle = isFilled
     ? "New Waitlist Entry"
@@ -113,15 +151,18 @@ export const POST = withAuth(async (req, { user, supabase }) => {
       ? `${applicantName} has joined your posting "${posting.title}"`
       : `${applicantName} has requested to join "${posting.title}"`;
 
-  notifyIfPreferred(supabase, posting.creator_id, "interest_received", {
-    userId: posting.creator_id,
-    type: "application_received",
-    title: notifTitle,
-    body: notifBody,
-    relatedPostingId: posting_id,
-    relatedApplicationId: application.id,
-    relatedUserId: user.id,
-  });
+  logFireAndForget(
+    notifyIfPreferred(supabase, posting.creator_id, "interest_received", {
+      userId: posting.creator_id,
+      type: "application_received",
+      title: notifTitle,
+      body: notifBody,
+      relatedPostingId: posting_id,
+      relatedApplicationId: application.id,
+      relatedUserId: user.id,
+    }),
+    "application-created-notification",
+  );
 
   // Auto-accept: check if posting should be marked as filled
   if (isAutoAccept && !isFilled) {

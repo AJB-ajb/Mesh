@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { getInitials } from "@/lib/format";
 import { formatTimeAgo } from "@/lib/format";
+import { RelativeTime } from "@/components/ui/relative-time";
 import { labels } from "@/lib/labels";
 import type { MyInterest } from "@/lib/hooks/use-interests";
 
@@ -47,7 +48,7 @@ export function InterestSentCard({ interest }: InterestSentCardProps) {
           <div className="flex gap-2 w-full sm:w-auto">
             {posting && (
               <Button variant="outline" asChild>
-                <Link href={`/postings/${posting.id}`}>View Details</Link>
+                <Link href={`/postings/${posting.id}`}>{labels.interestSent.viewDetails}</Link>
               </Button>
             )}
           </div>
@@ -76,7 +77,11 @@ export function InterestSentCard({ interest }: InterestSentCardProps) {
             >
               {creatorName}
             </Link>{" "}
-            • Requested {formatTimeAgo(interest.created_at)}
+            • Requested{" "}
+            <RelativeTime
+              date={interest.created_at}
+              formatter={formatTimeAgo}
+            />
           </span>
         </div>
       </CardContent>

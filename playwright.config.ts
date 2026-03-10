@@ -49,6 +49,22 @@ export default defineConfig({
       dependencies: ["chromium"],
       testMatch: /e2e\/auth-feature\.spec\.ts/,
     },
+    // Self-authenticating tests — use the authenticated fixture which
+    // creates/cleans up its own users via Supabase Admin API.
+    {
+      name: "authenticated",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch:
+        /e2e\/(posting-creation|application-flow|discover-filtering|cross-user-visibility)\.spec\.ts/,
+    },
+    // Full multi-user lifecycle tests — opt-in, not run by default.
+    // Run with: pnpm test:e2e:full
+    {
+      name: "e2e-full",
+      use: { ...devices["Desktop Chrome"] },
+      testDir: "./tests/e2e-full",
+      timeout: 60_000,
+    },
   ],
   webServer: {
     command: "pnpm dev",

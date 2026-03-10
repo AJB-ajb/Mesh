@@ -1,5 +1,5 @@
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, apiSuccess } from "@/lib/errors";
+import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 
 /**
  * PATCH /api/friend-ask/[id]
@@ -10,12 +10,7 @@ import { apiError, apiSuccess } from "@/lib/errors";
 export const PATCH = withAuth(async (req, { user, supabase, params }) => {
   const { id } = params;
 
-  let body: { status?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return apiError("VALIDATION", "Invalid JSON body", 400);
-  }
+  const body = await parseBody<{ status?: string }>(req);
 
   if (body.status !== "cancelled") {
     return apiError("VALIDATION", "Only status 'cancelled' is supported", 400);

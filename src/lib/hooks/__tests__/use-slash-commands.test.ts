@@ -7,62 +7,35 @@ import { SLASH_COMMANDS } from "@/lib/slash-commands/registry";
 // Helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Creates a real textarea element in the document for testing.
- * We need a real element because the hook reads properties and the
- * menu position computation uses real DOM APIs.
- */
-function createRealTextarea(
-  value: string,
-  selectionStart: number,
-): {
-  ref: React.RefObject<HTMLTextAreaElement | null>;
-  cleanup: () => void;
-} {
+function createTextarea(value: string, selectionStart: number) {
   const textarea = document.createElement("textarea");
   textarea.value = value;
   document.body.appendChild(textarea);
-
-  // jsdom doesn't support selectionStart setter on detached elements reliably,
-  // so we set it after appending
   textarea.selectionStart = selectionStart;
   textarea.selectionEnd = selectionStart;
-
   return {
-    ref: { current: textarea },
-    cleanup: () => {
-      document.body.removeChild(textarea);
-    },
+    ref: { current: textarea } as React.RefObject<HTMLTextAreaElement | null>,
+    cleanup: () => document.body.removeChild(textarea),
   };
 }
 
-function createKeyboardEvent(
+function keyEvent(
   key: string,
-  extra: Partial<React.KeyboardEvent<HTMLTextAreaElement>> = {},
-): React.KeyboardEvent<HTMLTextAreaElement> {
+): React.KeyboardEvent<HTMLTextAreaElement> & { defaultPrevented: boolean } {
   let prevented = false;
   return {
     key,
-    preventDefault: () => {
-      prevented = true;
-    },
-    get defaultPrevented() {
-      return prevented;
-    },
-    ...extra,
-  } as React.KeyboardEvent<HTMLTextAreaElement>;
+    preventDefault: () => { prevented = true; },
+    get defaultPrevented() { return prevented; },
+  } as React.KeyboardEvent<HTMLTextAreaElement> & { defaultPrevented: boolean };
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
 describe("useSlashCommands", () => {
-  let onChange: ReturnType<typeof vi.fn<(newValue: string) => void>>;
+  let onChange: ReturnType<typeof vi.fn<(v: string) => void>>;
   const cleanups: (() => void)[] = [];
 
   beforeEach(() => {
-    onChange = vi.fn<(newValue: string) => void>();
+    onChange = vi.fn<(v: string) => void>();
   });
 
   afterEach(() => {
@@ -70,240 +43,232 @@ describe("useSlashCommands", () => {
     cleanups.length = 0;
   });
 
-  function setupTextarea(value: string, selectionStart: number) {
-    const { ref, cleanup } = createRealTextarea(value, selectionStart);
+  function setup(value: string, cursor: number) {
+    const { ref, cleanup } = createTextarea(value, cursor);
     cleanups.push(cleanup);
     return ref;
   }
 
-  it("starts with menu closed", () => {
-    const ref = setupTextarea("", 0);
-    const { result } = renderHook(() =>
-      useSlashCommands({ textareaRef: ref, value: "", onChange }),
-    );
+  // -----------------------------------------------------------------------
+  // Slash trigger detection — getSlashQuery logic
+  // -----------------------------------------------------------------------
 
-    expect(result.current.menuOpen).toBe(false);
-    expect(result.current.activeOverlay).toBeNull();
-  });
-
-  it("opens menu when / is at start of input", () => {
-    const ref = setupTextarea("/", 1);
+  it("detects / at the start of input", () => {
+    const ref = setup("/", 1);
     const { result } = renderHook(() =>
       useSlashCommands({ textareaRef: ref, value: "/", onChange }),
     );
 
-    act(() => {
-      result.current.checkForSlashCommand();
-    });
-
+    act(() => result.current.checkForSlashCommand());
     expect(result.current.menuOpen).toBe(true);
+  });
+
+  it("detects / after whitespace", () => {
+    const ref = setup("hello /", 7);
+    const { result } = renderHook(() =>
+      useSlashCommands({ textareaRef: ref, value: "hello /", onChange }),
+    );
+
+    act(() => result.current.checkForSlashCommand());
+    expect(result.current.menuOpen).toBe(true);
+  });
+
+  it("rejects / in the middle of a word", () => {
+    const ref = setup("hello/", 6);
+    const { result } = renderHook(() =>
+      useSlashCommands({ textareaRef: ref, value: "hello/", onChange }),
+    );
+
+    act(() => result.current.checkForSlashCommand());
+    expect(result.current.menuOpen).toBe(false);
+  });
+
+  it("detects / after a newline", () => {
+    const value = "line1\n/";
+    const ref = setup(value, value.length);
+    const { result } = renderHook(() =>
+      useSlashCommands({ textareaRef: ref, value, onChange }),
+    );
+
+    act(() => result.current.checkForSlashCommand());
+    expect(result.current.menuOpen).toBe(true);
+  });
+
+  it("closes menu when query contains a space", () => {
+    // Typing "/ti " — the space after "ti" should invalidate the slash query
+    const value = "hello /ti x";
+    const ref = setup(value, value.length);
+    const { result } = renderHook(() =>
+      useSlashCommands({ textareaRef: ref, value, onChange }),
+    );
+
+    act(() => result.current.checkForSlashCommand());
+    expect(result.current.menuOpen).toBe(false);
+  });
+
+  // -----------------------------------------------------------------------
+  // Command filtering
+  // -----------------------------------------------------------------------
+
+  it("shows all commands when only / is typed", () => {
+    const ref = setup("/", 1);
+    const { result } = renderHook(() =>
+      useSlashCommands({ textareaRef: ref, value: "/", onChange }),
+    );
+
+    act(() => result.current.checkForSlashCommand());
     expect(result.current.filteredCommands).toHaveLength(SLASH_COMMANDS.length);
   });
 
-  it("opens menu when / is after whitespace", () => {
-    const value = "hello /";
-    const ref = setupTextarea(value, value.length);
+  it("filters commands by substring match on name", () => {
+    const ref = setup("/ti", 3);
     const { result } = renderHook(() =>
-      useSlashCommands({ textareaRef: ref, value, onChange }),
+      useSlashCommands({ textareaRef: ref, value: "/ti", onChange }),
     );
 
-    act(() => {
-      result.current.checkForSlashCommand();
-    });
+    act(() => result.current.checkForSlashCommand());
+    expect(result.current.filteredCommands.map((c) => c.name)).toContain("time");
+    // Every filtered command should have "ti" in its name or label
+    for (const cmd of result.current.filteredCommands) {
+      const matchesName = cmd.name.toLowerCase().includes("ti");
+      const matchesLabel = cmd.label.toLowerCase().includes("ti");
+      expect(matchesName || matchesLabel).toBe(true);
+    }
+  });
 
+  it("returns empty list for a query that matches nothing", () => {
+    const ref = setup("/zzzzz", 6);
+    const { result } = renderHook(() =>
+      useSlashCommands({ textareaRef: ref, value: "/zzzzz", onChange }),
+    );
+
+    act(() => result.current.checkForSlashCommand());
     expect(result.current.menuOpen).toBe(true);
+    expect(result.current.filteredCommands).toHaveLength(0);
   });
 
-  it("does NOT open menu when / is in middle of word", () => {
-    const value = "hello/";
-    const ref = setupTextarea(value, value.length);
-    const { result } = renderHook(() =>
-      useSlashCommands({ textareaRef: ref, value, onChange }),
-    );
+  // -----------------------------------------------------------------------
+  // Keyboard navigation
+  // -----------------------------------------------------------------------
 
-    act(() => {
-      result.current.checkForSlashCommand();
-    });
-
-    expect(result.current.menuOpen).toBe(false);
-  });
-
-  it("filters commands as user types after /", () => {
-    const value = "/ti";
-    const ref = setupTextarea(value, value.length);
-    const { result } = renderHook(() =>
-      useSlashCommands({ textareaRef: ref, value, onChange }),
-    );
-
-    act(() => {
-      result.current.checkForSlashCommand();
-    });
-
-    expect(result.current.menuOpen).toBe(true);
-    // "ti" matches "time", "location", and "question" (substring match)
-    expect(result.current.filteredCommands.length).toBe(3);
-    expect(result.current.filteredCommands.map((c) => c.name)).toContain(
-      "time",
-    );
-  });
-
-  it("ArrowDown changes selectedIndex", () => {
-    const ref = setupTextarea("/", 1);
+  it("ArrowDown increments selectedIndex", () => {
+    const ref = setup("/", 1);
     const { result } = renderHook(() =>
       useSlashCommands({ textareaRef: ref, value: "/", onChange }),
     );
 
-    act(() => {
-      result.current.checkForSlashCommand();
-    });
+    act(() => result.current.checkForSlashCommand());
 
-    const downEvent = createKeyboardEvent("ArrowDown");
-    act(() => {
-      result.current.onKeyDown(downEvent);
-    });
+    const e = keyEvent("ArrowDown");
+    act(() => result.current.onKeyDown(e));
 
     expect(result.current.selectedIndex).toBe(1);
-    expect(downEvent.defaultPrevented).toBe(true);
+    expect(e.defaultPrevented).toBe(true);
   });
 
-  it("ArrowUp wraps to last item from 0", () => {
-    const ref = setupTextarea("/", 1);
+  it("ArrowDown wraps from last to first", () => {
+    const ref = setup("/", 1);
     const { result } = renderHook(() =>
       useSlashCommands({ textareaRef: ref, value: "/", onChange }),
     );
 
-    act(() => {
-      result.current.checkForSlashCommand();
-    });
+    act(() => result.current.checkForSlashCommand());
 
-    const upEvent = createKeyboardEvent("ArrowUp");
-    act(() => {
-      result.current.onKeyDown(upEvent);
-    });
+    // Move to last item
+    for (let i = 0; i < SLASH_COMMANDS.length - 1; i++) {
+      act(() => result.current.onKeyDown(keyEvent("ArrowDown")));
+    }
+    expect(result.current.selectedIndex).toBe(SLASH_COMMANDS.length - 1);
 
+    // One more wraps to 0
+    act(() => result.current.onKeyDown(keyEvent("ArrowDown")));
+    expect(result.current.selectedIndex).toBe(0);
+  });
+
+  it("ArrowUp wraps from first to last", () => {
+    const ref = setup("/", 1);
+    const { result } = renderHook(() =>
+      useSlashCommands({ textareaRef: ref, value: "/", onChange }),
+    );
+
+    act(() => result.current.checkForSlashCommand());
+
+    act(() => result.current.onKeyDown(keyEvent("ArrowUp")));
     expect(result.current.selectedIndex).toBe(SLASH_COMMANDS.length - 1);
   });
 
-  it("Enter selects command and opens overlay for action type", () => {
-    const ref = setupTextarea("/time", 5);
-    const { result } = renderHook(() =>
-      useSlashCommands({ textareaRef: ref, value: "/time", onChange }),
-    );
-
-    act(() => {
-      result.current.checkForSlashCommand();
-    });
-
-    const enterEvent = createKeyboardEvent("Enter");
-    act(() => {
-      result.current.onKeyDown(enterEvent);
-    });
-
-    expect(result.current.menuOpen).toBe(false);
-    expect(result.current.activeOverlay).toBe("time");
-    expect(enterEvent.defaultPrevented).toBe(true);
-  });
-
-  it("Escape closes menu", () => {
-    const ref = setupTextarea("/", 1);
-    const { result } = renderHook(() =>
-      useSlashCommands({ textareaRef: ref, value: "/", onChange }),
-    );
-
-    act(() => {
-      result.current.checkForSlashCommand();
-    });
-
-    expect(result.current.menuOpen).toBe(true);
-
-    const escEvent = createKeyboardEvent("Escape");
-    act(() => {
-      result.current.onKeyDown(escEvent);
-    });
-
-    expect(result.current.menuOpen).toBe(false);
-  });
-
-  it("selecting template opens template overlay", () => {
-    const ref = setupTextarea("/template", 9);
-    const { result } = renderHook(() =>
-      useSlashCommands({ textareaRef: ref, value: "/template", onChange }),
-    );
-
-    act(() => {
-      result.current.checkForSlashCommand();
-    });
-
-    const enterEvent = createKeyboardEvent("Enter");
-    act(() => {
-      result.current.onKeyDown(enterEvent);
-    });
-
-    expect(result.current.activeOverlay).toBe("template");
-  });
-
-  it("handleOverlayResult inserts text and closes overlay", () => {
-    const ref = setupTextarea("/time", 5);
-    const { result } = renderHook(() =>
-      useSlashCommands({ textareaRef: ref, value: "/time", onChange }),
-    );
-
-    act(() => {
-      result.current.checkForSlashCommand();
-    });
-
-    const enterEvent = createKeyboardEvent("Enter");
-    act(() => {
-      result.current.onKeyDown(enterEvent);
-    });
-
-    expect(result.current.activeOverlay).toBe("time");
-
-    onChange.mockClear();
-
-    act(() => {
-      result.current.handleOverlayResult("weekday evenings");
-    });
-
-    expect(result.current.activeOverlay).toBeNull();
-    expect(onChange).toHaveBeenCalled();
-  });
-
   it("does not intercept keys when menu is closed", () => {
-    const ref = setupTextarea("hello", 5);
+    const ref = setup("hello", 5);
     const { result } = renderHook(() =>
       useSlashCommands({ textareaRef: ref, value: "hello", onChange }),
     );
 
-    const downEvent = createKeyboardEvent("ArrowDown");
-    act(() => {
-      result.current.onKeyDown(downEvent);
-    });
-
-    expect(downEvent.defaultPrevented).toBe(false);
+    const e = keyEvent("ArrowDown");
+    act(() => result.current.onKeyDown(e));
+    expect(e.defaultPrevented).toBe(false);
   });
 
-  it("closeOverlay clears activeOverlay", () => {
-    const ref = setupTextarea("/time", 5);
+  it("Escape closes the menu", () => {
+    const ref = setup("/", 1);
+    const { result } = renderHook(() =>
+      useSlashCommands({ textareaRef: ref, value: "/", onChange }),
+    );
+
+    act(() => result.current.checkForSlashCommand());
+    expect(result.current.menuOpen).toBe(true);
+
+    act(() => result.current.onKeyDown(keyEvent("Escape")));
+    expect(result.current.menuOpen).toBe(false);
+  });
+
+  // -----------------------------------------------------------------------
+  // Command selection and overlay dispatch
+  // -----------------------------------------------------------------------
+
+  it("Enter on an action command opens the overlay", () => {
+    const ref = setup("/time", 5);
     const { result } = renderHook(() =>
       useSlashCommands({ textareaRef: ref, value: "/time", onChange }),
     );
 
-    act(() => {
-      result.current.checkForSlashCommand();
-    });
+    act(() => result.current.checkForSlashCommand());
+    act(() => result.current.onKeyDown(keyEvent("Enter")));
 
-    const enterEvent = createKeyboardEvent("Enter");
-    act(() => {
-      result.current.onKeyDown(enterEvent);
-    });
+    expect(result.current.menuOpen).toBe(false);
+    expect(result.current.activeOverlay).toBe("time");
+  });
 
+  it("handleOverlayResult inserts text at the slash position", () => {
+    const ref = setup("before /time after", 12); // cursor after "/time"
+    const { result } = renderHook(() =>
+      useSlashCommands({ textareaRef: ref, value: "before /time after", onChange }),
+    );
+
+    act(() => result.current.checkForSlashCommand());
+    act(() => result.current.onKeyDown(keyEvent("Enter")));
+
+    // After Enter, "/time" is removed and onChange is called with cleaned value
+    onChange.mockClear();
+
+    act(() => result.current.handleOverlayResult("weekday evenings"));
+
+    expect(result.current.activeOverlay).toBeNull();
+    expect(onChange).toHaveBeenCalledTimes(1);
+    const inserted = onChange.mock.calls[0][0] as string;
+    expect(inserted).toContain("weekday evenings");
+  });
+
+  it("closeOverlay clears the overlay without inserting text", () => {
+    const ref = setup("/time", 5);
+    const { result } = renderHook(() =>
+      useSlashCommands({ textareaRef: ref, value: "/time", onChange }),
+    );
+
+    act(() => result.current.checkForSlashCommand());
+    act(() => result.current.onKeyDown(keyEvent("Enter")));
     expect(result.current.activeOverlay).toBe("time");
 
-    act(() => {
-      result.current.closeOverlay();
-    });
-
+    act(() => result.current.closeOverlay());
     expect(result.current.activeOverlay).toBeNull();
   });
 });

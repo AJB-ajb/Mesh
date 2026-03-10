@@ -24,6 +24,7 @@ import { useRealtimeChat } from "@/lib/hooks/use-realtime-chat";
 import { useSendMessage } from "@/lib/hooks/use-send-message";
 import { usePresenceContext } from "@/components/providers/presence-provider";
 import { getInitials, formatTimeAgoShort } from "@/lib/format";
+import { RelativeTime } from "@/components/ui/relative-time";
 import { useConversationMessages } from "@/lib/hooks/use-inbox";
 import type { Conversation, Message } from "@/lib/hooks/use-inbox";
 
@@ -100,14 +101,16 @@ export function ConversationList({
               </div>
             </OnlineStatusBadge>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <h4 className="font-medium truncate">
+              <div className="flex items-center justify-between gap-1 min-w-0">
+                <h4 className="font-medium truncate min-w-0">
                   {conversation.other_user?.full_name || labels.common.unknown}
                 </h4>
                 {conversation.last_message && (
-                  <span className="text-xs text-muted-foreground">
-                    {formatTimeAgoShort(conversation.last_message.created_at)}
-                  </span>
+                  <RelativeTime
+                    date={conversation.last_message.created_at}
+                    formatter={formatTimeAgoShort}
+                    className="text-xs text-muted-foreground shrink-0"
+                  />
                 )}
               </div>
               {conversation.posting && (
@@ -225,9 +228,9 @@ export function ChatPanel({
                 {getInitials(conversation.other_user?.full_name || null)}
               </div>
             </OnlineStatusBadge>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h4 className="font-medium truncate">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 min-w-0">
+                <h4 className="font-medium truncate min-w-0">
                   {conversation.other_user?.full_name || labels.common.unknown}
                 </h4>
                 <OnlineStatus
@@ -241,7 +244,7 @@ export function ChatPanel({
               {conversation.posting && (
                 <Link
                   href={`/postings/${conversation.posting_id}`}
-                  className="text-xs text-primary hover:underline truncate block"
+                  className="text-xs text-primary hover:underline truncate block max-w-full"
                 >
                   Re: {conversation.posting.title}
                 </Link>
@@ -288,7 +291,10 @@ export function ChatPanel({
                       : "text-muted-foreground",
                   )}
                 >
-                  {formatTimeAgoShort(message.created_at)}
+                  <RelativeTime
+                    date={message.created_at}
+                    formatter={formatTimeAgoShort}
+                  />
                 </p>
               </div>
             </div>

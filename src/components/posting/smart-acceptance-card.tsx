@@ -84,7 +84,7 @@ export function SmartAcceptanceCard({
 
   const needsTimeSelection =
     cardData && !cardData.skip_time && !cardData.confirmed_time;
-  const hasTimeSlots = cardData && cardData.time_slots.length > 0;
+  const hasTimeSlots = cardData && cardData.time_slots?.length > 0;
 
   const isValid =
     cardState === "fallback" ||
@@ -175,8 +175,8 @@ export function SmartAcceptanceCard({
     cardData &&
     cardData.skip_time &&
     !cardData.confirmed_time &&
-    cardData.questions.length === 0 &&
-    cardData.roles.length === 0;
+    (cardData.questions?.length ?? 0) === 0 &&
+    (cardData.roles?.length ?? 0) === 0;
 
   if (isEmptyCard) {
     return (
@@ -223,7 +223,7 @@ export function SmartAcceptanceCard({
       )}
 
       {/* Questions section */}
-      {cardData && cardData.questions.length > 0 && (
+      {cardData && (cardData.questions?.length ?? 0) > 0 && (
         <QuestionsSection
           questions={cardData.questions}
           answers={answers}
@@ -232,7 +232,7 @@ export function SmartAcceptanceCard({
       )}
 
       {/* Roles section */}
-      {cardData && cardData.roles.length > 0 && (
+      {cardData && (cardData.roles?.length ?? 0) > 0 && (
         <RolesSection
           roles={cardData.roles}
           selectedRole={selectedRole}

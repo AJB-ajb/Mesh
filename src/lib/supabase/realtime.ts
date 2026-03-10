@@ -119,6 +119,14 @@ function isGroupMessage(value: unknown): value is GroupMessage {
   );
 }
 
+function isPostingLike(
+  value: unknown,
+): value is { id: string; status: string; creator_id: string } {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return typeof v.id === "string" && typeof v.status === "string";
+}
+
 // Exported for testing
 export const _typeGuards = {
   isMessage,
@@ -126,6 +134,7 @@ export const _typeGuards = {
   isConversation,
   isPresenceStateArray,
   isGroupMessage,
+  isPostingLike,
 };
 
 /**
@@ -497,6 +506,55 @@ export function subscribeToGroupMessages(
         console.error(
           `[Realtime] Error subscribing to group messages for posting ${postingId}`,
         );
+      }
+    });
+
+  return channel;
+}
+
+// ---------------------------------------------------------------------------
+// Posting changes (for SWR cache invalidation)
+// ---------------------------------------------------------------------------
+
+export type PostingEvent = {
+  eventType: "INSERT" | "UPDATE" | "DELETE";
+  posting: { id: string; status: string; creator_id: string };
+};
+
+/**
+ * Subscribe to real-time posting changes (inserts, updates, deletes).
+ * Used to invalidate SWR caches in the discover and active feeds.
+ */
+export function subscribeToPostings(
+  onEvent: (event: PostingEvent) => void,
+): RealtimeChannel {
+  const supabase = createClient();
+
+  const channel = supabase
+    .channel("postings:global")
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "postings",
+      },
+      (payload) => {
+        const record =
+          payload.eventType === "DELETE" ? payload.old : payload.new;
+        if (isPostingLike(record)) {
+          onEvent({
+            eventType: payload.eventType as PostingEvent["eventType"],
+            posting: record,
+          });
+        }
+      },
+    )
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        console.log("[Realtime] Subscribed to postings changes");
+      } else if (status === "CHANNEL_ERROR") {
+        console.error("[Realtime] Error subscribing to postings changes");
       }
     });
 

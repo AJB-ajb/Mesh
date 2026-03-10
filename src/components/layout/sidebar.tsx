@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -37,14 +37,13 @@ interface SidebarProps {
 
 export function Sidebar({ className }: SidebarProps) {
   const router = useRouter();
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    // Only access localStorage on client side
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("sidebar-collapsed");
-      return saved ? JSON.parse(saved) : false;
-    }
-    return false;
-  });
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Sync from localStorage after mount to avoid SSR/client hydration mismatch
+  useEffect(() => {
+    const saved = localStorage.getItem("sidebar-collapsed");
+    if (saved) queueMicrotask(() => setIsCollapsed(JSON.parse(saved)));
+  }, []);
 
   const onActivatePrimary = useCallback(
     (index: number) => {

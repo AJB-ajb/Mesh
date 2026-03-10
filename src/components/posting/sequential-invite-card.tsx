@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Loader2, ListOrdered, XCircle, Info } from "lucide-react";
+import { Loader2, ListOrdered, XCircle, Info, UserPlus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
+import { NumberPicker } from "@/components/ui/number-picker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Popover,
@@ -13,8 +14,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useSequentialInviteForPosting } from "@/lib/hooks/use-sequential-invites";
-import { SequentialInviteSelector } from "./sequential-invite-selector";
 import { SequentialInviteStatus } from "./sequential-invite-status";
+import { InvitePickerSheet } from "./invite-picker-sheet";
 
 type ConnectionItem = {
   user_id: string;
@@ -42,16 +43,23 @@ export function SequentialInviteCard({
   const [isCreating, setIsCreating] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
   const [connectionNames, setConnectionNames] = useState<
     Record<string, string>
   >({});
 
-  // Resolve connection names when we have an active sequential invite
+  // Resolve connection names when we have an active sequential invite.
+  // Use the stringified friend list as dependency (stable across SWR polls)
+  // to avoid re-fetching on every revalidation cycle.
+  const friendListKey = sequentialInvite?.ordered_friend_list.join(",") ?? "";
+
   useEffect(() => {
-    if (!sequentialInvite) return;
+    if (!sequentialInvite || friendListKey === "") return;
 
     const ids = sequentialInvite.ordered_friend_list;
-    if (ids.length === 0) return;
+    // Only fetch names for IDs we don't already have
+    const missingIds = ids.filter((id) => !connectionNames[id]);
+    if (missingIds.length === 0) return;
 
     let cancelled = false;
 
@@ -60,7 +68,7 @@ export function SequentialInviteCard({
         const res = await fetch("/api/profiles/batch", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_ids: ids }),
+          body: JSON.stringify({ user_ids: missingIds }),
         });
 
         if (!res.ok) return;
@@ -68,11 +76,13 @@ export function SequentialInviteCard({
         const { profiles } = await res.json();
         if (cancelled) return;
 
-        const names: Record<string, string> = {};
-        for (const p of profiles) {
-          names[p.user_id] = p.full_name || p.user_id.slice(0, 8);
-        }
-        setConnectionNames(names);
+        setConnectionNames((prev) => {
+          const next = { ...prev };
+          for (const p of profiles) {
+            next[p.user_id] = p.full_name || p.user_id.slice(0, 8);
+          }
+          return next;
+        });
       } catch {
         // Silently fail — SequentialInviteStatus will use truncated IDs
       }
@@ -82,7 +92,8 @@ export function SequentialInviteCard({
     return () => {
       cancelled = true;
     };
-  }, [sequentialInvite]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [friendListKey]);
 
   const handleCreate = useCallback(async () => {
     if (selectedConnections.length === 0) return;
@@ -120,6 +131,15 @@ export function SequentialInviteCard({
         const data = await sendRes.json();
         throw new Error(data.error?.message || "Failed to send first invite");
       }
+
+      // Seed connectionNames from the selected connections so names are
+      // visible immediately when the UI switches to the active-invite view,
+      // avoiding a flash of raw UUIDs while the batch profile fetch runs.
+      const seeded: Record<string, string> = {};
+      for (const c of selectedConnections) {
+        seeded[c.user_id] = c.full_name;
+      }
+      setConnectionNames(seeded);
 
       mutate();
     } catch (err) {
@@ -187,21 +207,23 @@ export function SequentialInviteCard({
             connectionNames={connectionNames}
           />
 
-          {sequentialInvite.status === "pending" && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCancel}
-              disabled={isCancelling}
-            >
-              {isCancelling ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <XCircle className="size-4" />
-              )}
-              {labels.invite.cancelInvite}
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {sequentialInvite.status === "pending" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancel}
+                disabled={isCancelling}
+              >
+                {isCancelling ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <XCircle className="size-4" />
+                )}
+                {labels.invite.cancelInvite}
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
     );
@@ -244,15 +266,11 @@ export function SequentialInviteCard({
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-72 text-sm" side="top">
-                <p className="font-medium">
-                  {labels.invite.modeSequential}
-                </p>
+                <p className="font-medium">{labels.invite.modeSequential}</p>
                 <p className="mt-1 text-muted-foreground">
                   {labels.invite.modeSequentialHelp}
                 </p>
-                <p className="mt-3 font-medium">
-                  {labels.invite.modeParallel}
-                </p>
+                <p className="mt-3 font-medium">{labels.invite.modeParallel}</p>
                 <p className="mt-1 text-muted-foreground">
                   {labels.invite.modeParallelHelp}
                 </p>
@@ -287,29 +305,15 @@ export function SequentialInviteCard({
               {labels.invite.advancedSettings}
             </summary>
             <div className="mt-2 space-y-2">
-              <label
-                htmlFor="concurrent-invites"
-                className="text-sm font-medium"
-              >
+              <label className="text-sm font-medium">
                 {labels.invite.concurrentLabel}
               </label>
-              <input
-                id="concurrent-invites"
-                type="number"
+              <NumberPicker
+                value={concurrentInvites}
+                onChange={setConcurrentInvites}
                 min={1}
                 max={Math.max(1, selectedConnections.length)}
-                value={concurrentInvites}
-                onChange={(e) => {
-                  const val = Math.max(
-                    1,
-                    Math.min(
-                      Math.max(1, selectedConnections.length),
-                      Number(e.target.value) || 1,
-                    ),
-                  );
-                  setConcurrentInvites(val);
-                }}
-                className="flex h-9 w-20 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                label={labels.invite.concurrentLabel}
               />
               <p className="text-xs text-muted-foreground">
                 {labels.invite.concurrentHelp}
@@ -320,12 +324,26 @@ export function SequentialInviteCard({
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
-        <SequentialInviteSelector
-          currentUserId={currentUserId}
-          selectedConnections={selectedConnections}
-          onChange={setSelectedConnections}
-          inviteMode={inviteMode}
-        />
+        {/* Selected people summary + add button */}
+        {selectedConnections.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {selectedConnections.map((c) => (
+              <span
+                key={c.user_id}
+                className="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-xs font-medium"
+              >
+                {c.full_name}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <Button variant="outline" size="sm" onClick={() => setShowPicker(true)}>
+          <UserPlus className="size-4" />
+          {selectedConnections.length > 0
+            ? labels.invite.pickerInviteMore
+            : labels.invite.pickerTitle}
+        </Button>
 
         {selectedConnections.length > 0 && (
           <Button onClick={handleCreate} disabled={isCreating}>
@@ -339,6 +357,15 @@ export function SequentialInviteCard({
             )}
           </Button>
         )}
+
+        <InvitePickerSheet
+          open={showPicker}
+          onOpenChange={setShowPicker}
+          selectedConnections={selectedConnections}
+          onChange={setSelectedConnections}
+          currentUserId={currentUserId}
+          inviteMode={inviteMode}
+        />
       </CardContent>
     </Card>
   );

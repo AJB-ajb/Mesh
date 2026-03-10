@@ -49,6 +49,7 @@ function PostingDetailInner() {
     waitlistPosition: fetchedWaitlistPosition,
     acceptedCount: fetchedAcceptedCount,
     parentPosting,
+    hasPendingInvite,
     isLoading,
     mutate,
   } = usePostingDetail(postingId);
@@ -56,7 +57,7 @@ function PostingDetailInner() {
   // Determine active tab from URL or context
   const tabParam = searchParams.get("tab");
   const defaultTab =
-    tabParam === "edit" || tabParam === "manage" || tabParam === "project"
+    tabParam === "manage" || tabParam === "project"
       ? tabParam
       : "manage";
   const [activeTab, setActiveTab] = useState(defaultTab);
@@ -159,6 +160,7 @@ function PostingDetailInner() {
             projectEnabled,
             acceptedCount,
             parentPosting,
+            hasPendingInvite,
           }
         : null,
     [
@@ -179,6 +181,7 @@ function PostingDetailInner() {
       projectEnabled,
       acceptedCount,
       parentPosting,
+      hasPendingInvite,
     ],
   );
 

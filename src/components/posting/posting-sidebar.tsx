@@ -28,10 +28,10 @@ export function PostingSidebar() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-sm font-medium">
+            <div className="flex size-12 items-center justify-center rounded-full bg-muted text-sm font-medium">
               {getInitials(creatorName)}
             </div>
-            <div>
+            <div className="flex-1">
               <Link
                 href={`/profile/${posting.profiles?.user_id}`}
                 className="font-medium hover:underline"
@@ -44,13 +44,17 @@ export function PostingSidebar() {
                 </p>
               )}
             </div>
+            {!isOwner && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onContactCreator}
+                aria-label={labels.postingDetail.contactCreator}
+              >
+                <MessageSquare className="size-4" />
+              </Button>
+            )}
           </div>
-          {!isOwner && (
-            <Button className="w-full" onClick={onContactCreator}>
-              <MessageSquare className="h-4 w-4" />
-              {labels.postingDetail.contactCreator}
-            </Button>
-          )}
         </CardContent>
       </Card>
 

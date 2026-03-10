@@ -148,8 +148,9 @@ describe("matchProfileToPostings", () => {
     );
   });
 
-  it("throws error when profile has no embedding", async () => {
+  it("returns empty array when profile has no embedding (null)", async () => {
     const { mockClient, mockFrom } = createMockSupabase();
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     mockFrom.mockReturnValue({
       select: vi.fn().mockReturnValue({
@@ -166,9 +167,36 @@ describe("matchProfileToPostings", () => {
       mockClient as unknown as Awaited<ReturnType<typeof createClient>>,
     );
 
-    await expect(matchProfileToPostings("user-1")).rejects.toThrow(
-      "Your profile embedding is still being generated",
+    const matches = await matchProfileToPostings("user-1");
+    expect(matches).toEqual([]);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[matching] Profile embedding not ready"),
     );
+    warnSpy.mockRestore();
+  });
+
+  it("returns empty array when profile embedding is not an array", async () => {
+    const { mockClient, mockFrom } = createMockSupabase();
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: { embedding: "not-an-array" },
+            error: null,
+          }),
+        }),
+      }),
+    });
+
+    vi.mocked(createClient).mockResolvedValue(
+      mockClient as unknown as Awaited<ReturnType<typeof createClient>>,
+    );
+
+    const matches = await matchProfileToPostings("user-1");
+    expect(matches).toEqual([]);
+    warnSpy.mockRestore();
   });
 
   it("returns empty array when no matches found", async () => {
@@ -414,8 +442,9 @@ describe("matchPostingToProfiles", () => {
     );
   });
 
-  it("throws error when posting has no embedding", async () => {
+  it("returns empty array when posting has no embedding (null)", async () => {
     const { mockClient, mockFrom } = createMockSupabase();
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const mockSingle = vi.fn().mockResolvedValue({
       data: {
@@ -439,9 +468,43 @@ describe("matchPostingToProfiles", () => {
       mockClient as unknown as Awaited<ReturnType<typeof createClient>>,
     );
 
-    await expect(matchPostingToProfiles("post-1")).rejects.toThrow(
-      "The posting embedding is still being generated",
+    const matches = await matchPostingToProfiles("post-1");
+    expect(matches).toEqual([]);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[matching] Posting embedding not ready"),
     );
+    warnSpy.mockRestore();
+  });
+
+  it("returns empty array when posting embedding is not an array", async () => {
+    const { mockClient, mockFrom } = createMockSupabase();
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const mockSingle = vi.fn().mockResolvedValue({
+      data: {
+        embedding: "some-string",
+        creator_id: "creator-1",
+        title: "Test",
+        description: "Test",
+      },
+      error: null,
+    });
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({ single: mockSingle }),
+          single: mockSingle,
+        }),
+      }),
+    });
+
+    vi.mocked(createClient).mockResolvedValue(
+      mockClient as unknown as Awaited<ReturnType<typeof createClient>>,
+    );
+
+    const matches = await matchPostingToProfiles("post-1");
+    expect(matches).toEqual([]);
+    warnSpy.mockRestore();
   });
 });
 
@@ -486,6 +549,8 @@ describe("createMatchRecords", () => {
           embedding: null,
           status: "open",
           identified_roles: null,
+          in_discover: true,
+          link_token: null,
 
           created_at: "",
           updated_at: "",
@@ -548,6 +613,8 @@ describe("createMatchRecords", () => {
           embedding: null,
           status: "open",
           identified_roles: null,
+          in_discover: true,
+          link_token: null,
 
           created_at: "",
           updated_at: "",

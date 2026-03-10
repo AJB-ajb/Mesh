@@ -38,6 +38,7 @@ vi.mock("@/lib/api/rate-limit", () => ({
 }));
 
 import { buildChain, authedUser } from "tests/utils/supabase-mock";
+import { testRequiresAuth } from "tests/utils/route-test-helpers";
 
 import { POST } from "../route";
 
@@ -59,14 +60,7 @@ describe("POST /api/matches/deep-match", () => {
     mockIsDeepMatchAvailable.mockReturnValue(true);
   });
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await POST(makeReq(), routeCtx);
-    expect(res.status).toBe(401);
-  });
+  testRequiresAuth(POST, makeReq, routeCtx, mockGetUser);
 
   it("returns 403 for free tier users", async () => {
     authedUser(mockGetUser);

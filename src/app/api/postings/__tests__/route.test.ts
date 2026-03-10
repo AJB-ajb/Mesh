@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { buildChain, authedUser } from "tests/utils/supabase-mock";
+import { testRequiresAuth } from "tests/utils/route-test-helpers";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -41,14 +42,7 @@ const routeCtx = { params: Promise.resolve({}) };
 describe("POST /api/postings", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await POST(makeReq(), routeCtx);
-    expect(res.status).toBe(401);
-  });
+  testRequiresAuth(POST, makeReq, routeCtx, mockGetUser);
 
   it("returns 400 when description is missing", async () => {
     authedUser(mockGetUser, MOCK_USER);
@@ -228,6 +222,8 @@ describe("POST /api/postings", () => {
 
     const { triggerEmbeddingGenerationServer } =
       await import("@/lib/api/trigger-embedding-server");
-    expect(triggerEmbeddingGenerationServer).toHaveBeenCalled();
+    expect(triggerEmbeddingGenerationServer).toHaveBeenCalledWith(
+      "http://localhost",
+    );
   });
 });

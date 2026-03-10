@@ -24,6 +24,7 @@ vi.mock("@/lib/matching/posting-to-profile", () => ({
 }));
 
 import { buildChain, authedUser } from "tests/utils/supabase-mock";
+import { testRequiresAuth, testRequiresResource, testRequiresOwnership } from "tests/utils/route-test-helpers";
 
 // Dynamic import for [id] path
 const { GET } = await import("@/app/api/matches/for-posting/[id]/route");
@@ -35,39 +36,12 @@ const routeCtx = { params: Promise.resolve({ id: "posting-1" }) };
 describe("GET /api/matches/for-posting/[id]", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await GET(makeReq(), routeCtx);
-    expect(res.status).toBe(401);
-  });
-
-  it("returns 404 when posting not found", async () => {
-    authedUser(mockGetUser);
-    mockFrom.mockReturnValue(
-      buildChain({ data: null, error: { message: "not found" } }),
-    );
-
-    const res = await GET(makeReq(), routeCtx);
-    const body = await res.json();
-
-    expect(res.status).toBe(404);
-    expect(body.error.code).toBe("NOT_FOUND");
-  });
-
-  it("returns 403 when user is not the posting creator", async () => {
-    authedUser(mockGetUser);
+  testRequiresAuth(GET, makeReq, routeCtx, mockGetUser);
+  testRequiresResource(GET, makeReq, routeCtx, mockGetUser, mockFrom);
+  testRequiresOwnership(GET, makeReq, routeCtx, mockGetUser, () => {
     mockFrom.mockReturnValue(
       buildChain({ data: { creator_id: "other-user" }, error: null }),
     );
-
-    const res = await GET(makeReq(), routeCtx);
-    const body = await res.json();
-
-    expect(res.status).toBe(403);
-    expect(body.error.code).toBe("FORBIDDEN");
   });
 
   it("returns matches successfully", async () => {

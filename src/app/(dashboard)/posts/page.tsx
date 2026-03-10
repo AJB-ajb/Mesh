@@ -17,6 +17,7 @@ const FILTERS: PostsPageFilter[] = [
   "created",
   "joined",
   "applied",
+  "invited",
   "completed",
 ];
 
@@ -66,7 +67,7 @@ function PostsContent() {
       </div>
 
       {/* Filter chips */}
-      <div className="flex gap-3 overflow-x-auto scrollbar-none">
+      <div className="flex flex-wrap gap-2">
         {FILTERS.map((filter) => (
           <button
             key={filter}

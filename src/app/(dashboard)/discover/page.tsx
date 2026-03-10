@@ -10,7 +10,11 @@ import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { usePostings } from "@/lib/hooks/use-postings";
 import { useConnections } from "@/lib/hooks/use-connections";
-import type { Posting, QueryFilters } from "@/lib/hooks/use-postings";
+import type {
+  Posting,
+  PostingWithScore,
+  QueryFilters,
+} from "@/lib/hooks/use-postings";
 import { useNlFilter } from "@/lib/hooks/use-nl-filter";
 import { useSkillDescendants } from "@/lib/hooks/use-skill-descendants";
 import { usePostingInterest } from "@/lib/hooks/use-posting-interest";
@@ -68,8 +72,10 @@ function DiscoverContent() {
     const filters: QueryFilters = {};
     if (resolvedSkillIds.length > 0) filters.skillNodeIds = resolvedSkillIds;
     if (contextParentId) filters.parentPostingId = contextParentId;
+    if (searchQuery) filters.searchQuery = searchQuery;
+    if (filterVisibility !== "all") filters.visibility = filterVisibility;
     return Object.keys(filters).length > 0 ? filters : undefined;
-  }, [resolvedSkillIds, contextParentId]);
+  }, [resolvedSkillIds, contextParentId, searchQuery, filterVisibility]);
 
   const { postings, userId, interestedPostingIds, isLoading, mutate } =
     usePostings("discover", filterCategory, queryFilters);
@@ -120,31 +126,10 @@ function DiscoverContent() {
     return ids;
   }, [connections, userId]);
 
-  // Apply text search, mode filter, saved filter, connections filter, and sort
+  // Apply NL filters, saved filter, connections filter, and sort
+  // (text search and visibility are now applied server-side via queryFilters)
   const filteredPostings = useMemo(() => {
-    // Text search and mode filter
-    let result = postings.filter((posting: Posting) => {
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const matchesSearch =
-          posting.title.toLowerCase().includes(query) ||
-          posting.description.toLowerCase().includes(query) ||
-          posting.skills.some((skill: string) =>
-            skill.toLowerCase().includes(query),
-          );
-        if (!matchesSearch) return false;
-      }
-
-      if (
-        filterVisibility !== "all" &&
-        (posting.visibility ??
-          (posting.mode === "friend_ask" ? "private" : "public")) !==
-          filterVisibility
-      )
-        return false;
-
-      return true;
-    });
+    let result = postings as PostingWithScore[];
 
     // Apply NL-parsed structured filters
     result = applyFilters(result, nlFilters);
@@ -174,8 +159,6 @@ function DiscoverContent() {
     return result;
   }, [
     postings,
-    searchQuery,
-    filterVisibility,
     nlFilters,
     showSaved,
     bookmarkedIds,
@@ -283,7 +266,7 @@ function DiscoverContent() {
         )
       ) : (
         /* Postings grid */
-        <div className="grid gap-6">
+        <div className="grid gap-3 sm:gap-6">
           {filteredPostings.map((posting) => {
             const isOwner = userId === posting.creator_id;
             const isAlreadyInterested = interestedPostingIds.includes(

@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { buildChain, authedUser } from "tests/utils/supabase-mock";
+import { testRequiresAuth, testRequiresResource, testRequiresOwnership } from "tests/utils/route-test-helpers";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -22,30 +23,9 @@ const routeCtx = { params: Promise.resolve({ id: "match-1" }) };
 describe("GET /api/matches/[id]", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await GET(req, routeCtx);
-    expect(res.status).toBe(401);
-  });
-
-  it("returns 404 when match not found", async () => {
-    authedUser(mockGetUser);
-    mockFrom.mockReturnValue(
-      buildChain({ data: null, error: { message: "not found" } }),
-    );
-
-    const res = await GET(req, routeCtx);
-    const body = await res.json();
-
-    expect(res.status).toBe(404);
-    expect(body.error.code).toBe("NOT_FOUND");
-  });
-
-  it("returns 403 when user has no access to match", async () => {
-    authedUser(mockGetUser);
+  testRequiresAuth(GET, () => req, routeCtx, mockGetUser);
+  testRequiresResource(GET, () => req, routeCtx, mockGetUser, mockFrom);
+  testRequiresOwnership(GET, () => req, routeCtx, mockGetUser, () => {
     mockFrom.mockReturnValue(
       buildChain({
         data: {
@@ -62,12 +42,6 @@ describe("GET /api/matches/[id]", () => {
         error: null,
       }),
     );
-
-    const res = await GET(req, routeCtx);
-    const body = await res.json();
-
-    expect(res.status).toBe(403);
-    expect(body.error.code).toBe("FORBIDDEN");
   });
 
   it("returns match details when user is the matched user", async () => {

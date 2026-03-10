@@ -468,7 +468,7 @@
    =========================================== */
 @layer components {
   .markdown-content {
-    @apply text-sm leading-relaxed;
+    @apply text-sm leading-relaxed break-words;
   }
   .markdown-content > *:first-child {
     @apply mt-0;

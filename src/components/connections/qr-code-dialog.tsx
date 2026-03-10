@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Copy, Download } from "lucide-react";
 
@@ -29,19 +29,15 @@ export function QrCodeDialog({
   userName,
   onCopied,
 }: QrCodeDialogProps) {
-  const profileUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/profile/${userId}`
-      : `/profile/${userId}`;
+  const [profileUrl, setProfileUrl] = useState(`/profile/${userId}`);
+  useEffect(() => {
+    setProfileUrl(`${window.location.origin}/profile/${userId}`);
+  }, [userId]);
 
   const handleCopyLink = useCallback(async () => {
-    const url =
-      typeof window !== "undefined"
-        ? `${window.location.origin}/profile/${userId}`
-        : `/profile/${userId}`;
-    await navigator.clipboard.writeText(url);
+    await navigator.clipboard.writeText(profileUrl);
     onCopied?.();
-  }, [userId, onCopied]);
+  }, [profileUrl, onCopied]);
 
   const handleDownloadQr = useCallback(() => {
     // Find the SVG and convert to canvas/PNG
@@ -103,11 +99,7 @@ export function QrCodeDialog({
         </div>
 
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={handleCopyLink}
-          >
+          <Button variant="outline" className="flex-1" onClick={handleCopyLink}>
             <Copy className="h-4 w-4" />
             {labels.connectionsPage.copyLink}
           </Button>

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { computeWeightedScore, formatScore } from "@/lib/matching/scoring";
 import { labels } from "@/lib/labels";
 import { formatDateAgo, stripTitleMarkdown } from "@/lib/format";
+import { RelativeTime } from "@/components/ui/relative-time";
 import type { SaveStatus } from "@/lib/hooks/use-auto-save";
 import { usePostingCoreContext } from "./posting-core-context";
 import { usePostingEditContext } from "./posting-edit-context";
@@ -64,16 +65,18 @@ export function PostingDetailHeader() {
     backHref,
     backLabel,
     parentPosting,
+    hasPendingInvite,
   } = usePostingCoreContext();
   const { form, onFormChange, saveStatus } = usePostingEditContext();
 
   const creatorName = posting.profiles?.full_name || "Unknown";
 
-  // Determine whether to hide the apply section (private postings for visitors)
-  const hideApplySection =
-    !isOwner &&
+  const isPrivate =
     (posting.visibility ??
       (posting.mode === "friend_ask" ? "private" : "public")) === "private";
+
+  // Hide apply section for private postings and when user has a pending invite
+  const hideApplySection = !isOwner && (isPrivate || hasPendingInvite);
 
   return (
     <>
@@ -108,55 +111,61 @@ export function PostingDetailHeader() {
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-2">
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex flex-col gap-2">
             {isOwner ? (
-              <input
+              <textarea
                 value={form.title}
                 onChange={(e) => onFormChange("title", e.target.value)}
-                className="text-2xl font-bold flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.preventDefault();
+                }}
+                rows={1}
+                className="text-2xl font-bold w-full rounded-md border border-input bg-background px-3 py-2 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none field-sizing-content"
               />
             ) : (
-              <h1 className="text-3xl font-bold tracking-tight">
+              <h1 className="text-3xl font-bold tracking-tight line-clamp-2">
                 {stripTitleMarkdown(posting.title)}
               </h1>
             )}
-            <Badge
-              variant={
-                posting.status === "open"
-                  ? isExpired(posting.expires_at)
-                    ? "destructive"
-                    : "default"
-                  : posting.status === "filled"
-                    ? "secondary"
-                    : "outline"
-              }
-            >
-              {isExpired(posting.expires_at)
-                ? labels.common.expired
-                : posting.status}
-            </Badge>
-            {(posting.visibility === "private" ||
-              posting.mode === "friend_ask") && (
-              <Badge variant="outline">{labels.invite.privateBadge}</Badge>
-            )}
-            {posting.expires_at && (
-              <span
-                className={`text-xs ${isExpired(posting.expires_at) ? "text-destructive" : "text-muted-foreground"}`}
-              >
-                {formatExpiry(posting.expires_at)}
-              </span>
-            )}
-            {!isOwner && matchBreakdown && (
+            <div className="flex items-center gap-3 flex-wrap">
               <Badge
-                variant="default"
-                className="bg-green-500 hover:bg-green-600 flex items-center gap-1"
+                variant={
+                  posting.status === "open"
+                    ? isExpired(posting.expires_at)
+                      ? "destructive"
+                      : "default"
+                    : posting.status === "filled"
+                      ? "secondary"
+                      : "outline"
+                }
               >
-                <Sparkles className="h-4 w-4" />
-                {formatScore(computeWeightedScore(matchBreakdown))}{" "}
-                {labels.postingDetail.match}
+                {isExpired(posting.expires_at)
+                  ? labels.common.expired
+                  : posting.status}
               </Badge>
-            )}
-            {isOwner && <SaveStatusIndicator status={saveStatus} />}
+              {(posting.visibility === "private" ||
+                posting.mode === "friend_ask") && (
+                <Badge variant="outline">{labels.invite.privateBadge}</Badge>
+              )}
+              {posting.expires_at && (
+                <span
+                  className={`text-xs ${isExpired(posting.expires_at) ? "text-destructive" : "text-muted-foreground"}`}
+                >
+                  {formatExpiry(posting.expires_at)}
+                </span>
+              )}
+              {!isOwner && matchBreakdown && (
+                <Badge
+                  variant="default"
+                  className="bg-green-500 hover:bg-green-600 flex items-center gap-1"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  {formatScore(computeWeightedScore(matchBreakdown))}{" "}
+                  {labels.postingDetail.match}
+                </Badge>
+              )}
+              {isOwner && <SaveStatusIndicator status={saveStatus} />}
+            </div>
           </div>
           <p className="text-muted-foreground">
             {labels.postingDetail.postedBy}{" "}
@@ -166,7 +175,8 @@ export function PostingDetailHeader() {
             >
               {creatorName}
             </Link>{" "}
-            &bull; {formatDateAgo(posting.created_at)}
+            &bull;{" "}
+            <RelativeTime date={posting.created_at} formatter={formatDateAgo} />
           </p>
         </div>
 

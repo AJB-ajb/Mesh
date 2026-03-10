@@ -23,7 +23,7 @@ export type PublicProfile = {
   headline: string | null;
   bio: string | null;
   location_mode: string | null;
-  location_name: string | null;
+  location: string | null;
   profile_skills: ProfileSkillRow[];
 };
 

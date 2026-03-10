@@ -2,22 +2,10 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { PostingAboutCard } from "../posting-about-card";
 import { PostingCoreProvider } from "../posting-core-context";
-import { PostingEditProvider } from "../posting-edit-context";
 import { PostingApplicationProvider } from "../posting-application-context";
-import type {
-  PostingDetail,
-  PostingFormState,
-} from "@/lib/hooks/use-posting-detail";
+import type { PostingDetail } from "@/lib/hooks/use-posting-detail";
 import type { PostingCoreContextValue } from "../posting-core-context";
-import type { PostingEditContextValue } from "../posting-edit-context";
 import type { PostingApplicationContextValue } from "../posting-application-context";
-
-// Mock LocationAutocomplete since it's not under test
-vi.mock("@/components/location/location-autocomplete", () => ({
-  LocationAutocomplete: (props: { placeholder?: string }) => (
-    <input placeholder={props.placeholder || "location"} />
-  ),
-}));
 
 const basePosting: PostingDetail = {
   id: "p-1",
@@ -42,38 +30,6 @@ const basePosting: PostingDetail = {
   auto_accept: false,
 };
 
-const baseForm: PostingFormState = {
-  title: "",
-  description: "",
-  skills: "",
-  estimatedTime: "",
-  teamSizeMin: "1",
-  teamSizeMax: "3",
-  lookingFor: "3",
-  category: "hackathon",
-  visibility: "public",
-  mode: "open",
-  status: "open",
-  expiresAt: "2025-04-01",
-  locationMode: "remote",
-  locationName: "",
-  locationLat: "",
-  locationLng: "",
-  maxDistanceKm: "",
-  tags: "",
-  contextIdentifier: "",
-  parentPostingId: "",
-  skillLevelMin: "",
-  autoAccept: "false",
-  availabilityMode: "flexible",
-  timezone: "",
-  availabilityWindows: [],
-  specificWindows: [],
-  selectedSkills: [],
-};
-
-const onFormChange = vi.fn();
-
 function makeCoreValue(posting: PostingDetail): PostingCoreContextValue {
   return {
     posting,
@@ -94,31 +50,7 @@ function makeCoreValue(posting: PostingDetail): PostingCoreContextValue {
     isAcceptedMember: false,
     projectEnabled: false,
     acceptedCount: 0,
-  };
-}
-
-function makeEditValue(
-  form: PostingFormState,
-  isEditing = false,
-): PostingEditContextValue {
-  return {
-    form,
-    onFormChange,
-    isEditing,
-    isSaving: false,
-    isDeleting: false,
-    isExtending: false,
-    isReposting: false,
-    saveStatus: "idle" as const,
-    onStartEdit: vi.fn(),
-    onCancelEdit: vi.fn(),
-    onSave: vi.fn(),
-    onDelete: vi.fn(),
-    onExtendDeadline: vi.fn(),
-    onRepost: vi.fn(),
-    isApplyingUpdate: false,
-    onApplyUpdate: vi.fn(),
-    onUndoUpdate: vi.fn(),
+    hasPendingInvite: false,
   };
 }
 
@@ -143,17 +75,11 @@ function makeAppValue(): PostingApplicationContextValue {
   };
 }
 
-function renderWithContext(
-  posting: PostingDetail = basePosting,
-  form: PostingFormState = baseForm,
-  isEditing = false,
-) {
+function renderWithContext(posting: PostingDetail = basePosting) {
   return render(
     <PostingCoreProvider value={makeCoreValue(posting)}>
       <PostingApplicationProvider value={makeAppValue()}>
-        <PostingEditProvider value={makeEditValue(form, isEditing)}>
-          <PostingAboutCard />
-        </PostingEditProvider>
+        <PostingAboutCard />
       </PostingApplicationProvider>
     </PostingCoreProvider>,
   );
@@ -186,13 +112,13 @@ describe("PostingAboutCard", () => {
 
   it("renders team size in view mode", () => {
     renderWithContext();
-    expect(screen.getByText(/Min 1 · Looking for 3/)).toBeInTheDocument();
+    expect(screen.getByText(/1–3 total · Looking for 2/)).toBeInTheDocument();
   });
 
   it("renders team size with different min/max values", () => {
     const posting = { ...basePosting, team_size_min: 2, team_size_max: 5 };
     renderWithContext(posting);
-    expect(screen.getByText(/Min 2 · Looking for 5/)).toBeInTheDocument();
+    expect(screen.getByText(/2–5 total · Looking for 4/)).toBeInTheDocument();
   });
 
   it("renders estimated time", () => {
@@ -247,15 +173,4 @@ describe("PostingAboutCard", () => {
   });
 
   // skill_level_min column dropped -- now per-skill in posting_skills join table
-
-  it("renders textarea in editing mode", () => {
-    renderWithContext(
-      basePosting,
-      { ...baseForm, description: "Edit me" },
-      true,
-    );
-    const textarea = screen.getByDisplayValue("Edit me");
-    expect(textarea).toBeInTheDocument();
-    expect(textarea.tagName.toLowerCase()).toBe("textarea");
-  });
 });

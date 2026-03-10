@@ -63,6 +63,7 @@ export const labels = {
       new_message: "New Message",
       new_group_message: "New Team Message",
       match_found: "Match Found",
+      meeting_proposal: "Meeting Proposal",
     } as const,
     dropdownTitle: "Notifications",
     markAllRead: "Mark all as read",
@@ -637,6 +638,7 @@ export const labels = {
   // Common / shared strings
   // ---------------------------------------------------------------------------
   common: {
+    close: "Close",
     cancel: "Cancel",
     save: "Save",
     saving: "Saving...",
@@ -969,6 +971,7 @@ export const labels = {
     sharePosting: "Share Posting",
     reportIssue: "Report Issue",
     shareTitle: "Check out this posting on Mesh",
+    editPosting: "Edit posting",
 
     // Error messages
     errorUpdatePosting: "Failed to update posting. Please try again.",
@@ -1023,6 +1026,39 @@ export const labels = {
   matchedProfiles: {
     viewProfile: "View Profile",
     message: "Message",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Context bar (composable access)
+  // ---------------------------------------------------------------------------
+  contextBar: {
+    contextLabel: "Context",
+    contextNone: "None",
+    contextSearchPlaceholder: "Search groups...",
+    inviteLabel: "Invite",
+    inviteAdd: "+ Add people",
+    linkLabel: "Link",
+    linkCreate: "Create link",
+    linkCopy: "Copy link",
+    linkRevoke: "Revoke",
+    linkCopied: "Link copied to clipboard",
+    discoverLabel: "Show in Discover",
+    summaryPrefix: "Visible to:",
+    summaryEveryone: "Everyone (Discover)",
+    summaryOnly: (names: string) => `Only ${names}`,
+    summaryInvited: (count: number) => `${count} invited`,
+    summaryPlusDiscover: (base: string) => `${base} + Everyone (Discover)`,
+    summaryAnyoneWithLink: "Anyone with the link",
+    summaryPlusLink: (base: string) => `${base} + anyone with link`,
+    summaryMembers: (name: string, count: number) =>
+      `${name} (${count} members)`,
+    settingsToggle: "Settings",
+    settingsHint: "size, expire, accept, N-sequential",
+    teamSizeMinLabel: "Min team size",
+    teamSizeMaxLabel: "Max team size",
+    expiryLabel: "Expiry",
+    autoAcceptLabel: "Auto-accept",
+    sequentialCountLabel: "N-sequential",
   },
 
   // ---------------------------------------------------------------------------
@@ -1133,6 +1169,15 @@ export const labels = {
       `Waiting on ${pending} of ${total} connections`,
     modeInfoLabel: "How invite modes work",
     advancedSettings: "Advanced settings",
+    pickerTitle: "Invite people",
+    pickerSearch: "Search connections...",
+    pickerNoConnections: "No connections yet",
+    pickerNoMatches: "No matches",
+    pickerSuggested: "Suggested",
+    pickerDone: "Done",
+    pickerInviteMore: "Invite more",
+    pickerAskOrder: "Ask order (drag to reorder)",
+    pickerSelected: "Selected connections",
   },
 
   // ---------------------------------------------------------------------------
@@ -1187,6 +1232,12 @@ export const labels = {
     successMessage: "Thank you for your feedback!",
     errorGeneric: "Something went wrong. Please try again.",
     errorEmptyMessage: "Please enter a message.",
+    screenshotLabel: "Screenshot",
+    screenshotAdd: "Tap, paste, or drop an image",
+    screenshotUploading: "Uploading...",
+    screenshotRemove: "Remove",
+    screenshotError: "Failed to upload screenshot. Please try again.",
+    debugContextLabel: "Debug info attached automatically",
   },
 
   // ---------------------------------------------------------------------------
@@ -1304,6 +1355,7 @@ export const labels = {
     youCreated: "You created",
     youJoined: "You joined",
     youApplied: "Requested",
+    youInvited: "Invited",
     empty: "No active postings yet",
     emptyDescription:
       "Postings appear here once the minimum team size is reached.",
@@ -1322,6 +1374,7 @@ export const labels = {
       created: "Created",
       joined: "Joined",
       applied: "Requested",
+      invited: "Invited",
       completed: "Completed",
     } as const,
     empty: {
@@ -1329,6 +1382,7 @@ export const labels = {
       created: "You haven\u2019t created any postings yet.",
       joined: "You haven\u2019t joined any postings yet.",
       applied: "No pending join requests.",
+      invited: "No pending invites.",
       completed: "No completed postings yet.",
     } as const,
     emptyDescription: {
@@ -1336,6 +1390,7 @@ export const labels = {
       created: "Create a new posting to find collaborators.",
       joined: "Browse the discover page to find postings to join.",
       applied: "Request to join postings you\u2019re interested in.",
+      invited: "Invites from connections will appear here.",
       completed: "Completed projects will appear here.",
     } as const,
     newPosting: "New Posting",
@@ -1875,6 +1930,58 @@ export const labels = {
     scopedDiscoverTitle: (parentTitle: string) => `Discover in ${parentTitle}`,
     browsePostings: "Browse postings",
     backToGroup: "Back to group",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Team card
+  // ---------------------------------------------------------------------------
+  teamCard: {
+    title: "Team Members",
+    owner: "Owner",
+    emptyState: "No members have joined yet.",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Profile extraction review
+  // ---------------------------------------------------------------------------
+  extractionReviewFields: {
+    fullName: "Full Name",
+    headline: "Headline",
+    skills: "Skills",
+    location: "Location",
+    languages: "Languages",
+    bio: "Bio",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Match breakdown
+  // ---------------------------------------------------------------------------
+  matchBreakdown: {
+    title: "Match Breakdown",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Interest received card
+  // ---------------------------------------------------------------------------
+  interestReceived: {
+    interested: "Interested",
+    viewPosting: "View Posting",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Interest sent card
+  // ---------------------------------------------------------------------------
+  interestSent: {
+    viewDetails: "View Details",
+  },
+
+  // ---------------------------------------------------------------------------
+  // AI match card
+  // ---------------------------------------------------------------------------
+  aiMatchCard: {
+    requestToJoin: "Request to join",
+    requestSent: "Request sent",
+    messageTeam: "Message Team",
   },
 
   // ---------------------------------------------------------------------------

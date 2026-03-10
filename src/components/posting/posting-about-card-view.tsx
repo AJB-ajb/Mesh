@@ -80,7 +80,8 @@ export function PostingAboutCardView({
           <Users className="h-5 w-5 text-muted-foreground" />
           <p className="mt-2 text-sm text-muted-foreground">Team size</p>
           <p className="font-medium">
-            Min {posting.team_size_min} · Looking for {posting.team_size_max}
+            {posting.team_size_min}&ndash;{posting.team_size_max} total · Looking for{" "}
+            {Math.max(1, posting.team_size_max - 1)}
           </p>
         </div>
         {posting.estimated_time && (

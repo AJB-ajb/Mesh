@@ -1,7 +1,10 @@
 import { withAuth } from "@/lib/api/with-auth";
-import { verifyPostingOwnership } from "@/lib/api/ownership";
+import { verifyPostingOwnership } from "@/lib/api/guards";
+import { logFireAndForget } from "@/lib/api/fire-and-forget";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import { SCHEDULING } from "@/lib/constants";
+import { notifyIfPreferred } from "@/lib/api/notify-if-preferred";
+import { MEETING_PROPOSED } from "@/lib/notifications/events";
 
 /** GET: List proposals with responses for a posting */
 export const GET = withAuth(async (_req, { user, supabase, params }) => {
@@ -93,6 +96,26 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
   if (error) {
     throw new AppError("INTERNAL", error.message, 500);
+  }
+
+  // Notify team members (excluding the owner who created the proposal)
+  const { data: memberIds } = await supabase.rpc(
+    "get_posting_team_member_ids",
+    { p_posting_id: postingId },
+  );
+
+  for (const memberId of (memberIds ?? []) as string[]) {
+    if (memberId === user.id) continue;
+    logFireAndForget(
+      notifyIfPreferred(supabase, memberId, "meeting_proposal", {
+        userId: memberId,
+        type: MEETING_PROPOSED.type,
+        title: MEETING_PROPOSED.title,
+        body: `A new meeting time has been proposed${title ? `: ${title}` : ""}.`,
+        relatedPostingId: postingId,
+      }),
+      "proposal-created-notification",
+    );
   }
 
   return apiSuccess({ proposal }, 201);

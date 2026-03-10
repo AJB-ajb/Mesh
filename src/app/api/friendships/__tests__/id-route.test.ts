@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { buildChain, authedUser } from "tests/utils/supabase-mock";
+import { testRequiresAuth, testRequiresResource, testRequiresOwnership } from "tests/utils/route-test-helpers";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -26,21 +27,11 @@ const routeCtx = (id: string) => ({ params: Promise.resolve({ id }) });
 describe("PATCH /api/friendships/[id]", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await PATCH(
-      makeReq("/api/friendships/f1", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "accepted" }),
-      }),
-      routeCtx("f1"),
-    );
-    expect(res.status).toBe(401);
-  });
+  testRequiresAuth(PATCH, () => makeReq("/api/friendships/f1", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: "accepted" }),
+  }), routeCtx("f1"), mockGetUser);
 
   it("returns 400 for invalid status", async () => {
     authedUser(mockGetUser);
@@ -57,45 +48,23 @@ describe("PATCH /api/friendships/[id]", () => {
     expect(body.error.code).toBe("VALIDATION");
   });
 
-  it("returns 404 when friendship not found", async () => {
-    authedUser(mockGetUser);
-    mockFrom.mockReturnValue(
-      buildChain({ data: null, error: { message: "not found" } }),
-    );
+  testRequiresResource(PATCH, () => makeReq("/api/friendships/no-exist", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: "accepted" }),
+  }), routeCtx("no-exist"), mockGetUser, mockFrom);
 
-    const res = await PATCH(
-      makeReq("/api/friendships/no-exist", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "accepted" }),
-      }),
-      routeCtx("no-exist"),
-    );
-    expect(res.status).toBe(404);
-  });
-
-  it("returns 403 when non-recipient tries to accept", async () => {
-    authedUser(mockGetUser);
-    // user-1 is the initiator (user_id), not the recipient (friend_id)
-    const friendship = {
+  testRequiresOwnership(PATCH, () => makeReq("/api/friendships/f1", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: "accepted" }),
+  }), routeCtx("f1"), mockGetUser, () => {
+    mockFrom.mockReturnValue(buildChain({ data: {
       id: "f1",
       user_id: "user-1",
       friend_id: FRIEND_ID,
       status: "pending",
-    };
-    mockFrom.mockReturnValue(buildChain({ data: friendship, error: null }));
-
-    const res = await PATCH(
-      makeReq("/api/friendships/f1", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "accepted" }),
-      }),
-      routeCtx("f1"),
-    );
-    const body = await res.json();
-    expect(res.status).toBe(403);
-    expect(body.error.code).toBe("FORBIDDEN");
+    }, error: null }));
   });
 
   it("allows the recipient to accept", async () => {
@@ -133,33 +102,10 @@ describe("PATCH /api/friendships/[id]", () => {
 describe("DELETE /api/friendships/[id]", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 404 when friendship not found", async () => {
-    authedUser(mockGetUser);
-    mockFrom.mockReturnValue(
-      buildChain({ data: null, error: { message: "not found" } }),
-    );
+  testRequiresResource(DELETE, () => makeReq("/api/friendships/nope", { method: "DELETE" }), routeCtx("nope"), mockGetUser, mockFrom);
 
-    const res = await DELETE(
-      makeReq("/api/friendships/nope", { method: "DELETE" }),
-      routeCtx("nope"),
-    );
-    expect(res.status).toBe(404);
-  });
-
-  it("returns 403 when non-initiator tries to delete", async () => {
-    authedUser(mockGetUser);
-    // user-1 is the recipient, not the initiator
-    mockFrom.mockReturnValue(
-      buildChain({ data: { user_id: FRIEND_ID }, error: null }),
-    );
-
-    const res = await DELETE(
-      makeReq("/api/friendships/f1", { method: "DELETE" }),
-      routeCtx("f1"),
-    );
-    const body = await res.json();
-    expect(res.status).toBe(403);
-    expect(body.error.code).toBe("FORBIDDEN");
+  testRequiresOwnership(DELETE, () => makeReq("/api/friendships/f1", { method: "DELETE" }), routeCtx("f1"), mockGetUser, () => {
+    mockFrom.mockReturnValue(buildChain({ data: { user_id: FRIEND_ID }, error: null }));
   });
 
   it("deletes friendship when initiator requests", async () => {

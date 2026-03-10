@@ -21,6 +21,7 @@ import {
   findViewportExceedingElements,
   findClippedPositionedElements,
   checkMinimumSpacing,
+  findLongTextOverflowViolations,
 } from "../utils/layout-helpers";
 
 // ---------------------------------------------------------------------------
@@ -668,4 +669,188 @@ test.describe("Layout > Minimum spacing", () => {
       ).toBe(false);
     });
   }
+});
+
+// ---------------------------------------------------------------------------
+// Group 12: Long text overflow stress test (mobile)
+//   Injects very long text into text elements to verify that all containers
+//   handle overflow gracefully — via truncation, word-break, or overflow
+//   constraints. Catches bugs where short test data masks missing CSS rules.
+// ---------------------------------------------------------------------------
+
+// Allowlist: elements/containers where overflow is handled at a higher level
+// or where long text injection is not meaningful.
+const LONG_TEXT_ALLOWLIST = [
+  "nav", // Navigation labels are fixed
+  "header", // App header — fixed labels
+  '[role="navigation"]', // Bottom bar — fixed labels
+  "[data-radix-scroll-area-viewport]", // Radix scroll areas handle overflow
+  ".sr-only", // Screen-reader-only elements
+  "textarea", // Textareas have their own scroll
+  "input", // Inputs have their own scroll
+  "code", // Inline code may intentionally overflow (wrapped by pre/scroll)
+  "time", // Time elements are fixed-width content
+  '[data-slot="button"]', // shadcn buttons — controlled labels
+] as const;
+
+test.describe("Layout > Long text overflow (mobile)", () => {
+  // Test user-content areas: markdown descriptions, cards, user-generated text.
+  // Static UI labels (page headings, buttons, nav) are excluded — they're
+  // controlled strings from labels.ts and will never be arbitrarily long.
+
+  test("Markdown content handles long text without overflow", async ({
+    page,
+  }) => {
+    test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
+    // Navigate to a page with markdown content — discover has posting cards
+    await navigateToPage(page, "/discover", "mobile");
+
+    const hasMarkdown = (await page.locator(".markdown-content").count()) > 0;
+    test.skip(!hasMarkdown, "No markdown content on page");
+
+    const violations = await findLongTextOverflowViolations(
+      page,
+      ".markdown-content",
+      LONG_TEXT_ALLOWLIST,
+    );
+    expect(
+      violations,
+      `Markdown content overflows with long text: ${JSON.stringify(violations, null, 2)}`,
+    ).toEqual([]);
+  });
+
+  // Test all authenticated pages for user-content text overflow.
+  // Scoped to Card components which contain user-generated content
+  // (posting descriptions, profile info, connection cards, etc.)
+  for (const { path, name } of AUTHED_PAGES) {
+    test(`${name} (${path}) — cards handle long text`, async ({ page }) => {
+      test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
+      await navigateToPage(page, path, "mobile");
+
+      const hasCards = (await page.locator('[data-slot="card"]').count()) > 0;
+      test.skip(!hasCards, "No card components on page");
+
+      const violations = await findLongTextOverflowViolations(
+        page,
+        '[data-slot="card"]',
+        LONG_TEXT_ALLOWLIST,
+      );
+      expect(
+        violations,
+        `Card content overflows on ${path} (mobile): ${JSON.stringify(violations, null, 2)}`,
+      ).toEqual([]);
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Group 13: Connections chat — long text stress test (mobile)
+//   Extends Group 10 by injecting long text into the chat header, message
+//   previews, and "Re: ..." subject to verify proper containment.
+// ---------------------------------------------------------------------------
+
+test.describe("Layout > Connections chat long text (mobile)", () => {
+  test("Chat header handles long 'Re: ...' subject", async ({ page }) => {
+    test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
+    await navigateToPage(page, "/connections", "mobile");
+
+    const firstConn = page.locator('button[class*="items-start"]').first();
+    const hasConnections = (await firstConn.count()) > 0;
+    test.skip(!hasConnections, "No connections to test");
+
+    await firstConn.click();
+    await page.waitForTimeout(500);
+
+    const chatCard = page.locator('[data-slot="card"]').first();
+    const isVisible = await chatCard.isVisible().catch(() => false);
+    test.skip(!isVisible, "No chat card visible");
+
+    // Inject long text into chat header elements and check overflow.
+    // Chat messages (whitespace-pre-wrap break-words) and timestamps are
+    // excluded — they already have CSS word-break and timestamps are fixed content.
+    const chatAllowlist = [
+      ...LONG_TEXT_ALLOWLIST,
+      ".whitespace-pre-wrap", // Chat messages — break-words handles wrap visually
+      ".text-xs.mt-1", // Message timestamps — fixed-length content
+    ] as const;
+    const violations = await findLongTextOverflowViolations(
+      page,
+      '[data-slot="card"]',
+      chatAllowlist,
+    );
+    expect(
+      violations,
+      `Long text causes overflow in chat panel: ${JSON.stringify(violations, null, 2)}`,
+    ).toEqual([]);
+  });
+
+  test("Connection list cards handle long names and messages", async ({
+    page,
+  }) => {
+    test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
+    await navigateToPage(page, "/connections", "mobile");
+
+    const connItems = page.locator('button[class*="items-start"]');
+    const count = await connItems.count();
+    test.skip(count === 0, "No connections to test");
+
+    // Inject long text into the first few connection cards
+    const violations = await page.evaluate(() => {
+      const items = document.querySelectorAll('button[class*="items-start"]');
+      const results: Array<{
+        index: number;
+        selector: string;
+        text: string;
+        scrollWidth: number;
+        clientWidth: number;
+      }> = [];
+
+      const LONG_TEXT =
+        "VeryLongUserNameWithoutAnySpacesThatShouldBeTruncatedProperlyOnMobileDevices";
+
+      for (let i = 0; i < Math.min(items.length, 3); i++) {
+        const item = items[i];
+        const textEls = item.querySelectorAll("p, span, h4");
+
+        for (const el of textEls) {
+          if (!(el instanceof HTMLElement)) continue;
+          const style = getComputedStyle(el);
+          if (style.display === "none" || style.visibility === "hidden")
+            continue;
+          if (style.textOverflow === "ellipsis") continue;
+          // Skip positioned elements (badges, dots)
+          if (style.position === "absolute" || style.position === "fixed")
+            continue;
+          // Skip very small elements (icons, badges)
+          const rect = el.getBoundingClientRect();
+          if (rect.width < 30 || rect.height < 10) continue;
+
+          const original = el.innerHTML;
+          el.textContent = LONG_TEXT;
+          void el.offsetWidth;
+
+          if (el.scrollWidth > el.clientWidth + 1) {
+            let s = el.tagName.toLowerCase();
+            if (el.className && typeof el.className === "string") {
+              s += "." + el.className.split(" ").slice(0, 3).join(".");
+            }
+            results.push({
+              index: i,
+              selector: s,
+              text: LONG_TEXT.slice(0, 30),
+              scrollWidth: el.scrollWidth,
+              clientWidth: el.clientWidth,
+            });
+          }
+          el.innerHTML = original;
+        }
+      }
+      return results;
+    });
+
+    expect(
+      violations,
+      `Connection cards overflow with long text: ${JSON.stringify(violations)}`,
+    ).toEqual([]);
+  });
 });

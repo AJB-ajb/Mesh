@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { buildChain, authedUser } from "tests/utils/supabase-mock";
+import { testRequiresAuth } from "tests/utils/route-test-helpers";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -25,14 +26,7 @@ const routeCtx = { params: Promise.resolve({}) };
 describe("GET /api/friendships", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await GET(makeReq("/api/friendships"), routeCtx);
-    expect(res.status).toBe(401);
-  });
+  testRequiresAuth(GET, () => makeReq("/api/friendships"), routeCtx, mockGetUser);
 
   it("returns friendships for the authenticated user", async () => {
     authedUser(mockGetUser);
@@ -66,21 +60,11 @@ describe("GET /api/friendships", () => {
 describe("POST /api/friendships", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns 401 when not authenticated", async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "No" },
-    });
-    const res = await POST(
-      makeReq("/api/friendships", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ friend_id: "user-2" }),
-      }),
-      routeCtx,
-    );
-    expect(res.status).toBe(401);
-  });
+  testRequiresAuth(POST, () => makeReq("/api/friendships", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ friend_id: "user-2" }),
+  }), routeCtx, mockGetUser);
 
   it("returns 400 when friend_id is missing", async () => {
     authedUser(mockGetUser);

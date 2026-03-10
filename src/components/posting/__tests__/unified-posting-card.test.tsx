@@ -43,6 +43,10 @@ vi.mock("@/lib/posting/location", () => ({
 // Mock styles
 vi.mock("@/lib/posting/styles", () => ({
   categoryStyles: { hackathon: "bg-purple-500" },
+  getStatusColor: (status: string) =>
+    status === "open"
+      ? "bg-green-500/10 text-green-600"
+      : "bg-muted text-muted-foreground",
 }));
 
 // Mock next/navigation
@@ -149,7 +153,7 @@ describe("UnifiedPostingCard -- full variant", () => {
 
   it("renders meta line with team size, time, and location", () => {
     render(<UnifiedPostingCard {...fullBaseProps} />);
-    expect(screen.getByText(/Looking for 5/)).toBeInTheDocument();
+    expect(screen.getByText(/Looking for 4/)).toBeInTheDocument();
     expect(screen.getByText("2 weeks")).toBeInTheDocument();
     expect(screen.getByText("Remote")).toBeInTheDocument();
   });
@@ -216,16 +220,9 @@ describe("UnifiedPostingCard -- compact variant", () => {
     expect(screen.getByText("You joined")).toBeInTheDocument();
   });
 
-  it("shows edit button only for owner", () => {
-    render(<UnifiedPostingCard {...compactBaseProps} />);
-    expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
-  });
-
-  it("hides edit button for joined role", () => {
-    render(<UnifiedPostingCard {...compactBaseProps} role="joined" />);
-    expect(
-      screen.queryByRole("button", { name: "Edit" }),
-    ).not.toBeInTheDocument();
+  it("renders role badge -- Invited for invited", () => {
+    render(<UnifiedPostingCard {...compactBaseProps} role="invited" />);
+    expect(screen.getByText("Invited")).toBeInTheDocument();
   });
 
   it("shows status badge", () => {

@@ -60,4 +60,4 @@ Core tables: `profiles` (1:1 with auth.users) → `postings` → `matches` (user
 
 - **Unit**: Vitest, co-located in `__tests__/` dirs. Run: `pnpm test:run`
 - **E2E**: Playwright in `tests/e2e/`. Run: `pnpm test:e2e`
-- See [../spec/testing.md](../spec/testing.md) for test users and conventions
+- See [../spec/1-testing.md](../spec/1-testing.md) for test users and conventions

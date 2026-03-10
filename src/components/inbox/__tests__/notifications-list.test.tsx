@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { NotificationsList } from "../notifications-list";
 import type { Notification } from "@/lib/supabase/realtime";
+import { INVITE_RECEIVED } from "@/lib/notifications/events";
 
 function makeNotification(overrides: Partial<Notification> = {}): Notification {
   return {
@@ -123,13 +124,13 @@ describe("NotificationsList", () => {
   it("applies blue styling for sequential_invite type", () => {
     const notification = makeNotification({
       type: "sequential_invite",
-      title: "Sequential Invite Received",
+      title: INVITE_RECEIVED.title,
     });
     render(
       <NotificationsList {...defaultProps} notifications={[notification]} />,
     );
     const iconContainer = screen
-      .getByText("Sequential Invite Received")
+      .getByText(INVITE_RECEIVED.title)
       .closest("[class*='group']")
       ?.querySelector("[class*='bg-blue']");
     expect(iconContainer).toBeTruthy();
@@ -189,7 +190,7 @@ describe("NotificationsList", () => {
     it("shows Join/Do not join buttons for actionable sequential_invite", () => {
       const notification = makeNotification({
         type: "sequential_invite",
-        title: "Sequential Invite Received",
+        title: INVITE_RECEIVED.title,
         related_posting_id: "p1",
       });
       const onRespond = vi.fn().mockResolvedValue(undefined);
@@ -227,7 +228,7 @@ describe("NotificationsList", () => {
     it("does not show inline actions when no handler provided", () => {
       const notification = makeNotification({
         type: "sequential_invite",
-        title: "Sequential Invite Received",
+        title: INVITE_RECEIVED.title,
         related_posting_id: "p1",
       });
 
@@ -241,7 +242,7 @@ describe("NotificationsList", () => {
       const notification = makeNotification({
         id: "notif-invite",
         type: "sequential_invite",
-        title: "Sequential Invite Received",
+        title: INVITE_RECEIVED.title,
         related_posting_id: "p1",
       });
       const onRespond = vi.fn().mockResolvedValue(undefined);
@@ -267,7 +268,7 @@ describe("NotificationsList", () => {
       const notification = makeNotification({
         id: "notif-invite",
         type: "sequential_invite",
-        title: "Sequential Invite Received",
+        title: INVITE_RECEIVED.title,
         related_posting_id: "p1",
       });
       const onRespond = vi.fn().mockResolvedValue(undefined);

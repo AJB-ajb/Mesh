@@ -10,7 +10,6 @@ export type TestPosting = {
   creator_id: string;
   title: string;
   description: string;
-  skills: string[];
   team_size_min: number;
   team_size_max: number;
   category: string;
@@ -21,8 +20,9 @@ export type TestPosting = {
   skill_level_min: number;
   context_identifier: string | null;
   natural_language_criteria: string | null;
+  auto_accept: boolean;
   status: "open" | "closed" | "filled" | "expired";
-  expiration_date: Date;
+  expires_at: string;
 };
 
 const postingTitles = [
@@ -34,22 +34,6 @@ const postingTitles = [
   "Portfolio Website Generator",
   "Task Management System",
   "Recipe Sharing Platform",
-];
-
-const skillPool = [
-  "TypeScript",
-  "React",
-  "Node.js",
-  "Python",
-  "Go",
-  "PostgreSQL",
-  "MongoDB",
-  "Docker",
-  "AWS",
-  "Next.js",
-  "Vue.js",
-  "GraphQL",
-  "REST API",
 ];
 
 const categoryPool = [
@@ -84,10 +68,6 @@ export const createPosting = (
     creator_id: faker.string.uuid(),
     title: faker.helpers.arrayElement(postingTitles),
     description: faker.lorem.paragraphs(2),
-    skills: faker.helpers.arrayElements(
-      skillPool,
-      faker.number.int({ min: 3, max: 6 }),
-    ),
     team_size_min: teamSizeMin,
     team_size_max: teamSizeMin + faker.number.int({ min: 1, max: 4 }),
     category: faker.helpers.arrayElement(categoryPool),
@@ -103,8 +83,9 @@ export const createPosting = (
     skill_level_min: faker.number.int({ min: 1, max: 5 }),
     context_identifier: null,
     natural_language_criteria: null,
+    auto_accept: false,
     status: "open",
-    expiration_date: expirationDate,
+    expires_at: expirationDate.toISOString(),
     ...overrides,
   };
 };
@@ -127,7 +108,7 @@ export const createExpiredPosting = (
 
   return createPosting({
     status: "expired",
-    expiration_date: pastDate,
+    expires_at: pastDate.toISOString(),
     ...overrides,
   });
 };

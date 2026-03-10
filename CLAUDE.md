@@ -4,17 +4,7 @@
 2. **Follow the Git Workflow in `.AGENTS.md`**: Never commit code directly to `dev` or `main`. Use git worktrees as described there.
 3. **Worktree trigger — first edit rule**: Before making the first file edit (Edit/Write tool) to any source or config file, check if you are in the main repo on `dev`/`main`. If so, **stop and create a worktree first** — even if the conversation started as investigation and evolved into code changes. The only exception is documentation-only changes (`spec/`, `docs/`, `*.md`).
 4. **Plan mode first step**: When writing a plan (via `EnterPlanMode`), always include as the **first step**: create a git worktree and `cd` into it. Plan mode cannot run commands, so this ensures the worktree setup isn't forgotten when implementation begins.
-5. See `spec/` for product specifications.
-
-## Bash Tool Rules
-
-To avoid permission prompts from compound commands:
-
-- **Never chain commands with `&&`, `||`, or `;`** — make separate sequential Bash tool calls instead
-  - **Particularly never chain with git commands**, e.g. `cd <worktree> && git …`
-- **Never use `for`/`while` loops or process substitution `<()`** in Bash — use dedicated tools (Grep, Glob, Read) or multiple sequential calls
-- **Never pipe commands** (`|`) — use dedicated tools or capture output across calls
-- One simple command per Bash tool call. This is more transparent and avoids permission issues.
+5. See `spec/README.md` for the layered spec directory (0-direction, 1-behavior, 2-roadmap, 3-architecture). Read `spec/README.md` first to know which files to load.
 
 ## Parallel Subagents
 

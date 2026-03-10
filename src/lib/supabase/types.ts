@@ -174,6 +174,10 @@ export interface Posting {
   timezone: string | null;
   status: "open" | "closed" | "filled" | "expired" | "paused";
   parent_posting_id: string | null;
+  /** Composable access: appears in platform-wide Discover feed */
+  in_discover: boolean;
+  /** Composable access: shareable link token (null = no link) */
+  link_token: string | null;
   created_at: string;
   updated_at: string;
   expires_at: string;
@@ -207,6 +211,8 @@ export interface PostingInsert {
   embedding?: number[] | null;
   status?: "open" | "closed" | "filled" | "expired" | "paused";
   parent_posting_id?: string | null;
+  in_discover?: boolean;
+  link_token?: string | null;
   created_at?: string;
   updated_at?: string;
   expires_at: string;
@@ -240,6 +246,8 @@ export interface PostingUpdate {
   embedding?: number[] | null;
   status?: "open" | "closed" | "filled" | "expired" | "paused";
   parent_posting_id?: string | null;
+  in_discover?: boolean;
+  link_token?: string | null;
   created_at?: string;
   updated_at?: string;
   expires_at?: string;
@@ -372,6 +380,18 @@ export interface FriendshipInsert {
 
 export type FeedbackMood = "frustrated" | "neutral" | "happy";
 
+export interface FeedbackMetadata {
+  viewport_width?: number;
+  viewport_height?: number;
+  screen_width?: number;
+  screen_height?: number;
+  device_pixel_ratio?: number;
+  connection_type?: string;
+  app_version?: string;
+  platform?: string;
+  dark_mode?: boolean;
+}
+
 export interface Feedback {
   id: string;
   user_id: string | null;
@@ -379,6 +399,8 @@ export interface Feedback {
   mood: FeedbackMood | null;
   page_url: string;
   user_agent: string | null;
+  screenshot_url: string | null;
+  metadata: FeedbackMetadata | null;
   created_at: string;
 }
 
@@ -389,6 +411,8 @@ export interface FeedbackInsert {
   mood?: FeedbackMood | null;
   page_url: string;
   user_agent?: string | null;
+  screenshot_url?: string | null;
+  metadata?: FeedbackMetadata | null;
   created_at?: string;
 }
 

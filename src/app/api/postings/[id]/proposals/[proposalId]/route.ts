@@ -1,5 +1,11 @@
 import { withAuth } from "@/lib/api/with-auth";
+import { logFireAndForget } from "@/lib/api/fire-and-forget";
 import { apiError, apiSuccess, parseBody } from "@/lib/errors";
+import { notifyIfPreferred } from "@/lib/api/notify-if-preferred";
+import {
+  MEETING_CONFIRMED,
+  MEETING_CANCELLED,
+} from "@/lib/notifications/events";
 
 /** PATCH: Confirm or cancel a proposal (owner only) */
 export const PATCH = withAuth(async (req, { user, supabase, params }) => {
@@ -60,6 +66,30 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
 
   if (error) {
     return apiError("INTERNAL", error.message, 500);
+  }
+
+  // Notify team members about the status change
+  const event = status === "confirmed" ? MEETING_CONFIRMED : MEETING_CANCELLED;
+  const { data: memberIds } = await supabase.rpc(
+    "get_posting_team_member_ids",
+    { p_posting_id: postingId },
+  );
+
+  for (const memberId of (memberIds ?? []) as string[]) {
+    if (memberId === user.id) continue;
+    logFireAndForget(
+      notifyIfPreferred(supabase, memberId, "meeting_proposal", {
+        userId: memberId,
+        type: event.type,
+        title: event.title,
+        body:
+          status === "confirmed"
+            ? "A meeting time has been confirmed. Check the posting for details."
+            : "A proposed meeting time has been cancelled.",
+        relatedPostingId: postingId,
+      }),
+      "proposal-status-change-notification",
+    );
   }
 
   return apiSuccess({ proposal });

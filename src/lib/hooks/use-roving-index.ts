@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 type Orientation = "vertical" | "horizontal";
 
@@ -32,6 +32,10 @@ export function useRovingIndex({
   loop = true,
 }: UseRovingIndexOptions): UseRovingIndexReturn {
   const [activeIndex, setActiveIndex] = useState(0);
+  const activeIndexRef = useRef(activeIndex);
+  useEffect(() => {
+    activeIndexRef.current = activeIndex;
+  }, [activeIndex]);
 
   // Clamp activeIndex when itemCount shrinks
   useEffect(() => {
@@ -68,10 +72,10 @@ export function useRovingIndex({
         setActiveIndex(itemCount - 1);
       } else if (e.key === "Enter") {
         e.preventDefault();
-        onActivate?.(activeIndex);
+        onActivate?.(activeIndexRef.current);
       }
     },
-    [itemCount, orientation, loop, onActivate, activeIndex],
+    [itemCount, orientation, loop, onActivate],
   );
 
   const getContainerProps = useCallback(

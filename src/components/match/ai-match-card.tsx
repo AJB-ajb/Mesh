@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BadgeList } from "@/components/ui/badge-list";
 import { formatTimeAgo } from "@/lib/format";
+import { RelativeTime } from "@/components/ui/relative-time";
 import { labels } from "@/lib/labels";
 import { statusColors, statusLabels } from "@/lib/posting/styles";
 import type {
@@ -23,8 +24,6 @@ export interface AiMatchCardProps {
 export function AiMatchCard({ match, isApplying, onApply }: AiMatchCardProps) {
   const posting = match.posting as Posting;
   const matchScore = Math.round(match.score * 100);
-  const matchedAt = formatTimeAgo(match.created_at);
-
   return (
     <Card>
       <CardHeader className="pb-4">
@@ -47,7 +46,10 @@ export function AiMatchCard({ match, isApplying, onApply }: AiMatchCardProps) {
                 {statusLabels[match.status] ?? match.status}
               </span>
             </div>
-            <p className="text-sm text-muted-foreground">Matched {matchedAt}</p>
+            <p className="text-sm text-muted-foreground">
+              Matched{" "}
+              <RelativeTime date={match.created_at} formatter={formatTimeAgo} />
+            </p>
           </div>
         </div>
       </CardHeader>
@@ -94,19 +96,19 @@ export function AiMatchCard({ match, isApplying, onApply }: AiMatchCardProps) {
               ) : (
                 <Check className="h-4 w-4" />
               )}
-              Request to join
+              {labels.aiMatchCard.requestToJoin}
             </Button>
           )}
           {match.status === "applied" && (
             <Button variant="secondary" disabled>
-              Request sent
+              {labels.aiMatchCard.requestSent}
             </Button>
           )}
           {match.status === "accepted" && (
             <Button asChild>
               <Link href={`/inbox`}>
                 <MessageSquare className="h-4 w-4" />
-                Message Team
+                {labels.aiMatchCard.messageTeam}
               </Link>
             </Button>
           )}

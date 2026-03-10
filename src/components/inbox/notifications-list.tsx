@@ -19,7 +19,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { formatTimeAgoShort } from "@/lib/format";
+import { RelativeTime } from "@/components/ui/relative-time";
 import type { Notification } from "@/lib/supabase/realtime";
+import { INVITE_RECEIVED } from "@/lib/notifications/events";
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
@@ -53,7 +55,7 @@ const getIconColor = (type: string) => {
 const isActionableInvite = (notification: Notification) => {
   return (
     notification.type === "sequential_invite" &&
-    notification.title === "Sequential Invite Received" &&
+    notification.title === INVITE_RECEIVED.title &&
     notification.related_posting_id
   );
 };
@@ -162,9 +164,11 @@ export function NotificationsList({
                         </p>
                       )}
                     </div>
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {formatTimeAgoShort(notification.created_at)}
-                    </span>
+                    <RelativeTime
+                      date={notification.created_at}
+                      formatter={formatTimeAgoShort}
+                      className="text-xs text-muted-foreground shrink-0"
+                    />
                   </div>
 
                   {/* Inline actions for sequential invite */}

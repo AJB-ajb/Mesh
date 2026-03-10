@@ -1,6 +1,7 @@
 import { withAuth } from "@/lib/api/with-auth";
 import { AppError, apiSuccess, parseBody } from "@/lib/errors";
 import { sendNotification } from "@/lib/notifications/create";
+import { CONNECTION_REQUEST } from "@/lib/notifications/events";
 
 /**
  * GET /api/friendships
@@ -75,7 +76,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     {
       userId: friend_id,
       type: "friend_request",
-      title: "Connection Request",
+      title: CONNECTION_REQUEST.title,
       body: `${senderProfile?.full_name || "Someone"} wants to connect with you`,
       relatedUserId: user.id,
     },

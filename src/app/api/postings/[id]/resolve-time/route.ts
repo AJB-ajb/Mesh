@@ -1,4 +1,5 @@
 import { withAuth } from "@/lib/api/with-auth";
+import { logFireAndForget } from "@/lib/api/fire-and-forget";
 import { notifyIfPreferred } from "@/lib/api/notify-if-preferred";
 import { apiSuccess, AppError } from "@/lib/errors";
 import { getPosting, getProfile } from "@/lib/data";
@@ -134,6 +135,7 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
           required: ["auto_commit", "reason"],
         },
         temperature: 0.1,
+        tier: "fast",
       });
 
       shouldAutoCommit = result.auto_commit;
@@ -183,13 +185,16 @@ export const POST = withAuth(async (_req, { user, supabase, params }) => {
 
   // 9. Notify all accepted members
   for (const app of applications.filter((a) => a.status === "accepted")) {
-    notifyIfPreferred(supabase, app.applicant_id, "interest_received", {
-      userId: app.applicant_id,
-      type: "meeting_confirmed",
-      title: "Meeting Confirmed",
-      body: `Your activity "${posting.title}" is confirmed for ${slotDate.toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`,
-      relatedPostingId: postingId,
-    });
+    logFireAndForget(
+      notifyIfPreferred(supabase, app.applicant_id, "interest_received", {
+        userId: app.applicant_id,
+        type: "meeting_confirmed",
+        title: "Meeting Confirmed",
+        body: `Your activity "${posting.title}" is confirmed for ${slotDate.toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`,
+        relatedPostingId: postingId,
+      }),
+      "resolve-time-meeting-confirmed",
+    );
   }
 
   return apiSuccess({

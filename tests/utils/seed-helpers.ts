@@ -38,7 +38,21 @@ export async function seedUser(
     throw new Error(`Failed to seed user: ${error.message}`);
   }
 
-  return { userId: data.user.id, user: userData };
+  const userId = data.user.id;
+
+  // Auto-create a profile row so FK constraints on postings etc. are satisfied
+  const { error: profileError } = await supabaseAdmin
+    .from("profiles")
+    .upsert(
+      { user_id: userId, full_name: userData.full_name },
+      { onConflict: "user_id" },
+    );
+
+  if (profileError) {
+    throw new Error(`Failed to seed profile for user: ${profileError.message}`);
+  }
+
+  return { userId, user: userData };
 }
 
 /**
@@ -130,6 +144,35 @@ export async function seedMatch(
 
   if (error) {
     throw new Error(`Failed to seed match: ${error.message}`);
+  }
+
+  return data;
+}
+
+/**
+ * Seed a friend_ask directly into the database
+ */
+export async function seedFriendAskDirect(friendAskData: {
+  posting_id: string;
+  creator_id: string;
+  ordered_friend_list: string[];
+  pending_invitees?: string[];
+  invite_mode?: "sequential" | "parallel";
+  status?: string;
+  current_request_index?: number;
+}): Promise<{ id: string }> {
+  if (!supabaseAdmin) {
+    throw new Error("SUPABASE_SECRET_KEY required for seedFriendAskDirect");
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("friend_asks")
+    .insert(friendAskData)
+    .select("id")
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to seed friend_ask: ${error.message}`);
   }
 
   return data;

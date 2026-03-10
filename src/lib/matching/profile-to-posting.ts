@@ -66,9 +66,10 @@ export async function matchProfileToPostings(
   // asynchronously via the batch processor after profile save
   const embedding = profile.embedding;
   if (!embedding || !Array.isArray(embedding)) {
-    throw new Error(
-      "Your profile embedding is still being generated. Please try again in a moment.",
+    console.warn(
+      `[matching] Profile embedding not ready for user ${userId}, returning empty matches`,
     );
+    return [];
   }
 
   // Build RPC params with optional hard filters
@@ -167,6 +168,8 @@ export async function matchProfileToPostings(
       updated_at: row.updated_at,
       expires_at: row.expires_at,
       identified_roles: row.identified_roles ?? null,
+      in_discover: row.in_discover ?? row.visibility !== "private",
+      link_token: row.link_token ?? null,
     };
 
     const existingMatch = matchMap.get(row.posting_id);

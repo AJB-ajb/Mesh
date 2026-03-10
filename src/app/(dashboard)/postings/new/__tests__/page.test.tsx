@@ -99,10 +99,9 @@ describe("NewPostingPage", () => {
     });
   });
 
-  it("shows collapsible edit details section", () => {
+  it("shows context bar with discover toggle", () => {
     render(<NewPostingPage />);
-    const toggle = screen.getByText("Edit details manually");
-    expect(toggle).toBeInTheDocument();
+    expect(screen.getByText("Show in Discover")).toBeInTheDocument();
   });
 
   it("shows error on failed submission", async () => {

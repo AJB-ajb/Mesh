@@ -152,11 +152,13 @@ export function postingExtractionSchema(mode: ExtractionMode): ObjectSchema {
     },
     team_size_min: {
       type: SchemaType.NUMBER,
-      description: "Minimum number of people needed for the team",
+      description:
+        "Minimum total team size INCLUDING the poster. E.g., 'need 2 people' from a single poster → 3",
     },
     team_size_max: {
       type: SchemaType.NUMBER,
-      description: "Maximum number of people needed for the team",
+      description:
+        "Maximum total team size INCLUDING the poster. E.g., 'looking for 2-3 people' from a single poster → max 4",
     },
     tags: {
       type: SchemaType.ARRAY,
@@ -229,7 +231,7 @@ export function postingExtractionSchema(mode: ExtractionMode): ObjectSchema {
   const required =
     mode === "update"
       ? ["updated_text", "skills"]
-      : ["title", "description", "skills"];
+      : ["title", "description", "skills", "team_size_min", "team_size_max"];
 
   return { type: SchemaType.OBJECT, properties, required };
 }

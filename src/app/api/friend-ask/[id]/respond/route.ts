@@ -1,6 +1,8 @@
 import { withAuth } from "@/lib/api/with-auth";
+import { logFireAndForget } from "@/lib/api/fire-and-forget";
 import { notifyIfPreferred } from "@/lib/api/notify-if-preferred";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
+import { INVITE_RECEIVED, INVITE_ACCEPTED, INVITE_DECLINED } from "@/lib/notifications/events";
 
 /**
  * POST /api/friend-ask/[id]/respond
@@ -86,14 +88,17 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
   // Helper: notify the creator
   const notifyCreator = (title: string, body: string) => {
-    notifyIfPreferred(supabase, friendAsk.creator_id, "sequential_invite", {
-      userId: friendAsk.creator_id,
-      type: "sequential_invite",
-      title,
-      body,
-      relatedPostingId: friendAsk.posting_id,
-      relatedUserId: user.id,
-    });
+    logFireAndForget(
+      notifyIfPreferred(supabase, friendAsk.creator_id, "sequential_invite", {
+        userId: friendAsk.creator_id,
+        type: "sequential_invite",
+        title,
+        body,
+        relatedPostingId: friendAsk.posting_id,
+        relatedUserId: user.id,
+      }),
+      "friend-ask-respond-notify-creator",
+    );
   };
 
   // Helper: send invite notification to a connection
@@ -104,14 +109,17 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       .eq("user_id", friendAsk.creator_id)
       .single();
 
-    notifyIfPreferred(supabase, friendId, "sequential_invite", {
-      userId: friendId,
-      type: "sequential_invite",
-      title: "Invite Received",
-      body: `${creatorName?.full_name || "Someone"} wants you to join "${postingTitle}"`,
-      relatedPostingId: friendAsk.posting_id,
-      relatedUserId: friendAsk.creator_id,
-    });
+    logFireAndForget(
+      notifyIfPreferred(supabase, friendId, "sequential_invite", {
+        userId: friendId,
+        type: "sequential_invite",
+        title: INVITE_RECEIVED.title,
+        body: `${creatorName?.full_name || "Someone"} wants you to join "${postingTitle}"`,
+        relatedPostingId: friendAsk.posting_id,
+        relatedUserId: friendAsk.creator_id,
+      }),
+      "friend-ask-respond-notify-friend",
+    );
   };
 
   // =========================================================================
@@ -137,7 +145,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
         );
 
       notifyCreator(
-        "Invite Accepted!",
+        INVITE_ACCEPTED.title,
         `${responderName} has joined "${postingTitle}"`,
       );
 
@@ -164,7 +172,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       );
 
     notifyCreator(
-      "Invite Accepted!",
+      INVITE_ACCEPTED.title,
       `${responderName} has joined "${postingTitle}"`,
     );
 
@@ -180,7 +188,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
   // Notify the creator about the decline
   notifyCreator(
-    "Invite Declined",
+    INVITE_DECLINED.title,
     `${responderName} declined the invite for "${postingTitle}"`,
   );
 

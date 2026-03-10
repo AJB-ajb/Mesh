@@ -6,6 +6,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, ScoreBreakdown } from "@/lib/supabase/types";
 import { MATCHING, DEEP_MATCH } from "@/lib/constants";
+import { MATCH_SCORE_THRESHOLD } from "@/lib/matching/scoring";
 import {
   deepMatchCandidates,
   isDeepMatchAvailable,
@@ -53,9 +54,8 @@ export async function matchPostingToProfiles(
   // asynchronously via the batch processor after posting save
   const embedding = posting.embedding;
   if (!embedding || !Array.isArray(embedding)) {
-    throw new Error(
-      "The posting embedding is still being generated. Please try again in a moment.",
-    );
+    console.warn(`[matching] Posting embedding not ready for ${postingId}, returning empty matches`);
+    return [];
   }
 
   // Build RPC params with hard filters from posting's location data
@@ -265,7 +265,7 @@ export async function createMatchRecordsForPosting(
   const supabase = await createClient();
 
   const matchInserts = matches
-    .filter((m) => !m.matchId) // Only create new matches
+    .filter((m) => !m.matchId && m.score > MATCH_SCORE_THRESHOLD) // Only create new matches above threshold
     .map((m) => ({
       posting_id: postingId,
       user_id: m.profile.user_id,

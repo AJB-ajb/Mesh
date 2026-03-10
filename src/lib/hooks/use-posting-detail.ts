@@ -87,6 +87,7 @@ export type PostingDetailData = {
   waitlistPosition: number | null;
   acceptedCount: number | null;
   parentPosting: { id: string; title: string } | null;
+  hasPendingInvite: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -123,8 +124,17 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
   // Derive skills and selectedPostingSkills from join table
   let posting = rawPosting;
   if (rawPosting) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const psRows = (rawPosting.posting_skills as any[]) ?? [];
+    type PostingSkillRow = {
+      skill_id: string;
+      level_min: number | null;
+      skill_nodes: {
+        id: string;
+        name: string;
+        parent_id: string | null;
+        depth: number;
+      } | null;
+    };
+    const psRows = (rawPosting.posting_skills as PostingSkillRow[]) ?? [];
     const joinSkills = deriveSkillNames(psRows);
 
     // Build selectedPostingSkills for edit mode
@@ -136,8 +146,8 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
           "id" in ps.skill_nodes,
       )
       .map((ps) => ({
-        skillId: ps.skill_nodes.id as string,
-        name: ps.skill_nodes.name as string,
+        skillId: ps.skill_nodes!.id as string,
+        name: ps.skill_nodes!.name as string,
         path: [],
         levelMin: ps.level_min as number | null,
       }));
@@ -163,6 +173,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
       waitlistPosition: null,
       acceptedCount: null,
       parentPosting: null,
+      hasPendingInvite: false,
     };
   }
 
@@ -187,25 +198,56 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
   let applications: Application[] = [];
   let matchedProfiles: MatchedProfile[] = [];
   let acceptedCount: number | null = null;
+  let hasPendingInvite = false;
 
   if (user && !isOwner) {
-    // Non-owner: check application, fetch profile, compute match, count accepted
-    const [applicationResult, profileResult, acceptedCountResult] =
-      await Promise.all([
-        supabase
-          .from("applications")
-          .select("*")
-          .eq("posting_id", postingId)
-          .eq("applicant_id", user.id)
-          .maybeSingle(),
-        supabase.from("profiles").select("*").eq("user_id", user.id).single(),
-        supabase
-          .from("applications")
-          .select("*", { count: "exact" })
-          .eq("posting_id", postingId)
-          .eq("status", "accepted")
-          .limit(0),
-      ]);
+    // Non-owner: check application, fetch profile, compute match, count accepted, check invites
+    const [
+      applicationResult,
+      profileResult,
+      acceptedCountResult,
+      inviteResult,
+    ] = await Promise.all([
+      supabase
+        .from("applications")
+        .select("*")
+        .eq("posting_id", postingId)
+        .eq("applicant_id", user.id)
+        .maybeSingle(),
+      supabase.from("profiles").select("*").eq("user_id", user.id).single(),
+      supabase
+        .from("applications")
+        .select("*", { count: "exact" })
+        .eq("posting_id", postingId)
+        .eq("status", "accepted")
+        .limit(0),
+      supabase
+        .from("friend_asks")
+        .select(
+          "id, invite_mode, pending_invitees, ordered_friend_list, declined_list",
+        )
+        .eq("posting_id", postingId)
+        .eq("status", "pending"),
+    ]);
+
+    // Check if user is an active invitee
+    for (const fa of inviteResult.data ?? []) {
+      const inviteMode = fa.invite_mode ?? "sequential";
+      const declinedList: string[] = fa.declined_list ?? [];
+      if (declinedList.includes(user.id)) continue;
+      if (inviteMode === "parallel") {
+        if (fa.ordered_friend_list.includes(user.id)) {
+          hasPendingInvite = true;
+          break;
+        }
+      } else {
+        const pendingInvitees: string[] = fa.pending_invitees ?? [];
+        if (pendingInvitees.includes(user.id)) {
+          hasPendingInvite = true;
+          break;
+        }
+      }
+    }
 
     acceptedCount = acceptedCountResult.count ?? 0;
 
@@ -343,6 +385,7 @@ async function fetchPostingDetail(key: string): Promise<PostingDetailData> {
     waitlistPosition,
     acceptedCount,
     parentPosting,
+    hasPendingInvite,
   };
 }
 
@@ -369,6 +412,7 @@ export function usePostingDetail(postingId: string) {
     waitlistPosition: data?.waitlistPosition ?? null,
     acceptedCount: data?.acceptedCount ?? null,
     parentPosting: data?.parentPosting ?? null,
+    hasPendingInvite: data?.hasPendingInvite ?? false,
     error,
     isLoading,
     mutate,

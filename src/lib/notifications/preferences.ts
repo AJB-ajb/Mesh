@@ -12,7 +12,8 @@ export type NotificationType =
   | "sequential_invite"
   | "new_message"
   | "new_group_message"
-  | "match_found";
+  | "match_found"
+  | "meeting_proposal";
 
 export type NotificationChannel = "in_app" | "browser";
 
@@ -33,6 +34,7 @@ export const defaultNotificationPreferences: NotificationPreferences = {
     new_message: true,
     new_group_message: true,
     match_found: true,
+    meeting_proposal: true,
   },
   browser: {
     interest_received: true,
@@ -43,6 +45,7 @@ export const defaultNotificationPreferences: NotificationPreferences = {
     new_message: true,
     new_group_message: true,
     match_found: false,
+    meeting_proposal: true,
   },
 };
 
@@ -76,4 +79,5 @@ export const allNotificationTypes: NotificationType[] = [
   "new_message",
   "new_group_message",
   "match_found",
+  "meeting_proposal",
 ];

@@ -8,6 +8,19 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
     replaysOnErrorSampleRate: 1.0,
     integrations: [Sentry.replayIntegration()],
     environment: process.env.NEXT_PUBLIC_VERCEL_ENV ?? "development",
+    beforeSend(event) {
+      const frames = event.exception?.values;
+      if (frames?.length) {
+        const { type, value } = frames[0];
+        // Supabase Auth navigator.locks abort on mobile page navigation
+        if (type === "AbortError") return null;
+        // Transient mobile network failures (fetch itself throws)
+        if (type === "TypeError" && value === "Failed to fetch") return null;
+        // Expected for expired sessions — not a bug
+        if (value === "Not authenticated") return null;
+      }
+      return event;
+    },
   });
 }
 
