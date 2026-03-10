@@ -1,11 +1,12 @@
 "use client";
 
-import { Users, Calendar, Clock, MapPin } from "lucide-react";
+import { Users, Calendar, MapPin } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { NOT_SPECIFIED } from "@/lib/format";
 import { getLocationModeDisplay } from "@/lib/posting/location";
+import { categoryIcons } from "@/lib/posting/styles";
 import type { PostingDetail } from "@/lib/hooks/use-posting-detail";
 import type { QuestionMode } from "@/lib/hidden-syntax";
 
@@ -80,8 +81,8 @@ export function PostingAboutCardView({
           <Users className="h-5 w-5 text-muted-foreground" />
           <p className="mt-2 text-sm text-muted-foreground">Team size</p>
           <p className="font-medium">
-            {posting.team_size_min}&ndash;{posting.team_size_max} total · Looking for{" "}
-            {Math.max(1, posting.team_size_max - 1)}
+            {posting.team_size_min}&ndash;{posting.team_size_max} total ·
+            Looking for {Math.max(1, posting.team_size_max - 1)}
           </p>
         </div>
         {posting.estimated_time && (
@@ -92,7 +93,16 @@ export function PostingAboutCardView({
           </div>
         )}
         <div className="rounded-lg border border-border p-4">
-          <Clock className="h-5 w-5 text-muted-foreground" />
+          {(() => {
+            const Icon = posting.category
+              ? categoryIcons[posting.category]
+              : null;
+            return Icon ? (
+              <Icon className="size-5 text-muted-foreground" />
+            ) : (
+              <span className="size-5" />
+            );
+          })()}
           <p className="mt-2 text-sm text-muted-foreground">Category</p>
           <p className="font-medium capitalize">
             {posting.category || NOT_SPECIFIED}

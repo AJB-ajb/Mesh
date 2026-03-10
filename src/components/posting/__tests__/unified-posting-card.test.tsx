@@ -41,13 +41,23 @@ vi.mock("@/lib/posting/location", () => ({
 }));
 
 // Mock styles
-vi.mock("@/lib/posting/styles", () => ({
-  categoryStyles: { hackathon: "bg-purple-500" },
-  getStatusColor: (status: string) =>
-    status === "open"
-      ? "bg-green-500/10 text-green-600"
-      : "bg-muted text-muted-foreground",
-}));
+vi.mock("@/lib/posting/styles", () => {
+  const MockIcon = ({ className, ...props }: Record<string, unknown>) => (
+    <svg
+      className={className as string}
+      data-testid="category-icon"
+      {...props}
+    />
+  );
+  return {
+    categoryStyles: { hackathon: "bg-purple-500", study: "bg-blue-500" },
+    categoryIcons: { hackathon: MockIcon, study: MockIcon },
+    getStatusColor: (status: string) =>
+      status === "open"
+        ? "bg-green-500/10 text-green-600"
+        : "bg-muted text-muted-foreground",
+  };
+});
 
 // Mock next/navigation
 const pushMock = vi.fn();
