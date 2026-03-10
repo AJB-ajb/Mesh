@@ -1,5 +1,4 @@
 import { withAuth } from "@/lib/api/with-auth";
-import { verifyPostingOwnership } from "@/lib/api/guards";
 import { logFireAndForget } from "@/lib/api/fire-and-forget";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import { SCHEDULING } from "@/lib/constants";
@@ -39,12 +38,19 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
   return apiSuccess({ proposals: proposals ?? [] });
 });
 
-/** POST: Create a new meeting proposal (owner only) */
+/** POST: Create a new meeting proposal (any team member) */
 export const POST = withAuth(async (req, { user, supabase, params }) => {
   const postingId = params.id;
 
-  // Verify user is posting owner
-  await verifyPostingOwnership(supabase, postingId, user.id);
+  // Verify team membership
+  const { data: isMember } = await supabase.rpc("is_posting_team_member", {
+    p_posting_id: postingId,
+    p_user_id: user.id,
+  });
+
+  if (!isMember) {
+    throw new AppError("FORBIDDEN", "Not a team member", 403);
+  }
 
   const { title, startTime, endTime } = await parseBody<{
     title?: string;
