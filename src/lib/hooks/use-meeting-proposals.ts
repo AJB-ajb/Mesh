@@ -2,6 +2,7 @@
 
 import useSWR from "swr";
 import type { MeetingProposal } from "@/lib/types/scheduling";
+import { cacheKeys } from "@/lib/swr/keys";
 
 type UseMeetingProposalsResult = {
   proposals: MeetingProposal[];
@@ -21,7 +22,7 @@ async function fetchProposals(key: string): Promise<MeetingProposal[]> {
 export function useMeetingProposals(
   postingId: string | null,
 ): UseMeetingProposalsResult {
-  const key = postingId ? `api/postings/${postingId}/proposals` : null;
+  const key = postingId ? cacheKeys.meetingProposals(postingId) : null;
 
   const { data, error, isLoading, mutate } = useSWR(key, fetchProposals);
 

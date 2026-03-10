@@ -31,25 +31,9 @@ import {
 import { RelativeTime } from "@/components/ui/relative-time";
 import { labels } from "@/lib/labels";
 import { cn } from "@/lib/utils";
-import { categoryStyles } from "@/lib/posting/styles";
+import { categoryStyles, getStatusColor } from "@/lib/posting/styles";
 import { getLocationLabel } from "@/lib/posting/location";
-
-// ---------------------------------------------------------------------------
-// Status color helper
-// ---------------------------------------------------------------------------
-
-function getStatusColor(status: string) {
-  switch (status) {
-    case "open":
-      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
-    case "filled":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
-    case "closed":
-      return "bg-muted text-muted-foreground";
-    default:
-      return "bg-muted text-muted-foreground";
-  }
-}
+import { MATCH_DIMENSIONS } from "@/lib/matching/dimensions";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -327,20 +311,15 @@ export function UnifiedPostingCard({
                           {formatScore(compatibilityScore)} match
                         </p>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mt-1">
-                          {(
-                            [
-                              ["Relevance", scoreBreakdown.semantic],
-                              ["Availability", scoreBreakdown.availability],
-                              ["Skill Level", scoreBreakdown.skill_level],
-                              ["Location", scoreBreakdown.location],
-                            ] as const
-                          ).map(([label, score]) => (
-                            <div key={label} className="flex flex-col">
+                          {MATCH_DIMENSIONS.map((dim) => (
+                            <div key={dim.key} className="flex flex-col">
                               <span className="text-muted-foreground">
-                                {label}
+                                {dim.label}
                               </span>
                               <span className="font-medium text-foreground">
-                                {score != null ? formatScore(score) : "N/A"}
+                                {scoreBreakdown[dim.key] != null
+                                  ? formatScore(scoreBreakdown[dim.key]!)
+                                  : "N/A"}
                               </span>
                             </div>
                           ))}
@@ -529,18 +508,13 @@ export function UnifiedPostingCard({
             </div>
             {showBreakdown && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mt-2">
-                {(
-                  [
-                    ["Relevance", scoreBreakdown.semantic],
-                    ["Availability", scoreBreakdown.availability],
-                    ["Skill Level", scoreBreakdown.skill_level],
-                    ["Location", scoreBreakdown.location],
-                  ] as const
-                ).map(([label, score]) => (
-                  <div key={label} className="flex flex-col">
-                    <span className="text-muted-foreground">{label}</span>
+                {MATCH_DIMENSIONS.map((dim) => (
+                  <div key={dim.key} className="flex flex-col">
+                    <span className="text-muted-foreground">{dim.label}</span>
                     <span className="font-medium text-foreground">
-                      {score != null ? formatScore(score) : "N/A"}
+                      {scoreBreakdown[dim.key] != null
+                        ? formatScore(scoreBreakdown[dim.key]!)
+                        : "N/A"}
                     </span>
                   </div>
                 ))}

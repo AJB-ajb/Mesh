@@ -1,5 +1,6 @@
 import { withAuth } from "@/lib/api/with-auth";
-import { verifyPostingOwnership } from "@/lib/api/ownership";
+import { verifyPostingOwnership } from "@/lib/api/guards";
+import { logFireAndForget } from "@/lib/api/fire-and-forget";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import { SCHEDULING } from "@/lib/constants";
 import { notifyIfPreferred } from "@/lib/api/notify-if-preferred";
@@ -105,13 +106,16 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
   for (const memberId of (memberIds ?? []) as string[]) {
     if (memberId === user.id) continue;
-    notifyIfPreferred(supabase, memberId, "meeting_proposal", {
-      userId: memberId,
-      type: MEETING_PROPOSED.type,
-      title: MEETING_PROPOSED.title,
-      body: `A new meeting time has been proposed${title ? `: ${title}` : ""}.`,
-      relatedPostingId: postingId,
-    });
+    logFireAndForget(
+      notifyIfPreferred(supabase, memberId, "meeting_proposal", {
+        userId: memberId,
+        type: MEETING_PROPOSED.type,
+        title: MEETING_PROPOSED.title,
+        body: `A new meeting time has been proposed${title ? `: ${title}` : ""}.`,
+        relatedPostingId: postingId,
+      }),
+      "proposal-created-notification",
+    );
   }
 
   return apiSuccess({ proposal }, 201);

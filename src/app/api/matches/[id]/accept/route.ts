@@ -24,9 +24,9 @@ export const PATCH = withAuth(async (_req, { user, supabase, params }) => {
     throw new AppError("NOT_FOUND", "Match not found", 404);
   }
 
-  const posting = match.posting as Record<string, unknown>;
+  const posting = match.posting as Record<string, unknown> | null;
 
-  if (posting?.creator_id !== user.id) {
+  if (!posting || posting.creator_id !== user.id) {
     throw new AppError(
       "FORBIDDEN",
       "Only posting creators can accept applicants",
