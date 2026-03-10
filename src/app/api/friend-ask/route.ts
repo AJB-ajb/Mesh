@@ -1,5 +1,5 @@
 import { withAuth } from "@/lib/api/with-auth";
-import { verifyPostingOwnership } from "@/lib/api/ownership";
+import { verifyPostingOwnership } from "@/lib/api/guards";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 
 /**
