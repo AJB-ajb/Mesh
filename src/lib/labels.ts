@@ -1280,6 +1280,8 @@ export const labels = {
     skipToMainContent: "Skip to main content",
     toggleTheme: "Toggle theme",
     deleteAvailabilityBlock: "Delete availability block",
+    previousDays: "Previous days",
+    nextDays: "Next days",
     shortcuts: {
       openSearch: "Open search / command palette",
       showHelp: "Show keyboard shortcuts",
