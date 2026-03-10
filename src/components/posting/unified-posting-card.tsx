@@ -551,14 +551,14 @@ export function UnifiedPostingCard({
 
         {/* Meta line — compact on mobile */}
         <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-xs sm:text-sm text-muted-foreground">
-          {teamSizeMax != null && (
+          {teamSizeMax != null && teamSizeMax > 1 && (
             <span className="flex items-center gap-1 sm:gap-1.5">
               <Users className="size-3.5 sm:size-4" />
               <span className="md:hidden">
-                {labels.postingCard.lookingForShort(teamSizeMax)}
+                {labels.postingCard.lookingForShort(teamSizeMax - 1)}
               </span>
               <span className="hidden md:inline">
-                {labels.postingCard.lookingFor(teamSizeMax)}
+                {labels.postingCard.lookingFor(teamSizeMax - 1)}
               </span>
             </span>
           )}

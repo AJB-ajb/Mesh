@@ -41,7 +41,7 @@ describe("postingExtractionSchema", () => {
   it("includes correct fields for extract mode", () => {
     const schema = postingExtractionSchema("extract");
     expect(schema.type).toBe(SchemaType.OBJECT);
-    expect(schema.required).toEqual(["title", "description", "skills"]);
+    expect(schema.required).toEqual(["title", "description", "skills", "team_size_min", "team_size_max"]);
     expect(schema.properties!.updated_text).toBeUndefined();
     expect(schema.properties!.title).toBeDefined();
     expect(schema.properties!.skills).toBeDefined();
