@@ -38,7 +38,21 @@ export async function seedUser(
     throw new Error(`Failed to seed user: ${error.message}`);
   }
 
-  return { userId: data.user.id, user: userData };
+  const userId = data.user.id;
+
+  // Auto-create a profile row so FK constraints on postings etc. are satisfied
+  const { error: profileError } = await supabaseAdmin
+    .from("profiles")
+    .upsert(
+      { user_id: userId, full_name: userData.full_name },
+      { onConflict: "user_id" },
+    );
+
+  if (profileError) {
+    throw new Error(`Failed to seed profile for user: ${profileError.message}`);
+  }
+
+  return { userId, user: userData };
 }
 
 /**
