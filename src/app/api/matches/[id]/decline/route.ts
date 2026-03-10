@@ -20,9 +20,9 @@ export const PATCH = withAuth(async (_req, { user, supabase, params }) => {
     return apiError("NOT_FOUND", "Match not found", 404);
   }
 
-  const project = match.project as Record<string, unknown>;
+  const project = match.project as Record<string, unknown> | null;
 
-  if (project?.creator_id !== user.id) {
+  if (!project || project.creator_id !== user.id) {
     return apiError(
       "FORBIDDEN",
       "Only project creators can decline applicants",
