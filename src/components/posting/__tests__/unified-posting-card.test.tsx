@@ -43,6 +43,10 @@ vi.mock("@/lib/posting/location", () => ({
 // Mock styles
 vi.mock("@/lib/posting/styles", () => ({
   categoryStyles: { hackathon: "bg-purple-500" },
+  getStatusColor: (status: string) =>
+    status === "open"
+      ? "bg-green-500/10 text-green-600"
+      : "bg-muted text-muted-foreground",
 }));
 
 // Mock next/navigation

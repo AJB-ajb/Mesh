@@ -1,13 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { RealtimeChannel } from "@supabase/supabase-js";
+import { useCallback } from "react";
 import {
   subscribeToMessages,
-  unsubscribeChannel,
   type Message,
 } from "@/lib/supabase/realtime";
-import { useRealtimePresence } from "./use-realtime-presence";
+import { useRealtimeChannel } from "./use-realtime-channel";
 
 type UseRealtimeChatOptions = {
   conversationId: string | null;
@@ -31,44 +29,23 @@ export function useRealtimeChat({
   currentUserId,
   onNewMessage,
 }: UseRealtimeChatOptions): UseRealtimeChatReturn {
-  const messageChannelRef = useRef<RealtimeChannel | null>(null);
+  const subscribe = useCallback(
+    (id: string, onMessage: (msg: Message) => void) =>
+      subscribeToMessages(
+        id,
+        onMessage,
+        () => {
+          // Handle message updates (e.g., read status)
+        },
+      ),
+    [],
+  );
 
-  const { typingUsers, onlineUsers, setIsTyping, isConnected } =
-    useRealtimePresence({
-      roomId: conversationId ? `chat:${conversationId}` : null,
-      currentUserId,
-      typingContextId: conversationId,
-    });
-
-  // Subscribe to messages
-  useEffect(() => {
-    if (!conversationId || !currentUserId) return;
-
-    messageChannelRef.current = subscribeToMessages(
-      conversationId,
-      (message) => {
-        // Only trigger callback for messages from other users
-        if (message.sender_id !== currentUserId) {
-          onNewMessage?.(message);
-        }
-      },
-      () => {
-        // Handle message updates (e.g., read status)
-      },
-    );
-
-    return () => {
-      if (messageChannelRef.current) {
-        unsubscribeChannel(messageChannelRef.current);
-        messageChannelRef.current = null;
-      }
-    };
-  }, [conversationId, currentUserId, onNewMessage]);
-
-  return {
-    typingUsers,
-    onlineUsers,
-    setIsTyping,
-    isConnected,
-  };
+  return useRealtimeChannel<Message>({
+    entityId: conversationId,
+    currentUserId,
+    roomPrefix: "chat",
+    subscribe,
+    onNewMessage,
+  });
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import useSWR from "swr";
 import { useRouter } from "next/navigation";
 import { cacheKeys } from "@/lib/swr/keys";
@@ -214,10 +215,14 @@ async function fetchProfile(): Promise<ProfileFetchResult> {
 
 export function useProfileData() {
   const router = useRouter();
+  const redirectingRef = useRef(false);
 
   return useSWR(cacheKeys.profile(), fetchProfile, {
     onError: () => {
-      router.replace("/login");
+      if (!redirectingRef.current) {
+        redirectingRef.current = true;
+        router.replace("/login");
+      }
     },
   });
 }

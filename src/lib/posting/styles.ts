@@ -22,3 +22,16 @@ export const statusLabels: Record<string, string> = {
   accepted: "Accepted",
   declined: "Declined",
 };
+
+export function getStatusColor(status: string) {
+  switch (status) {
+    case "open":
+      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+    case "filled":
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
+    case "closed":
+      return "bg-muted text-muted-foreground";
+    default:
+      return "bg-muted text-muted-foreground";
+  }
+}

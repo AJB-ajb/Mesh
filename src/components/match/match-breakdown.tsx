@@ -5,29 +5,8 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ScoreBreakdown } from "@/lib/supabase/types";
 import { formatScore, getScoreColorVariant } from "@/lib/matching/scoring";
-
-const DIMENSIONS = [
-  {
-    key: "semantic" as const,
-    label: "Relevance",
-    description: "Alignment in interests and posting description",
-  },
-  {
-    key: "availability" as const,
-    label: "Availability",
-    description: "Schedule compatibility between you and the posting",
-  },
-  {
-    key: "skill_level" as const,
-    label: "Skill Level",
-    description: "How well your skill levels match the posting requirements",
-  },
-  {
-    key: "location" as const,
-    label: "Location",
-    description: "Geographic proximity weighted by location preferences",
-  },
-] as const;
+import { MATCH_DIMENSIONS } from "@/lib/matching/dimensions";
+import { labels } from "@/lib/labels";
 
 export interface MatchBreakdownProps {
   breakdown: ScoreBreakdown;
@@ -43,7 +22,7 @@ export function MatchBreakdown({ breakdown, className }: MatchBreakdownProps) {
 
   const dimensions = useMemo(
     () =>
-      DIMENSIONS.map((d) => ({
+      MATCH_DIMENSIONS.map((d) => ({
         ...d,
         score: breakdown[d.key],
       })),
@@ -59,7 +38,7 @@ export function MatchBreakdown({ breakdown, className }: MatchBreakdownProps) {
         className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-muted/50"
       >
         <span className="text-sm font-medium text-foreground">
-          Match Breakdown
+          {labels.matchBreakdown.title}
         </span>
         {isExpanded ? (
           <ChevronUp className="h-4 w-4 text-muted-foreground" />
