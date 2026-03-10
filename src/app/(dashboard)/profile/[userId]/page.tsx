@@ -14,7 +14,7 @@ export default async function PublicProfilePage({
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "user_id, full_name, headline, bio, location_mode, location_name, profile_skills(skill_id, level, skill_nodes(id, name))",
+      "user_id, full_name, headline, bio, location_mode, location, profile_skills(skill_id, level, skill_nodes(id, name))",
     )
     .eq("user_id", userId)
     .single();
