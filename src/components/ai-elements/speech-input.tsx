@@ -113,6 +113,10 @@ export const SpeechInput = ({
   const audioChunksRef = useRef<Blob[]>([]);
   // Track which results have already been emitted as final to avoid duplicates
   const lastProcessedIndexRef = useRef<number>(0);
+  // Keep a stable ref to onTranscriptionChange so the recognition handler
+  // never captures a stale closure (avoids restarting recognition on re-render).
+  const onTranscriptionChangeRef = useRef(onTranscriptionChange);
+  onTranscriptionChangeRef.current = onTranscriptionChange;
 
   // Detect mode on mount
   useEffect(() => {
@@ -124,6 +128,9 @@ export const SpeechInput = ({
     if (mode !== "speech-recognition") {
       return;
     }
+
+    // Reset watermark whenever the effect re-initializes recognition
+    lastProcessedIndexRef.current = 0;
 
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -160,7 +167,7 @@ export const SpeechInput = ({
       }
 
       if (newFinalTranscript) {
-        onTranscriptionChange?.(newFinalTranscript);
+        onTranscriptionChangeRef.current?.(newFinalTranscript);
       }
     };
 
@@ -177,7 +184,7 @@ export const SpeechInput = ({
         recognitionRef.current.stop();
       }
     };
-  }, [mode, onTranscriptionChange, lang]);
+  }, [mode, lang]);
 
   // Start MediaRecorder recording
   const startMediaRecorder = useCallback(async () => {
