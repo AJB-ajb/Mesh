@@ -5,7 +5,10 @@ import {
   buildCountChain,
   authedUser,
 } from "tests/utils/supabase-mock";
-import { testRequiresAuth, testRequiresOwnership } from "tests/utils/route-test-helpers";
+import {
+  testRequiresAuth,
+  testRequiresOwnership,
+} from "tests/utils/route-test-helpers";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -21,7 +24,7 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 // ---------- Notification mock ----------
-const mockNotifyIfPreferred = vi.fn();
+const mockNotifyIfPreferred = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/api/notify-if-preferred", () => ({
   notifyIfPreferred: (...args: unknown[]) => mockNotifyIfPreferred(...args),
 }));
@@ -81,14 +84,20 @@ describe("POST /api/postings/[id]/proposals", () => {
   };
 
   testRequiresAuth(POST, () => makePostReq(validBody), routeCtx, mockGetUser);
-  testRequiresOwnership(POST, () => makePostReq(validBody), routeCtx, mockGetUser, () => {
-    mockFrom.mockReturnValue(
-      buildChain({
-        data: { id: "posting-1", creator_id: "other-user" },
-        error: null,
-      }),
-    );
-  });
+  testRequiresOwnership(
+    POST,
+    () => makePostReq(validBody),
+    routeCtx,
+    mockGetUser,
+    () => {
+      mockFrom.mockReturnValue(
+        buildChain({
+          data: { id: "posting-1", creator_id: "other-user" },
+          error: null,
+        }),
+      );
+    },
+  );
 
   it("returns 400 when startTime or endTime is missing", async () => {
     authedUser(mockGetUser);
