@@ -72,6 +72,8 @@ export function useCalendarDrag(
 ): UseCalendarDragResult {
   const [dragState, setDragState] = useState<DragState | null>(null);
   const dragRef = useRef<DragState | null>(null);
+  /** Element that received setPointerCapture — release must target the same element */
+  const captureElementRef = useRef<HTMLElement | null>(null);
 
   const handlePointerDown = useCallback(
     (
@@ -82,7 +84,8 @@ export function useCalendarDrag(
     ) => {
       if (e.button !== 0) return;
       e.preventDefault();
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      captureElementRef.current = e.currentTarget as HTMLElement;
+      captureElementRef.current.setPointerCapture(e.pointerId);
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
 
@@ -117,7 +120,8 @@ export function useCalendarDrag(
       if (e.button !== 0) return;
       e.preventDefault();
       e.stopPropagation();
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      captureElementRef.current = e.currentTarget as HTMLElement;
+      captureElementRef.current.setPointerCapture(e.pointerId);
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
 
@@ -213,12 +217,13 @@ export function useCalendarDrag(
       const state = dragRef.current;
       if (!state) return;
 
-      // Release pointer capture
+      // Release pointer capture on the same element that called setPointerCapture
       try {
-        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+        captureElementRef.current?.releasePointerCapture(e.pointerId);
       } catch {
         // Pointer capture may already be released
       }
+      captureElementRef.current = null;
 
       if (state.mode === "create") {
         const min = Math.min(state.startMinutes, state.currentMinutes);

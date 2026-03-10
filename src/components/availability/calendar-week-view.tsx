@@ -23,6 +23,12 @@ const MOBILE_PAGES = [
   [6], // Sun
 ] as const;
 
+/**
+ * SSR-safe mobile detection. Defaults to `false` (desktop) on the server;
+ * client updates via queueMicrotask on mount. This matches the pattern used
+ * in global-search.tsx. The 639px breakpoint aligns with Tailwind's sm:640px
+ * — at 640px both CSS (sm: applies) and JS (not mobile) agree.
+ */
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
