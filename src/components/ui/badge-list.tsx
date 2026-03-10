@@ -14,14 +14,16 @@ export function BadgeList({
   className,
 }: BadgeListProps) {
   return (
-    <div className={className ?? "flex flex-wrap gap-2"}>
+    <div className={className ?? "flex flex-wrap gap-1.5 sm:gap-2"}>
       {items.slice(0, max).map((item) => (
-        <Badge key={item} variant={variant}>
+        <Badge key={item} variant={variant} className="text-xs">
           {item}
         </Badge>
       ))}
       {items.length > max && (
-        <Badge variant="outline">+{items.length - max}</Badge>
+        <Badge variant="outline" className="text-xs">
+          +{items.length - max}
+        </Badge>
       )}
     </div>
   );

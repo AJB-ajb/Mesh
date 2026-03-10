@@ -163,10 +163,12 @@ function MobilePicker({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
+        onTouchMove={(e) => e.stopPropagation()}
         className="overflow-y-auto scrollbar-hide"
         style={{
           height: VISIBLE_ITEMS * ITEM_HEIGHT,
           scrollSnapType: "y mandatory",
+          touchAction: "pan-y",
           maskImage:
             "linear-gradient(to bottom, transparent 0%, black 33%, black 67%, transparent 100%)",
           WebkitMaskImage:
