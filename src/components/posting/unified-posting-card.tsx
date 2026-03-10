@@ -157,13 +157,17 @@ export function UnifiedPostingCard({
     locationName ?? null,
   );
 
-  // Strip first line from description when it was used as the title (avoid duplication)
+  // Strip first line from description when it matches the title (avoid duplication)
   const displayDescription = (() => {
-    if (!description || title) return description;
+    if (!description) return description;
     const firstLine = description.split(/\n/)[0]?.trim() ?? "";
     if (!firstLine) return description;
     const extracted = extractTitleFromDescription(description);
-    if (displayTitle === extracted) {
+    // Strip if the title prop matches the extracted first line, or if no title prop was given
+    if (
+      stripTitleMarkdown(extracted) === strippedTitle ||
+      (!title && displayTitle === extracted)
+    ) {
       const rest = description.slice(description.indexOf("\n") + 1).trim();
       return rest || description;
     }
@@ -207,7 +211,7 @@ export function UnifiedPostingCard({
 
             {/* Title */}
             <h3
-              className="text-lg font-semibold line-clamp-2"
+              className="text-base sm:text-lg font-semibold line-clamp-2"
               title={strippedTitle}
             >
               {strippedTitle}
@@ -356,10 +360,10 @@ export function UnifiedPostingCard({
   // ---------------------------------------------------------------------------
 
   return (
-    <Card className="min-w-0 overflow-hidden">
-      <CardContent className="p-4 sm:p-6 space-y-4">
+    <Card className="min-w-0 overflow-hidden group">
+      <CardContent className="p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4">
         {/* Creator top line */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
           <div className="hidden md:flex size-8 items-center justify-center rounded-full bg-muted text-xs font-medium">
             {getInitials(creatorName)}
           </div>
@@ -386,10 +390,10 @@ export function UnifiedPostingCard({
         </div>
 
         {/* Title + badges + actions */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0 space-y-1 flex-1">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h3 className="text-lg font-semibold break-words">
+            <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap">
+              <h3 className="text-base sm:text-lg font-semibold break-words">
                 <Link
                   href={postingHref}
                   className="hover:underline cursor-pointer"
@@ -398,7 +402,9 @@ export function UnifiedPostingCard({
                 </Link>
               </h3>
               {category && (
-                <Badge className={categoryStyles[category] ?? ""}>
+                <Badge
+                  className={cn("text-xs", categoryStyles[category] ?? "")}
+                >
                   {category}
                 </Badge>
               )}
@@ -410,18 +416,21 @@ export function UnifiedPostingCard({
               {(visibility === "private" || mode === "friend_ask") && (
                 <Badge
                   variant="outline"
-                  className="border-amber-500/30 text-amber-600 dark:text-amber-400"
+                  className="text-xs border-amber-500/30 text-amber-600 dark:text-amber-400"
                 >
                   Private
                 </Badge>
               )}
-              <Badge variant="secondary" className={getStatusColor(status)}>
+              <Badge
+                variant="secondary"
+                className={cn("text-xs", getStatusColor(status))}
+              >
                 {status}
               </Badge>
               {!isOwner && compatibilityScore !== undefined && (
                 <Badge
                   variant="default"
-                  className="bg-green-500 hover:bg-green-600 flex items-center gap-1"
+                  className="bg-green-500 hover:bg-green-600 flex items-center gap-1 text-xs"
                 >
                   <Sparkles className="size-3" />
                   {formatScore(compatibilityScore)} match
@@ -430,12 +439,13 @@ export function UnifiedPostingCard({
             </div>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          {/* Action buttons — inline/compact on mobile */}
+          <div className="flex flex-wrap items-center gap-2 sm:w-auto">
             {!isOwner && onToggleBookmark && (
               <Button
                 variant="ghost"
                 size="icon"
+                className="size-8 sm:size-9"
                 onClick={() => onToggleBookmark(id)}
                 aria-label={isBookmarked ? "Remove bookmark" : "Bookmark"}
               >
@@ -449,40 +459,52 @@ export function UnifiedPostingCard({
             {showInterestButton && (
               <Button
                 variant="outline"
+                size="sm"
+                className="h-8 sm:h-9 text-xs sm:text-sm"
                 onClick={() => onExpressInterest?.(id)}
                 disabled={isInteresting}
               >
                 {isInteresting ? (
-                  <Loader2 className="size-4 animate-spin" />
+                  <Loader2 className="size-3.5 animate-spin" />
                 ) : (
-                  <Send className="size-4" />
+                  <Send className="size-3.5" />
                 )}
                 {isInteresting ? "Requesting..." : "Request to join"}
               </Button>
             )}
             {!isOwner && activeTab === "discover" && isAlreadyInterested && (
-              <Button variant="secondary" disabled>
-                <Check className="size-4" />
+              <Button
+                variant="secondary"
+                size="sm"
+                className="h-8 sm:h-9 text-xs sm:text-sm"
+                disabled
+              >
+                <Check className="size-3.5" />
                 {labels.joinRequest.action.requested}
               </Button>
             )}
-            <Button variant="outline" asChild>
-              <Link href={postingHref}>
-                {isOwner ? "Edit" : "View Details"}
-              </Link>
-            </Button>
+            {isOwner && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 sm:h-9 text-xs sm:text-sm"
+                asChild
+              >
+                <Link href={postingHref}>Edit</Link>
+              </Button>
+            )}
           </div>
         </div>
 
         {/* Description — clamped responsively */}
         <MarkdownRenderer
           content={displayDescription}
-          className="text-muted-foreground line-clamp-1 sm:line-clamp-2 md:line-clamp-4"
+          className="text-sm sm:text-base text-muted-foreground line-clamp-2 sm:line-clamp-2 md:line-clamp-4"
         />
 
-        {/* Compatibility Breakdown (collapsible) */}
+        {/* Compatibility Breakdown (collapsible) — hidden on mobile, shown on sm+ */}
         {!isOwner && scoreBreakdown && (
-          <div className="rounded-lg border border-green-500/20 bg-green-50/50 dark:bg-green-950/20 p-3">
+          <div className="hidden sm:block rounded-lg border border-green-500/20 bg-green-50/50 dark:bg-green-950/20 p-2 sm:p-3">
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium text-green-700 dark:text-green-400 flex items-center gap-1">
                 <Sparkles className="size-3" />
@@ -525,11 +547,11 @@ export function UnifiedPostingCard({
           </div>
         )}
 
-        {/* Meta line */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+        {/* Meta line — compact on mobile */}
+        <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-xs sm:text-sm text-muted-foreground">
           {teamSizeMax != null && (
-            <span className="flex items-center gap-1.5">
-              <Users className="size-4" />
+            <span className="flex items-center gap-1 sm:gap-1.5">
+              <Users className="size-3.5 sm:size-4" />
               <span className="md:hidden">
                 {labels.postingCard.lookingForShort(teamSizeMax)}
               </span>
@@ -539,14 +561,14 @@ export function UnifiedPostingCard({
             </span>
           )}
           {estimatedTime && (
-            <span className="flex items-center gap-1.5">
-              <Calendar className="size-4" />
+            <span className="flex items-center gap-1 sm:gap-1.5">
+              <Calendar className="size-3.5 sm:size-4" />
               {estimatedTime}
             </span>
           )}
           {locationLabel && (
-            <span className="flex items-center gap-1.5">
-              <MapPin className="size-4" />
+            <span className="flex items-center gap-1 sm:gap-1.5">
+              <MapPin className="size-3.5 sm:size-4" />
               {locationLabel}
             </span>
           )}
