@@ -14,18 +14,20 @@ export const VOICE = {
   SILENCE_DURATION_MS: 2500,
 } as const;
 
-/** Gemini models in fallback order (free tier) */
+/** Gemini models in fallback order (free tier, per-model independent quotas) */
 export const GEMINI_MODELS = {
   /** Fast lite models for simple tasks (clean, format, normalize) */
   fast: [
     "gemini-3.1-flash-lite-preview",
     "gemini-2.5-flash-lite",
+    "gemini-3-flash-preview",
     "gemini-2.5-flash",
   ] as const,
   /** Standard models for complex tasks (extraction, deep-match, analysis) */
   standard: [
     "gemini-2.5-flash",
     "gemini-3-flash-preview",
+    "gemini-3.1-flash-lite-preview",
     "gemini-2.5-flash-lite",
   ] as const,
 } as const;
