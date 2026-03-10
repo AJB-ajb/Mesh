@@ -134,8 +134,10 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
   // Helper: create an application row on accept so the user appears as a team member.
   // Uses upsert to handle the UNIQUE(posting_id, applicant_id) constraint gracefully.
+  // If a "pending" self-application already exists, this intentionally upgrades it to
+  // "accepted" — an invite acceptance should override a self-application.
   const createApplicationOnAccept = async () => {
-    await supabase.from("applications").upsert(
+    const { error: upsertError } = await supabase.from("applications").upsert(
       {
         posting_id: friendAsk.posting_id,
         applicant_id: user.id,
@@ -144,6 +146,13 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       },
       { onConflict: "posting_id,applicant_id" },
     );
+    if (upsertError) {
+      console.error(
+        "Failed to upsert application on invite accept:",
+        upsertError,
+      );
+      throw new AppError("INTERNAL", upsertError.message, 500);
+    }
   };
 
   // =========================================================================
