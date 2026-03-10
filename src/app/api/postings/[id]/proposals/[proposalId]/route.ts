@@ -1,4 +1,5 @@
 import { withAuth } from "@/lib/api/with-auth";
+import { logFireAndForget } from "@/lib/api/fire-and-forget";
 import { apiError, apiSuccess, parseBody } from "@/lib/errors";
 import { notifyIfPreferred } from "@/lib/api/notify-if-preferred";
 import {
@@ -76,16 +77,19 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
 
   for (const memberId of (memberIds ?? []) as string[]) {
     if (memberId === user.id) continue;
-    notifyIfPreferred(supabase, memberId, "meeting_proposal", {
-      userId: memberId,
-      type: event.type,
-      title: event.title,
-      body:
-        status === "confirmed"
-          ? "A meeting time has been confirmed. Check the posting for details."
-          : "A proposed meeting time has been cancelled.",
-      relatedPostingId: postingId,
-    });
+    logFireAndForget(
+      notifyIfPreferred(supabase, memberId, "meeting_proposal", {
+        userId: memberId,
+        type: event.type,
+        title: event.title,
+        body:
+          status === "confirmed"
+            ? "A meeting time has been confirmed. Check the posting for details."
+            : "A proposed meeting time has been cancelled.",
+        relatedPostingId: postingId,
+      }),
+      "proposal-status-change-notification",
+    );
   }
 
   return apiSuccess({ proposal });

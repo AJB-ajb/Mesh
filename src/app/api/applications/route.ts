@@ -1,4 +1,5 @@
 import { withAuth } from "@/lib/api/with-auth";
+import { logFireAndForget } from "@/lib/api/fire-and-forget";
 import { notifyIfPreferred } from "@/lib/api/notify-if-preferred";
 import { markPostingFilledIfFull } from "@/lib/api/posting-fulfillment";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
@@ -150,15 +151,18 @@ export const POST = withAuth(async (req, { user, supabase }) => {
       ? `${applicantName} has joined your posting "${posting.title}"`
       : `${applicantName} has requested to join "${posting.title}"`;
 
-  notifyIfPreferred(supabase, posting.creator_id, "interest_received", {
-    userId: posting.creator_id,
-    type: "application_received",
-    title: notifTitle,
-    body: notifBody,
-    relatedPostingId: posting_id,
-    relatedApplicationId: application.id,
-    relatedUserId: user.id,
-  });
+  logFireAndForget(
+    notifyIfPreferred(supabase, posting.creator_id, "interest_received", {
+      userId: posting.creator_id,
+      type: "application_received",
+      title: notifTitle,
+      body: notifBody,
+      relatedPostingId: posting_id,
+      relatedApplicationId: application.id,
+      relatedUserId: user.id,
+    }),
+    "application-created-notification",
+  );
 
   // Auto-accept: check if posting should be marked as filled
   if (isAutoAccept && !isFilled) {
