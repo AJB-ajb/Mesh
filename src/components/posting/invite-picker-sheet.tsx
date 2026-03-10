@@ -13,6 +13,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
+import { useMobileKeyboard } from "@/lib/hooks/use-mobile-keyboard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +53,7 @@ export function InvitePickerSheet({
   inviteMode = "sequential",
 }: InvitePickerSheetProps) {
   const { connections, isLoading } = useConnections();
+  const { keyboardVisible, keyboardHeight } = useMobileKeyboard();
   const [filter, setFilter] = useState("");
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -164,7 +166,15 @@ export function InvitePickerSheet({
     >
       <SheetContent
         side="bottom"
-        className="max-h-[85vh] rounded-t-xl"
+        className="rounded-t-xl"
+        style={{
+          maxHeight: keyboardVisible
+            ? `calc(85vh - ${keyboardHeight}px)`
+            : "85vh",
+          paddingBottom: keyboardVisible ? `${keyboardHeight}px` : undefined,
+          transition:
+            "max-height 0.15s ease-out, padding-bottom 0.15s ease-out",
+        }}
         showCloseButton={false}
       >
         <SheetHeader>

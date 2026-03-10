@@ -86,8 +86,7 @@ const markdownEditorTheme = EditorView.theme({
   },
   "&.cm-focused": {
     outline: "none",
-    boxShadow:
-      "0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring))",
+    boxShadow: "0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring))",
   },
   ".cm-content": {
     padding: "0.75rem 1rem",
@@ -95,6 +94,12 @@ const markdownEditorTheme = EditorView.theme({
   },
   ".cm-placeholder": {
     color: "hsl(var(--muted-foreground))",
+    display: "inline-block",
+    lineHeight: "1.625",
+    height: "auto",
+    pointerEvents: "none",
+    verticalAlign: "top",
+    whiteSpace: "pre-wrap",
   },
   ".cm-line": {
     padding: "0.125rem 0",
