@@ -192,10 +192,8 @@ export async function POST(req: Request) {
           generateEmbeddingsBatch(allTexts),
         );
       } catch (error) {
-        return apiError(
-          "INTERNAL",
-          `Embedding generation failed: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        console.error("Embedding generation failed:", error);
+        return apiError("INTERNAL", "Embedding generation failed");
       }
     }
 
@@ -273,9 +271,7 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     Sentry.captureException(error);
-    return apiError(
-      "INTERNAL",
-      error instanceof Error ? error.message : "Internal server error",
-    );
+    console.error("Embeddings processing error:", error);
+    return apiError("INTERNAL", "Internal server error");
   }
 }
