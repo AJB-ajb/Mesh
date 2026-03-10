@@ -21,17 +21,17 @@ type CalendarWeekViewBlockProps = {
   variant?: "default" | "selection";
   onDelete?: (index: number) => void;
   onResizeTopStart?: (
-    e: React.MouseEvent,
+    e: React.PointerEvent,
     index: number,
     window: RecurringWindow,
   ) => void;
   onResizeBottomStart?: (
-    e: React.MouseEvent,
+    e: React.PointerEvent,
     index: number,
     window: RecurringWindow,
   ) => void;
   onMoveStart?: (
-    e: React.MouseEvent,
+    e: React.PointerEvent,
     index: number,
     window: RecurringWindow,
   ) => void;
@@ -54,7 +54,7 @@ export function CalendarWeekViewBlock({
   const top = (startOffset / 60) * HOUR_HEIGHT;
   const height = (duration / 60) * HOUR_HEIGHT;
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handlePointerDown = (e: React.PointerEvent) => {
     if (readOnly) return;
     onMoveStart?.(e, index, w);
   };
@@ -73,15 +73,15 @@ export function CalendarWeekViewBlock({
 
   return (
     <div
-      className={`absolute left-0.5 right-0.5 rounded-sm border text-xs select-none ${colorClasses} ${readOnly ? "" : "cursor-grab active:cursor-grabbing"}`}
+      className={`absolute left-0.5 right-0.5 rounded-sm border text-xs select-none touch-none ${colorClasses} ${readOnly ? "" : "cursor-grab active:cursor-grabbing"}`}
       style={{ top: `${top}px`, height: `${Math.max(height, 12)}px` }}
-      onMouseDown={handleMouseDown}
+      onPointerDown={handlePointerDown}
     >
       {/* Resize handle: top */}
       {!readOnly && !isPreview && (
         <div
-          className="absolute top-0 left-0 right-0 h-1.5 cursor-ns-resize"
-          onMouseDown={(e) => onResizeTopStart?.(e, index, w)}
+          className="absolute top-0 left-0 right-0 h-1.5 cursor-ns-resize touch-none"
+          onPointerDown={(e) => onResizeTopStart?.(e, index, w)}
         />
       )}
 
@@ -112,8 +112,8 @@ export function CalendarWeekViewBlock({
       {/* Resize handle: bottom */}
       {!readOnly && !isPreview && (
         <div
-          className="absolute bottom-0 left-0 right-0 h-1.5 cursor-ns-resize"
-          onMouseDown={(e) => onResizeBottomStart?.(e, index, w)}
+          className="absolute bottom-0 left-0 right-0 h-1.5 cursor-ns-resize touch-none"
+          onPointerDown={(e) => onResizeBottomStart?.(e, index, w)}
         />
       )}
     </div>
