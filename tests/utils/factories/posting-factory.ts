@@ -22,7 +22,7 @@ export type TestPosting = {
   natural_language_criteria: string | null;
   auto_accept: boolean;
   status: "open" | "closed" | "filled" | "expired";
-  expiration_date: Date;
+  expires_at: string;
 };
 
 const postingTitles = [
@@ -85,7 +85,7 @@ export const createPosting = (
     natural_language_criteria: null,
     auto_accept: false,
     status: "open",
-    expiration_date: expirationDate,
+    expires_at: expirationDate.toISOString(),
     ...overrides,
   };
 };
@@ -108,7 +108,7 @@ export const createExpiredPosting = (
 
   return createPosting({
     status: "expired",
-    expiration_date: pastDate,
+    expires_at: pastDate.toISOString(),
     ...overrides,
   });
 };
