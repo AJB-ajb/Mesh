@@ -220,6 +220,11 @@ describe("UnifiedPostingCard -- compact variant", () => {
     expect(screen.getByText("You joined")).toBeInTheDocument();
   });
 
+  it("renders role badge -- Invited for invited", () => {
+    render(<UnifiedPostingCard {...compactBaseProps} role="invited" />);
+    expect(screen.getByText("Invited")).toBeInTheDocument();
+  });
+
   it("shows status badge", () => {
     render(<UnifiedPostingCard {...compactBaseProps} />);
     expect(screen.getByText("open")).toBeInTheDocument();

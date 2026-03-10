@@ -176,7 +176,9 @@ export function UnifiedPostingCard({
         ? labels.active.youCreated
         : role === "applied"
           ? labels.active.youApplied
-          : labels.active.youJoined;
+          : role === "invited"
+            ? labels.active.youInvited
+            : labels.active.youJoined;
 
     return (
       <Link href={postingHref} className="block min-w-0">
