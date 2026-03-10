@@ -390,7 +390,7 @@ export function UnifiedPostingCard({
         </div>
 
         {/* Title + badges + actions */}
-        <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0 space-y-1 flex-1">
             <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap">
               <h3 className="text-base sm:text-lg font-semibold break-words">

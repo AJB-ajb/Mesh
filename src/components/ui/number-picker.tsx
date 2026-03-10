@@ -168,7 +168,7 @@ function MobilePicker({
         style={{
           height: VISIBLE_ITEMS * ITEM_HEIGHT,
           scrollSnapType: "y mandatory",
-          touchAction: "none",
+          touchAction: "pan-y",
           maskImage:
             "linear-gradient(to bottom, transparent 0%, black 33%, black 67%, transparent 100%)",
           WebkitMaskImage:
