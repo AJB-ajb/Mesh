@@ -25,6 +25,14 @@ const MOOD_EMOJIS: Record<FeedbackMood, string> = {
 
 const MOOD_VALUES: FeedbackMood[] = ["frustrated", "neutral", "happy"];
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const MAX_SCREENSHOTS = 5;
+
+interface ScreenshotEntry {
+  url: string | null; // null while still uploading
+  preview: string;
+  uploading: boolean;
+  id: string; // stable key for React
+}
 
 function collectMetadata(): FeedbackMetadata {
   const nav = navigator as Navigator & {
@@ -51,21 +59,19 @@ export function FeedbackWidget() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Screenshot state
-  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
-  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(
-    null,
-  );
-  const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
+  // Screenshot state — array of entries
+  const [screenshots, setScreenshots] = useState<ScreenshotEntry[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const anyUploading = screenshots.some((s) => s.uploading);
+  const atLimit = screenshots.length >= MAX_SCREENSHOTS;
 
   const resetForm = useCallback(() => {
     setMessage("");
     setMood(null);
     setError(null);
     setSuccess(false);
-    setScreenshotUrl(null);
-    setScreenshotPreview(null);
+    setScreenshots([]);
   }, []);
 
   const handleOpenChange = useCallback(
@@ -78,42 +84,59 @@ export function FeedbackWidget() {
     [setOpen, resetForm],
   );
 
-  const uploadFile = useCallback(async (file: File) => {
-    if (!ALLOWED_TYPES.includes(file.type)) return;
+  const uploadFile = useCallback(
+    async (file: File) => {
+      if (!ALLOWED_TYPES.includes(file.type)) return;
 
-    // Show local preview immediately
-    const reader = new FileReader();
-    reader.onload = (ev) => setScreenshotPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
-
-    // Upload to server
-    setUploadingScreenshot(true);
-    setError(null);
-
-    try {
-      const formData = new FormData();
-      formData.append("screenshot", file);
-      const res = await fetch("/api/feedback/screenshot", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        setError(labels.feedback.screenshotError);
-        setScreenshotPreview(null);
+      if (screenshots.length >= MAX_SCREENSHOTS) {
+        setError(labels.feedback.screenshotLimitReached);
         return;
       }
 
-      const json = await res.json();
-      setScreenshotUrl(json.url);
-    } catch {
-      setError(labels.feedback.screenshotError);
-      setScreenshotPreview(null);
-    } finally {
-      setUploadingScreenshot(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  }, []);
+      const entryId = crypto.randomUUID();
+
+      // Show local preview immediately
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const preview = ev.target?.result as string;
+        setScreenshots((prev) => [
+          ...prev,
+          { url: null, preview, uploading: true, id: entryId },
+        ]);
+      };
+      reader.readAsDataURL(file);
+
+      setError(null);
+
+      try {
+        const formData = new FormData();
+        formData.append("screenshot", file);
+        const res = await fetch("/api/feedback/screenshot", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) {
+          setError(labels.feedback.screenshotError);
+          setScreenshots((prev) => prev.filter((s) => s.id !== entryId));
+          return;
+        }
+
+        const json = await res.json();
+        setScreenshots((prev) =>
+          prev.map((s) =>
+            s.id === entryId ? { ...s, url: json.url, uploading: false } : s,
+          ),
+        );
+      } catch {
+        setError(labels.feedback.screenshotError);
+        setScreenshots((prev) => prev.filter((s) => s.id !== entryId));
+      } finally {
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    },
+    [screenshots.length],
+  );
 
   const handleScreenshotSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,7 +171,7 @@ export function FeedbackWidget() {
 
   // Paste from clipboard
   useEffect(() => {
-    if (!open || screenshotPreview) return;
+    if (!open || atLimit) return;
     function handlePaste(e: ClipboardEvent) {
       const items = e.clipboardData?.items;
       if (!items) return;
@@ -165,11 +188,10 @@ export function FeedbackWidget() {
     }
     document.addEventListener("paste", handlePaste);
     return () => document.removeEventListener("paste", handlePaste);
-  }, [open, screenshotPreview, uploadFile]);
+  }, [open, atLimit, uploadFile]);
 
-  const removeScreenshot = useCallback(() => {
-    setScreenshotUrl(null);
-    setScreenshotPreview(null);
+  const removeScreenshot = useCallback((id: string) => {
+    setScreenshots((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
   const handleSubmit = useCallback(async () => {
@@ -181,6 +203,10 @@ export function FeedbackWidget() {
     setSubmitting(true);
     setError(null);
 
+    const screenshotUrls = screenshots
+      .map((s) => s.url)
+      .filter((u): u is string => u !== null);
+
     try {
       const res = await fetch("/api/feedback", {
         method: "POST",
@@ -190,7 +216,7 @@ export function FeedbackWidget() {
           mood,
           page_url: window.location.href,
           user_agent: navigator.userAgent,
-          screenshot_url: screenshotUrl,
+          screenshot_urls: screenshotUrls.length ? screenshotUrls : undefined,
           metadata: collectMetadata(),
         }),
       });
@@ -210,7 +236,7 @@ export function FeedbackWidget() {
     } finally {
       setSubmitting(false);
     }
-  }, [message, mood, screenshotUrl, setOpen, resetForm]);
+  }, [message, mood, screenshots, setOpen, resetForm]);
 
   const handleTranscription = useCallback((text: string) => {
     setMessage((prev) => (prev ? `${prev} ${text}` : text));
@@ -288,36 +314,48 @@ export function FeedbackWidget() {
                 disabled={submitting}
               />
 
-              {/* Screenshot */}
+              {/* Screenshots */}
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium">
                   {labels.feedback.screenshotLabel}
                 </label>
-                {screenshotPreview ? (
-                  <div className="relative rounded-lg border overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={screenshotPreview}
-                      alt="Screenshot preview"
-                      className="w-full max-h-48 object-cover"
-                    />
-                    {uploadingScreenshot && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-background/60">
-                        <span className="text-sm text-muted-foreground">
-                          {labels.feedback.screenshotUploading}
-                        </span>
+
+                {/* Thumbnail grid */}
+                {screenshots.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {screenshots.map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="relative rounded-lg border overflow-hidden aspect-video"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={entry.preview}
+                          alt="Screenshot preview"
+                          className="w-full h-full object-cover"
+                        />
+                        {entry.uploading && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-background/60">
+                            <span className="text-xs text-muted-foreground">
+                              {labels.feedback.screenshotUploading}
+                            </span>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeScreenshot(entry.id)}
+                          className="absolute top-1 right-1 size-5 rounded-full bg-background/80 flex items-center justify-center hover:bg-background"
+                          aria-label={labels.feedback.screenshotRemove}
+                        >
+                          <X className="size-3" />
+                        </button>
                       </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={removeScreenshot}
-                      className="absolute top-2 right-2 size-6 rounded-full bg-background/80 flex items-center justify-center hover:bg-background"
-                      aria-label={labels.feedback.screenshotRemove}
-                    >
-                      <X className="size-3.5" />
-                    </button>
+                    ))}
                   </div>
-                ) : (
+                )}
+
+                {/* Add button / drop zone */}
+                {!atLimit && (
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
@@ -331,7 +369,9 @@ export function FeedbackWidget() {
                     }`}
                   >
                     <ImagePlus className="size-4" />
-                    {labels.feedback.screenshotAdd}
+                    {screenshots.length > 0
+                      ? labels.feedback.screenshotAddMore
+                      : labels.feedback.screenshotAdd}
                   </button>
                 )}
                 <input
@@ -355,7 +395,7 @@ export function FeedbackWidget() {
               {/* Submit button */}
               <Button
                 onClick={handleSubmit}
-                disabled={submitting || uploadingScreenshot || !message.trim()}
+                disabled={submitting || anyUploading || !message.trim()}
               >
                 {submitting
                   ? labels.feedback.submittingButton
