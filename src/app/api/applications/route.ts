@@ -4,6 +4,7 @@ import { markPostingFilledIfFull } from "@/lib/api/posting-fulfillment";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import {
   getPosting,
+  getProfile,
   getApplicationForPosting,
   createApplication,
   countApplicationsByStatus,
@@ -26,6 +27,19 @@ export const POST = withAuth(async (req, { user, supabase }) => {
 
   if (!posting_id || typeof posting_id !== "string") {
     throw new AppError("VALIDATION", "posting_id is required", 400);
+  }
+
+  // Ensure a profile row exists (FK target for applicant_id).
+  // If the user authenticated but never completed onboarding, create a stub
+  // so the join request always succeeds.
+  let profile = await getProfile(supabase, user.id);
+  if (!profile) {
+    const { data: stub } = await supabase
+      .from("profiles")
+      .upsert({ user_id: user.id }, { onConflict: "user_id" })
+      .select("*")
+      .single();
+    profile = stub;
   }
 
   // Fetch the posting
@@ -123,13 +137,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
 
   // --- Notifications ---
 
-  const { data: applicantProfile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("user_id", user.id)
-    .single();
-
-  const applicantName = applicantProfile?.full_name || "Someone";
+  const applicantName = profile?.full_name || user.email || "Someone";
 
   const notifTitle = isFilled
     ? "New Waitlist Entry"
