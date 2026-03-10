@@ -5,6 +5,7 @@ import { Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getInitials } from "@/lib/format";
+import { labels } from "@/lib/labels";
 import { usePostingDetailContext } from "./posting-detail-context";
 
 export function PostingTeamCard() {
@@ -20,7 +21,7 @@ export function PostingTeamCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="h-5 w-5" />
-          Team Members
+          {labels.teamCard.title}
           <Badge variant="secondary" className="ml-auto">
             {accepted.length + 1} / min {teamSizeMin} (max {teamSizeMax})
           </Badge>
@@ -37,7 +38,7 @@ export function PostingTeamCard() {
               <p className="text-sm font-medium truncate">
                 {creatorName || "Unknown"}
               </p>
-              <p className="text-xs text-muted-foreground">Owner</p>
+              <p className="text-xs text-muted-foreground">{labels.teamCard.owner}</p>
             </div>
           </div>
 
@@ -60,7 +61,7 @@ export function PostingTeamCard() {
 
           {accepted.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              No members have joined yet.
+              {labels.teamCard.emptyState}
             </p>
           )}
         </div>
