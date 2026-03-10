@@ -4,6 +4,7 @@ import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import type { RecurringWindow } from "@/lib/types/availability";
 import type { CalendarBusyBlockRow } from "@/lib/calendar/types";
+import { cacheKeys } from "@/lib/swr/keys";
 
 type UseCalendarBusyBlocksResult = {
   busyWindows: RecurringWindow[];
@@ -80,7 +81,7 @@ async function fetchBusyBlocks(
 export function useCalendarBusyBlocks(
   profileId: string | null,
 ): UseCalendarBusyBlocksResult {
-  const key = profileId ? `busy-blocks:${profileId}` : null;
+  const key = profileId ? cacheKeys.calendarBusyBlocks(profileId) : null;
   const { data, error, isLoading, mutate } = useSWR(key, fetchBusyBlocks);
 
   return {
