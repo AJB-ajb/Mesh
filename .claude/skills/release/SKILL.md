@@ -247,25 +247,10 @@ After the user confirms the PR is merged:
 
 4. **Push migrations** (if any were pending):
 
-   `supabase link` uses the management API (token-based) but `db push` connects directly to Postgres and needs the DB password. The production password differs from dev. Check `.env` for `SUPABASE_DB_PASSWORD_PROD`; if absent, ask the user. Then push with `--db-url`:
-
-   ```python
-   python3 -c "
-   import subprocess, urllib.parse, os
-   pw = os.environ.get('SUPABASE_DB_PASSWORD_PROD') or input('Production DB password: ')
-   encoded = urllib.parse.quote(pw, safe='')
-   url = f'postgresql://postgres:{encoded}@db.jirgkhjdxahfsgqxprhh.supabase.co:5432/postgres'
-   r = subprocess.run(['supabase', 'db', 'push', '--db-url', url], capture_output=True, text=True, timeout=120)
-   print(r.stdout)
-   if r.stderr: print('STDERR:', r.stderr)
-   print('RC:', r.returncode)
-   "
-   ```
-
-   If the user provides the password directly, you can also use:
+   **Important**: `.env` contains `SUPABASE_DB_PASSWORD` set to the **dev** DB password. The CLI reads this automatically and will send the wrong password to the production host. You **must** unset it so the CLI falls back to stored credentials from `supabase link`:
 
    ```
-   supabase db push --db-url "postgresql://postgres:<URL-ENCODED-PASSWORD>@db.jirgkhjdxahfsgqxprhh.supabase.co:5432/postgres"
+   SUPABASE_DB_PASSWORD= supabase db push
    ```
 
 5. **Re-link to dev project**:
