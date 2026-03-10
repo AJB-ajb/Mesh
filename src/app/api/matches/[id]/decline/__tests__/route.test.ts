@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { buildChain, authedUser } from "tests/utils/supabase-mock";
-import { testRequiresAuth, testRequiresResource, testRequiresOwnership } from "tests/utils/route-test-helpers";
+import {
+  testRequiresAuth,
+  testRequiresResource,
+  testRequiresOwnership,
+} from "tests/utils/route-test-helpers";
 
 // ---------- Supabase mock ----------
 const mockGetUser = vi.fn();
@@ -27,18 +31,24 @@ describe("PATCH /api/matches/[id]/decline", () => {
 
   testRequiresAuth(PATCH, () => req, routeCtx, mockGetUser);
   testRequiresResource(PATCH, () => req, routeCtx, mockGetUser, mockFrom);
-  testRequiresOwnership(PATCH, () => req, routeCtx, mockGetUser, () => {
-    mockFrom.mockReturnValue(
-      buildChain({
-        data: {
-          id: "match-1",
-          status: "applied",
-          project: { creator_id: "other-user" },
-        },
-        error: null,
-      }),
-    );
-  });
+  testRequiresOwnership(
+    PATCH,
+    () => req,
+    routeCtx,
+    mockGetUser,
+    () => {
+      mockFrom.mockReturnValue(
+        buildChain({
+          data: {
+            id: "match-1",
+            status: "applied",
+            posting: { creator_id: "other-user" },
+          },
+          error: null,
+        }),
+      );
+    },
+  );
 
   it("returns 400 when match is not in applied status", async () => {
     authedUser(mockGetUser);
@@ -47,7 +57,7 @@ describe("PATCH /api/matches/[id]/decline", () => {
         data: {
           id: "match-1",
           status: "pending",
-          project: { creator_id: "user-1" },
+          posting: { creator_id: "user-1" },
         },
         error: null,
       }),
@@ -66,7 +76,7 @@ describe("PATCH /api/matches/[id]/decline", () => {
     const matchData = {
       id: "match-1",
       status: "applied",
-      project: { creator_id: "user-1" },
+      posting: { creator_id: "user-1" },
     };
     const updatedMatch = {
       id: "match-1",
@@ -75,7 +85,7 @@ describe("PATCH /api/matches/[id]/decline", () => {
       explanation: null,
       score_breakdown: null,
       created_at: "2026-01-01",
-      project: { id: "p1", title: "Project", creator_id: "user-1" },
+      posting: { id: "p1", title: "Project", creator_id: "user-1" },
       profile: { id: "pr1", full_name: "Jane" },
     };
 
@@ -101,7 +111,7 @@ describe("PATCH /api/matches/[id]/decline", () => {
     const matchData = {
       id: "match-1",
       status: "applied",
-      project: { creator_id: "user-1" },
+      posting: { creator_id: "user-1" },
     };
 
     let callCount = 0;
