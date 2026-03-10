@@ -77,10 +77,37 @@ pnpm test:e2e
 
 ### 2f. pgTAP (RLS tests)
 
-```bash
-source .env
-PW=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$SUPABASE_DB_PASSWORD', safe=''))")
-supabase test db --db-url "postgresql://postgres:${PW}@db.wcfpmyiaauclgugjrntu.supabase.co:5432/postgres"
+**Important**: The DB password contains `$` and `!` characters that bash interprets as variable/history expansion. You **must** invoke `supabase test db` via Python's `subprocess` to bypass shell mangling:
+
+```python
+python3 -c "
+import subprocess, urllib.parse, os, dotenv
+dotenv.load_dotenv()
+pw = os.environ['SUPABASE_DB_PASSWORD']
+encoded = urllib.parse.quote(pw, safe='')
+url = f'postgresql://postgres:{encoded}@db.wcfpmyiaauclgugjrntu.supabase.co:5432/postgres'
+r = subprocess.run(['supabase', 'test', 'db', '--db-url', url], capture_output=True, text=True, timeout=60)
+print(r.stdout)
+if r.stderr: print('STDERR:', r.stderr)
+print('RC:', r.returncode)
+"
+```
+
+If `dotenv` is not installed, read the password directly:
+
+```python
+python3 -c "
+import subprocess, urllib.parse, re
+with open('.env') as f:
+    m = re.search(r'SUPABASE_DB_PASSWORD=\"(.+?)\"', f.read())
+pw = m.group(1)
+encoded = urllib.parse.quote(pw, safe='')
+url = f'postgresql://postgres:{encoded}@db.wcfpmyiaauclgugjrntu.supabase.co:5432/postgres'
+r = subprocess.run(['supabase', 'test', 'db', '--db-url', url], capture_output=True, text=True, timeout=60)
+print(r.stdout)
+if r.stderr: print('STDERR:', r.stderr)
+print('RC:', r.returncode)
+"
 ```
 
 Ignore failures in tests with hardcoded row counts (e.g. `01_profiles_rls.sql` expecting 3 profiles) — these are known false positives against the remote dev DB. All RLS policy logic tests must pass.
@@ -101,11 +128,7 @@ The goal is a green test suite on `dev` before the PR is opened — the PR shoul
 
 Compare migration status between local and the **production** Supabase project.
 
-1. **Save the currently linked project ref** so we can restore it later:
-
-   ```
-   cat supabase/.temp/project-ref
-   ```
+1. **Save the currently linked project ref** so we can restore it later — use the Read tool to read `supabase/.temp/project-ref`.
 
 2. **Link to production**:
 
