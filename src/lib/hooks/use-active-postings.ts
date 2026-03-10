@@ -2,6 +2,7 @@
 
 import useSWR from "swr";
 import { getUserOrThrow } from "@/lib/supabase/auth";
+import { cacheKeys } from "@/lib/swr/keys";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -158,7 +159,7 @@ async function fetchActivePostings(): Promise<ActivePostingsData> {
 
 export function useActivePostings() {
   const { data, error, isLoading } = useSWR(
-    "active-postings",
+    cacheKeys.activePostings(),
     fetchActivePostings,
   );
 
