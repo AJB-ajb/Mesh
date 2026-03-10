@@ -12,7 +12,10 @@ type UseRealtimeChannelOptions<TMessage extends { sender_id: string }> = {
   /** Prefix for the presence room, e.g. "chat" or "group-chat" */
   roomPrefix: string;
   /** Function that subscribes to the channel and returns it */
-  subscribe: (entityId: string, onMessage: (msg: TMessage) => void) => RealtimeChannel;
+  subscribe: (
+    entityId: string,
+    onMessage: (msg: TMessage) => void,
+  ) => RealtimeChannel;
   onNewMessage?: (message: TMessage) => void;
 };
 
@@ -35,6 +38,13 @@ export function useRealtimeChannel<TMessage extends { sender_id: string }>({
   onNewMessage,
 }: UseRealtimeChannelOptions<TMessage>): UseRealtimeChannelReturn {
   const messageChannelRef = useRef<RealtimeChannel | null>(null);
+  const onNewMessageRef = useRef(onNewMessage);
+  const subscribeRef = useRef(subscribe);
+
+  useEffect(() => {
+    onNewMessageRef.current = onNewMessage;
+    subscribeRef.current = subscribe;
+  });
 
   const { typingUsers, onlineUsers, setIsTyping, isConnected } =
     useRealtimePresence({
@@ -46,10 +56,10 @@ export function useRealtimeChannel<TMessage extends { sender_id: string }>({
   useEffect(() => {
     if (!entityId || !currentUserId) return;
 
-    messageChannelRef.current = subscribe(entityId, (message) => {
+    messageChannelRef.current = subscribeRef.current(entityId, (message) => {
       // Only forward messages from other users — own messages handled optimistically
       if (message.sender_id !== currentUserId) {
-        onNewMessage?.(message);
+        onNewMessageRef.current?.(message);
       }
     });
 
@@ -59,7 +69,7 @@ export function useRealtimeChannel<TMessage extends { sender_id: string }>({
         messageChannelRef.current = null;
       }
     };
-  }, [entityId, currentUserId, onNewMessage, subscribe]);
+  }, [entityId, currentUserId]);
 
   return {
     typingUsers,

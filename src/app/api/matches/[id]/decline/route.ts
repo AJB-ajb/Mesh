@@ -1,37 +1,39 @@
 import type { MatchResponse } from "@/lib/supabase/types";
 import { withAuth } from "@/lib/api/with-auth";
-import { apiError, apiSuccess } from "@/lib/errors";
+import { apiSuccess, AppError } from "@/lib/errors";
 
 /**
  * PATCH /api/matches/[id]/decline
- * Project owner declines an applicant
+ * Posting owner declines an applicant
  * Changes status from 'applied' to 'declined'
  */
 export const PATCH = withAuth(async (_req, { user, supabase, params }) => {
   const matchId = params.id;
 
+  // NOTE: matches.project_id references the postings table (renamed from projects).
+  // Use the FK column name `project_id` for the join.
   const { data: match, error: matchError } = await supabase
     .from("matches")
-    .select(`*, project:projects(*)`)
+    .select(`*, posting:postings!project_id(*)`)
     .eq("id", matchId)
     .single();
 
   if (matchError || !match) {
-    return apiError("NOT_FOUND", "Match not found", 404);
+    throw new AppError("NOT_FOUND", "Match not found", 404);
   }
 
-  const project = match.project as Record<string, unknown> | null;
+  const posting = match.posting as Record<string, unknown> | null;
 
-  if (!project || project.creator_id !== user.id) {
-    return apiError(
+  if (!posting || posting.creator_id !== user.id) {
+    throw new AppError(
       "FORBIDDEN",
-      "Only project creators can decline applicants",
+      "Only posting creators can decline applicants",
       403,
     );
   }
 
   if (match.status !== "applied") {
-    return apiError(
+    throw new AppError(
       "VALIDATION",
       `Match is not in 'applied' status (current: ${match.status})`,
       400,
@@ -45,16 +47,16 @@ export const PATCH = withAuth(async (_req, { user, supabase, params }) => {
       responded_at: new Date().toISOString(),
     })
     .eq("id", matchId)
-    .select(`*, project:projects(*), profile:profiles(*)`)
+    .select(`*, posting:postings!project_id(*), profile:profiles(*)`)
     .single();
 
   if (updateError || !updatedMatch) {
-    return apiError("INTERNAL", "Failed to update match", 500);
+    throw new AppError("INTERNAL", "Failed to update match", 500);
   }
 
   const response: MatchResponse = {
     id: updatedMatch.id,
-    posting: updatedMatch.project as MatchResponse["posting"],
+    posting: updatedMatch.posting as MatchResponse["posting"],
     profile: updatedMatch.profile as MatchResponse["profile"],
     score: updatedMatch.similarity_score,
     explanation: updatedMatch.explanation,
