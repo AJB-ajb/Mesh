@@ -70,7 +70,7 @@ export function AddConnectionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{labels.connectionsPage.addConnectionTitle}</DialogTitle>
           <DialogDescription>
@@ -89,7 +89,7 @@ export function AddConnectionDialog({
           />
         </div>
 
-        <div className="mt-2 min-h-[120px]">
+        <div className="mt-2 min-h-[120px] max-h-[60vh] overflow-y-auto">
           {isLoading && (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -113,11 +113,11 @@ export function AddConnectionDialog({
                 return (
                   <div
                     key={profile.user_id}
-                    className="flex items-center gap-3 rounded-lg border border-border p-3"
+                    className="flex items-center gap-2 sm:gap-3 rounded-lg border border-border p-2 sm:p-3"
                   >
                     <div
                       className={cn(
-                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium",
+                        "flex size-8 sm:size-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs sm:text-sm font-medium",
                       )}
                     >
                       {getInitials(profile.full_name)}
@@ -127,7 +127,7 @@ export function AddConnectionDialog({
                         {profile.full_name || labels.common.unknown}
                       </p>
                       {profile.headline && (
-                        <p className="text-xs text-muted-foreground truncate">
+                        <p className="text-xs text-muted-foreground line-clamp-2 sm:truncate">
                           {profile.headline}
                         </p>
                       )}
