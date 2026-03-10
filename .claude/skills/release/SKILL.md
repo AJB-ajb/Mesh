@@ -133,20 +133,20 @@ Compare migration status between local and the **production** Supabase project.
 2. **Link to production**:
 
    ```
-   npx supabase link --project-ref jirgkhjdxahfsgqxprhh
+   supabase link --project-ref jirgkhjdxahfsgqxprhh
    ```
 
 3. **List migration status**:
 
    ```
-   npx supabase migration list --linked
+   supabase migration list --linked
    ```
 
 4. **Count pending migrations** — rows where the Remote column is empty. Store the count and the list of migration names for the summary.
 
 5. **Re-link to dev** (restore the saved ref):
    ```
-   npx supabase link --project-ref <saved-ref>
+   supabase link --project-ref <saved-ref>
    ```
 
 Do NOT push migrations yet — that happens after the PR is merged (step 6).
@@ -211,6 +211,16 @@ EOF
 
 Tell the user the PR URL and ask them to review and merge when ready.
 
+## 5b. Monitor CI
+
+After opening the PR, use `/loop 3m` to poll CI status every 3 minutes:
+
+```
+gh pr checks <PR-number>
+```
+
+When all checks pass (or failures are identified), report the results. If a check fails, investigate with `gh run view <run-id> --log-failed` and fix if needed (using the worktree flow from step 2f).
+
 ## 6. Post-Merge: Apply Migrations to Production
 
 After the user confirms the PR is merged:
@@ -232,19 +242,36 @@ After the user confirms the PR is merged:
 3. **Link to production**:
 
    ```
-   npx supabase link --project-ref jirgkhjdxahfsgqxprhh
+   supabase link --project-ref jirgkhjdxahfsgqxprhh
    ```
 
 4. **Push migrations** (if any were pending):
 
+   `supabase link` uses the management API (token-based) but `db push` connects directly to Postgres and needs the DB password. The production password differs from dev. Check `.env` for `SUPABASE_DB_PASSWORD_PROD`; if absent, ask the user. Then push with `--db-url`:
+
+   ```python
+   python3 -c "
+   import subprocess, urllib.parse, os
+   pw = os.environ.get('SUPABASE_DB_PASSWORD_PROD') or input('Production DB password: ')
+   encoded = urllib.parse.quote(pw, safe='')
+   url = f'postgresql://postgres:{encoded}@db.jirgkhjdxahfsgqxprhh.supabase.co:5432/postgres'
+   r = subprocess.run(['supabase', 'db', 'push', '--db-url', url], capture_output=True, text=True, timeout=120)
+   print(r.stdout)
+   if r.stderr: print('STDERR:', r.stderr)
+   print('RC:', r.returncode)
+   "
    ```
-   npx supabase db push
+
+   If the user provides the password directly, you can also use:
+
+   ```
+   supabase db push --db-url "postgresql://postgres:<URL-ENCODED-PASSWORD>@db.jirgkhjdxahfsgqxprhh.supabase.co:5432/postgres"
    ```
 
 5. **Re-link to dev project**:
 
    ```
-   npx supabase link --project-ref wcfpmyiaauclgugjrntu
+   supabase link --project-ref wcfpmyiaauclgugjrntu
    ```
 
 6. **Verify** by listing migrations again — all should now show a Remote timestamp.
