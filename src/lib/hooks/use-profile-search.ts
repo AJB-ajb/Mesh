@@ -1,5 +1,6 @@
 import useSWR from "swr";
 import { useEffect, useState } from "react";
+import { cacheKeys } from "@/lib/swr/keys";
 
 export type ProfileSearchResult = {
   user_id: string;
@@ -33,7 +34,7 @@ export function useProfileSearch(rawQuery: string) {
 
   const { data, error, isLoading, mutate } = useSWR(
     debouncedQuery.trim().length >= 2
-      ? `profile-search/${debouncedQuery.trim()}`
+      ? cacheKeys.profileSearch(debouncedQuery.trim())
       : null,
     fetchProfileSearch,
   );

@@ -2,6 +2,7 @@
 
 import useSWR from "swr";
 import type { CommonAvailabilityWindow } from "@/lib/types/scheduling";
+import { cacheKeys } from "@/lib/swr/keys";
 
 type UseCommonAvailabilityResult = {
   windows: CommonAvailabilityWindow[];
@@ -23,7 +24,7 @@ export function useCommonAvailability(
   postingId: string | null,
 ): UseCommonAvailabilityResult {
   const key = postingId
-    ? `api/postings/${postingId}/common-availability`
+    ? cacheKeys.commonAvailability(postingId)
     : null;
 
   const { data, error, isLoading } = useSWR(key, fetchCommonAvailability);

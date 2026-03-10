@@ -7,6 +7,7 @@ import {
   subscribeToPostings,
   unsubscribeChannel,
 } from "@/lib/supabase/realtime";
+import { cacheKeys } from "@/lib/swr/keys";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -163,7 +164,7 @@ async function fetchActivePostings(): Promise<ActivePostingsData> {
 
 export function useActivePostings() {
   const { data, error, isLoading, mutate } = useSWR(
-    "active-postings",
+    cacheKeys.activePostings(),
     fetchActivePostings,
   );
 
