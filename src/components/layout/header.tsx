@@ -87,7 +87,7 @@ export function Header({ className }: HeaderProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={signOut}
-              className="text-destructive focus:text-destructive"
+              className="text-destructive focus-visible:text-destructive"
             >
               <LogOut className="size-4" />
               {labels.common.signOut}

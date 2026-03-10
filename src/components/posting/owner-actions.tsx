@@ -96,7 +96,7 @@ export function OwnerActions() {
 
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            className="text-destructive focus:text-destructive"
+            className="text-destructive focus-visible:text-destructive"
             onClick={() => setShowDeleteDialog(true)}
             disabled={isDeleting}
           >
