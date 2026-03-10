@@ -176,10 +176,8 @@ export const POST = withAuth(
           generateEmbeddingsBatch(allTexts),
         );
       } catch (error) {
-        return apiError(
-          "INTERNAL",
-          `Embedding generation failed: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        console.error("Embedding generation failed:", error);
+        return apiError("INTERNAL", "Embedding generation failed");
       }
     }
 
