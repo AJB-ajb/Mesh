@@ -33,7 +33,9 @@ export function useRovingIndex({
 }: UseRovingIndexOptions): UseRovingIndexReturn {
   const [activeIndex, setActiveIndex] = useState(0);
   const activeIndexRef = useRef(activeIndex);
-  activeIndexRef.current = activeIndex;
+  useEffect(() => {
+    activeIndexRef.current = activeIndex;
+  }, [activeIndex]);
 
   // Clamp activeIndex when itemCount shrinks
   useEffect(() => {
