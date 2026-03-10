@@ -113,13 +113,13 @@ describe("POST /api/feedback", () => {
       expect.objectContaining({
         user_id: "user-123",
         mood: "happy",
-        screenshot_url: null,
+        screenshot_urls: null,
         metadata: null,
       }),
     );
   });
 
-  it("passes screenshot_url and metadata to insert", async () => {
+  it("passes screenshot_urls and metadata to insert", async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: "user-123" } },
       error: null,
@@ -137,7 +137,10 @@ describe("POST /api/feedback", () => {
     const req = makeRequest({
       message: "Bug with screenshot",
       page_url: "http://localhost/postings",
-      screenshot_url: "https://storage.example.com/shot.png",
+      screenshot_urls: [
+        "https://storage.example.com/shot1.png",
+        "https://storage.example.com/shot2.png",
+      ],
       metadata,
     });
     const res = await POST(req, routeCtx);
@@ -145,7 +148,10 @@ describe("POST /api/feedback", () => {
     expect(res.status).toBe(201);
     expect(mockInsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        screenshot_url: "https://storage.example.com/shot.png",
+        screenshot_urls: [
+          "https://storage.example.com/shot1.png",
+          "https://storage.example.com/shot2.png",
+        ],
         metadata,
       }),
     );

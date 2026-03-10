@@ -399,7 +399,7 @@ export interface Feedback {
   mood: FeedbackMood | null;
   page_url: string;
   user_agent: string | null;
-  screenshot_url: string | null;
+  screenshot_urls: string[] | null;
   metadata: FeedbackMetadata | null;
   created_at: string;
 }
@@ -411,7 +411,7 @@ export interface FeedbackInsert {
   mood?: FeedbackMood | null;
   page_url: string;
   user_agent?: string | null;
-  screenshot_url?: string | null;
+  screenshot_urls?: string[] | null;
   metadata?: FeedbackMetadata | null;
   created_at?: string;
 }

@@ -12,13 +12,13 @@ export const POST = withAuth(
 
     const body = await parseBody(request);
 
-    const { message, mood, page_url, user_agent, screenshot_url, metadata } =
+    const { message, mood, page_url, user_agent, screenshot_urls, metadata } =
       body as {
         message?: string;
         mood?: string;
         page_url?: string;
         user_agent?: string;
-        screenshot_url?: string;
+        screenshot_urls?: string[];
         metadata?: FeedbackMetadata;
       };
 
@@ -53,6 +53,36 @@ export const POST = withAuth(
       }
     }
 
+    // Validate screenshot_urls
+    if (screenshot_urls !== undefined && screenshot_urls !== null) {
+      if (!Array.isArray(screenshot_urls)) {
+        return apiError("VALIDATION", "screenshot_urls must be an array", 400);
+      }
+      if (screenshot_urls.length > 5) {
+        return apiError(
+          "VALIDATION",
+          "screenshot_urls must contain at most 5 elements",
+          400,
+        );
+      }
+      for (const url of screenshot_urls) {
+        if (typeof url !== "string" || url.trim().length === 0) {
+          return apiError(
+            "VALIDATION",
+            "Each screenshot URL must be a non-empty string",
+            400,
+          );
+        }
+        if (!url.startsWith("http")) {
+          return apiError(
+            "VALIDATION",
+            "Each screenshot URL must be a valid URL starting with http",
+            400,
+          );
+        }
+      }
+    }
+
     const { data, error } = await supabase
       .from("feedback")
       .insert({
@@ -61,7 +91,7 @@ export const POST = withAuth(
         mood: (mood as FeedbackMood) ?? null,
         page_url,
         user_agent: user_agent ?? null,
-        screenshot_url: screenshot_url ?? null,
+        screenshot_urls: screenshot_urls?.length ? screenshot_urls : null,
         metadata: metadata ?? null,
       })
       .select("id, created_at")
