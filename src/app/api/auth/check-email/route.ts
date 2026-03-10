@@ -72,7 +72,7 @@ async function fallbackCheck(
       perPage,
     });
 
-    if (error) {
+    if (error || !data) {
       console.error("[check-email] Failed to list users:", error);
       return apiError("INTERNAL", "Failed to check email", 500);
     }
@@ -93,7 +93,7 @@ async function fallbackCheck(
     }
 
     // If we got fewer users than perPage, we've reached the end
-    if (data.users.length < perPage) {
+    if ((data?.users?.length ?? 0) < perPage) {
       break;
     }
     page++;
