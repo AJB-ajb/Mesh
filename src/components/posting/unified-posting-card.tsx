@@ -31,7 +31,11 @@ import {
 import { RelativeTime } from "@/components/ui/relative-time";
 import { labels } from "@/lib/labels";
 import { cn } from "@/lib/utils";
-import { categoryStyles, getStatusColor } from "@/lib/posting/styles";
+import {
+  categoryStyles,
+  categoryIcons,
+  getStatusColor,
+} from "@/lib/posting/styles";
 import { getLocationLabel } from "@/lib/posting/location";
 import { MATCH_DIMENSIONS } from "@/lib/matching/dimensions";
 
@@ -229,11 +233,23 @@ export function UnifiedPostingCard({
                   {teamSizeMin}&ndash;{teamSizeMax}
                 </span>
               )}
-              {category && (
-                <Badge variant="outline" className="text-xs capitalize">
-                  {category}
-                </Badge>
-              )}
+              {category &&
+                (() => {
+                  const Icon = categoryIcons[category];
+                  return (
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "text-xs px-1.5",
+                        categoryStyles[category] ?? "",
+                      )}
+                      title={category}
+                      aria-label={category}
+                    >
+                      {Icon ? <Icon className="size-3.5" /> : category}
+                    </Badge>
+                  );
+                })()}
               {role === "joined" && unreadCount != null && unreadCount > 0 && (
                 <span className="flex items-center gap-1 text-xs text-primary font-medium">
                   <MessageSquare className="size-3.5" />
@@ -384,13 +400,22 @@ export function UnifiedPostingCard({
                   {strippedTitle}
                 </Link>
               </h3>
-              {category && (
-                <Badge
-                  className={cn("text-xs", categoryStyles[category] ?? "")}
-                >
-                  {category}
-                </Badge>
-              )}
+              {category &&
+                (() => {
+                  const Icon = categoryIcons[category];
+                  return (
+                    <Badge
+                      className={cn(
+                        "text-xs px-1.5",
+                        categoryStyles[category] ?? "",
+                      )}
+                      title={category}
+                      aria-label={category}
+                    >
+                      {Icon ? <Icon className="size-3.5" /> : category}
+                    </Badge>
+                  );
+                })()}
               {contextIdentifier && (
                 <Badge variant="secondary" className="text-xs">
                   {contextIdentifier}
