@@ -98,7 +98,7 @@ export function ProfileExtractionReviewCard({
             <div className="divide-y">
               {extracted.full_name && (
                 <FieldRow
-                  label="Full Name"
+                  label={labels.extractionReviewFields.fullName}
                   value={<span className="text-sm">{extracted.full_name}</span>}
                   onAccept={() => acceptField("full_name")}
                 />
@@ -106,7 +106,7 @@ export function ProfileExtractionReviewCard({
 
               {extracted.headline && (
                 <FieldRow
-                  label="Headline"
+                  label={labels.extractionReviewFields.headline}
                   value={<span className="text-sm">{extracted.headline}</span>}
                   onAccept={() => acceptField("headline")}
                 />
@@ -114,7 +114,7 @@ export function ProfileExtractionReviewCard({
 
               {extracted.skills && extracted.skills.length > 0 && (
                 <FieldRow
-                  label="Skills"
+                  label={labels.extractionReviewFields.skills}
                   value={
                     <div className="flex flex-wrap gap-1">
                       {extracted.skills.map((skill) => (
@@ -154,7 +154,7 @@ export function ProfileExtractionReviewCard({
 
               {extracted.location && (
                 <FieldRow
-                  label="Location"
+                  label={labels.extractionReviewFields.location}
                   value={<span className="text-sm">{extracted.location}</span>}
                   onAccept={() => acceptField("location")}
                 />
@@ -162,7 +162,7 @@ export function ProfileExtractionReviewCard({
 
               {extracted.languages && extracted.languages.length > 0 && (
                 <FieldRow
-                  label="Languages"
+                  label={labels.extractionReviewFields.languages}
                   value={
                     <div className="flex flex-wrap gap-1">
                       {extracted.languages.map((lang) => (
@@ -178,7 +178,7 @@ export function ProfileExtractionReviewCard({
 
               {extracted.bio && (
                 <FieldRow
-                  label="Bio"
+                  label={labels.extractionReviewFields.bio}
                   value={
                     <p className="text-sm line-clamp-2">{extracted.bio}</p>
                   }

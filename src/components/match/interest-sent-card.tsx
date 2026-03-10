@@ -47,7 +47,7 @@ export function InterestSentCard({ interest }: InterestSentCardProps) {
           <div className="flex gap-2 w-full sm:w-auto">
             {posting && (
               <Button variant="outline" asChild>
-                <Link href={`/postings/${posting.id}`}>View Details</Link>
+                <Link href={`/postings/${posting.id}`}>{labels.interestSent.viewDetails}</Link>
               </Button>
             )}
           </div>

@@ -4,28 +4,8 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { formatDateAgo } from "@/lib/format";
+import { getStatusColor } from "@/lib/posting/styles";
 import type { ChildPosting } from "@/lib/hooks/use-child-postings";
-
-// ---------------------------------------------------------------------------
-// Status color helper (matches unified-posting-card)
-// ---------------------------------------------------------------------------
-
-function getStatusColor(status: string) {
-  switch (status) {
-    case "open":
-      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
-    case "filled":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
-    case "closed":
-      return "bg-muted text-muted-foreground";
-    default:
-      return "bg-muted text-muted-foreground";
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
 
 export function ChildPostingCard({ posting }: { posting: ChildPosting }) {
   const creatorName = posting.profiles?.full_name ?? "Unknown";
