@@ -33,6 +33,7 @@ let mockUser = { id: "user-1" };
 let mockSupabaseFrom: ReturnType<typeof vi.fn>;
 
 vi.mock("@/lib/api/with-auth", () => ({
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   withAuth: (handler: Function) => {
     // Return a Next.js-style route handler that calls the inner handler
     return async (req: Request, routeContext: { params: Promise<Record<string, string>> }) => {
