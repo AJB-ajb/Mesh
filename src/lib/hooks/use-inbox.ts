@@ -1,6 +1,7 @@
 import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { getUserOrThrow } from "@/lib/supabase/auth";
+import { cacheKeys } from "@/lib/swr/keys";
 import type {
   Notification as RealtimeNotification,
   Conversation as RealtimeConversation,
@@ -107,7 +108,7 @@ async function fetchInboxData(): Promise<InboxData> {
 }
 
 export function useInboxData() {
-  const { data, error, isLoading, mutate } = useSWR("inbox", fetchInboxData);
+  const { data, error, isLoading, mutate } = useSWR(cacheKeys.inboxData(), fetchInboxData);
 
   return {
     notifications: data?.notifications ?? [],
@@ -156,7 +157,7 @@ export function useConversationMessages(
 ) {
   const { data, error, isLoading, mutate } = useSWR(
     conversationId && currentUserId
-      ? `messages/${conversationId}/${currentUserId}`
+      ? cacheKeys.conversationMessages(conversationId, currentUserId)
       : null,
     fetchConversationMessages,
   );

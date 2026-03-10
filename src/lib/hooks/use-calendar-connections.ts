@@ -2,6 +2,7 @@
 
 import useSWR from "swr";
 import type { CalendarConnection } from "@/lib/calendar/types";
+import { cacheKeys } from "@/lib/swr/keys";
 
 type UseCalendarConnectionsResult = {
   connections: CalendarConnection[];
@@ -19,7 +20,7 @@ async function fetchConnections(): Promise<CalendarConnection[]> {
 
 export function useCalendarConnections(): UseCalendarConnectionsResult {
   const { data, error, isLoading, mutate } = useSWR(
-    "calendar-connections",
+    cacheKeys.calendarConnections(),
     fetchConnections,
   );
 
