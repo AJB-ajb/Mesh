@@ -94,7 +94,7 @@ const defaultMatch = {
   posting_id: "posting-1",
   user_id: "user-1",
   similarity_score: 0.85,
-  explanation: null,
+  explanation: null as string | null,
   score_breakdown: {},
 };
 
