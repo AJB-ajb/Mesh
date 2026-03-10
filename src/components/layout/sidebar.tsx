@@ -37,12 +37,11 @@ interface SidebarProps {
 
 export function Sidebar({ className }: SidebarProps) {
   const router = useRouter();
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
-  useEffect(() => {
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
     const saved = localStorage.getItem("sidebar-collapsed");
-    if (saved) setIsCollapsed(JSON.parse(saved));
-  }, []);
+    return saved ? JSON.parse(saved) : false;
+  });
 
   const onActivatePrimary = useCallback(
     (index: number) => {
