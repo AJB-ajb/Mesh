@@ -104,7 +104,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     throw new AppError("INTERNAL", error.message, 500);
   }
 
-  // Notify team members (excluding the owner who created the proposal)
+  // Notify team members (excluding the proposer)
   const { data: memberIds } = await supabase.rpc(
     "get_posting_team_member_ids",
     { p_posting_id: postingId },
