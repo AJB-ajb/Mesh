@@ -134,9 +134,21 @@ async function findDuplicates() {
               .eq("user_id", dupe.id);
             console.log(`  Moved profile from ${dupe.id} to ${primary.id}`);
           } else {
-            console.log(
-              `  Primary already has a profile. Duplicate profile will be orphaned on user deletion.`,
-            );
+            // Primary already has a profile — delete the duplicate's profile
+            // to avoid leaving an orphaned row.
+            const { error: delProfileErr } = await admin
+              .from("profiles")
+              .delete()
+              .eq("user_id", dupe.id);
+            if (delProfileErr) {
+              console.error(
+                `  ERROR deleting duplicate profile ${dupe.id}: ${delProfileErr.message}`,
+              );
+            } else {
+              console.log(
+                `  Deleted duplicate profile for ${dupe.id} (primary already has one).`,
+              );
+            }
           }
         }
 
