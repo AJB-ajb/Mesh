@@ -139,36 +139,6 @@ function DiscoverContent() {
     [mutate],
   );
 
-  /** Auto-accept postings skip the dialog — submit directly like the old flow. */
-  const handleAutoAcceptInterest = useCallback(
-    async (postingId: string) => {
-      setSubmittedPostingIds((prev) => new Set(prev).add(postingId));
-      setApplicationError(null);
-      try {
-        const res = await fetch("/api/applications", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ posting_id: postingId }),
-        });
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error?.message || "Failed to submit request");
-        }
-        await mutate();
-      } catch (err) {
-        setSubmittedPostingIds((prev) => {
-          const next = new Set(prev);
-          next.delete(postingId);
-          return next;
-        });
-        setApplicationError(
-          err instanceof Error ? err.message : "Failed to submit request",
-        );
-      }
-    },
-    [mutate],
-  );
-
   const { bookmarkedIds, toggleBookmark } = useBookmarks();
 
   const { connections } = useConnections();
@@ -369,14 +339,7 @@ function DiscoverContent() {
                 isAlreadyInterested={isAlreadyInterested}
                 isInteresting={isInteresting}
                 showInterestButton={showInterestButton}
-                onExpressInterest={(id: string) => {
-                  // Auto-accept postings skip the dialog — join immediately
-                  if (posting.auto_accept) {
-                    handleAutoAcceptInterest(id);
-                  } else {
-                    setAcceptancePostingId(id);
-                  }
-                }}
+                onExpressInterest={setAcceptancePostingId}
                 activeTab="discover"
                 isBookmarked={bookmarkedIds.has(posting.id)}
                 onToggleBookmark={toggleBookmark}
