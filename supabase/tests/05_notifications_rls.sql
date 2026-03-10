@@ -7,7 +7,7 @@ SELECT tests.create_test_users();
 
 -- Seed: notification for Alice
 INSERT INTO public.notifications (id, user_id, type, title)
-VALUES ('60000000-0000-0000-0000-000000000001', tests.alice(), 'match', 'New match!');
+VALUES ('60000000-0000-0000-0000-000000000001', tests.alice(), 'match_found', 'New match!');
 
 -- ============================================
 -- SELECT: only own notifications
@@ -34,7 +34,7 @@ SELECT is(
 -- ============================================
 
 SELECT lives_ok(
-  $$INSERT INTO public.notifications (user_id, type, title) VALUES ('a0000000-0000-0000-0000-000000000001', 'message', 'Hi')$$,
+  $$INSERT INTO public.notifications (user_id, type, title) VALUES ('a0000000-0000-0000-0000-000000000001', 'new_message', 'Hi')$$,
   'Bob can create a notification (for system-generated notifications)'
 );
 
