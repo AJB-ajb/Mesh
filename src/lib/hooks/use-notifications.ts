@@ -72,7 +72,7 @@ export function useNotifications() {
 
     const supabase = supabaseRef.current;
     const channel = supabase
-      .channel("header-notifications")
+      .channel(`header-notifications:${data.userId}`)
       .on(
         "postgres_changes",
         {
