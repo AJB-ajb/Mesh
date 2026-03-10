@@ -182,7 +182,7 @@ export function TeamSchedulingSection({
       {/* Common availability grid */}
       <TeamAvailabilityView
         windows={windows}
-        onTimeSelect={isOwner ? handleTimeSelect : undefined}
+        onTimeSelect={handleTimeSelect}
         timeSelection={timeSelection}
       />
 
@@ -192,13 +192,11 @@ export function TeamSchedulingSection({
           <h4 className="text-sm font-medium">
             {labels.scheduling.proposalsTitle}
           </h4>
-          {isOwner && (
-            <MeetingProposer
-              onPropose={handlePropose}
-              prefill={meetingPrefill}
-              onClear={handleClearSelection}
-            />
-          )}
+          <MeetingProposer
+            onPropose={handlePropose}
+            prefill={meetingPrefill}
+            onClear={handleClearSelection}
+          />
         </div>
 
         {proposals.length === 0 ? (
