@@ -13,6 +13,8 @@ import {
 } from "../utils/seed-helpers";
 import { createUser } from "../utils/factories/user-factory";
 
+const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
 // Shared seed data — each test creates its own owner + postings and cleans up.
 
 test.describe("Discover Filtering", () => {
@@ -28,8 +30,8 @@ test.describe("Discover Filtering", () => {
       developerPage.getByRole("heading", { name: "Discover" }),
     ).toBeVisible({ timeout: 10000 });
 
-    // Search input
-    const searchInput = developerPage.locator('input[type="search"]');
+    // Discover search input (not the global search in the header)
+    const searchInput = developerPage.locator('input[type="search"][placeholder*="remote React"]');
     await expect(searchInput).toBeVisible();
 
     // Category chips should be visible — at least "All" chip
@@ -60,6 +62,7 @@ test.describe("Discover Filtering", () => {
         status: "open",
         team_size_min: 1,
         team_size_max: 3,
+        expires_at: expiresAt,
       });
 
       await seedPostingDirect({
@@ -71,6 +74,7 @@ test.describe("Discover Filtering", () => {
         status: "open",
         team_size_min: 1,
         team_size_max: 5,
+        expires_at: expiresAt,
       });
 
       await developerPage.goto("/discover");
@@ -155,6 +159,7 @@ test.describe("Discover Filtering", () => {
         status: "open",
         team_size_min: 1,
         team_size_max: 3,
+        expires_at: expiresAt,
       });
 
       await seedPostingDirect({
@@ -166,6 +171,7 @@ test.describe("Discover Filtering", () => {
         status: "open",
         team_size_min: 1,
         team_size_max: 2,
+        expires_at: expiresAt,
       });
 
       await developerPage.goto("/discover");
@@ -179,8 +185,8 @@ test.describe("Discover Filtering", () => {
           .first(),
       ).toBeVisible({ timeout: 10000 });
 
-      // Type a search query
-      const searchInput = developerPage.locator('input[type="search"]');
+      // Type a search query — use the discover-specific search input
+      const searchInput = developerPage.locator('input[type="search"][placeholder*="remote React"]');
       await searchInput.fill("Quantum");
 
       // Wait for filter to apply (client-side filtering)

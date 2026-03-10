@@ -25,6 +25,8 @@ import {
 import { createUser } from "../utils/factories/user-factory";
 import { logout, loginAsUser } from "../utils/auth-helpers";
 
+const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
 test.describe("Application Flow", () => {
   test("developer can apply to a posting and owner can see the request", async ({
     developerPage,
@@ -49,6 +51,7 @@ test.describe("Application Flow", () => {
         status: "open",
         team_size_min: 1,
         team_size_max: 3,
+        expires_at: expiresAt,
       });
       postingId = seededPosting.id;
 
@@ -141,6 +144,7 @@ test.describe("Application Flow", () => {
         status: "open",
         team_size_min: 2,
         team_size_max: 4,
+        expires_at: expiresAt,
       });
       postingId = seededPosting.id;
 
