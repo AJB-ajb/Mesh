@@ -21,6 +21,7 @@ import {
 import { useRouter } from "next/navigation";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatScore } from "@/lib/matching/scoring";
+import { MATCH_DIMENSIONS } from "@/lib/matching/dimensions";
 import { getInitials } from "@/lib/format";
 import { labels } from "@/lib/labels";
 import { cn } from "@/lib/utils";
@@ -106,29 +107,20 @@ export function PostingMatchedProfilesCard() {
 
                       {/* Match Breakdown */}
                       <div className="grid grid-cols-2 gap-2 text-xs">
-                        {(
-                          [
-                            ["Semantic", matchedProfile.breakdown.semantic],
-                            [
-                              "Availability",
-                              matchedProfile.breakdown.availability,
-                            ],
-                            [
-                              "Skill Level",
-                              matchedProfile.breakdown.skill_level,
-                            ],
-                            ["Location", matchedProfile.breakdown.location],
-                          ] as const
-                        ).map(([label, score]) => (
+                        {MATCH_DIMENSIONS.map((dim) => (
                           <div
-                            key={label}
+                            key={dim.key}
                             className="flex items-center justify-between"
                           >
                             <span className="text-muted-foreground">
-                              {label}:
+                              {dim.label}:
                             </span>
                             <span className="font-medium">
-                              {score != null ? formatScore(score) : "N/A"}
+                              {matchedProfile.breakdown[dim.key] != null
+                                ? formatScore(
+                                    matchedProfile.breakdown[dim.key]!,
+                                  )
+                                : "N/A"}
                             </span>
                           </div>
                         ))}
