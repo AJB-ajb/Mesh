@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -55,6 +55,20 @@ export function InvitePickerSheet({
   const { connections, isLoading } = useConnections();
   const { keyboardVisible, keyboardHeight } = useMobileKeyboard();
   const [filter, setFilter] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Memoize the keyboard-dependent style so it only changes when the actual
+  // values change, not on every render. This prevents the SheetContent DOM
+  // from being updated on unrelated re-renders which can reset the mobile
+  // input cursor position.
+  const sheetStyle = useMemo(
+    () => ({
+      maxHeight: keyboardVisible ? `calc(85vh - ${keyboardHeight}px)` : "85vh",
+      paddingBottom: keyboardVisible ? `${keyboardHeight}px` : undefined,
+      transition: "max-height 0.15s ease-out, padding-bottom 0.15s ease-out",
+    }),
+    [keyboardVisible, keyboardHeight],
+  );
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
@@ -167,14 +181,7 @@ export function InvitePickerSheet({
       <SheetContent
         side="bottom"
         className="rounded-t-xl"
-        style={{
-          maxHeight: keyboardVisible
-            ? `calc(85vh - ${keyboardHeight}px)`
-            : "85vh",
-          paddingBottom: keyboardVisible ? `${keyboardHeight}px` : undefined,
-          transition:
-            "max-height 0.15s ease-out, padding-bottom 0.15s ease-out",
-        }}
+        style={sheetStyle}
         showCloseButton={false}
       >
         <SheetHeader>
@@ -186,7 +193,12 @@ export function InvitePickerSheet({
           <div className="flex items-center gap-2 rounded-md border px-3 py-2">
             <Search className="size-4 text-muted-foreground" />
             <input
+              ref={inputRef}
               type="text"
+              inputMode="search"
+              autoComplete="off"
+              autoCorrect="off"
+              dir="ltr"
               placeholder={labels.invite.pickerSearch}
               value={filter}
               onChange={(e) => setFilter(e.target.value)}

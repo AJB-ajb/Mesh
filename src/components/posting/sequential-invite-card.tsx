@@ -48,12 +48,18 @@ export function SequentialInviteCard({
     Record<string, string>
   >({});
 
-  // Resolve connection names when we have an active sequential invite
+  // Resolve connection names when we have an active sequential invite.
+  // Use the stringified friend list as dependency (stable across SWR polls)
+  // to avoid re-fetching on every revalidation cycle.
+  const friendListKey = sequentialInvite?.ordered_friend_list.join(",") ?? "";
+
   useEffect(() => {
-    if (!sequentialInvite) return;
+    if (!sequentialInvite || friendListKey === "") return;
 
     const ids = sequentialInvite.ordered_friend_list;
-    if (ids.length === 0) return;
+    // Only fetch names for IDs we don't already have
+    const missingIds = ids.filter((id) => !connectionNames[id]);
+    if (missingIds.length === 0) return;
 
     let cancelled = false;
 
@@ -62,7 +68,7 @@ export function SequentialInviteCard({
         const res = await fetch("/api/profiles/batch", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_ids: ids }),
+          body: JSON.stringify({ user_ids: missingIds }),
         });
 
         if (!res.ok) return;
@@ -70,11 +76,13 @@ export function SequentialInviteCard({
         const { profiles } = await res.json();
         if (cancelled) return;
 
-        const names: Record<string, string> = {};
-        for (const p of profiles) {
-          names[p.user_id] = p.full_name || p.user_id.slice(0, 8);
-        }
-        setConnectionNames(names);
+        setConnectionNames((prev) => {
+          const next = { ...prev };
+          for (const p of profiles) {
+            next[p.user_id] = p.full_name || p.user_id.slice(0, 8);
+          }
+          return next;
+        });
       } catch {
         // Silently fail — SequentialInviteStatus will use truncated IDs
       }
@@ -84,7 +92,8 @@ export function SequentialInviteCard({
     return () => {
       cancelled = true;
     };
-  }, [sequentialInvite]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [friendListKey]);
 
   const handleCreate = useCallback(async () => {
     if (selectedConnections.length === 0) return;
@@ -122,6 +131,15 @@ export function SequentialInviteCard({
         const data = await sendRes.json();
         throw new Error(data.error?.message || "Failed to send first invite");
       }
+
+      // Seed connectionNames from the selected connections so names are
+      // visible immediately when the UI switches to the active-invite view,
+      // avoiding a flash of raw UUIDs while the batch profile fetch runs.
+      const seeded: Record<string, string> = {};
+      for (const c of selectedConnections) {
+        seeded[c.user_id] = c.full_name;
+      }
+      setConnectionNames(seeded);
 
       mutate();
     } catch (err) {
@@ -320,11 +338,7 @@ export function SequentialInviteCard({
           </div>
         )}
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowPicker(true)}
-        >
+        <Button variant="outline" size="sm" onClick={() => setShowPicker(true)}>
           <UserPlus className="size-4" />
           {selectedConnections.length > 0
             ? labels.invite.pickerInviteMore
