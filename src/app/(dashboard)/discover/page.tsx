@@ -17,7 +17,6 @@ import type {
 } from "@/lib/hooks/use-postings";
 import { useNlFilter } from "@/lib/hooks/use-nl-filter";
 import { useSkillDescendants } from "@/lib/hooks/use-skill-descendants";
-import { usePostingInterest } from "@/lib/hooks/use-posting-interest";
 import { useBookmarks } from "@/lib/hooks/use-bookmarks";
 import { applyFilters } from "@/lib/filters/apply-filters";
 import { UnifiedPostingCard } from "@/components/posting";
@@ -111,7 +110,11 @@ function DiscoverContent() {
     clearNlFilters();
   };
 
-  const { interestingIds, interestError } = usePostingInterest(mutate);
+  // Optimistic tracking: IDs submitted via the acceptance dialog this session
+  const [submittedPostingIds, setSubmittedPostingIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [applicationError, setApplicationError] = useState<string | null>(null);
 
   // Acceptance dialog state: which posting is being joined
   const [acceptancePostingId, setAcceptancePostingId] = useState<string | null>(
@@ -129,7 +132,39 @@ function DiscoverContent() {
         const data = await res.json();
         throw new Error(data.error?.message || "Failed to submit request");
       }
+      setSubmittedPostingIds((prev) => new Set(prev).add(postingId));
+      setApplicationError(null);
       await mutate();
+    },
+    [mutate],
+  );
+
+  /** Auto-accept postings skip the dialog — submit directly like the old flow. */
+  const handleAutoAcceptInterest = useCallback(
+    async (postingId: string) => {
+      setSubmittedPostingIds((prev) => new Set(prev).add(postingId));
+      setApplicationError(null);
+      try {
+        const res = await fetch("/api/applications", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ posting_id: postingId }),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error?.message || "Failed to submit request");
+        }
+        await mutate();
+      } catch (err) {
+        setSubmittedPostingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(postingId);
+          return next;
+        });
+        setApplicationError(
+          err instanceof Error ? err.message : "Failed to submit request",
+        );
+      }
     },
     [mutate],
   );
@@ -261,9 +296,9 @@ function DiscoverContent() {
         onSortChange={setSortBy}
       />
 
-      {interestError && (
+      {applicationError && (
         <p className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {interestError}
+          {applicationError}
         </p>
       )}
 
@@ -291,10 +326,10 @@ function DiscoverContent() {
         <div className="grid gap-3 sm:gap-6">
           {filteredPostings.map((posting) => {
             const isOwner = userId === posting.creator_id;
-            const isAlreadyInterested = interestedPostingIds.includes(
-              posting.id,
-            );
-            const isInteresting = interestingIds.has(posting.id);
+            const isAlreadyInterested =
+              interestedPostingIds.includes(posting.id) ||
+              submittedPostingIds.has(posting.id);
+            const isInteresting = submittedPostingIds.has(posting.id);
             const postingVisibility =
               posting.visibility ??
               (posting.mode === "friend_ask" ? "private" : "public");
@@ -334,7 +369,14 @@ function DiscoverContent() {
                 isAlreadyInterested={isAlreadyInterested}
                 isInteresting={isInteresting}
                 showInterestButton={showInterestButton}
-                onExpressInterest={setAcceptancePostingId}
+                onExpressInterest={(id: string) => {
+                  // Auto-accept postings skip the dialog — join immediately
+                  if (posting.auto_accept) {
+                    handleAutoAcceptInterest(id);
+                  } else {
+                    setAcceptancePostingId(id);
+                  }
+                }}
                 activeTab="discover"
                 isBookmarked={bookmarkedIds.has(posting.id)}
                 onToggleBookmark={toggleBookmark}

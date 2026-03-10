@@ -27,16 +27,27 @@ export function AcceptanceDialog({
   onSubmit,
 }: AcceptanceDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Clear error when a new posting is selected
+  const prevPostingId = useState<string | null>(null);
+  if (prevPostingId[0] !== postingId) {
+    prevPostingId[1](postingId);
+    if (error) setError(null);
+  }
 
   const handleSubmit = useCallback(
     async (responses: ApplicationResponses) => {
       if (!postingId) return;
       setIsSubmitting(true);
+      setError(null);
       try {
         await onSubmit(postingId, responses);
         onClose();
-      } catch {
-        // Error handling is done by the parent
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to submit request",
+        );
       } finally {
         setIsSubmitting(false);
       }
@@ -59,8 +70,14 @@ export function AcceptanceDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="p-5 pt-3">
+          {error && (
+            <p className="mb-3 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {error}
+            </p>
+          )}
           {postingId && (
             <SmartAcceptanceCard
+              key={postingId}
               postingId={postingId}
               onSubmit={handleSubmit}
               onCancel={onClose}
