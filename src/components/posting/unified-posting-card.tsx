@@ -168,8 +168,10 @@ export function UnifiedPostingCard({
       stripTitleMarkdown(extracted) === strippedTitle ||
       (!title && displayTitle === extracted)
     ) {
-      const rest = description.slice(description.indexOf("\n") + 1).trim();
-      return rest || description;
+      const nlIndex = description.indexOf("\n");
+      if (nlIndex === -1) return ""; // description is only the title
+      const rest = description.slice(nlIndex + 1).trim();
+      return rest;
     }
     return description;
   })();
