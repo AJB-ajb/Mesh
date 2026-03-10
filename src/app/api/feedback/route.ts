@@ -12,13 +12,13 @@ export const POST = withAuth(
 
     const body = await parseBody(request);
 
-    const { message, mood, page_url, user_agent, screenshot_url, metadata } =
+    const { message, mood, page_url, user_agent, screenshot_urls, metadata } =
       body as {
         message?: string;
         mood?: string;
         page_url?: string;
         user_agent?: string;
-        screenshot_url?: string;
+        screenshot_urls?: string[];
         metadata?: FeedbackMetadata;
       };
 
@@ -61,7 +61,7 @@ export const POST = withAuth(
         mood: (mood as FeedbackMood) ?? null,
         page_url,
         user_agent: user_agent ?? null,
-        screenshot_url: screenshot_url ?? null,
+        screenshot_urls: screenshot_urls?.length ? screenshot_urls : null,
         metadata: metadata ?? null,
       })
       .select("id, created_at")
