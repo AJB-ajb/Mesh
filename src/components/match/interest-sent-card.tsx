@@ -13,6 +13,8 @@ import { getInitials } from "@/lib/format";
 import { formatTimeAgo } from "@/lib/format";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { labels } from "@/lib/labels";
+import { categoryIcons, categoryStyles } from "@/lib/posting/styles";
+import { cn } from "@/lib/utils";
 import type { MyInterest } from "@/lib/hooks/use-interests";
 
 export interface InterestSentCardProps {
@@ -37,9 +39,23 @@ export function InterestSentCard({ interest }: InterestSentCardProps) {
                   {posting?.title}
                 </Link>
               </CardTitle>
-              {posting?.category && (
-                <Badge variant="secondary">{posting.category}</Badge>
-              )}
+              {posting?.category &&
+                (() => {
+                  const Icon = categoryIcons[posting.category];
+                  return (
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        "px-1.5",
+                        categoryStyles[posting.category] ?? "",
+                      )}
+                      title={posting.category}
+                      aria-label={posting.category}
+                    >
+                      {Icon ? <Icon className="size-3.5" /> : posting.category}
+                    </Badge>
+                  );
+                })()}
               <Badge variant="outline" className="text-xs">
                 {labels.joinRequest.action.requested}
               </Badge>
@@ -48,7 +64,9 @@ export function InterestSentCard({ interest }: InterestSentCardProps) {
           <div className="flex gap-2 w-full sm:w-auto">
             {posting && (
               <Button variant="outline" asChild>
-                <Link href={`/postings/${posting.id}`}>{labels.interestSent.viewDetails}</Link>
+                <Link href={`/postings/${posting.id}`}>
+                  {labels.interestSent.viewDetails}
+                </Link>
               </Button>
             )}
           </div>

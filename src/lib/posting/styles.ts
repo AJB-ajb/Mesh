@@ -1,3 +1,20 @@
+import {
+  BookOpen,
+  Code,
+  User,
+  Briefcase,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
+
+export const categoryIcons: Record<string, LucideIcon> = {
+  study: BookOpen,
+  hackathon: Code,
+  personal: User,
+  professional: Briefcase,
+  social: Users,
+};
+
 export const categoryStyles: Record<string, string> = {
   study: "bg-blue-500/10 text-blue-700 border-blue-500/20 dark:text-blue-400",
   hackathon:
