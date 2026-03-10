@@ -111,6 +111,8 @@ export const SpeechInput = ({
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  // Track which results have already been emitted as final to avoid duplicates
+  const lastProcessedIndexRef = useRef<number>(0);
 
   // Detect mode on mount
   useEffect(() => {
@@ -133,6 +135,7 @@ export const SpeechInput = ({
 
     speechRecognition.onstart = () => {
       isStartingRef.current = false;
+      lastProcessedIndexRef.current = 0;
       setIsListening(true);
     };
 
@@ -141,17 +144,23 @@ export const SpeechInput = ({
     };
 
     speechRecognition.onresult = (event) => {
-      let finalTranscript = "";
+      let newFinalTranscript = "";
 
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      // Only process results we haven't emitted yet.
+      // Start from whichever is higher: the event's resultIndex or our
+      // last-processed watermark, so we never re-emit a finalized segment.
+      const start = Math.max(event.resultIndex, lastProcessedIndexRef.current);
+      for (let i = start; i < event.results.length; i++) {
         const result = event.results[i];
         if (result.isFinal) {
-          finalTranscript += result[0]?.transcript ?? "";
+          newFinalTranscript += result[0]?.transcript ?? "";
+          // Mark everything up to and including this index as processed
+          lastProcessedIndexRef.current = i + 1;
         }
       }
 
-      if (finalTranscript) {
-        onTranscriptionChange?.(finalTranscript);
+      if (newFinalTranscript) {
+        onTranscriptionChange?.(newFinalTranscript);
       }
     };
 
