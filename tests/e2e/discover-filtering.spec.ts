@@ -55,7 +55,7 @@ test.describe("Discover Filtering", () => {
         creator_id: ownerId,
         title: "E2E Hackathon Project Alpha",
         description: "A hackathon project for testing category filters.",
-        skills: ["Python"],
+
         category: "hackathon",
         status: "open",
         team_size_min: 1,
@@ -66,7 +66,7 @@ test.describe("Discover Filtering", () => {
         creator_id: ownerId,
         title: "E2E Study Group Beta",
         description: "A study group for testing category filters.",
-        skills: ["Math"],
+
         category: "study",
         status: "open",
         team_size_min: 1,
@@ -150,7 +150,7 @@ test.describe("Discover Filtering", () => {
         creator_id: ownerId,
         title: "E2E Quantum Computing Research",
         description: "Research group exploring quantum algorithms.",
-        skills: ["Quantum Computing"],
+
         category: "study",
         status: "open",
         team_size_min: 1,
@@ -161,7 +161,7 @@ test.describe("Discover Filtering", () => {
         creator_id: ownerId,
         title: "E2E Mobile Game Development",
         description: "Building a puzzle game for iOS.",
-        skills: ["Swift", "SpriteKit"],
+
         category: "personal",
         status: "open",
         team_size_min: 1,

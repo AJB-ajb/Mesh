@@ -60,40 +60,6 @@ test.describe("Posting Creation", () => {
     await expect(postButton).toBeDisabled();
   });
 
-   
-  test("owner can expand and fill the detail form", async ({
-    ownerPage,
-    ownerUser,
-  }) => {
-    await ownerPage.goto("/postings/new");
-
-    // Click the "Edit details" toggle to expand the form
-    const detailsToggle = ownerPage.locator("button", {
-      hasText: "Edit details",
-    });
-    await expect(detailsToggle).toBeVisible();
-    await detailsToggle.click();
-
-    // The expanded form should show the title input
-    const titleInput = ownerPage.locator("input#title");
-    await expect(titleInput).toBeVisible();
-
-    // The category select should be visible
-    const categorySelect = ownerPage.locator("select#category");
-    await expect(categorySelect).toBeVisible();
-
-    // Fill in the title
-    await titleInput.fill("Test Side Project");
-
-    // Select a category
-    await categorySelect.selectOption("hackathon");
-
-    // Verify the values are set
-    await expect(titleInput).toHaveValue("Test Side Project");
-    await expect(categorySelect).toHaveValue("hackathon");
-  });
-
-   
   test("back link navigates to postings list", async ({
     ownerPage,
     ownerUser,

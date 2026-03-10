@@ -10,7 +10,6 @@ export type TestPosting = {
   creator_id: string;
   title: string;
   description: string;
-  skills: string[];
   team_size_min: number;
   team_size_max: number;
   category: string;
@@ -35,22 +34,6 @@ const postingTitles = [
   "Portfolio Website Generator",
   "Task Management System",
   "Recipe Sharing Platform",
-];
-
-const skillPool = [
-  "TypeScript",
-  "React",
-  "Node.js",
-  "Python",
-  "Go",
-  "PostgreSQL",
-  "MongoDB",
-  "Docker",
-  "AWS",
-  "Next.js",
-  "Vue.js",
-  "GraphQL",
-  "REST API",
 ];
 
 const categoryPool = [
@@ -85,10 +68,6 @@ export const createPosting = (
     creator_id: faker.string.uuid(),
     title: faker.helpers.arrayElement(postingTitles),
     description: faker.lorem.paragraphs(2),
-    skills: faker.helpers.arrayElements(
-      skillPool,
-      faker.number.int({ min: 3, max: 6 }),
-    ),
     team_size_min: teamSizeMin,
     team_size_max: teamSizeMin + faker.number.int({ min: 1, max: 4 }),
     category: faker.helpers.arrayElement(categoryPool),
