@@ -34,7 +34,7 @@ export function AvailabilityOverlay({
 }: AvailabilityOverlayProps) {
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             {labels.profileEditor.availabilityOverlayTitle}
