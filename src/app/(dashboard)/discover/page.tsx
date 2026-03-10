@@ -266,7 +266,7 @@ function DiscoverContent() {
         )
       ) : (
         /* Postings grid */
-        <div className="grid gap-6">
+        <div className="grid gap-3 sm:gap-6">
           {filteredPostings.map((posting) => {
             const isOwner = userId === posting.creator_id;
             const isAlreadyInterested = interestedPostingIds.includes(
