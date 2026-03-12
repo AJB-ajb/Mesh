@@ -4,7 +4,7 @@
 
 **Note**: Some features in the case studies below are not yet implemented — they describe the target UX, not the current implementation. This is Layer 0: the world we are building toward.
 
-See [1-nested-postings.md](1-nested-postings.md) for the architectural model, [1-matching.md](1-matching.md) for matching, [1-scheduling.md](1-scheduling.md) for scheduling.
+See [1-spaces.md](1-spaces.md) for the Spaces model, [1-matching.md](1-matching.md) for matching, [1-scheduling.md](1-scheduling.md) for scheduling.
 
 ---
 
@@ -136,59 +136,59 @@ The system sees both calendars, computes that Kim is busy until 14:30, that the 
 
 ---
 
-## Nested Use Cases (Groups & Channels)
+## Nested Use Cases (Spaces & Sub-Spaces)
 
-### Hackathon team: from channel to coordinated team
+### Hackathon team: from community Space to coordinated team
 
-**The full arc**: An organizer creates an "XHacks 2026" posting (channel). 200 participants join via QR code at the venue. Discovery within the channel is scoped to members.
+**The full arc**: An organizer creates an "XHacks 2026" Space (community, open membership). 200 participants join via QR code at the venue. Admin enables posting-only mode. Discovery within the Space is scoped to members.
 
-**Step 1 — Finding teammates (child posting in channel)**:
-A participant posts within XHacks: "Building an accessibility checker — need a designer and a backend dev." Matching runs on the 200 channel members, weighted toward skills. Three people join.
+**Step 1 — Finding teammates (posting-message in community Space)**:
+A participant posts within XHacks: "Building an accessibility checker — need a designer and a backend dev." A sub-Space (thread) is spawned. Matching runs on the 200 Space members, weighted toward skills. Three people join the sub-Space.
 
-**Step 2 — Coordinating the team (child posting in group)**:
-The team of 4 is now a group. Someone posts within the group: "Pre-hackathon planning call — 30 min this week?" The system knows the audience (the 4 team members), checks 4-way calendar overlap, generates time slots. Each member gets a one-tap RSVP. No "when works for everyone?" thread.
+**Step 2 — Coordinating the team (posting-message in team sub-Space)**:
+The team of 4 coordinates in their sub-Space. Someone writes "Pre-hackathon planning call — 30 min this week?" The system generates a time proposal card from 4-way calendar overlap. Each member taps their preferred slot. No "when works for everyone?" thread.
 
-**Step 3 — Task assignment (child posting in group)**:
-During the hackathon: "Who's handling the Figma mockups by tonight?" Posted within the group. The system can even suggest a team member based on profile skills. Simple "I'll do it" response.
+**Step 3 — Task assignment (posting-message in team sub-Space)**:
+During the hackathon: "Who's handling the Figma mockups by tonight?" A task claim card appears. The system can suggest a team member based on profile skills. One tap: "I'll do it."
 
-**What nesting provides**: The channel scoped discovery to relevant people. The group scoped coordination to the team. Each child posting inherited context — participants, project topic, location — so the poster only had to write the new thing they needed.
+**What Spaces provide**: The community Space scoped discovery to relevant people. The team sub-Space scoped coordination to the team. Each posting-message inherited context — participants, project topic, location — so the poster only had to write the new thing they needed.
 
 **Negotiations resolved at each level**:
 
-- Channel level: who is in scope (channel members)
-- Team posting: who specifically (matching on skills within channel), what (the project)
-- Planning call: when (calendar overlap on the known team)
-- Task assignment: who does what (within the known team and project)
+- Community Space level: who is in scope (Space members)
+- Team posting: who specifically (matching on skills within Space), what (the project)
+- Planning call: when (calendar overlap via time proposal card)
+- Task assignment: who does what (task claim card within the team)
 
 ### Recurring practice: weekly group with per-session coordination
 
-**The full arc**: Someone creates "Weekly Spanish practice — conversational, beginner-friendly, Tuesdays evening, Cafe Fruhling near Uni." This stays open as a standing group. New people discover it and join over time.
+**The full arc**: Someone creates a "Weekly Spanish practice" Space — conversational, beginner-friendly, Tuesdays evening, Cafe Frühling near Uni. This stays open. New people discover it and join over time.
 
-**Each week**: A child posting is created (one tap or auto via `/recur`): "This Tuesday's session." The system sends RSVPs to the group. Calendar overlap narrows the exact time (18:00 vs. 18:30). Members confirm with one tap.
+**Each week**: A posting-message is created: "This Tuesday's session." A shared RSVP card appears in the conversation. Calendar overlap narrows the exact time (18:00 vs. 18:30). Members tap Yes/No. One tap per person.
 
-**A member can't make it one week**: They decline the RSVP. The group sees "3 of 4 coming this week." No "sorry guys I can't make it this week" message thread needed.
+**A member can't make it one week**: They tap No on the RSVP card. The card updates: "3 of 4 coming this week." No "sorry guys I can't make it this week" message thread needed.
 
-**A new member joins the parent**: They start getting weekly RSVPs. The system already knows the what, where, and roughly when — the new member only needs to confirm availability.
+**A new member joins the Space**: They start seeing weekly RSVP cards. The Space's state text already describes the what, where, and roughly when — the new member only needs to confirm availability.
 
-**What nesting provides**: The parent posting holds the stable context (what, where, recurring pattern, the group). Each weekly instance only negotiates what's new: exact time, who's coming this week. The effort per week is near zero — one tap to confirm.
+**What Spaces provide**: The Space holds the stable context (what, where, recurring pattern, the group) in its state text. Each weekly instance only negotiates what's new: exact time, who's coming this week. The effort per week is near zero — one tap to confirm.
 
 ### Course project: semester-long team coordination
 
-**The full arc**: "Data Structures course project — need 2 partners, Prof. Muller's section, deadline June 15, ~10h/week." Two partners join via matching. The group persists for the semester.
+**The full arc**: "Data Structures course project — need 2 partners, Prof. Muller's section, deadline June 15, ~10h/week." Two partners join via matching. The Space persists for the semester.
 
-**Finding a weekly sync**: Someone posts within the group: "Weekly sync — when works for everyone?" The system finds the best recurring slot from 3-way calendar overlap and proposes it. One round of confirmation instead of a week of "how about Tuesday?" "no, Wednesday?" messages.
+**Finding a weekly sync**: Someone writes in the Space: "Weekly sync — when works for everyone?" A recurring time proposal card appears with the best slots from 3-way calendar overlap. One round of taps instead of a week of "how about Tuesday?" "no, Wednesday?" messages.
 
-**Specific working session**: "Working session for Assignment 3 — this weekend at the library?" Inherits the team, negotiates only the new dimensions: specific time, specific place.
+**Specific working session**: "Working session for Assignment 3 — this weekend?" A posting-message spawns a thread. "Library or remote?" → a poll card. Members tap. Resolved in seconds.
 
-**What nesting provides**: The project context (course, team, deadline, roughly how much time) is established once. Every child posting builds on it. The team doesn't re-negotiate who they are or what they're working on for each meeting.
+**What Spaces provide**: The project context (course, team, deadline, roughly how much time) lives in the Space's state text, established once. Every posting-message builds on it. The team doesn't re-negotiate who they are or what they're working on for each meeting.
 
 ### Mentorship program: organization-scoped matching
 
-An AI safety organization creates "AI Safety Mentorship — Spring 2026 cohort" (channel). Mentors and mentees join via invite link.
+An AI safety organization creates "AI Safety Mentorship — Spring 2026 cohort" Space (community, open membership). Mentors and mentees join via invite link.
 
-Mentors post within the channel: "Available for 2h/week — experience in alignment research and interpretability." Mentees post: "Looking for a mentor in interpretability, 1h/week." Matching runs within the channel, weighted toward skill level complementarity and interest alignment. Verified credentials (GitHub, LinkedIn) influence match quality.
+Mentors post within the Space: "Available for 2h/week — experience in alignment research and interpretability." Mentees post: "Looking for a mentor in interpretability, 1h/week." Matching runs within the Space, weighted toward skill level complementarity and interest alignment. Verified credentials (GitHub, LinkedIn) influence match quality.
 
-Once matched, the mentor-mentee pair becomes a small group. They coordinate session times via child postings — each one inheriting the context (mentorship, the specific focus area, both participants).
+Once matched, the mentor-mentee pair has a 2-person Space. They coordinate session times via posting-messages — each one inheriting the mentorship context from the parent Space.
 
 ### Friday dinner — group scheduling with trade-offs
 
@@ -288,18 +288,18 @@ Ask one person — they're busy. Ask another — no reply. Ask a third — "what
 
 ### Compression summary
 
-| Pattern               | Typical messages | With Mesh | Key mechanism                                |
-| --------------------- | ---------------- | --------- | -------------------------------------------- |
-| Time negotiation      | 6-8              | 0 (1 tap) | Calendar + preferences + acceptance card     |
-| Availability check    | 4-10+            | 0         | Calendar pre-filtering + sequential invite   |
-| Location exchange     | 4-5              | 0         | `\|\|hidden\|\|`                             |
-| Role clarification    | 6-8              | 1 tap     | `\|\|?\|\|` prompts + multi-role extraction  |
-| Preparation/logistics | 5-6              | 0         | `\|\|hidden\|\|`                             |
-| Confirmation/reminder | 2-3              | 0         | Calendar auto-creation + reminders           |
-| Renegotiation         | 3-12             | 1+1 tap   | Suggest different time + calendar re-compute |
-| Introduction/context  | 6+               | 0         | Text-first posting + match explanation       |
-| Recurrence            | 4-8              | 1 tap     | Repost + participant notification            |
-| Cancellation          | 3-8+             | 0 (auto)  | Waitlist + auto-promotion + calendar sync    |
+| Pattern               | Typical messages | With Mesh | Key mechanism                                 |
+| --------------------- | ---------------- | --------- | --------------------------------------------- |
+| Time negotiation      | 6-8              | 0 (1 tap) | Calendar + preferences + acceptance card      |
+| Availability check    | 4-10+            | 0         | Calendar pre-filtering + sequential invite    |
+| Location exchange     | 4-5              | 0         | `\|\|hidden\|\|`                              |
+| Role clarification    | 6-8              | 1 tap     | `\|\|?\|\|` prompts + multi-role extraction   |
+| Preparation/logistics | 5-6              | 0         | `\|\|hidden\|\|`                              |
+| Confirmation/reminder | 2-3              | 0         | Calendar auto-creation + reminders            |
+| Renegotiation         | 3-12             | 1+1 tap   | Card update + calendar re-compute             |
+| Introduction/context  | 6+               | 0         | Text-first posting + match explanation        |
+| Recurrence            | 4-8              | 1 tap     | RSVP card in Space + participant notification |
+| Cancellation          | 3-8+             | 0 (auto)  | Waitlist + auto-promotion + calendar sync     |
 
 **Average coordination: ~30-50 messages reduced to ~1-3 taps.**
 
@@ -313,19 +313,19 @@ Every use case involves the same set of negotiations — who, when, where, what,
 
 The key difference between use cases isn't a type distinction — it's **which negotiations dominate** and **how many rounds** are needed:
 
-| Use case             | Primary negotiation                 | Rounds                               | Nesting                          |
-| -------------------- | ----------------------------------- | ------------------------------------ | -------------------------------- |
-| Coffee now           | When (scheduling)                   | 1                                    | Flat                             |
-| Spanish partner      | Who (deep compatibility)            | 1                                    | Flat                             |
-| Short film crew      | Who + what (roles)                  | 1                                    | Flat                             |
-| Copy-paste (k8s)     | Who (skill + reciprocity)           | 1                                    | Flat                             |
-| Chess (minimal)      | Who (self-selection)                | 1                                    | Flat                             |
-| Tennis with stranger | Who + when                          | 1                                    | Flat                             |
-| Quick call           | When (scheduling)                   | 1                                    | Flat                             |
-| Friday dinner        | When (N-way overlap)                | 1                                    | Flat (group)                     |
-| Hackathon team       | Who + what (roles, vision)          | 1-2                                  | Channel -> group                 |
-| Recurring practice   | When (per instance)                 | Ongoing, each round is 1 tap         | Parent -> weekly children        |
-| Course project       | Who initially, then when repeatedly | Ongoing                              | Parent -> children over semester |
-| Mentorship           | Who (deep compatibility)            | 1 for matching, ongoing for sessions | Channel -> pair -> sessions      |
+| Use case             | Primary negotiation                 | Rounds                               | Space structure                                |
+| -------------------- | ----------------------------------- | ------------------------------------ | ---------------------------------------------- |
+| Coffee now           | When (scheduling)                   | 1                                    | Posting in Explore → sub-Space                 |
+| Spanish partner      | Who (deep compatibility)            | 1                                    | Posting in Explore → sub-Space                 |
+| Short film crew      | Who + what (roles)                  | 1                                    | Posting in Explore → sub-Space                 |
+| Copy-paste (k8s)     | Who (skill + reciprocity)           | 1                                    | Posting in Explore → sub-Space                 |
+| Chess (minimal)      | Who (self-selection)                | 1                                    | Posting in Explore → sub-Space                 |
+| Tennis with stranger | Who + when                          | 1                                    | Posting in Explore → sub-Space                 |
+| Quick call           | When (scheduling)                   | 1                                    | DM Space → posting thread                      |
+| Friday dinner        | When (N-way overlap)                | 1                                    | Friends Space or Explore → sub-Space           |
+| Hackathon team       | Who + what (roles, vision)          | 1-2                                  | Community Space → team sub-Space               |
+| Recurring practice   | When (per instance)                 | Ongoing, each round is 1 tap         | Group Space with weekly posting-messages       |
+| Course project       | Who initially, then when repeatedly | Ongoing                              | Group Space with posting threads over semester |
+| Mentorship           | Who (deep compatibility)            | 1 for matching, ongoing for sessions | Community Space → pair sub-Space → threads     |
 
-Nesting reduces effort over time: the first posting requires describing everything, but subsequent coordination within the group is nearly frictionless because the context is already established.
+Spaces reduce effort over time: the first posting requires describing everything, but subsequent coordination within the Space is nearly frictionless because the context is already established in the state text.

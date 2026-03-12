@@ -21,14 +21,14 @@ Structured forms (title, description, category, skill picker, location, time, te
 
 ### What Changes
 
-| Aspect | Form-First | Text-First |
-|---|---|---|
-| **Primary input** | Multi-step form | Single text field |
-| **Text** | Secondary description field | The posting *is* the text |
-| **Structured data** | User enters via form fields | Auto-extracted from text in background |
-| **Skills** | Skill tree picker with levels | Free text, extracted to skill tags |
-| **Profile creation** | Fill out form fields | Write/paste a description, or guided prompts |
-| **Matching basis** | Structured field comparison | Fast filter on extracted data, then LLM deep match on text |
+| Aspect               | Form-First                    | Text-First                                                 |
+| -------------------- | ----------------------------- | ---------------------------------------------------------- |
+| **Primary input**    | Multi-step form               | Single text field                                          |
+| **Text**             | Secondary description field   | The posting _is_ the text                                  |
+| **Structured data**  | User enters via form fields   | Auto-extracted from text in background                     |
+| **Skills**           | Skill tree picker with levels | Free text, extracted to skill tags                         |
+| **Profile creation** | Fill out form fields          | Write/paste a description, or guided prompts               |
+| **Matching basis**   | Structured field comparison   | Fast filter on extracted data, then LLM deep match on text |
 
 ---
 
@@ -39,30 +39,31 @@ Structured forms (title, description, category, skill picker, location, time, te
 Every posting and profile has:
 
 1. **Text** (markdown) -- the user's description. Appears in the posting, used for deep matching, is the user's primary artifact.
-2. **Metadata** -- structured data that is *either extracted from text* or *set independently* because it doesn't belong in text (calendar availability, GPS coordinates, visibility settings, invitations).
+2. **Metadata** -- structured data that is _either extracted from text_ or _set independently_ because it doesn't belong in text (calendar availability, GPS coordinates, visibility settings, invitations).
 
 ### The Principle
 
 > The markdown text is the primary data store. Structured data lives in the text via `mesh:` links when precision is needed, or as plain text when not. A small set of truly non-textual metadata (calendar imports, visibility settings, invitations) lives separately. LLM extraction derives queryable fields from the text for fast filtering.
 
-| Data type | Lives in... | Example |
-|---|---|---|
-| What the posting is about | Text (plain) | "Looking for someone to practice negotiation, ~2h/week" |
-| Skills mentioned | Text (plain or `mesh:skill` link) | `[negotiation (beginner)](mesh:skill?id=negotiation&level=1)` or just "negotiation" |
-| Activity type | Extracted from text by LLM | `practice_session` |
-| Time preference | Text (plain or `mesh:time` link) | `[evenings, ~2h/week](mesh:time?times=evening)` or just "evenings" |
-| Precise location | Text (`mesh:location` link or plain) | `[near Karlsplatz](mesh:location?lat=48.13&lng=11.58&r=2)` |
-| Hidden details | Text (`||hidden||` syntax) | `||Karlsplatz 5, 3rd floor||` |
-| Calendar availability | Metadata (imported) | Free/busy slots |
-| Visibility | Metadata (user setting) | `public` / `private` |
-| Invitations | Metadata (action) | `[user_id_1, user_id_2]` |
-| Group size | Text (plain or extracted) | `2-3` |
+| Data type                 | Lives in...                          | Example                                                                             |
+| ------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------- | ------ | --- | --------- | --- | --- | ----------------------- | --- | --- |
+| What the posting is about | Text (plain)                         | "Looking for someone to practice negotiation, ~2h/week"                             |
+| Skills mentioned          | Text (plain or `mesh:skill` link)    | `[negotiation (beginner)](mesh:skill?id=negotiation&level=1)` or just "negotiation" |
+| Activity type             | Extracted from text by LLM           | `practice_session`                                                                  |
+| Time preference           | Text (plain or `mesh:time` link)     | `[evenings, ~2h/week](mesh:time?times=evening)` or just "evenings"                  |
+| Precise location          | Text (`mesh:location` link or plain) | `[near Karlsplatz](mesh:location?lat=48.13&lng=11.58&r=2)`                          |
+| Hidden details            | Text (`                              |                                                                                     | hidden |     | ` syntax) | `   |     | Karlsplatz 5, 3rd floor |     | `   |
+| Calendar availability     | Metadata (imported)                  | Free/busy slots                                                                     |
+| Visibility                | Metadata (user setting)              | `public` / `private`                                                                |
+| Invitations               | Metadata (action)                    | `[user_id_1, user_id_2]`                                                            |
+| Group size                | Text (plain or extracted)            | `2-3`                                                                               |
 
 ### Extraction, Not Standardization
 
 When the user posts, the LLM extracts metadata from text in the background. This is a **read-only derivation** -- the LLM extracts data for querying and filtering, but does not modify the user's text.
 
 Why not auto-standardize?
+
 - Users don't want their words rewritten without consent.
 - Bidirectional sync (metadata <-> text) is expensive and fragile.
 - Read-only extraction is simpler -- mistakes in metadata affect filtering, not the posting itself.
@@ -72,6 +73,7 @@ If extraction is clearly wrong, the user can correct metadata directly, and that
 ### Keeping the Skill System
 
 The global skill taxonomy remains for fast filtering. But instead of users manually navigating a skill tree:
+
 1. Skills are **extracted from text** by the LLM, mapped to the nearest taxonomy entry.
 2. Optionally **set manually** via `/skills` or the skill picker.
 3. **Augmented over time** -- frequently-appearing skills not in the taxonomy get flagged for addition.
@@ -82,8 +84,8 @@ The global skill taxonomy remains for fast filtering. But instead of users manua
 
 ### Why Markdown
 
-- It *is* plain text -- users can type it like a message.
-- It *renders* with lightweight structure -- bold, lists, headings.
+- It _is_ plain text -- users can type it like a message.
+- It _renders_ with lightweight structure -- bold, lists, headings.
 - LLMs natively produce it -- zero conversion needed.
 - It's portable -- copy-paste to Slack, Discord, GitHub, email works.
 
@@ -91,16 +93,16 @@ The global skill taxonomy remains for fast filtering. But instead of users manua
 
 Chat-friendly subset (not full markdown):
 
-| Syntax | Purpose |
-|---|---|
-| `**bold**` | Emphasis |
-| `- ` | Bullet lists |
-| `## ` | Headings (ATX only -- no `===` underlines) |
-| `` `code` `` | Inline code / technical terms |
-| `[text](url)` | URLs |
-| `[text](mesh:type?params)` | Metadata-linked text (see below) |
-| `\|\|hidden content\|\|` | Acceptance-gated content (see below) |
-| Single newline | Line break (like messaging apps) |
+| Syntax                     | Purpose                                    |
+| -------------------------- | ------------------------------------------ |
+| `**bold**`                 | Emphasis                                   |
+| `- `                       | Bullet lists                               |
+| `## `                      | Headings (ATX only -- no `===` underlines) |
+| `` `code` ``               | Inline code / technical terms              |
+| `[text](url)`              | URLs                                       |
+| `[text](mesh:type?params)` | Metadata-linked text (see below)           |
+| `\|\|hidden content\|\|`   | Acceptance-gated content (see below)       |
+| Single newline             | Line break (like messaging apps)           |
 
 Excluded: tables, images, horizontal rules, HTML, footnotes.
 
@@ -119,6 +121,7 @@ Structured data embedded in text using standard markdown link syntax with a `mes
 **Format**: `[display text](mesh:type?key=value&key=value)`
 
 **Examples**:
+
 ```markdown
 [near Karlsplatz, Munich](mesh:location?lat=48.13&lng=11.58&r=2)
 [weekday evenings 18-20](mesh:time?days=mon,tue,wed,thu,fri&from=18:00&to=20:00)
@@ -160,6 +163,7 @@ Content wrapped in `||` is hidden from public view and revealed only after accep
 **Inline**: `Meet near ||Karlsplatz 5, 3rd floor, ring 'Schmidt'||`
 
 **Block** (`||` on its own line):
+
 ```markdown
 ||
 Exact address: Karlsplatz 5, 3rd floor
@@ -186,16 +190,17 @@ On acceptance, the LLM generates: instrument selector, equipment yes/no, jazz le
 
 ### Rendering
 
-| Context | `||hidden||` | `||? prompts||` |
-|---|---|---|
-| **Editor** | Dimmed, lock icon | Dimmed, question icon |
+| Context                 | `                                 |                                 | hidden              |     | `   | `                    |     | ? prompts |     | `   |
+| ----------------------- | --------------------------------- | ------------------------------- | ------------------- | --- | --- | -------------------- | --- | --------- | --- | --- |
+| **Editor**              | Dimmed, lock icon                 | Dimmed, question icon           |
 | **View (not accepted)** | "Details shared after acceptance" | "Questions asked on acceptance" |
-| **View (accepted)** | Revealed as normal text | Revealed as filled-in responses |
-| **Copy-paste / export** | `||` markers preserved | `||?` markers preserved |
+| **View (accepted)**     | Revealed as normal text           | Revealed as filled-in responses |
+| **Copy-paste / export** | `                                 |                                 | ` markers preserved | `   |     | ?` markers preserved |
 
 ### Combining With `mesh:` Links
 
 A location can show the area publicly, with exact details hidden:
+
 ```markdown
 [near Karlsplatz, Munich](mesh:location?lat=48.13&lng=11.58&r=2)
 ||Exact: Karlsplatz 5, 3rd floor, ring 'Schmidt'||
@@ -210,13 +215,14 @@ Text-first changes matching from a purely structured approach to a **two-stage h
 ### Stage 1: Fast Filter (unchanged in principle)
 
 Uses extracted metadata for SQL/pgvector queries:
+
 - Activity type, category, parent posting context
 - Location proximity (distance filter on coordinates)
 - Time overlap (calendar + extracted time preferences)
 - Skill overlap (extracted skills matched against taxonomy)
 - pgvector cosine similarity on posting/profile text embeddings
 
-Same approach as before, but inputs are now *derived from text* rather than manually entered.
+Same approach as before, but inputs are now _derived from text_ rather than manually entered.
 
 ### Stage 2: Deep Match (new)
 
@@ -238,13 +244,13 @@ A posting can describe multiple roles ("Looking for an actor AND a musician"). T
 
 Some information is inherently non-textual. Handled as metadata alongside text:
 
-| Signal | How it works |
-|---|---|
+| Signal                    | How it works                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------- |
 | **Calendar availability** | Imported from Google/iCal. Used for time overlap in fast filter and as context to deep match LLM. |
-| **Precise location** | Set via map/GPS. Stored as coordinates for distance filtering. Displayed as human-readable label. |
-| **Verification badges** | Linked LinkedIn/GitHub profiles. Displayed as visual badges, not part of text. |
-| **Collaboration metrics** | Collaboration count, completed projects, match history. Profile metadata. |
-| **Language preferences** | Set in user settings. Used for matching and auto-translation. |
+| **Precise location**      | Set via map/GPS. Stored as coordinates for distance filtering. Displayed as human-readable label. |
+| **Verification badges**   | Linked LinkedIn/GitHub profiles. Displayed as visual badges, not part of text.                    |
+| **Collaboration metrics** | Collaboration count, completed projects, match history. Profile metadata.                         |
+| **Language preferences**  | Set in user settings. Used for matching and auto-translation.                                     |
 
 ---
 
@@ -256,14 +262,14 @@ Mesh does not use end-to-end encryption for posting/profile content, because LLM
 
 ## What Stays the Same
 
-The text-first design changes the *input paradigm and matching approach*. The coordination core is unaffected:
+The text-first design changes the _input paradigm and matching approach_. The coordination core is unaffected:
 
-- **Posting -> invite -> coordinate flow**: The core loop. Text-first makes *creating* the posting faster; coordination after posting is unchanged.
-- **Page structure**: Discover, My Postings, Active, Connections (see [1-ux.md](1-ux.md))
+- **Posting -> invite -> coordinate flow**: The core loop. Text-first makes _creating_ the posting faster; coordination after posting is unchanged.
+- **Page structure**: Spaces, Activity, Profile (see [1-ux.md](1-ux.md))
 - **Posting lifecycle**: draft -> open -> active (min team reached) -> closed
 - **Waitlist**: Automatic waitlisting when postings are filled
-- **Connections & messaging**: Real-time DMs, group chat in Active
-- **Notifications**: Bell icon dropdown, notification types unchanged
+- **Connections & messaging**: Real-time messaging within Spaces (DMs and group conversations)
+- **Notifications**: Activity tab for actionable items, badges on Spaces for messages
 - **OAuth & onboarding**: One-click login, 30-second onboarding target
 - **Verification**: LinkedIn/GitHub profile linking and badges
 
