@@ -8,12 +8,16 @@ Coordinating activities through messaging apps means rounds of back-and-forth: e
 
 The root cause: **messaging apps treat everything as a message.** They don't know you're coordinating an activity, so they can't help with the coordination. The activity itself — what, when, where, how many people, what skills — gets buried in a thread of replies.
 
-Mesh treats the **activity posting** as the fundamental unit. Because a posting has structure, the platform can act on it: skip unavailable people, match on relevant dimensions, manage group formation, send invites in your preferred order. The back-and-forth is replaced by a single posting.
+Mesh treats the **Space** as the fundamental unit — a conversation context with members, state text, and coordination tools. Conversation is the primary interface: people coordinate through messages, as they naturally would. When structure is needed, a **posting-message** adds it within the conversation — carrying coordination properties like matching, capacity, lifecycle, and deadlines. Rich interactive cards replace back-and-forth negotiation with structured actions. The Space's state text gives the system a machine-readable summary to match and act on.
+
+### Isn't this going back to messaging?
+
+The problem was never conversation itself — it was conversation _without structure_. Messaging apps have conversation and nothing else: the app has no understanding of what's being coordinated, so every negotiation is back-and-forth text. Spaces keep conversation as the natural interface while embedding the coordination intelligence that plain messaging lacks. Posting-messages carry the structured properties that let the platform act: skip unavailable people, match on relevant dimensions, manage group formation, send invites in your preferred order. The vision's core argument — structured mechanisms replace negotiation rounds — is preserved; only the surface changes from "fill out a posting form" to "write in a conversation."
 
 This serves two scenarios:
 
-- **Finding new people** (matching): describe your activity, get matched with compatible people based on skills, availability, and interests.
-- **Coordinating with people you know** (invites): post your activity, invite connections in order — the platform handles the asking, waiting, and fallback automatically.
+- **Finding new people** (matching): post in a Space (or the global Explore surface), get matched with compatible people based on skills, availability, and interests.
+- **Coordinating with people you know** (invites): post within your group Space, invite connections in order — the platform handles the asking, waiting, and fallback automatically.
 
 ## Coordination as Negotiation Substitution
 
@@ -29,11 +33,11 @@ Mesh substitutes these negotiations with intelligent mechanisms:
 
 The key insight: these negotiations happen at every scale — for a coffee date AND a hackathon team AND a semester-long project. The difference is which dimensions dominate and how many rounds are needed. A coffee date resolves everything in one step. A hackathon team resolves "who" first, then "when to meet" repeatedly over the event.
 
-This is why postings nest. A posting is a coordination context — a bundle of negotiations, some resolved, some open. When the initial negotiations are resolved (team formed, project defined), new ones emerge (when to meet this week, who handles which task). A child posting inherits what's already resolved and focuses on what's new. Each level of nesting reduces effort because the system carries forward everything that's already been decided.
+This is why Spaces nest. A Space is a coordination context — a bundle of negotiations, some resolved, some open. When the initial negotiations are resolved (team formed, project defined), new ones emerge (when to meet this week, who handles which task). A sub-Space inherits what's already resolved and focuses on what's new. Each level of nesting reduces effort because the system carries forward everything that's already been decided.
 
 The result: coordination that would take dozens of messages — spread across days, losing momentum — collapses into a few taps. Not because the app is doing something magical, but because it understands the structure of what's being negotiated and can act on it.
 
-See [nested-postings.md](1-nested-postings.md) for the technical model. See [use-cases.md](0-use-cases.md) for walkthroughs.
+See [1-spaces.md](1-spaces.md) for the technical model. See [use-cases.md](0-use-cases.md) for walkthroughs.
 
 ## Effectiveness Over Engagement
 
@@ -83,10 +87,10 @@ People working on hobbies (game development, writing, art, theater) want collabo
 
 Hackathons are great for collaboration but finding teammates aligned on a vision is hard.
 
-- The hackathon itself is a parent posting (channel) — a shared context with event defaults (expiry, category). Participants join via QR code or share link.
-- Team-finding posts are child postings within the channel. Matching is scoped to channel members, so candidates are all at the same event.
-- Once a team forms, it becomes a group. Team coordination (planning calls, task assignment) happens via child postings within the group — each one inheriting the team context.
-- This is a natural two-level nesting: channel -> team -> coordination within team.
+- The hackathon itself is a community Space — a shared context with event defaults (deadline, category). Participants join via QR code or share link.
+- Team-finding posting-messages are posted within the hackathon Space. Matching is scoped to Space members, so candidates are all at the same event.
+- Once a team forms, it becomes a sub-Space. Team coordination (planning calls, task assignment) happens as threads and posting-messages within the team sub-Space — inheriting the team context.
+- This is a natural two-level nesting: community Space -> team sub-Space -> coordination within team.
 
 ### Spontaneous Activities
 

@@ -11,7 +11,7 @@
 3. **Idea-first** — start from what you want to do, not from building a profile
 4. **Natural language interface** — voice and text input, AI extracts structured data
 5. **Good enough matching** — cover common cases well; better than random, not perfect
-6. **High responsiveness** — postings should feel fresh and active; instant notifications for time-critical items
+6. **High responsiveness** — Spaces should feel fresh and active; instant notifications for time-critical items
 7. **Honest language** — prefer precise, qualified claims over absolutes. See [Voice & Tone](#voice--tone) below.
 
 ## Voice & Tone
@@ -45,31 +45,31 @@ The app targets 70% mobile usage. All layouts and interactions are designed mobi
 
 ### Layout Architecture
 
-| Viewport         | Navigation              | Header                                    | Content                           |
-| ---------------- | ----------------------- | ----------------------------------------- | --------------------------------- |
-| Mobile (<768px)  | Bottom tab bar (3 tabs) | Logo + theme toggle + user avatar         | Full-width, padded for bottom bar |
-| Desktop (≥768px) | Sidebar (collapsible)   | Global search + notifications + user menu | Sidebar offset                    |
+| Viewport         | Navigation              | Header                                          | Content                           |
+| ---------------- | ----------------------- | ----------------------------------------------- | --------------------------------- |
+| Mobile (<768px)  | Bottom tab bar (3 tabs) | Space name or logo + theme toggle + user avatar | Full-width, padded for bottom bar |
+| Desktop (≥768px) | Sidebar (collapsible)   | Global search + user menu                       | Sidebar offset                    |
 
 ### Bottom Tab Bar (mobile)
 
 Fixed bar at the bottom of the screen with three tabs:
 
-- **Discover** (`/discover`) — Compass icon
-- **Posts** (`/posts`) — FolderKanban icon
-- **Connections** (`/connections`) — Users icon
+- **Spaces** (`/spaces`) — MessageSquare icon
+- **Activity** (`/activity`) — Bell icon
+- **Profile** (`/profile`) — User icon
 
-Active tab is highlighted. Badge counts for unread items per tab. Hidden when the mobile keyboard is open. Safe area padding for notched devices (`env(safe-area-inset-bottom)`). Minimum 44px touch targets.
+Active tab is highlighted. Badge counts for unread items per tab (unread Spaces count on the Spaces tab, pending action count on the Activity tab). Hidden when the mobile keyboard is open. Safe area padding for notched devices (`env(safe-area-inset-bottom)`). Minimum 44px touch targets.
 
 ### Floating Action Button (mobile)
 
-A "+" button fixed above the bottom bar (right side) linking to `/postings/new`. Hidden when keyboard is open.
+A "+" button fixed above the bottom bar (right side). Opens a compose flow: create a new Space, or compose a message/posting in an existing Space. Hidden when keyboard is open.
 
 ### Mobile Command Palette
 
 On mobile, slash commands are accessed via a **"/" button** near the editor (not the FAB "+"). Tapping it opens a **bottom sheet** with the full command list. This replaces the cursor-position dropdown used on desktop, which has viewport/keyboard positioning issues on mobile.
 
-- **"/" button** — positioned near the editor toolbar. Visually distinct from the FAB "+" (which creates new postings). Self-documenting: it hints that slash commands are available.
-- **Bottom sheet** — slides up from the bottom of the screen. Shows all available commands for the current context (posting vs. profile). Tapping a command executes it (opens overlay, inserts text, etc.). Dismissible by swiping down or tapping outside.
+- **"/" button** — positioned near the editor toolbar. Visually distinct from the FAB "+" (which creates new Spaces/postings). Self-documenting: it hints that slash commands are available.
+- **Bottom sheet** — slides up from the bottom of the screen. Shows all available commands for the current context (Space compose vs. profile). Tapping a command executes it (opens overlay, inserts text, etc.). Dismissible by swiping down or tapping outside.
 - **Desktop** — typing "/" inline in the editor still triggers the cursor-position dropdown as before. The bottom sheet is mobile-only.
 - **Touch handling** — all interactive elements in the command system use `onPointerDown` (not `onMouseDown`) for cross-device compatibility. Menu items have minimum 44px touch targets.
 
@@ -77,144 +77,185 @@ On mobile, slash commands are accessed via a **"/" button** near the editor (not
 
 On mobile, the header shows only:
 
-- Logo (left)
+- Logo or Space name (left) — contextual: logo on list screens, Space name inside a Space
 - Theme toggle
 - User avatar (profile/settings access)
 
-Global search and notifications dropdown are hidden on mobile. Notifications are distributed via badge counts on the bottom bar tabs instead.
+Global search is hidden on mobile (search is available within the Spaces list and within individual Spaces). Notifications are distributed via badge counts on the bottom bar tabs and the Activity tab.
 
 ### Desktop Sidebar
 
-Unchanged from current behavior — collapsible sidebar with all navigation items plus "New Posting" CTA. Profile and Settings in secondary navigation.
+Collapsible sidebar with navigation sections matching the bottom tab bar: Spaces, Activity, Profile/Settings. The Space list is the main content area. "New Space" CTA button in the sidebar.
 
 ## Pages & Navigation
 
 ### Routes
 
-| Page                   | Route                   | Description                                                                                |
-| ---------------------- | ----------------------- | ------------------------------------------------------------------------------------------ |
-| Landing                | `/`                     | Hero, features, CTA                                                                        |
-| Login                  | `/login`                | Email/password + OAuth (Google, GitHub, LinkedIn)                                          |
-| Sign up                | `/signup`               | Registration                                                                               |
-| Forgot password        | `/forgot-password`      | Recovery email                                                                             |
-| Reset password         | `/reset-password`       | Reset form                                                                                 |
-| Onboarding             | `/onboarding`           | Profile setup (paste text, guided prompts, or skip)                                        |
-| Discover               | `/discover`             | Single feed of all postings, sorted by match score, with saved filter                      |
-| Posts                  | `/posts`                | Merged view: user's created, joined, applied, and completed postings with filter chips     |
-| Create posting         | `/postings/new`         | Free-form input + AI extraction                                                            |
-| Posting detail         | `/postings/[id]`        | Tabbed view: Edit · Manage · Project                                                       |
-| Connections            | `/connections`          | Connections list with DMs, requests, add/QR                                                |
-| My Postings (redirect) | `/my-postings`          | Redirects to `/posts?filter=created`                                                       |
-| Active (redirect)      | `/active`               | Redirects to `/posts?filter=joined`                                                        |
-| Profile                | `/profile`              | Text-first profile editor with slash commands, extracted metadata, availability + calendar |
-| Settings               | `/settings`             | Connected accounts, notification preferences, sign out, danger zone (delete account)       |
+| Page            | Route              | Description                                                                                |
+| --------------- | ------------------ | ------------------------------------------------------------------------------------------ |
+| Landing         | `/`                | Hero, features, CTA                                                                        |
+| Login           | `/login`           | Email/password + OAuth (Google, GitHub, LinkedIn)                                          |
+| Sign up         | `/signup`          | Registration                                                                               |
+| Forgot password | `/forgot-password` | Recovery email                                                                             |
+| Reset password  | `/reset-password`  | Reset form                                                                                 |
+| Onboarding      | `/onboarding`      | Profile setup (paste text, guided prompts, or skip)                                        |
+| Space list      | `/spaces`          | List of user's Spaces sorted by last activity, with filter chips and search                |
+| Space view      | `/spaces/[id]`     | Conversation timeline with messages and posting-messages; compose area at bottom           |
+| Activity        | `/activity`        | Personal action cards: matches, invites, scheduling, connection requests                   |
+| Profile         | `/profile`         | Text-first profile editor with slash commands, extracted metadata, availability + calendar |
+| Settings        | `/settings`        | Connected accounts, notification preferences, sign out, danger zone (delete account)       |
 
-### Removed pages
+### Removed/Changed pages
 
-| Old page  | Disposition                                            |
-| --------- | ------------------------------------------------------ |
-| Dashboard | Removed — Active is the new landing page               |
-| Matches   | Merged into Discover (match scores shown on all cards) |
-| Bookmarks | Merged into Discover (saved filter)                    |
-| Inbox     | Split — notifications → header bell; DMs → Connections |
+| Old page                          | Disposition                                                                                           |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Discover (`/discover`)            | Replaced by the Global Space ("Explore"), pinned at the top of the Space list                         |
+| Posts (`/posts`)                  | Removed. Active postings live within their Spaces as posting-messages                                 |
+| Connections (`/connections`)      | DMs are 2-person Spaces in the Space list. Connection management moves to Profile                     |
+| My Postings (`/my-postings`)      | Removed. User's own postings are visible in the Spaces they belong to                                 |
+| Active (`/active`)                | Removed. All active Spaces with recent coordination are in the Space list                             |
+| Posting detail (`/postings/[id]`) | Posting is a message within a Space conversation. Detail accessed by tapping the posting-message card |
+| Create posting (`/postings/new`)  | Posting creation is inline via the compose area within a Space view (Message/Posting toggle)          |
+| Notifications bell                | Replaced by the Activity tab for actionable items. Unread badges on Spaces for messages               |
 
 ### Navigation structure
 
-- **Sidebar main (desktop):** Discover, Posts, Connections
-- **Bottom tab bar (mobile):** Discover, Posts, Connections
-- **Sidebar CTA (desktop):** New Posting button
-- **FAB (mobile):** Floating "+" button → New Posting
-- **Sidebar secondary:** Profile, Settings
-- **Header:** Global search, theme toggle, notifications bell (dropdown), user menu
-- **Default landing page:** Posts (empty state nudges to Discover)
+- **Bottom tab bar (mobile):** Spaces, Activity, Profile
+- **Sidebar main (desktop):** Spaces, Activity, Profile, Settings
+- **Sidebar CTA (desktop):** New Space button
+- **FAB (mobile):** Floating "+" button — new Space or compose in existing Space
+- **Header:** Theme toggle, user avatar (mobile); global search, user menu (desktop)
+- **Default landing page:** Space list (`/spaces`)
 
 ## Onboarding Flow
 
-Target: a not-yet-registered user with a written project description can post in **under 30 seconds**.
+Target: a not-yet-registered user with a written project description can start coordinating in **under 30 seconds**.
 
-1. Click "Post project" CTA on landing page
+1. Click "Start coordinating" CTA on landing page
 2. OAuth login (Google, GitHub, LinkedIn — one click)
 3. Paste project description into free-form field
-4. Post
+4. Post — creates a Space with the description as state text and a posting-message
 
-Personal profile configuration is **not required** to create a posting. It can be completed later to improve matching quality. See [0-vision.md](0-vision.md) for the product reasoning behind this.
+Personal profile configuration is **not required** to create a posting or a Space. It can be completed later to improve matching quality. See [0-vision.md](0-vision.md) for the product reasoning behind this.
 
 ## Page Layouts
 
-### Discover (`/discover`)
+### Space List (`/spaces`)
 
-Single unified feed replacing the old Postings (Discover tab), Matches, and Bookmarks pages.
+The primary screen. A messenger-style list of the user's Spaces, sorted by last activity. See [1-spaces.md](1-spaces.md) for the Space data model.
 
-- **Search bar** (NL-powered, voice input) at top
-- **Sort control:** match score (default), newest, etc.
-- **Saved filter:** toggle to show only bookmarked postings
-- **Filter panel** (collapsible): category, visibility (public/private), location, team size, time commitment
-- **Posting cards** in a flat list — text-first rendering (see [1-text-first.md](1-text-first.md)):
-  - Creator name + time ago (top, like a message sender)
-  - Posting text as primary content (3–4 lines, not truncated to 2)
-  - Title is the first line of text (rendered slightly bolder), not a separate field
-  - Match score (Discover feed only — hidden in connections/invites/personal contexts)
-  - Minimal meta line: only info not already in the text (location, spots open)
-  - Skills as feed-level filter pills, not duplicated per card
-  - Apply / Express interest action
+- **Search bar** at top — search across Space names, state text, and messages
+- **Filter chips** (horizontally scrollable): All, Groups, DMs, Communities, Pinned, Archived
+- **Explore (Global Space)** pinned at the top of the list — the discovery surface
+- **Space rows** showing:
+  - Space avatar and name (for 2-person Spaces: the other person's avatar and name)
+  - Last message/posting preview text
+  - Timestamp of last activity
+  - Unread badge count
+- **Per-Space actions** (swipe or long-press): Pin, Mute, Archive
+- **Empty state:** nudge to explore the Global Space or create a new Space
 
-### Posts (`/posts`)
+### Space View (`/spaces/[id]`)
 
-Merged view replacing the separate My Postings and Active pages. Shows all user-related postings with filter chips.
+A conversation timeline view. The single layout that works for all Space sizes (2-person DMs, small groups, large communities). See [1-spaces.md](1-spaces.md) for details on progressive feature enablement by size.
 
-- **Filter chips** (horizontally scrollable on mobile): All, Created, Joined, Applied, Completed
-- Deep-linkable via query parameter: `/posts?filter=created`
-- **Created** filter: user's own postings (same as old My Postings page)
-- **Joined** filter: active postings where user is an accepted member
-- **Applied** filter: postings with pending/waitlisted applications
-- **Completed** filter: filled or closed postings
-- **New Posting** button visible on desktop only (mobile uses FAB)
-- Empty states per filter with contextual CTAs
+**Layout:**
 
-### My Postings (`/postings`) _(deprecated -- redirects to `/posts?filter=created`)_
+```
+┌─────────────────────────┐
+│ Space Name    [i] [...]│  ← header: name, info panel, settings
+├─────────────────────────┤
+│ State text (collapsed)  │  ← tap to expand / edit (privileged members)
+├─────────────────────────┤
+│                         │
+│ [message]               │
+│ [message]               │
+│ [posting-card]          │  ← posting-message rendered as card
+│   └ 3 replies           │  ← sub-Space thread, collapsed
+│ [message]               │
+│ [rich-card: time poll]  │  ← shared interactive card
+│                         │
+├─────────────────────────┤
+│ [text input] [M|P] [→] │  ← compose: Message/Posting toggle
+└─────────────────────────┘
+```
 
-Flat list of the user's own postings, sorted by recency. Recruitment-focused.
+**Header and info panel:**
 
-- **New Posting button** (also in sidebar CTA)
-- **Posting cards** showing:
-  - Title, status (draft / open / active / closed)
-  - Team fill: `current / min (max)` — e.g. `3 / 3 (5)`
-  - Pending actions summary: N applicants, sequential invite status
-  - Quick entry to Manage view
+- Space name and avatar
+- Member count
+- Tap header or [i] button to open info panel: state text (full, editable for privileged members), member list, Space settings, mute/pin controls
 
-### Posting Detail (`/postings/[id]`)
+**Conversation timeline:**
 
-Three-tab view for any posting the user owns. Entry point determines default tab (My Postings → Manage, Active → Project).
+- Messages and posting-messages interleaved chronologically
+- **Posting-messages** render as structured cards: title, text preview, status badge (open/active/closed), capacity indicator, CTA (Join/Apply)
+- **Sub-Spaces** render as collapsible threads anchored to their posting-message card. Collapsed by default ("3 replies"). Expandable inline; tap to open full-screen for long threads
+- **Rich interactive cards** (time proposals, RSVPs, polls, task claims) render inline in the timeline. Members interact via taps
+- Real-time updates: new messages, typing indicators, card state changes
 
-- **Edit tab:** title, description, category, visibility (public/private toggle), team size, skills, location, settings
-- **Manage tab:** applicants list with accept/decline, invite controls (sequential or parallel mode, available on any posting), AI-matched profiles, waitlist
-- **Project tab:** group chat, team members, posting details. Disabled (greyed out) until min team size reached.
+**Compose area:**
 
-Tabs that are not yet relevant are shown but disabled.
+- Text input (same markdown editor as elsewhere)
+- **Message/Posting toggle**: switches between sending a regular message and creating a posting-message
+- When set to **Posting**: additional controls surface inline (capacity, deadline, matching toggle, visibility) — same properties as current posting creation, but within the conversation
+- In **posting-only Spaces** (e.g., Explore/Global Space): toggle is locked to Posting
+- Slash commands available via "/" button (mobile) or inline "/" (desktop)
 
-### Active (`/active`)
+**Large Spaces (posting-only mode):**
 
-List of projects where min team size has been reached — both created and joined. With the nested posting model (see [nested-postings.md](1-nested-postings.md)), Active becomes the hub for ongoing coordination: each group shows its child postings (meetings, task assignments, updates) in a Coordination section alongside Chat.
+When a Space has posting-only mode enabled (common for large communities, always for the Global Space), the view adapts:
 
-- **Project/group cards** showing:
-  - Title, team fill `current / min (max)`
-  - Unread message count + unread coordination activity
-  - Role: "You created" / "You joined"
-  - Time since started
-- Clicking opens the group view with: Chat, Coordination (child postings), Members, Info
-- **Compose in context**: text input within the group view for creating child postings (lightweight, message-like)
-- **Empty state:** nudge to Discover
+```
+┌─────────────────────────┐
+│ Space Name    [i] [...]│
+├─────────────────────────┤
+│ State text (summary)    │
+├─────────────────────────┤
+│ [filter chips] [search] │  ← category, location, etc.
+├─────────────────────────┤
+│ [posting-card + score]  │
+│ [posting-card + score]  │  ← sorted by match score or recency
+│ [posting-card + score]  │
+│                         │
+├─────────────────────────┤
+│ [compose posting] [→]   │  ← posting-only compose
+└─────────────────────────┘
+```
 
-### Connections (`/connections`)
+- Filter chips and search for browsing posting-messages
+- Match scores shown on posting-message cards
+- Posting-messages are sortable by match score (default) or recency
 
-Chat-like split layout for the user's people network. Replaces Inbox.
+### Explore (Global Space)
 
-- **Left panel:**
-  - Search bar
-  - **Requests section** (collapsible, at top, auto-hides when empty): pending incoming requests with accept/decline buttons
-  - **Connection list:** sorted by last message recency, unread badges
-  - **Actions:** + Add (search by name/email), QR Code (show/scan), Share profile link
-- **Right panel:** chat with selected connection (1:1 DMs only; project group chat lives in Active)
+The Global Space is named "Explore" to users. It is the discovery surface, replacing the old Discover page.
+
+- **Pinned at the top** of the Space list (always visible)
+- **Posting-only** — no regular messages. A stream of posting-messages from all users
+- **Filterable and searchable**: chip filters (category, location, etc.), search bar, sort by match score or recency
+- **Match scores** displayed on each posting-message card
+- **Matching surfaces relevant postings** — not a raw chronological feed. The system highlights what is relevant to each user
+- Tapping a posting-message card shows its detail and sub-Space thread
+
+### Activity (`/activity`)
+
+The personal inbox of things that need your response. Contains **action cards** — items generated by Mesh's coordination intelligence. This replaces the old notifications bell dropdown for actionable items.
+
+- **Match cards**: "New posting matches you" — posting text + match score + match explanation + **Join / Pass** buttons
+- **Invite cards**: "Alex invited you to [Space]" — who invited, posting/Space context + **Accept / Decline** buttons
+- **Scheduling cards**: personalized time proposals needing your response — "Your meeting ends at 19:00, you'd arrive ~19:30" + time slot options
+- **Connection request cards**: incoming connection requests with **Accept / Decline** buttons
+- **RSVP request cards**: recurring session confirmations needing your response
+
+Each card has inline actions. Tapping an action (e.g., Join) lands you directly in the relevant Space. Cards are dismissed once acted on.
+
+**What does NOT appear here:** Non-actionable notifications (someone joined a Space, a new message was sent, someone reacted). Those appear as unread badges on the Space in the Space list.
+
+Activity tab + per-Space badges work together:
+
+- **Activity tab**: aggregated triage — "what needs my response across all Spaces?"
+- **Per-Space badges**: contextual — "what's new in this specific Space?"
 
 ### Profile (`/profile`)
 
@@ -226,7 +267,8 @@ Text-first profile editor. Mirrors the posting creation paradigm: the primary in
 2. **Profile editor** — MeshEditor (same as posting creation). The user's bio/description is the primary content. Slash commands available for structured input. Speech input supported.
 3. **Extracted metadata** — displayed below the editor as read-only badges/tags. Skills (badges with level), location, languages, interests. These are derived from the profile text via LLM extraction, not inputted through forms. Tapping a badge opens the relevant picker for manual correction.
 4. **Availability + Calendar** — the one remaining interactive section. Shows the availability grid/calendar week view, with a "Connect calendar" button inline. Busy blocks from connected calendars overlay on the availability display. This section is always visible (not collapsed) because it's inherently visual and not text-derivable.
-5. **Connected accounts** — at the bottom. Shows linked OAuth providers (Google, GitHub, LinkedIn) with connect/disconnect.
+5. **Connections** — list of connections with quick access to their DM Spaces. Add connection (search by name/email), QR code (show/scan), share profile link.
+6. **Connected accounts** — at the bottom. Shows linked OAuth providers (Google, GitHub, LinkedIn) with connect/disconnect.
 
 **No view/edit toggle.** The profile is always in an editable state. There is no separate "view mode" — the editor is the profile.
 
@@ -261,44 +303,49 @@ Slimmed down to configuration-only concerns. Calendar and profile-related featur
 - Calendar settings → moved to Profile (availability + calendar section)
 - Account info display (email, persona) → moved to Profile header or kept minimal
 
-### Notifications
-
-Not a page — lives in the **header bell icon** as a dropdown.
-
-- Unread count badge on bell
-- Dropdown shows recent notifications with type-specific icons
-- Mark all as read action
-- Notification types: interest_received, application_accepted/rejected, friend_request, sequential_invite (covers both sequential and parallel invites), new_message, match_found
-
 ## Interaction Patterns
 
-- **AI compatibility scores** shown on posting cards in Discover feed only (hidden in connections, invites, personal contexts)
-- **Real-time messaging** with typing indicators and presence status — 1:1 DMs in Connections, group chat in Active (Project tab)
-- **Progressive disclosure:** empty states guide the user to their next action (Active → Discover, Connections → Add)
-- **Invite:** invite connections to any posting (not restricted by visibility). Two modes:
+- **AI compatibility scores** shown on posting-message cards in the Explore/Global Space and on match cards in the Activity tab. Hidden in DM Spaces and small group conversations where matching is not relevant.
+- **Real-time messaging** with typing indicators and presence status — within any Space conversation (DM, group, or community)
+- **Progressive disclosure:** empty states guide the user to their next action (empty Space list → Explore, empty Activity → browse Spaces)
+- **Invite:** invite connections to any Space or posting-message. Two modes:
   - **Sequential:** rank connections by preference, send invites one-by-one until someone accepts. On decline, the next connection is auto-invited.
   - **Parallel:** invite all selected connections at once. First to accept wins; others are notified the spot is taken.
-    Controlled via the Manage tab. **Invitee flow:** notification with inline "Join / Do not join" buttons, plus response card on posting detail.
-- **Posting lifecycle:** a posting becomes "active" once min team size is reached. Active postings appear in both My Postings (recruitment lens, while still open) and Active (coordination lens). A posting can be simultaneously open for recruiting and active for coordination.
-- **Waitlist**: When a posting is filled, the CTA changes to "Join waitlist" (auto-accept) or "Request to join waitlist" (manual review). Users see their waitlist position. Poster sees waitlisted people in the Manage tab.
-- **Invitations** are a persistent posting feature — accessible during posting creation and throughout the posting lifecycle, not just after team formation.
+    Invitees see an invite card in their Activity tab with inline **Join / Decline** buttons.
+- **Posting lifecycle:** a posting-message becomes "active" once min capacity is reached. Active postings show a status badge on their card in the Space conversation. A posting can be simultaneously open for recruiting and active for coordination within its sub-Space.
+- **Waitlist**: When a posting-message is filled, the CTA changes to "Join waitlist" (auto-accept) or "Request to join waitlist" (manual review). Users see their waitlist position. The posting creator sees waitlisted people in the posting detail.
+- **Invitations** are a persistent posting feature — accessible during posting-message creation and throughout the posting lifecycle, not just after team formation.
+- **Rich interactive cards** in Space conversations: time proposals, RSVPs, polls, task claims, location confirms. Members interact via taps instead of writing messages. Cards update live as members respond. See the design document (`spec/designs/spaces-rewrite.md`, Section 10) for the full card type catalog.
 - **Voice input** for posting creation and natural language filtering
-- `[planned]` **AI-generated daily digest** notifications
+- `[planned]` **AI-generated daily digest** notifications for large Spaces
 
-### Text-First Input (v0.3+)
+### Text-First Input
 
-The posting and profile input paradigm is text-first. See [1-text-first.md](1-text-first.md) for the full spec. Key changes:
+The posting and profile input paradigm is text-first. See [1-text-first.md](1-text-first.md) for the full spec. Key points:
 
-- **Primary input is a text field**, not a multi-step form. Write what you want, post it, done.
+- **Primary input is a text field**, not a multi-step form. Write what you want, send it, done.
 - **Structure is derived, not inputted.** LLM extracts metadata (skills, time, location, category) from text in the background after posting.
-- **Posting is instant.** Extraction and matching happen after the posting is live — no gating on LLM processing.
+- **Posting is instant.** Extraction and matching happen after the posting-message is live — no gating on LLM processing.
 - **Markdown format.** Lightweight markdown (bold, lists, headings, inline code, links). Edit mode shows syntax-highlighted markers (e.g., `**bold**` renders bold but keeps the `**` visible). View mode fully renders.
-- **`mesh:` link syntax** for optional precision — `[📍 location](mesh:location?lat=...&lng=...)` embeds structured metadata in the text. Slash commands insert these; plain text is always fine too.
-- **`||hidden||` content** — text wrapped in `||` markers is hidden until acceptance. Solves the "send me the details" back-and-forth.
+- **`mesh:` link syntax** for optional precision — `[location](mesh:location?lat=...&lng=...)` embeds structured metadata in the text. Slash commands insert these; plain text is always fine too.
+- **`||hidden||` content** — text wrapped in `||` markers is hidden until acceptance. Solves the "send me the details" back-and-forth. Works in both posting-messages and Space state text.
 - **`||?||` prompts** — questions wrapped in `||?` markers become interactive form elements on acceptance (LLM converts natural language to UI).
 - **Slash commands** as a command palette — content commands (`/time`, `/location`, `/skills`, `/template`, `/hidden`), setting commands (`/visibility`, `/size`, `/autoaccept`), and action commands (`/invite`, `/link`, `/repost`, `/format`, `/clean`). Tab completes, Enter executes. On mobile, accessed via a "/" button that opens a bottom sheet (see [Mobile Command Palette](#mobile-command-palette)).
-- **Text tools**: Auto-format (✨) adds markdown structure, Auto-clean (🧹) corrects grammar/spelling. Both apply directly with inline undo.
+- **Text tools**: Auto-format adds markdown structure, Auto-clean corrects grammar/spelling. Both apply directly with inline undo.
 - **`/update` command** (profile context) — takes an NL instruction as inline argument (e.g., `/update add Python at expert level`) or opens an inline text input. LLM applies changes to the profile text and re-extracts structured fields.
 - **Quick chips and post-write nudges**: Deferred — focus on core flow first. Revisit when base editor and commands are polished.
 
 **Profile text-first parity.** The profile uses the same text-first paradigm as postings. The user's bio/description is the single source of truth — skills, location, languages, and interests are extracted from it. Form-based profile fields (fullName, headline, bio form, skills form, interests input, etc.) are deprecated in favor of the unified text editor with slash commands. Availability remains as an explicit interactive section because it is inherently visual.
+
+## Current Deviations
+
+The following describes the gap between this spec and the current implementation:
+
+- **Navigation**: The app currently uses a 3-tab bottom bar (Discover/Posts/Connections) and a notifications bell. The Spaces/Activity/Profile navigation described here is not yet implemented.
+- **Space list**: The `/spaces` route and messenger-style Space list do not exist yet. The current landing page is `/posts`.
+- **Space view**: The `/spaces/[id]` conversation timeline view with interleaved messages and posting-messages does not exist yet. The current posting detail is at `/postings/[id]` with a tabbed Edit/Manage/Project layout.
+- **Activity tab**: The `/activity` route with personal action cards does not exist yet. Actionable items currently surface via the notifications bell dropdown.
+- **Explore (Global Space)**: The Global Space concept is not yet implemented. Discovery currently uses the `/discover` feed.
+- **Posting creation**: Postings are currently created via a standalone `/postings/new` flow, not via a compose area within a Space conversation.
+- **Rich interactive cards**: Time proposals, RSVPs, polls, task claims, and other interactive cards in conversations are not yet implemented.
+- **Connections**: DMs and connection management currently live at `/connections`. These need to migrate to 2-person Spaces in the Space list and to the Profile page respectively.

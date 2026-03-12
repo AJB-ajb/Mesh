@@ -54,18 +54,18 @@ Use "Invite" in UI and specs. Two sub-modes:
 - **Sequential**: invites sent one-by-one in ranked order until someone accepts. The next connection is auto-invited on decline.
 - **Parallel**: all selected connections invited at once. First to accept wins.
 
-"Friend Ask" was informal jargon — replaced with "Invite" for clarity. The user chooses the mode via a toggle when creating an invite.
+"Friend Ask" was informal jargon — replaced with "Invite" for clarity. The user chooses the mode via a toggle when creating an invite. Invites now operate within Spaces — you invite connections to join a Space or respond to a posting-message within a Space.
 
 - **DB column**: `mode: "friend_ask"` is being replaced by `visibility: "private"` (expand-contract migration). During the transition, both columns exist; code reads `visibility` and writes both.
 
 ### Visibility (not "Mode")
 
-Use "Visibility" for the public/private toggle on postings.
+Use "Visibility" as a Space setting that controls discoverability and access.
 
-- **Public**: the posting appears in Discover for anyone to find and request to join.
-- **Private**: the posting is invite-only. The poster invites connections directly.
+- **Public**: the Space (or posting within it) appears in Explore for anyone to find and request to join.
+- **Private**: the Space is invite-only or link-only. Members invite connections directly.
 
-Previously called `mode: "open" | "friend_ask"`, which was confusing. The new `visibility` column uses clear, well-understood terminology. Invites are decoupled from visibility — you can invite connections on any posting, regardless of visibility.
+Previously called `mode: "open" | "friend_ask"`, which was confusing. The new `visibility` setting uses clear, well-understood terminology. The composable access model still applies but within the Space context — Spaces can have public postings while keeping conversation private, or be fully open. Invites are decoupled from visibility — you can invite connections to any Space, regardless of visibility.
 
 ### Relevance (not "Semantic" or "Semantic similarity")
 
@@ -79,11 +79,11 @@ Use "Flexible" as the third location option (alongside Remote and In-person).
 
 "Either" is vague — does it mean "I truly don't care" or "I'm open to both"? "Flexible" communicates openness clearly.
 
-### Bookmarks (Discover saved filter)
+### Bookmarks (Explore saved filter)
 
-Bookmarks are a toggle filter within the Discover feed, not a separate page. Users bookmark postings for later; toggling the saved filter in Discover shows only bookmarked postings. This avoids a standalone page that would go stale.
+Bookmarks are a toggle filter within Explore (the Global Space), not a separate page. Users bookmark postings for later; toggling the saved filter in Explore shows only bookmarked postings. This avoids a standalone page that would go stale.
 
-Previously planned as a separate `/bookmarks` page, but consolidated into Discover during the ux.md redesign (see `spec/ux.md`).
+Previously planned as a separate `/bookmarks` page, but consolidated into Discover (now Explore) during the ux.md redesign (see `spec/ux.md`). In the Spaces model, bookmarks apply to posting-messages within Explore.
 
 ### Repost + Extend Deadline (not "Reactivate")
 
@@ -124,24 +124,49 @@ When a posting is filled, users can join a waitlist for automatic or manual prom
 - **"Waitlisted"** — Status badge for users on the waitlist
 - **"You are #N on the waitlist"** — Position indicator shown to waitlisted users
 
+### Space (not "Group Chat" or "Channel")
+
+Use "Space" as the fundamental unit. Internally: Coordination Space (CS). A Space is a conversation context with members, state text, and coordination tools. Everything is a Space — DMs, groups, communities, the Global discovery surface.
+
+- 2-person Spaces display as the connection's name (no "Space" label)
+- Small Spaces (~2-8) are called "groups" colloquially
+- Large Spaces (~100+) may be called "communities"
+- The Global Space is called "Explore"
+
+### Explore (not "Discover" or "Global")
+
+The Global Space where everyone is a member. User-facing name: "Explore". This is the discovery surface — posting-only, filterable, matchable. Continuity with the previous Discover concept.
+
+### Posting-message (internal) / Posting (user-facing)
+
+A structured message type within a Space conversation. Carries coordination properties: matching, capacity, lifecycle, deadline. Can spawn a sub-Space. User-facing label remains "Posting" — users don't see "posting-message."
+
+### Activity tab (not "Notifications")
+
+The middle tab in the bottom bar. Shows personal action cards: matches, invites, scheduling proposals, connection requests. Replaces the notifications bell for actionable items. Non-actionable updates (new messages, someone joined) remain as badges on the Space list.
+
+### State text (internal) / Space description (user-facing)
+
+The living markdown document per Space. Updated via `/summarize` command. LLM suggests updates on card resolution. Contains the up-to-date coordination context.
+
 ---
 
-### Group / Channel (nested posting contexts)
+### Group / Channel (now Spaces of different sizes)
 
-Use "group" for small parent postings (2-8 members) and "channel" for large parent postings (20+ members, open membership). Both are postings with children — the terms describe the user-facing behavior, not a technical distinction.
+"Group" and "channel" are no longer distinct entity types — they are Spaces of different sizes with different default settings. The terms may be used colloquially to describe Space behavior:
 
-- **Group**: a posting where multiple people coordinate over time. Members can post updates, propose meetings, and chat within the group.
-- **Channel**: a shared space (hackathon, course, community) where members create postings. Join via link or QR code. Child postings are discoverable within the channel.
+- **Group**: a small Space (~2-8 members) where people coordinate over time. Messages and posting-messages coexist in the conversation.
+- **Community**: a large Space (hackathon, course, community) where members post and discover sub-Spaces. Join via link or QR code. Often in posting-only mode.
 
-These replace the `context_identifier` field, which was a string approximation of what should be a real entity with members, a description, and a lifecycle. See [nested-postings.md](1-nested-postings.md).
+These replace the `context_identifier` field, which was a string approximation of what should be a real entity with members, a description, and a lifecycle. See [1-spaces.md](1-spaces.md).
 
 ### Context Identifier (deprecated)
 
-The `context_identifier` field (a free-text string like "XHacks 2026" for exact-match filtering) is replaced by the nested posting model. The context becomes a parent posting — a real entity you can join, browse, and share — rather than a string label. See [nested-postings.md](1-nested-postings.md) Section 2.
+The `context_identifier` field (a free-text string like "XHacks 2026" for exact-match filtering) is replaced by the Spaces model. The context becomes a Space — a real entity you can join, browse, and share — rather than a string label. See [1-spaces.md](1-spaces.md) Section 2.
 
 ---
 
 ## Open Questions
 
 - ~~**Persona selection**~~: Removed. The "developer" / "posting creator" personas contradicted the "no required configuration" principle. Onboarding now goes straight to optional profile setup (paste text, guided prompts, or skip).
-- **"Matches" page name**: With Bookmarks and Join Requests moved elsewhere, this page is now just AI recommendations. Consider renaming to "Recommended" or "For You."
+- ~~**"Matches" page name**~~: Resolved — this is now the **Activity tab** (middle tab in the bottom bar). Shows personal action cards: matches, invites, scheduling proposals, connection requests.

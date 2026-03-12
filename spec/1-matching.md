@@ -26,7 +26,7 @@ The goal is not perfect matching — just better than random chance.
   2. Soft scoring on remaining candidates
 - Semantic matching via pgvector for embedding similarity (posting descriptions, tags, natural language criteria)
 - Keep raw inputs (e.g., "prefer Monday evening") for user editing and display
-- **Context-scoped matching**: Candidate pool narrows by posting context — global for top-level postings, channel members for channel children, no matching for small group sub-postings. See [nested-postings.md](1-nested-postings.md) Section 8.
+- **Context-scoped matching**: Candidate pool narrows by Space — all users for postings in the Global Space (Explore), Space members for postings in public Spaces, no matching for small Spaces (broadcast to members). See [1-spaces.md](1-spaces.md).
 
 ### User Experience
 
@@ -82,7 +82,7 @@ See [availability-calendar.md](1-availability.md) for the full availability spec
 - **Category**:
   - Coarse categories (for fast filtering): Study, Hackathon, Personal, Professional, Social
   - Free-form tags/keywords (matched via overlap or pgvector embedding similarity)
-- **Parent posting**: Child postings are scoped to their parent's participants. Replaces the deprecated `context_identifier` string field. See [nested-postings.md](1-nested-postings.md).
+- **Parent posting**: Posting-messages in a Space are scoped to the Space's members. See [1-spaces.md](1-spaces.md).
 - **Natural language criteria**: Optional, stored as pgvector embeddings for semantic matching beyond structured dimensions
 - **Capacity**: How many people the poster is looking for (default: 1)
 - **Deadline**: When the posting closes to new join requests
