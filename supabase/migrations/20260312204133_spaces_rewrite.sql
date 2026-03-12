@@ -141,9 +141,12 @@ create table activity_cards (
   type          text not null check (type in (
     'match', 'invite', 'scheduling', 'connection_request', 'rsvp', 'join_request'
   )),
+  title         text not null default '',
+  subtitle      text,
   space_id      uuid references spaces(id) on delete cascade,
   posting_id    uuid references space_postings(id) on delete cascade,
   from_user_id  uuid references profiles(user_id),
+  score         real,
   data          jsonb not null default '{}',
   status        text not null default 'pending' check (status in ('pending', 'acted', 'dismissed', 'expired')),
   created_at    timestamptz not null default now(),

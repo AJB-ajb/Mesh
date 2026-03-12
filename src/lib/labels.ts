@@ -1099,6 +1099,71 @@ export const labels = {
     collapseSidebar: "Collapse sidebar",
     expandSidebar: "Expand sidebar",
     clearSearch: "Clear search",
+    // Spaces navigation
+    spaces: "Spaces",
+    activity: "Activity",
+    newSpace: "New Space",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Spaces
+  // ---------------------------------------------------------------------------
+  spaces: {
+    explore: "Explore",
+    filterAll: "All",
+    filterDMs: "DMs",
+    filterGroups: "Groups",
+    filterPublic: "Public",
+    filterPinned: "Pinned",
+    filterArchived: "Archived",
+    emptyTitle: "No spaces yet",
+    emptyHint: "Browse Explore or create a new Space to get started.",
+    members: (n: number) => `${n} member${n !== 1 ? "s" : ""}`,
+    unread: (n: number) => `${n} unread`,
+    pinned: "Pinned",
+    muted: "Muted",
+    stateText: "Description",
+    composeMessage: "Message...",
+    composePosting: "Write a posting...",
+    send: "Send",
+    messageMode: "Message mode",
+    postingMode: "Posting mode",
+    info: "Space info",
+    memberList: "Members",
+    spaceSettings: "Space settings",
+    editStateText: "Edit description",
+    joinRequest: "Request to join",
+    joined: "Joined",
+    typingIndicator: (names: string[]) =>
+      names.length === 1
+        ? `${names[0]} is typing...`
+        : `${names.join(", ")} are typing...`,
+  },
+
+  // ---------------------------------------------------------------------------
+  // Activity
+  // ---------------------------------------------------------------------------
+  activity: {
+    title: "Activity",
+    emptyTitle: "All caught up",
+    emptyHint: "No actions needed right now.",
+    pendingCount: (n: number) => `${n} pending`,
+    cardTypes: {
+      match: "Match",
+      invite: "Invite",
+      scheduling: "Scheduling",
+      connection_request: "Connection Request",
+      rsvp: "RSVP",
+      join_request: "Join Request",
+    } as const,
+    actions: {
+      join: "Join",
+      pass: "Pass",
+      accept: "Accept",
+      decline: "Decline",
+      confirm: "Confirm",
+      dismiss: "Dismiss",
+    } as const,
   },
 
   // ---------------------------------------------------------------------------

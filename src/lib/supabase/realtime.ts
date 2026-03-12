@@ -560,3 +560,209 @@ export function subscribeToPostings(
 
   return channel;
 }
+
+// ---------------------------------------------------------------------------
+// Space message types & subscription
+// ---------------------------------------------------------------------------
+
+export type SpaceMessagePayload = {
+  id: string;
+  space_id: string;
+  sender_id: string | null;
+  type: string;
+  content: string | null;
+  posting_id: string | null;
+  created_at: string;
+};
+
+function isSpaceMessage(value: unknown): value is SpaceMessagePayload {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.id === "string" &&
+    typeof v.space_id === "string" &&
+    typeof v.type === "string" &&
+    typeof v.created_at === "string"
+  );
+}
+
+/**
+ * Subscribe to real-time space messages (INSERT) for a given space.
+ */
+export function subscribeToSpaceMessages(
+  spaceId: string,
+  onNewMessage: (message: SpaceMessagePayload) => void,
+): RealtimeChannel {
+  const supabase = createClient();
+
+  const channel = supabase
+    .channel(`space-messages:${spaceId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "space_messages",
+        filter: `space_id=eq.${spaceId}`,
+      },
+      (payload) => {
+        if (isSpaceMessage(payload.new)) {
+          onNewMessage(payload.new);
+        } else {
+          console.warn(
+            "[Realtime] Unexpected space message payload shape:",
+            payload.new,
+          );
+        }
+      },
+    )
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        console.log(
+          `[Realtime] Subscribed to space messages for space ${spaceId}`,
+        );
+      } else if (status === "CHANNEL_ERROR") {
+        console.error(
+          `[Realtime] Error subscribing to space messages for space ${spaceId}`,
+        );
+      }
+    });
+
+  return channel;
+}
+
+// ---------------------------------------------------------------------------
+// Activity card types & subscription
+// ---------------------------------------------------------------------------
+
+export type ActivityCardPayload = {
+  id: string;
+  user_id: string;
+  type: string;
+  status: string;
+  created_at: string;
+};
+
+function isActivityCard(value: unknown): value is ActivityCardPayload {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.id === "string" &&
+    typeof v.user_id === "string" &&
+    typeof v.type === "string" &&
+    typeof v.status === "string" &&
+    typeof v.created_at === "string"
+  );
+}
+
+/**
+ * Subscribe to real-time activity card inserts for a user.
+ */
+export function subscribeToActivityCards(
+  userId: string,
+  onNewCard: (card: ActivityCardPayload) => void,
+): RealtimeChannel {
+  const supabase = createClient();
+
+  const channel = supabase
+    .channel(`activity-cards:${userId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "activity_cards",
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => {
+        if (isActivityCard(payload.new)) {
+          onNewCard(payload.new);
+        } else {
+          console.warn(
+            "[Realtime] Unexpected activity card payload shape:",
+            payload.new,
+          );
+        }
+      },
+    )
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        console.log(
+          `[Realtime] Subscribed to activity cards for user ${userId}`,
+        );
+      } else if (status === "CHANNEL_ERROR") {
+        console.error(
+          `[Realtime] Error subscribing to activity cards for user ${userId}`,
+        );
+      }
+    });
+
+  return channel;
+}
+
+// ---------------------------------------------------------------------------
+// Space member changes subscription (for badge/unread updates)
+// ---------------------------------------------------------------------------
+
+export type SpaceMemberChangePayload = {
+  space_id: string;
+  user_id: string;
+  unread_count: number;
+  pinned: boolean;
+  muted: boolean;
+};
+
+function isSpaceMemberChange(
+  value: unknown,
+): value is SpaceMemberChangePayload {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.space_id === "string" && typeof v.user_id === "string"
+  );
+}
+
+/**
+ * Subscribe to space_members changes for a user (badge updates, etc.).
+ */
+export function subscribeToSpaceMemberChanges(
+  userId: string,
+  onUpdate: (payload: SpaceMemberChangePayload) => void,
+): RealtimeChannel {
+  const supabase = createClient();
+
+  const channel = supabase
+    .channel(`space-members:${userId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "space_members",
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => {
+        if (isSpaceMemberChange(payload.new)) {
+          onUpdate(payload.new);
+        } else {
+          console.warn(
+            "[Realtime] Unexpected space member payload shape:",
+            payload.new,
+          );
+        }
+      },
+    )
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        console.log(
+          `[Realtime] Subscribed to space member changes for user ${userId}`,
+        );
+      } else if (status === "CHANNEL_ERROR") {
+        console.error(
+          `[Realtime] Error subscribing to space member changes for user ${userId}`,
+        );
+      }
+    });
+
+  return channel;
+}

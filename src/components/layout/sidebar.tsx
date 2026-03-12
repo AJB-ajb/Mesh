@@ -4,9 +4,8 @@ import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Compass,
-  FolderKanban,
-  Users,
+  MessageSquare,
+  Bell,
   Plus,
   User,
   Settings,
@@ -21,9 +20,8 @@ import { Logo } from "./logo";
 import { NavItem } from "./nav-item";
 
 const navigation = [
-  { href: "/discover", icon: Compass, label: labels.nav.discover },
-  { href: "/posts", icon: FolderKanban, label: labels.nav.posts },
-  { href: "/connections", icon: Users, label: labels.nav.connections },
+  { href: "/spaces", icon: MessageSquare, label: labels.nav.spaces },
+  { href: "/activity", icon: Bell, label: labels.nav.activity },
 ];
 
 const secondaryNavigation = [
@@ -95,7 +93,7 @@ export function Sidebar({ className }: SidebarProps) {
             isCollapsed ? "md:opacity-0 md:w-0" : "opacity-100",
           )}
         >
-          <Logo href="/posts" />
+          <Logo href="/spaces" />
         </div>
         {/* Collapse toggle - desktop only */}
         <Button
@@ -125,7 +123,7 @@ export function Sidebar({ className }: SidebarProps) {
           )}
           asChild
         >
-          <Link href="/postings/new">
+          <Link href="/spaces">
             <Plus className="size-4 flex-shrink-0" />
             <span
               className={cn(
@@ -133,7 +131,7 @@ export function Sidebar({ className }: SidebarProps) {
                 isCollapsed && "md:hidden",
               )}
             >
-              {labels.common.newPosting}
+              {labels.nav.newSpace}
             </span>
           </Link>
         </Button>
