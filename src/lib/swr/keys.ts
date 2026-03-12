@@ -35,4 +35,20 @@ export const cacheKeys = {
     `api/postings/${postingId}/common-availability` as const,
   profileSearch: (query: string) => `profile-search/${query}` as const,
   githubSync: () => "/api/github/sync" as const,
+
+  // Spaces
+  spaces: () => "/api/spaces" as const,
+  space: (id: string) => `/api/spaces/${id}` as const,
+  spaceMessages: (spaceId: string) =>
+    `/api/spaces/${spaceId}/messages` as const,
+  spaceMembers: (spaceId: string) =>
+    `/api/spaces/${spaceId}/members` as const,
+  spacePostings: (spaceId: string) =>
+    `/api/spaces/${spaceId}/postings` as const,
+  spaceJoinRequests: (postingId: string) =>
+    `space-join-requests/${postingId}` as const,
+
+  // Activity
+  activityCards: () => "/api/activity" as const,
+  activityPendingCount: () => "activity-pending-count" as const,
 };
