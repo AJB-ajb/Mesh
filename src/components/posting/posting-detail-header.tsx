@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Sparkles } from "lucide-react";
 
@@ -14,12 +15,12 @@ import { usePostingEditContext } from "./posting-edit-context";
 import { OwnerActions } from "./owner-actions";
 import { ApplySection } from "./apply-section";
 
-const isExpired = (expiresAt: string | null) => {
+function checkExpired(expiresAt: string | null) {
   if (!expiresAt) return false;
   return new Date(expiresAt) < new Date();
-};
+}
 
-const formatExpiry = (expiresAt: string | null) => {
+function formatExpiry(expiresAt: string | null) {
   if (!expiresAt) return null;
   const date = new Date(expiresAt);
   const now = new Date();
@@ -33,7 +34,21 @@ const formatExpiry = (expiresAt: string | null) => {
   if (diffDays < 7) return `Expires in ${diffDays} days`;
   if (diffDays < 30) return `Expires in ${Math.floor(diffDays / 7)} weeks`;
   return `Expires ${date.toLocaleDateString()}`;
-};
+}
+
+export function useExpiry(expiresAt: string | null) {
+  const [expired, setExpired] = useState(false);
+  const [expiryText, setExpiryText] = useState<string | null>(null);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setExpired(checkExpired(expiresAt));
+      setExpiryText(formatExpiry(expiresAt));
+    });
+  }, [expiresAt]);
+
+  return { expired, expiryText };
+}
 
 function SaveStatusIndicator({ status }: { status: SaveStatus }) {
   if (status === "idle") return null;
@@ -70,6 +85,8 @@ export function PostingDetailHeader() {
   const { form, onFormChange, saveStatus } = usePostingEditContext();
 
   const creatorName = posting.profiles?.full_name || "Unknown";
+
+  const { expired, expiryText } = useExpiry(posting.expires_at);
 
   const isPrivate =
     (posting.visibility ??
@@ -131,7 +148,7 @@ export function PostingDetailHeader() {
               <Badge
                 variant={
                   posting.status === "open"
-                    ? isExpired(posting.expires_at)
+                    ? expired
                       ? "destructive"
                       : "default"
                     : posting.status === "filled"
@@ -139,19 +156,17 @@ export function PostingDetailHeader() {
                       : "outline"
                 }
               >
-                {isExpired(posting.expires_at)
-                  ? labels.common.expired
-                  : posting.status}
+                {expired ? labels.common.expired : posting.status}
               </Badge>
               {(posting.visibility === "private" ||
                 posting.mode === "friend_ask") && (
                 <Badge variant="outline">{labels.invite.privateBadge}</Badge>
               )}
-              {posting.expires_at && (
+              {posting.expires_at && expiryText && (
                 <span
-                  className={`text-xs ${isExpired(posting.expires_at) ? "text-destructive" : "text-muted-foreground"}`}
+                  className={`text-xs ${expired ? "text-destructive" : "text-muted-foreground"}`}
                 >
-                  {formatExpiry(posting.expires_at)}
+                  {expiryText}
                 </span>
               )}
               {!isOwner && matchBreakdown && (
