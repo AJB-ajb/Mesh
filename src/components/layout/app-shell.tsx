@@ -2,7 +2,6 @@ import { cn } from "@/lib/utils";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 import { BottomBar } from "./bottom-bar";
-import { CreatePostingFab } from "./create-posting-fab";
 import { TestModeBanner } from "./test-mode-banner";
 import { SkipLink } from "@/components/ui/skip-link";
 import { GlobalKeyboardShortcuts } from "./global-keyboard-shortcuts";
@@ -32,7 +31,6 @@ export function AppShell({ children, className }: AppShellProps) {
           </main>
         </div>
         <BottomBar />
-        <CreatePostingFab />
         <GlobalKeyboardShortcuts />
       </div>
     </PresenceProvider>

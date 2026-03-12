@@ -439,6 +439,9 @@ export interface MatchWithDetails extends Match {
 
 export type SpaceVisibility = "private" | "public" | "link";
 
+/** Derived space type — not stored in DB, computed from space properties */
+export type SpaceType = "global" | "dm" | "small" | "large";
+
 export interface SpaceSettings {
   posting_only?: boolean;
   visibility?: SpaceVisibility;
@@ -648,9 +651,12 @@ export interface ActivityCard {
   id: string;
   user_id: string;
   type: ActivityCardType;
+  title: string;
+  subtitle: string | null;
   space_id: string | null;
   posting_id: string | null;
   from_user_id: string | null;
+  score: number | null;
   data: Json;
   status: ActivityCardStatus;
   created_at: string;
@@ -666,12 +672,21 @@ export interface SpaceWithMembership extends Space {
   space_members: SpaceMember[];
 }
 
-/** Space list item with last message preview */
+/** Space list item with last message preview and derived type */
 export interface SpaceListItem extends Space {
+  type: SpaceType;
   space_members: Pick<SpaceMember, "unread_count" | "pinned" | "muted" | "role">[];
   last_message?: Pick<SpaceMessage, "content" | "type" | "created_at" | "sender_id"> | null;
   member_count?: number;
   other_member_profile?: Pick<Profile, "full_name" | "user_id"> | null;
+}
+
+/** Derive space type from space properties */
+export function deriveSpaceType(space: Space, memberCount?: number): SpaceType {
+  if (space.is_global) return "global";
+  if (memberCount !== undefined && memberCount <= 2 && !space.settings.posting_only) return "dm";
+  if (space.settings.posting_only || (memberCount !== undefined && memberCount > 10)) return "large";
+  return "small";
 }
 
 /** Space posting with creator profile */
