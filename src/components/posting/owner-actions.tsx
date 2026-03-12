@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, MoreHorizontal, Trash2, Share2, Flag, RefreshCw } from "lucide-react";
+import {
+  Loader2,
+  MoreHorizontal,
+  Trash2,
+  Share2,
+  Flag,
+  RefreshCw,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -26,11 +33,7 @@ import { useSharePosting } from "@/lib/hooks/use-share-posting";
 import { usePostingCoreContext } from "./posting-core-context";
 import { usePostingEditContext } from "./posting-edit-context";
 import { ExtendDeadlineButtons } from "./extend-deadline-buttons";
-
-const isExpired = (expiresAt: string | null) => {
-  if (!expiresAt) return false;
-  return new Date(expiresAt) < new Date();
-};
+import { useExpiry } from "./posting-detail-header";
 
 export function OwnerActions() {
   const { posting } = usePostingCoreContext();
@@ -46,7 +49,7 @@ export function OwnerActions() {
   const { handleShare } = useSharePosting(posting.title);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const expired = isExpired(posting.expires_at);
+  const { expired } = useExpiry(posting.expires_at);
 
   return (
     <div className="flex items-center gap-2">
@@ -80,10 +83,7 @@ export function OwnerActions() {
           {expired && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={onRepost}
-                disabled={isReposting}
-              >
+              <DropdownMenuItem onClick={onRepost} disabled={isReposting}>
                 {isReposting ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : (
