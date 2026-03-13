@@ -78,14 +78,14 @@ create table space_postings (
   auto_accept       boolean not null default false,
   status            text not null default 'open' check (status in ('open', 'active', 'closed', 'filled', 'expired')),
   extracted_metadata jsonb not null default '{}',
-  embedding         vector(1536),
+  embedding         extensions.vector(1536),
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now()
 );
 
 create index idx_space_postings_space on space_postings(space_id, created_at);
 create index idx_space_postings_status on space_postings(space_id, status);
-create index idx_space_postings_embedding on space_postings using ivfflat (embedding vector_cosine_ops);
+create index idx_space_postings_embedding on space_postings using ivfflat (embedding extensions.vector_cosine_ops);
 
 -- ---------------------------------------------------------------------------
 -- 2. Back-references (deferred FKs)
