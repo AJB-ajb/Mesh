@@ -9,6 +9,7 @@ import {
 } from "@/components/editor/extensions/slash-command-plugin";
 import {
   filterCommandsByContext,
+  type EditorContext,
   type SlashCommand,
 } from "@/lib/slash-commands/registry";
 import type { EditorView } from "@codemirror/view";
@@ -16,7 +17,7 @@ import type { Extension } from "@codemirror/state";
 
 export interface UseEditorSlashCommandsOptions {
   /** Filter commands by context (e.g. "posting") */
-  context?: "posting" | "profile";
+  context?: EditorContext;
   /** Called when a setting command is selected (e.g. /visibility) */
   onSettingChange?: (key: string, value: string) => void;
   /** Called when an immediate command fires (e.g. /format, /clean) */
