@@ -631,6 +631,51 @@ export function subscribeToSpaceMessages(
   return channel;
 }
 
+/**
+ * Subscribe to real-time space messages (INSERT) for multiple spaces
+ * using a single channel with an `in` filter. More efficient than
+ * one channel per space.
+ */
+export function subscribeToSpaceMessagesBatch(
+  spaceIds: string[],
+  onNewMessage: (message: SpaceMessagePayload) => void,
+): RealtimeChannel {
+  const supabase = createClient();
+
+  const channel = supabase
+    .channel(`space-messages:batch`)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "space_messages",
+        filter: `space_id=in.(${spaceIds.join(",")})`,
+      },
+      (payload) => {
+        if (isSpaceMessage(payload.new)) {
+          onNewMessage(payload.new);
+        } else {
+          console.warn(
+            "[Realtime] Unexpected space message payload shape:",
+            payload.new,
+          );
+        }
+      },
+    )
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        console.log(
+          `[Realtime] Subscribed to space messages for ${spaceIds.length} spaces`,
+        );
+      } else if (status === "CHANNEL_ERROR") {
+        console.error(`[Realtime] Error subscribing to batch space messages`);
+      }
+    });
+
+  return channel;
+}
+
 // ---------------------------------------------------------------------------
 // Activity card types & subscription
 // ---------------------------------------------------------------------------
@@ -717,9 +762,7 @@ function isSpaceMemberChange(
 ): value is SpaceMemberChangePayload {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
-  return (
-    typeof v.space_id === "string" && typeof v.user_id === "string"
-  );
+  return typeof v.space_id === "string" && typeof v.user_id === "string";
 }
 
 /**

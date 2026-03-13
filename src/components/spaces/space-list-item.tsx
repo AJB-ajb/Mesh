@@ -56,6 +56,7 @@ function buildPreview(
   }
 
   const content = msg.content ?? "";
+  if (!content) return null;
   return `${prefix}${sender}${content}`;
 }
 
