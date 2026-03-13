@@ -177,11 +177,13 @@ export async function matchProfileToPostings(
       "";
 
     if (profileText) {
-      const candidates = topN
+      const candidatesWithIds = topN
         .map((m) => {
           const ps = postingSourceMap.get(m.posting.id);
           const postingText = ps?.text || m.posting.description || "";
+          if (!postingText) return null;
           return {
+            postingId: m.posting.id,
             postingTitle:
               m.posting.title || m.posting.category || "Space Posting",
             postingText,
@@ -193,28 +195,29 @@ export async function matchProfileToPostings(
             semanticScore: m.scoreBreakdown?.semantic ?? null,
           };
         })
-        .filter((c) => c.postingText);
+        .filter((c): c is NonNullable<typeof c> => c !== null);
 
-      if (candidates.length > 0) {
+      if (candidatesWithIds.length > 0) {
         const deepResults = await deepMatchCandidates(
-          // Use the first posting title as a placeholder — each candidate
-          // has its own posting context in the prompt
-          candidates[0].postingTitle,
-          candidates[0].postingText,
-          candidates,
+          candidatesWithIds[0].postingTitle,
+          candidatesWithIds[0].postingText,
+          candidatesWithIds,
         );
 
-        // Attach deep match results and blend scores
-        let resultIdx = 0;
+        // Map results back by index (candidatesWithIds and deepResults are 1:1)
+        const resultMap = new Map<string, DeepMatchResult>();
+        candidatesWithIds.forEach((c, i) => {
+          if (i < deepResults.length) {
+            resultMap.set(c.postingId, deepResults[i]);
+          }
+        });
+
+        // Apply deep match results to the matching topN entries
         topN.forEach((m) => {
-          if (resultIdx < deepResults.length) {
-            const ps = postingSourceMap.get(m.posting.id);
-            const postingText = ps?.text || m.posting.description || "";
-            if (postingText) {
-              m.deepMatchResult = deepResults[resultIdx];
-              m.score = blendScores(m.score, deepResults[resultIdx].score);
-              resultIdx++;
-            }
+          const dr = resultMap.get(m.posting.id);
+          if (dr) {
+            m.deepMatchResult = dr;
+            m.score = blendScores(m.score, dr.score);
           }
         });
 

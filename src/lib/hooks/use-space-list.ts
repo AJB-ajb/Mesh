@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { cacheKeys } from "@/lib/swr/keys";
@@ -8,9 +8,7 @@ import {
   subscribeToSpaceMemberChanges,
   unsubscribeChannel,
 } from "@/lib/supabase/realtime";
-import type {
-  SpaceListItem,
-} from "@/lib/supabase/types";
+import type { SpaceListItem } from "@/lib/supabase/types";
 import { GLOBAL_SPACE_ID, deriveSpaceType } from "@/lib/supabase/types";
 
 // ---------------------------------------------------------------------------
@@ -103,10 +101,8 @@ async function fetchSpaces(): Promise<SpaceListData> {
     if (!aPinned && bPinned) return 1;
 
     // Then by last activity (last message or updated_at)
-    const aTime =
-      a.last_message?.created_at ?? a.updated_at;
-    const bTime =
-      b.last_message?.created_at ?? b.updated_at;
+    const aTime = a.last_message?.created_at ?? a.updated_at;
+    const bTime = b.last_message?.created_at ?? b.updated_at;
     return bTime.localeCompare(aTime);
   });
 
@@ -126,18 +122,23 @@ export function useSpaceList() {
 
   const userId = data?.userId ?? null;
 
+  const mutateRef = useRef(mutate);
+  useEffect(() => {
+    mutateRef.current = mutate;
+  }, [mutate]);
+
   // Subscribe to space_members changes for badge/unread updates
   useEffect(() => {
     if (!userId) return;
 
     const channel = subscribeToSpaceMemberChanges(userId, () => {
-      mutate();
+      mutateRef.current();
     });
 
     return () => {
       unsubscribeChannel(channel);
     };
-  }, [userId, mutate]);
+  }, [userId]);
 
   return {
     spaces: data?.spaces ?? [],

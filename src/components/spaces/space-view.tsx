@@ -28,7 +28,9 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
   // Mark as read when entering the space
   useEffect(() => {
     if (currentMember && currentMember.unread_count > 0) {
-      markAsRead();
+      markAsRead().catch((err) => {
+        console.warn("[space-view] Failed to mark as read:", err);
+      });
     }
   }, [currentMember, markAsRead]);
 

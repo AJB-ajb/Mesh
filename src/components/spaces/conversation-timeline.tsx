@@ -35,12 +35,13 @@ export function ConversationTimeline({
     prevMessageCount.current = messages.length;
   }, [messages.length]);
 
-  // Scroll to bottom on initial load
+  // Scroll to bottom on initial load or when message count changes
+  const messageCount = messages.length;
   useEffect(() => {
-    if (!isLoading && messages.length > 0) {
-      bottomRef.current?.scrollIntoView();
+    if (!isLoading && bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isLoading, messageCount]);
 
   if (isLoading) {
     return (

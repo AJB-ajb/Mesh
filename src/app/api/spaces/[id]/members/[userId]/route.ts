@@ -37,6 +37,18 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
     await verifySpaceMembership(supabase, spaceId, user.id);
   }
 
+  // Verify target user is a member of this space
+  const { data: targetMember } = await supabase
+    .from("space_members")
+    .select("user_id")
+    .eq("space_id", spaceId)
+    .eq("user_id", targetUserId)
+    .maybeSingle();
+
+  if (!targetMember) {
+    throw new AppError("NOT_FOUND", "User is not a member of this space", 404);
+  }
+
   const update: Record<string, unknown> = {};
   if (body.role !== undefined) update.role = body.role;
   if (body.muted !== undefined) update.muted = body.muted;
@@ -144,6 +156,24 @@ export const DELETE = withAuth(async (_req, { user, supabase, params }) => {
       `Failed to remove member: ${error.message}`,
       500,
     );
+  }
+
+  // Defensive check: verify at least one admin remains after the delete.
+  // Guards against TOCTOU race where another admin was removed concurrently.
+  const { count: remainingAdmins } = await supabase
+    .from("space_members")
+    .select("*", { count: "exact", head: true })
+    .eq("space_id", spaceId)
+    .eq("role", "admin");
+
+  if ((remainingAdmins ?? 0) === 0) {
+    // Race condition: re-add as admin
+    await supabase.from("space_members").insert({
+      space_id: spaceId,
+      user_id: targetUserId,
+      role: "admin",
+    });
+    throw new AppError("CONFLICT", "Cannot remove the last admin", 409);
   }
 
   return apiSuccess({ removed: true });

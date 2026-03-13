@@ -1,8 +1,6 @@
 import { withAuth } from "@/lib/api/with-auth";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
-import {
-  verifySpaceMembership,
-} from "@/lib/api/space-guards";
+import { verifySpaceMembership } from "@/lib/api/space-guards";
 import type { InviteMode } from "@/lib/supabase/types";
 
 /**
@@ -104,7 +102,27 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
   }>(req);
 
   if (!body.ordered_list || body.ordered_list.length === 0) {
-    throw new AppError("VALIDATION", "ordered_list must have at least one user", 400);
+    throw new AppError(
+      "VALIDATION",
+      "ordered_list must have at least one user",
+      400,
+    );
+  }
+
+  // Validate all user IDs exist
+  const { data: validUsers } = await supabase
+    .from("profiles")
+    .select("user_id")
+    .in("user_id", body.ordered_list);
+
+  const validIds = new Set(validUsers?.map((u) => u.user_id) ?? []);
+  const invalidIds = body.ordered_list.filter((id) => !validIds.has(id));
+  if (invalidIds.length > 0) {
+    throw new AppError(
+      "VALIDATION",
+      `Invalid user IDs: ${invalidIds.join(", ")}`,
+      400,
+    );
   }
 
   const { data: invite, error: insertError } = await supabase
@@ -116,9 +134,10 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       ordered_list: body.ordered_list,
       current_index: 0,
       concurrent_max: body.concurrent_max ?? body.ordered_list.length,
-      pending: body.mode === "sequential"
-        ? body.ordered_list.slice(0, body.concurrent_max ?? 1)
-        : body.ordered_list,
+      pending:
+        body.mode === "sequential"
+          ? body.ordered_list.slice(0, body.concurrent_max ?? 1)
+          : body.ordered_list,
       declined: [],
       status: "active",
     })

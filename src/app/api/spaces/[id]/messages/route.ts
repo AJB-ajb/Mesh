@@ -36,6 +36,7 @@ export const GET = withAuth(async (req, { user, supabase, params }) => {
       .from("space_messages")
       .select("created_at")
       .eq("id", before)
+      .eq("space_id", spaceId)
       .single();
 
     if (cursorMsg) {
@@ -82,6 +83,14 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
   if (!body.content?.trim()) {
     throw new AppError("VALIDATION", "Message content is required", 400);
+  }
+
+  if (body.content.length > 10000) {
+    throw new AppError(
+      "VALIDATION",
+      "Message content too long (max 10,000 characters)",
+      400,
+    );
   }
 
   const { data: message, error } = await supabase
