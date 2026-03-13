@@ -4,8 +4,8 @@
 
 ## Version & Status
 
-- **Current version**: 0.6.0
-- **Last updated**: 2026-03-10
+- **Current version**: 0.7.0
+- **Last updated**: 2026-03-13
 - **Versioning**: Milestone-based semver (`MAJOR.MINOR.PATCH`). See [Update Protocol](#update-protocol).
 
 ---
