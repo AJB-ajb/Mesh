@@ -472,3 +472,107 @@ begin
   end loop;
 end;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- 11. Matching RPCs for space_postings
+-- ---------------------------------------------------------------------------
+
+-- match_postings_to_user_v2: queries space_postings with pgvector cosine similarity
+-- against the user's profile embedding. Optional scope_space_id limits to a single space.
+create or replace function match_postings_to_user_v2(
+  target_user_id uuid,
+  match_count int default 10,
+  scope_space_id uuid default null
+)
+returns table (
+  posting_id uuid,
+  score float,
+  posting_text text,
+  posting_category text,
+  posting_tags text[],
+  posting_created_by uuid,
+  space_id uuid
+)
+language plpgsql
+security definer
+as $$
+declare
+  user_emb extensions.vector(1536);
+begin
+  -- Fetch the user's profile embedding
+  select p.embedding into user_emb
+  from public.profiles p
+  where p.user_id = target_user_id;
+
+  if user_emb is null then
+    return;
+  end if;
+
+  return query
+  select
+    sp.id as posting_id,
+    (1 - (sp.embedding <=> user_emb))::float as score,
+    sp.text as posting_text,
+    sp.category as posting_category,
+    sp.tags as posting_tags,
+    sp.created_by as posting_created_by,
+    sp.space_id
+  from public.space_postings sp
+  where
+    sp.status = 'open'
+    and sp.embedding is not null
+    and sp.created_by != target_user_id
+    -- Scope to a single space when provided
+    and (scope_space_id is null or sp.space_id = scope_space_id)
+    -- Only public postings when searching across spaces
+    and (scope_space_id is not null or sp.visibility = 'public')
+  order by score desc
+  limit match_count;
+end;
+$$;
+
+comment on function match_postings_to_user_v2 is
+  'Finds top matching space_postings for a user via pgvector cosine similarity. Optional scope_space_id limits results to a single space.';
+
+-- match_users_to_posting_v2: queries profiles with pgvector cosine similarity
+-- against a space_posting's embedding.
+create or replace function match_users_to_posting_v2(
+  target_posting_id uuid,
+  match_count int default 10
+)
+returns table (
+  user_id uuid,
+  score float
+)
+language plpgsql
+security definer
+as $$
+declare
+  posting_emb extensions.vector(1536);
+  posting_creator uuid;
+begin
+  -- Fetch the posting's embedding and creator
+  select sp.embedding, sp.created_by
+  into posting_emb, posting_creator
+  from public.space_postings sp
+  where sp.id = target_posting_id;
+
+  if posting_emb is null then
+    return;
+  end if;
+
+  return query
+  select
+    pr.user_id,
+    (1 - (pr.embedding <=> posting_emb))::float as score
+  from public.profiles pr
+  where
+    pr.embedding is not null
+    and pr.user_id != posting_creator
+  order by score desc
+  limit match_count;
+end;
+$$;
+
+comment on function match_users_to_posting_v2 is
+  'Finds top matching profiles for a space_posting via pgvector cosine similarity.';
