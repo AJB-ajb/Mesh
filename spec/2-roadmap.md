@@ -169,21 +169,21 @@ The editor and rendering system adopt the new markdown syntax (`mesh:` links, `|
 
 The core model change. After Phase 1, the app is a messenger with Spaces, posting-messages, and the existing matching/invite machinery. Subsumes the old v0.7 (Command Palette) — useful items folded in or deferred to backlog. See [1-spaces.md](1-spaces.md) and [designs/spaces-rewrite.md](designs/spaces-rewrite.md) §16.
 
-| Feature                | Issue | Effort | Description                                                                                           |
-| ---------------------- | ----- | ------ | ----------------------------------------------------------------------------------------------------- |
-| New DB tables          | —     | Large  | `spaces`, `space_members`, `space_messages`, `space_postings`, `space_join_requests`, `space_invites` |
-| Global Space (Explore) | —     | Medium | Created on migration, all users added. Posting-only. Replaces Discover feed.                          |
-| DM Spaces              | —     | Medium | Created for existing connections. 2-person Spaces replace DM conversations.                           |
-| Space list UI          | —     | Large  | Main screen: Space list with filters, pins, badges, message previews                                  |
-| Activity tab           | —     | Medium | Personal cards for matches, invites, connection requests                                              |
-| Space view             | —     | Large  | Conversation timeline with posting-cards inline                                                       |
-| Compose area           | —     | Medium | Message/Posting toggle, inline posting creation                                                       |
-| State text             | —     | Medium | Editable state text per Space, `/summarize` command                                                   |
-| Posting-messages       | —     | Large  | Create postings within Spaces, spawn sub-Spaces                                                       |
-| Matching               | —     | Medium | Existing pipeline, scoped by Space (candidate pool = Space members)                                   |
-| Realtime               | —     | Medium | Supabase Realtime per-Space channels                                                                  |
-| Drop old tables        | —     | Medium | Remove old `postings`, `conversations`, `messages`, `group_messages`                                  |
-| 3-tab navigation       | —     | Medium | Spaces / Activity / Profile — replaces current sidebar nav                                            |
+| Feature                | Issue | Effort | Description                                                                                                                                                 |
+| ---------------------- | ----- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| New DB tables          | —     | Large  | `spaces`, `space_members`, `space_messages`, `space_postings`, `space_join_requests`, `space_invites`                                                       |
+| Global Space (Explore) | —     | Medium | Created on migration, all users added. Posting-only. Replaces Discover feed.                                                                                |
+| DM Spaces              | —     | Medium | Created for existing connections. 2-person Spaces replace DM conversations.                                                                                 |
+| Space list UI          | —     | Large  | Main screen: Space list with filters, pins, badges, message previews                                                                                        |
+| Activity tab           | —     | Medium | Personal cards for matches, invites, connection requests                                                                                                    |
+| Space view             | —     | Large  | Conversation timeline with posting-cards inline                                                                                                             |
+| Compose area           | —     | Medium | Message/Posting toggle, inline posting creation                                                                                                             |
+| State text             | —     | Medium | Editable state text per Space, `/summarize` command                                                                                                         |
+| Posting-messages       | —     | Large  | Create postings within Spaces, spawn sub-Spaces                                                                                                             |
+| Matching               | —     | Medium | Existing pipeline, scoped by Space (candidate pool = Space members)                                                                                         |
+| Realtime               | —     | Medium | Supabase Realtime per-Space channels                                                                                                                        |
+| Drop old tables        | —     | Medium | Remove old `postings`, `conversations`, `messages`, `group_messages`                                                                                        |
+| 3-tab navigation       | —     | Medium | ✅ Spaces / Activity / Profile bottom bar (mobile) + sidebar (desktop). Decision: consider dropping Settings from sidebar (accessible via header dropdown). |
 
 ### v0.8 — Spaces Phase 2: Rich Interactive Cards
 
