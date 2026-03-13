@@ -10,7 +10,7 @@ import { SpaceHeader } from "./space-header";
 import { StateTextBanner } from "./state-text-banner";
 import { ConversationTimeline } from "./conversation-timeline";
 import { ComposeArea } from "./compose-area";
-import { LargeSpaceView } from "./large-space-view";
+import { PostingBrowser } from "./posting-browser";
 
 interface SpaceViewProps {
   space: SpaceDetail;
@@ -28,7 +28,8 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
     markAsRead,
   } = useSpaceMessages(space.id);
 
-  const { postings: postingsList } = useSpacePostings(space.id);
+  const { postings: postingsList, isLoading: postingsLoading } =
+    useSpacePostings(space.id);
 
   // Build a Map<postingId, SpacePosting> for quick lookup in timeline
   const postingsMap = useMemo(() => {
@@ -53,16 +54,36 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
 
   return (
     <div className="-m-4 sm:-m-6 flex flex-col h-[calc(100dvh-4rem)]">
-      <SpaceHeader space={space} memberCount={space.members.length} />
+      <SpaceHeader
+        space={space}
+        memberCount={space.members.length}
+        currentMember={currentMember}
+      />
 
       <StateTextBanner stateText={space.state_text} canEdit={canEdit} />
 
       {isPostingOnly ? (
-        <LargeSpaceView
-          spaceId={space.id}
-          space={space}
-          currentMember={currentMember}
-        />
+        <>
+          <PostingBrowser
+            spaceId={space.id}
+            postings={postingsList}
+            isLoading={postingsLoading}
+            matchingEnabled={space.settings?.matching_enabled ?? false}
+            userId={userId}
+            className="flex-1"
+          />
+          {currentMember && userId && (
+            <ComposeArea
+              spaceId={space.id}
+              senderId={userId}
+              senderName={
+                space.members.find((m) => m.user_id === userId)?.profiles
+                  ?.full_name ?? null
+              }
+              postingOnly={true}
+            />
+          )}
+        </>
       ) : (
         <>
           <ConversationTimeline

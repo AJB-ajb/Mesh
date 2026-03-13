@@ -447,6 +447,7 @@ export interface SpaceSettings {
   visibility?: SpaceVisibility;
   auto_accept?: boolean;
   max_members?: number | null;
+  matching_enabled?: boolean;
 }
 
 export interface Space {
@@ -675,8 +676,14 @@ export interface SpaceWithMembership extends Space {
 /** Space list item with last message preview and derived type */
 export interface SpaceListItem extends Space {
   type: SpaceType;
-  space_members: Pick<SpaceMember, "unread_count" | "pinned" | "muted" | "role">[];
-  last_message?: Pick<SpaceMessage, "content" | "type" | "created_at" | "sender_id"> | null;
+  space_members: Pick<
+    SpaceMember,
+    "unread_count" | "pinned" | "muted" | "role"
+  >[];
+  last_message?: Pick<
+    SpaceMessage,
+    "content" | "type" | "created_at" | "sender_id"
+  > | null;
   member_count?: number;
   other_member_profile?: Pick<Profile, "full_name" | "user_id"> | null;
 }
@@ -684,8 +691,17 @@ export interface SpaceListItem extends Space {
 /** Derive space type from space properties */
 export function deriveSpaceType(space: Space, memberCount?: number): SpaceType {
   if (space.is_global) return "global";
-  if (memberCount !== undefined && memberCount <= 2 && !space.settings.posting_only) return "dm";
-  if (space.settings.posting_only || (memberCount !== undefined && memberCount > 10)) return "large";
+  if (
+    memberCount !== undefined &&
+    memberCount <= 2 &&
+    !space.settings.posting_only
+  )
+    return "dm";
+  if (
+    space.settings.posting_only ||
+    (memberCount !== undefined && memberCount > 10)
+  )
+    return "large";
   return "small";
 }
 
@@ -697,7 +713,10 @@ export interface SpacePostingWithCreator extends SpacePosting {
 /** Activity card with related profile info */
 export interface ActivityCardWithDetails extends ActivityCard {
   from_profile?: Pick<Profile, "full_name" | "user_id"> | null;
-  space_posting?: Pick<SpacePosting, "text" | "category" | "tags" | "status"> | null;
+  space_posting?: Pick<
+    SpacePosting,
+    "text" | "category" | "tags" | "status"
+  > | null;
 }
 
 // ============================================

@@ -7,15 +7,20 @@ import { useState } from "react";
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import type { SpaceDetail } from "@/lib/hooks/use-space";
-import { GLOBAL_SPACE_ID } from "@/lib/supabase/types";
+import { GLOBAL_SPACE_ID, type SpaceMember } from "@/lib/supabase/types";
 import { SpaceInfoSheet } from "./space-info-sheet";
 
 interface SpaceHeaderProps {
   space: SpaceDetail;
   memberCount: number;
+  currentMember?: SpaceMember | null;
 }
 
-export function SpaceHeader({ space, memberCount }: SpaceHeaderProps) {
+export function SpaceHeader({
+  space,
+  memberCount,
+  currentMember,
+}: SpaceHeaderProps) {
   const router = useRouter();
   const [showInfo, setShowInfo] = useState(false);
   const isGlobal = space.id === GLOBAL_SPACE_ID;
@@ -55,6 +60,7 @@ export function SpaceHeader({ space, memberCount }: SpaceHeaderProps) {
 
       <SpaceInfoSheet
         space={space}
+        currentMember={currentMember ?? null}
         open={showInfo}
         onOpenChange={setShowInfo}
       />
