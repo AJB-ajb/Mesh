@@ -83,7 +83,7 @@ test.describe("Navigation", () => {
   }) => {
     await page.context().clearCookies();
 
-    await page.goto("/posts");
+    await page.goto("/spaces");
     await page.waitForURL(/\/login/, { timeout: 10000 });
     expect(page.url()).toContain("/login");
   });
