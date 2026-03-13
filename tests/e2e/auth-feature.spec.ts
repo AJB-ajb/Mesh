@@ -57,8 +57,8 @@ test.describe("Feature: Authentication Flow", () => {
       password: password!,
     });
 
-    // loginAsUser waits for /posts — verify we arrived
-    expect(page.url()).toContain("/posts");
+    // loginAsUser waits for /spaces — verify we arrived
+    expect(page.url()).toContain("/spaces");
   });
 
   // Test 3: Email/password login with invalid credentials
@@ -225,7 +225,7 @@ test.describe("Feature: Authentication Flow", () => {
     // Clear any existing session
     await page.context().clearCookies();
 
-    const protectedRoutes = ["/discover", "/posts", "/connections", "/profile"];
+    const protectedRoutes = ["/spaces", "/activity", "/settings", "/profile"];
 
     for (const route of protectedRoutes) {
       await page.goto(route);
@@ -253,15 +253,15 @@ test.describe("Feature: Authentication Flow", () => {
     // Verify we landed on /login
     expect(page.url()).toContain("/login");
 
-    // Verify posts page is no longer accessible
-    await page.goto("/posts");
+    // Verify spaces page is no longer accessible
+    await page.goto("/spaces");
     await page.waitForURL(/\/login/, { timeout: 10000 });
     expect(page.url()).toContain("/login");
   });
 
   // Test 11: API returns 401 when not authenticated (moved from auth.spec.ts)
   test("11. API returns 401 when not authenticated", async ({ request }) => {
-    const response = await request.get("/api/matches/for-me");
+    const response = await request.get("/api/spaces");
     expect(response.status()).toBe(401);
   });
 });

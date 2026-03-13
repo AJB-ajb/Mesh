@@ -57,7 +57,7 @@ describe("enter-to-send", () => {
 
   beforeEach(() => {
     onSubmit = vi.fn();
-    onSubmitRef = { current: onSubmit };
+    onSubmitRef = { current: onSubmit as unknown as () => void };
     view = createEditor(onSubmitRef);
   });
 
