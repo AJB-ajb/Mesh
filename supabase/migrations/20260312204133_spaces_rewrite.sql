@@ -85,6 +85,7 @@ create table space_postings (
 
 create index idx_space_postings_space on space_postings(space_id, created_at);
 create index idx_space_postings_status on space_postings(space_id, status);
+create index idx_space_postings_embedding on space_postings using ivfflat (embedding vector_cosine_ops);
 
 -- ---------------------------------------------------------------------------
 -- 2. Back-references (deferred FKs)
@@ -182,36 +183,59 @@ create index idx_space_postings_fts on space_postings
 
 -- is_space_member: recursive CTE walking inherits_members chain
 create or replace function is_space_member(p_space_id uuid, p_user_id uuid)
-returns boolean as $$
-  with recursive chain as (
-    select id, parent_space_id, inherits_members, is_global
-    from spaces where id = p_space_id
-    union all
-    select s.id, s.parent_space_id, s.inherits_members, s.is_global
-    from spaces s
-    join chain c on s.id = c.parent_space_id
-    where c.inherits_members = true
-  )
-  select exists (
-    select 1 from chain where is_global = true
-    union all
-    select 1 from chain c
-    join space_members m on m.space_id = c.id
-    where m.user_id = p_user_id
+returns boolean
+language plpgsql stable security definer as $$
+begin
+  -- Fast path: non-inherited space
+  if not (select coalesce(inherits_members, false) from spaces where id = p_space_id) then
+    return exists(select 1 from space_members where space_id = p_space_id and user_id = p_user_id)
+      or (select coalesce(is_global, false) from spaces where id = p_space_id);
+  end if;
+
+  -- Slow path: walk inherits_members chain via recursive CTE
+  return (
+    with recursive chain as (
+      select id, parent_space_id, inherits_members, is_global
+      from spaces where id = p_space_id
+      union all
+      select s.id, s.parent_space_id, s.inherits_members, s.is_global
+      from spaces s
+      join chain c on s.id = c.parent_space_id
+      where c.inherits_members = true
+    )
+    select exists (
+      select 1 from chain where is_global = true
+      union all
+      select 1 from chain c
+      join space_members m on m.space_id = c.id
+      where m.user_id = p_user_id
+    )
   );
-$$ language sql stable security definer;
+end;
+$$;
 
 -- ---------------------------------------------------------------------------
 -- 7. Triggers
 -- ---------------------------------------------------------------------------
 
--- Increment unread count for all members except sender on message insert
+-- Increment unread count for all members (direct + inherited) except sender on message insert
 create or replace function trg_increment_unread_count()
 returns trigger as $$
 begin
+  -- Walk the inherits_members chain upward to find all spaces whose members
+  -- should be notified about this message.
+  with recursive chain as (
+    select id, parent_space_id, inherits_members
+    from spaces where id = NEW.space_id
+    union all
+    select s.id, s.parent_space_id, s.inherits_members
+    from spaces s
+    join chain c on s.id = c.parent_space_id
+    where c.inherits_members = true
+  )
   update space_members
   set unread_count = unread_count + 1
-  where space_id = NEW.space_id
+  where space_id in (select id from chain)
     and user_id is distinct from NEW.sender_id;
   return NEW;
 end;
@@ -322,9 +346,24 @@ create policy space_members_delete on space_members for delete using (
   )
 );
 
--- space_messages: SELECT — member (visible_from respected)
+-- space_messages: SELECT — member (visible_from respected for direct members,
+-- inherited members see all since they have no direct space_members row)
 create policy space_messages_select on space_messages for select using (
-  is_space_member(space_id, auth.uid())
+  exists (
+    select 1 from space_members sm
+    where sm.space_id = space_messages.space_id
+      and sm.user_id = auth.uid()
+      and space_messages.created_at >= sm.visible_from
+  )
+  or (
+    -- inherited membership: space inherits and user is member of a parent
+    exists (
+      select 1 from spaces s
+      where s.id = space_messages.space_id
+        and s.inherits_members = true
+        and is_space_member(s.parent_space_id, auth.uid())
+    )
+  )
 );
 
 -- space_messages: INSERT — member
@@ -334,9 +373,11 @@ create policy space_messages_insert on space_messages for insert
     and is_space_member(space_id, auth.uid())
   );
 
--- space_postings: SELECT — member of space or global
+-- space_postings: SELECT — member of space, global space, or public posting
 create policy space_postings_select on space_postings for select using (
   is_space_member(space_id, auth.uid())
+  or exists (select 1 from spaces where id = space_postings.space_id and is_global = true)
+  or visibility = 'public'
 );
 
 -- space_postings: INSERT — member of space

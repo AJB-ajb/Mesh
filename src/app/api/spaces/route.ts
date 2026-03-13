@@ -1,5 +1,6 @@
 import { withAuth } from "@/lib/api/with-auth";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
+import { verifySpaceMembership } from "@/lib/api/space-guards";
 import type { SpaceInsert, SpaceListItem } from "@/lib/supabase/types";
 
 /**
@@ -32,7 +33,11 @@ export const GET = withAuth(async (req, { user, supabase }) => {
     .range(offset, offset + limit - 1);
 
   if (error) {
-    throw new AppError("INTERNAL", `Failed to fetch spaces: ${error.message}`, 500);
+    throw new AppError(
+      "INTERNAL",
+      `Failed to fetch spaces: ${error.message}`,
+      500,
+    );
   }
 
   return apiSuccess({ spaces: (spaces ?? []) as SpaceListItem[] });
@@ -50,6 +55,10 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     settings?: SpaceInsert["settings"];
   }>(req);
 
+  if (body.parent_space_id) {
+    await verifySpaceMembership(supabase, body.parent_space_id, user.id);
+  }
+
   const { data: space, error: insertError } = await supabase
     .from("spaces")
     .insert({
@@ -64,11 +73,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
 
   if (insertError) {
     if (insertError.code === "23503") {
-      throw new AppError(
-        "VALIDATION",
-        "Parent space not found",
-        400,
-      );
+      throw new AppError("VALIDATION", "Parent space not found", 400);
     }
     throw new AppError(
       "INTERNAL",
@@ -78,13 +83,11 @@ export const POST = withAuth(async (req, { user, supabase }) => {
   }
 
   // Add creator as admin member
-  const { error: memberError } = await supabase
-    .from("space_members")
-    .insert({
-      space_id: space.id,
-      user_id: user.id,
-      role: "admin",
-    });
+  const { error: memberError } = await supabase.from("space_members").insert({
+    space_id: space.id,
+    user_id: user.id,
+    role: "admin",
+  });
 
   if (memberError) {
     // Rollback space creation on membership failure

@@ -3,7 +3,10 @@
  */
 
 import { AppError } from "@/lib/errors";
-import type { SpacePostingInsert, SpacePostingUpdate } from "@/lib/supabase/types";
+import type {
+  SpacePostingInsert,
+  SpacePostingUpdate,
+} from "@/lib/supabase/types";
 
 export interface SpacePostingBody {
   text?: string;
@@ -32,8 +35,12 @@ export function validateSpacePostingBody(
 
   if (body.capacity !== undefined) {
     const cap = Number(body.capacity);
-    if (!Number.isFinite(cap) || cap < 1) {
-      throw new AppError("VALIDATION", "Capacity must be at least 1", 400);
+    if (!Number.isFinite(cap) || cap < 1 || cap > 100) {
+      throw new AppError(
+        "VALIDATION",
+        "Capacity must be between 1 and 100",
+        400,
+      );
     }
   }
 
@@ -127,9 +134,7 @@ export function buildSpacePostingUpdateRow(
     row.team_size_min = Math.max(1, Number(body.teamSizeMin) || 1);
   }
   if (body.deadline !== undefined) {
-    row.deadline = body.deadline
-      ? new Date(body.deadline).toISOString()
-      : null;
+    row.deadline = body.deadline ? new Date(body.deadline).toISOString() : null;
   }
   if (body.activityDate !== undefined) {
     row.activity_date = body.activityDate

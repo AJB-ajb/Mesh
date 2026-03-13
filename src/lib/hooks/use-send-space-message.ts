@@ -69,7 +69,7 @@ export function useSendSpaceMessage({
 
           // Optimistic update: add message to SWR cache immediately
           const optimisticMsg: SpaceMessageWithSender = {
-            id: `optimistic-${Date.now()}`,
+            id: crypto.randomUUID(),
             space_id: spaceId,
             sender_id: senderId,
             type: "message",
@@ -85,7 +85,11 @@ export function useSendSpaceMessage({
           const messagesKey = cacheKeys.spaceMessages(spaceId);
           mutate(
             messagesKey,
-            (current: { messages: SpaceMessageWithSender[]; hasMore: boolean } | undefined) => {
+            (
+              current:
+                | { messages: SpaceMessageWithSender[]; hasMore: boolean }
+                | undefined,
+            ) => {
               if (!current) return current;
               return {
                 ...current,
@@ -96,14 +100,12 @@ export function useSendSpaceMessage({
           );
 
           // Send to server
-          const { error } = await supabase
-            .from("space_messages")
-            .insert({
-              space_id: spaceId,
-              sender_id: senderId,
-              type: "message" as SpaceMessageType,
-              content: trimmed,
-            });
+          const { error } = await supabase.from("space_messages").insert({
+            space_id: spaceId,
+            sender_id: senderId,
+            type: "message" as SpaceMessageType,
+            content: trimmed,
+          });
 
           if (error) {
             console.error("[SendSpaceMessage] Error:", error);
@@ -115,6 +117,7 @@ export function useSendSpaceMessage({
 
           // Revalidate to get the real message with server-assigned ID
           mutate(messagesKey);
+          mutate(cacheKeys.spaces());
         } else {
           // Posting mode: create a space posting, then insert a message referencing it
           const postingData: SpacePostingInsert = {
@@ -160,9 +163,10 @@ export function useSendSpaceMessage({
             return false;
           }
 
-          // Revalidate both messages and postings caches
+          // Revalidate messages, postings, and space list caches
           mutate(cacheKeys.spaceMessages(spaceId));
           mutate(cacheKeys.spacePostings(spaceId));
+          mutate(cacheKeys.spaces());
         }
 
         setIsSending(false);

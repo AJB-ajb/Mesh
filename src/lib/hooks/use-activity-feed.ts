@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { cacheKeys } from "@/lib/swr/keys";
@@ -70,22 +70,28 @@ export function useActivityFeed() {
 
   const userId = data?.userId ?? null;
 
+  const mutateRef = useRef(mutate);
+  useEffect(() => {
+    mutateRef.current = mutate;
+  }, [mutate]);
+
   // Subscribe to new activity cards in real time
   useEffect(() => {
     if (!userId) return;
 
     const channel = subscribeToActivityCards(userId, () => {
-      mutate();
+      mutateRef.current();
     });
 
     return () => {
       unsubscribeChannel(channel);
     };
-  }, [userId, mutate]);
+  }, [userId]);
 
   // Derive pending count from data
   const pendingCount =
-    data?.cards.filter((c: ActivityCardWithDetails) => c.status === "pending").length ?? 0;
+    data?.cards.filter((c: ActivityCardWithDetails) => c.status === "pending")
+      .length ?? 0;
 
   // Act on a card (change status)
   const actOnCard = useCallback(

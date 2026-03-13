@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useState, useRef } from "react";
 import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { cacheKeys } from "@/lib/swr/keys";
@@ -64,18 +64,27 @@ export function useSpaceMessages(spaceId: string | null) {
 
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
+  const mutateRef = useRef(mutate);
+  useEffect(() => {
+    mutateRef.current = mutate;
+  }, [mutate]);
+
   // Subscribe to new space messages in real time
   useEffect(() => {
     if (!spaceId) return;
 
     const channel = subscribeToSpaceMessages(spaceId, (newMsg) => {
       // Append the new message to the cache
-      mutate(
+      mutateRef.current(
         (current: MessagesData | undefined) => {
           if (!current) return current;
 
           // Avoid duplicates (in case SWR revalidation already picked it up)
-          if (current.messages.some((m: SpaceMessageWithSender) => m.id === newMsg.id)) {
+          if (
+            current.messages.some(
+              (m: SpaceMessageWithSender) => m.id === newMsg.id,
+            )
+          ) {
             return current;
           }
 
@@ -105,15 +114,29 @@ export function useSpaceMessages(spaceId: string | null) {
     return () => {
       unsubscribeChannel(channel);
     };
-  }, [spaceId, mutate]);
+  }, [spaceId]);
+
+  const dataRef = useRef(data);
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Load older messages (cursor-based pagination)
   const loadMore = useCallback(async () => {
-    if (!spaceId || !data?.messages.length || !data.hasMore) return;
+    const currentData = dataRef.current;
+    if (!spaceId || !currentData?.messages.length || !currentData.hasMore)
+      return;
 
     setIsLoadingMore(true);
     const supabase = createClient();
-    const oldestMessage = data.messages[0];
+    const oldestMessage = currentData.messages[0];
 
     try {
       const { data: olderData, error: olderError } = await supabase
@@ -130,7 +153,7 @@ export function useSpaceMessages(spaceId: string | null) {
         olderData ?? []
       ).reverse() as SpaceMessageWithSender[];
 
-      mutate(
+      mutateRef.current(
         (current: MessagesData | undefined) => {
           if (!current) return current;
           return {
@@ -141,9 +164,9 @@ export function useSpaceMessages(spaceId: string | null) {
         { revalidate: false },
       );
     } finally {
-      setIsLoadingMore(false);
+      if (isMountedRef.current) setIsLoadingMore(false);
     }
-  }, [spaceId, data, mutate]);
+  }, [spaceId]);
 
   // Mark messages as read
   const markAsRead = useCallback(async () => {
