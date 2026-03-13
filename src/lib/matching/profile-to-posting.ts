@@ -104,9 +104,7 @@ export async function matchProfileToPostings(
     .eq("type", "match")
     .in("posting_id", postingIds);
 
-  const cardMap = new Map(
-    existingCards?.map((c) => [c.posting_id, c]) || [],
-  );
+  const cardMap = new Map(existingCards?.map((c) => [c.posting_id, c]) || []);
 
   // Transform results into match objects
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -134,7 +132,7 @@ export async function matchProfileToPostings(
       status: "open",
       created_at: "",
       updated_at: "",
-      expires_at: null,
+      expires_at: "",
       identified_roles: null,
       in_discover: true,
       link_token: null,
@@ -182,10 +180,10 @@ export async function matchProfileToPostings(
       const candidates = topN
         .map((m) => {
           const ps = postingSourceMap.get(m.posting.id);
-          const postingText =
-            ps?.text || m.posting.description || "";
+          const postingText = ps?.text || m.posting.description || "";
           return {
-            postingTitle: m.posting.title || m.posting.category || "Space Posting",
+            postingTitle:
+              m.posting.title || m.posting.category || "Space Posting",
             postingText,
             profileText,
             fastFilterScore: m.score,
@@ -211,8 +209,7 @@ export async function matchProfileToPostings(
         topN.forEach((m) => {
           if (resultIdx < deepResults.length) {
             const ps = postingSourceMap.get(m.posting.id);
-            const postingText =
-              ps?.text || m.posting.description || "";
+            const postingText = ps?.text || m.posting.description || "";
             if (postingText) {
               m.deepMatchResult = deepResults[resultIdx];
               m.score = blendScores(m.score, deepResults[resultIdx].score);
@@ -263,7 +260,9 @@ export async function createMatchRecords(
     const { error } = await supabase.from("activity_cards").insert(cardInserts);
 
     if (error) {
-      throw new Error(`Failed to create match activity cards: ${error.message}`);
+      throw new Error(
+        `Failed to create match activity cards: ${error.message}`,
+      );
     }
   }
 
