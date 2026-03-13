@@ -7,6 +7,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { labels } from "@/lib/labels";
+import { ROUTES } from "@/lib/routes";
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -42,9 +43,9 @@ export default function DashboardError({ error, reset }: ErrorProps) {
           {labels.error.tryAgain}
         </Button>
         <Button variant="outline" asChild>
-          <Link href="/posts">
+          <Link href={ROUTES.home}>
             <LayoutDashboard className="size-4" />
-            {labels.error.goToPosts}
+            {labels.error.goToSpaces}
           </Link>
         </Button>
       </div>

@@ -18,15 +18,16 @@ import { useRovingIndex } from "@/lib/hooks/use-roving-index";
 import { Button } from "@/components/ui/button";
 import { Logo } from "./logo";
 import { NavItem } from "./nav-item";
+import { ROUTES } from "@/lib/routes";
 
 const navigation = [
-  { href: "/spaces", icon: MessageSquare, label: labels.nav.spaces },
-  { href: "/activity", icon: Bell, label: labels.nav.activity },
+  { href: ROUTES.spaces, icon: MessageSquare, label: labels.nav.spaces },
+  { href: ROUTES.activity, icon: Bell, label: labels.nav.activity },
 ];
 
 const secondaryNavigation = [
-  { href: "/profile", icon: User, label: labels.nav.profile },
-  { href: "/settings", icon: Settings, label: labels.nav.settings },
+  { href: ROUTES.profile, icon: User, label: labels.nav.profile },
+  { href: ROUTES.settings, icon: Settings, label: labels.nav.settings },
 ];
 
 interface SidebarProps {
@@ -93,7 +94,7 @@ export function Sidebar({ className }: SidebarProps) {
             isCollapsed ? "md:opacity-0 md:w-0" : "opacity-100",
           )}
         >
-          <Logo href="/spaces" />
+          <Logo href={ROUTES.home} />
         </div>
         {/* Collapse toggle - desktop only */}
         <Button
@@ -123,7 +124,7 @@ export function Sidebar({ className }: SidebarProps) {
           )}
           asChild
         >
-          <Link href="/spaces">
+          <Link href={ROUTES.spaces}>
             <Plus className="size-4 flex-shrink-0" />
             <span
               className={cn(

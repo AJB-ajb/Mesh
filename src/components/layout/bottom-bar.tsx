@@ -7,12 +7,13 @@ import { MessageSquare, Bell, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { useMobileKeyboard } from "@/lib/hooks/use-mobile-keyboard";
+import { ROUTES } from "@/lib/routes";
 
 const tabs = [
-  { href: "/spaces", icon: MessageSquare, label: labels.nav.spaces },
-  { href: "/activity", icon: Bell, label: labels.nav.activity },
-  { href: "/profile", icon: User, label: labels.nav.profile },
-] as const;
+  { href: ROUTES.spaces, icon: MessageSquare, label: labels.nav.spaces },
+  { href: ROUTES.activity, icon: Bell, label: labels.nav.activity },
+  { href: ROUTES.profile, icon: User, label: labels.nav.profile },
+];
 
 export function BottomBar() {
   const pathname = usePathname();
