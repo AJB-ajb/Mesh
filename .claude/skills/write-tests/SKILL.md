@@ -1,11 +1,12 @@
 ---
 name: write-tests
 description: >
-  Write tests that find bugs — not tests that re-specify the implementation. Invoked after
-  implementing a feature, when fixing a bug, or to audit existing test quality. Enforces
-  adversarial test thinking: tests approach code from a different angle than the implementation,
-  target specific failure modes, and skip what TypeScript already catches. Use when someone says
-  'write tests', 'add tests', 'test this', 'review tests', 'audit tests', or 'improve tests'.
+  Write tests that find bugs — not tests that re-specify the implementation. Enforces adversarial
+  test thinking: tests approach code from a different angle than the implementation, target specific
+  failure modes, and skip what TypeScript already catches. IMPORTANT: Trigger proactively after
+  completing any feature implementation or bug fix that adds/modifies non-trivial logic — don't
+  wait for the user to ask for tests. Also trigger when someone says 'write tests', 'add tests',
+  'test this', 'review tests', 'audit tests', or 'improve tests'.
 argument-hint: "[file/module path] [audit]"
 ---
 

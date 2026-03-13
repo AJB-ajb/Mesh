@@ -1,10 +1,11 @@
 ---
 name: agents-md
 description: >
-  Edit .AGENTS.md or CLAUDE.md project instructions. Use when adding, updating, or removing
-  conventions, workflow rules, or agent instructions. Ensures changes are concise, non-duplicative,
-  and token-efficient. Use when someone says 'update agents', 'add to claude.md', 'change the rules',
-  'add a convention', or 'modify agent instructions'.
+  Edit .AGENTS.md or CLAUDE.md project instructions. Ensures changes are concise, non-duplicative,
+  and token-efficient. IMPORTANT: Trigger this skill whenever you are about to edit .AGENTS.md or
+  CLAUDE.md — even if the edit arises as part of a different task (e.g. adding a worktree step
+  during a permissions update). Also trigger when someone says 'update agents', 'add to claude.md',
+  'change the rules', 'add a convention', or 'modify agent instructions'.
 argument-hint: "[what to add or change]"
 ---
 

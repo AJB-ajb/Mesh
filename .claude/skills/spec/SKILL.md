@@ -2,9 +2,10 @@
 name: spec
 description: >
   Navigate, read, create, and update product specifications and technical documentation.
-  Covers spec/ (what to build) and docs/ (how it's built). Use when someone says 'read the spec',
-  'update the spec', 'write a spec', 'check the docs', 'update the data model', 'architecture',
-  or when starting work on a feature that needs spec or docs context.
+  Covers spec/ (what to build) and docs/ (how it's built). IMPORTANT: Trigger proactively before
+  starting implementation of any feature or significant change — read the relevant spec to ensure
+  alignment. Also trigger when someone says 'read the spec', 'update the spec', 'write a spec',
+  'check the docs', 'update the data model', or 'architecture'.
 argument-hint: "[topic or feature name]"
 ---
 
