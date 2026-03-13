@@ -2,6 +2,8 @@ import { labels } from "@/lib/labels";
 
 export type SlashCommandType = "action" | "content" | "setting" | "immediate";
 
+export type EditorContext = "posting" | "profile" | "message" | "state-text";
+
 export interface SlashCommand {
   /** Unique identifier used for matching and overlay routing */
   name: string;
@@ -14,8 +16,8 @@ export interface SlashCommand {
   /** "action" opens an overlay, "content" inserts text directly,
    *  "setting" opens an inline picker, "immediate" runs instantly */
   type: SlashCommandType;
-  /** Restrict to a specific context; omit to show everywhere */
-  context?: "posting" | "profile";
+  /** Restrict to specific context(s); omit to show everywhere */
+  context?: EditorContext | EditorContext[];
 }
 
 export const SLASH_COMMANDS: SlashCommand[] = [
@@ -46,6 +48,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     label: labels.slashCommands.template.label,
     description: labels.slashCommands.template.description,
     type: "action",
+    context: ["posting", "profile"],
   },
   {
     name: "hidden",
@@ -53,6 +56,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     label: labels.slashCommands.hidden.label,
     description: labels.slashCommands.hidden.description,
     type: "content",
+    context: "posting",
   },
   {
     name: "question",
@@ -162,10 +166,12 @@ export function filterCommands(
  * Filter commands by context. Commands without a context are always included.
  */
 export function filterCommandsByContext(
-  context?: "posting" | "profile",
+  context?: EditorContext,
 ): SlashCommand[] {
   if (!context) return SLASH_COMMANDS;
-  return SLASH_COMMANDS.filter(
-    (cmd) => !cmd.context || cmd.context === context,
-  );
+  return SLASH_COMMANDS.filter((cmd) => {
+    if (!cmd.context) return true;
+    if (Array.isArray(cmd.context)) return cmd.context.includes(context);
+    return cmd.context === context;
+  });
 }
