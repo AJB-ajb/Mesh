@@ -44,6 +44,7 @@ export async function matchProfileToPostings(
   limit: number = MATCHING.DEFAULT_RESULT_LIMIT,
   filters?: MatchFilters,
   deepMatch: boolean = false,
+  spaceId?: string,
 ): Promise<ProfileToPostingMatch[]> {
   const supabase = await createClient();
 
@@ -72,32 +73,17 @@ export async function matchProfileToPostings(
     return [];
   }
 
-  // Build RPC params with optional hard filters
+  // Build RPC params for the v2 space_postings-based matching
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rpcParams: Record<string, any> = {
-    user_embedding: embedding,
-    user_id_param: userId,
-    match_limit: limit,
+    target_user_id: userId,
+    match_count: limit,
   };
 
-  if (filters?.category) rpcParams.category_filter = filters.category;
-  if (filters?.context) rpcParams.context_filter = filters.context;
-  if (filters?.parentPostingId)
-    rpcParams.parent_posting_id_filter = filters.parentPostingId;
-  if (filters?.locationMode || profile.location_mode) {
-    rpcParams.location_mode_filter =
-      filters?.locationMode ?? profile.location_mode;
-  }
-  if (profile.location_lat != null && profile.location_lng != null) {
-    rpcParams.user_location_lat = profile.location_lat;
-    rpcParams.user_location_lng = profile.location_lng;
-  }
-  if (filters?.maxDistanceKm) {
-    rpcParams.max_distance_km = filters.maxDistanceKm;
-  }
+  if (spaceId) rpcParams.scope_space_id = spaceId;
 
   const { data, error } = await supabase.rpc(
-    "match_postings_to_user",
+    "match_postings_to_user_v2",
     rpcParams,
   );
 
@@ -109,80 +95,59 @@ export async function matchProfileToPostings(
     return [];
   }
 
-  // Check for existing match records
+  // Check for existing activity_cards (type: 'match') for these postings
   const postingIds = data.map((row: { posting_id: string }) => row.posting_id);
-  const { data: existingMatches } = await supabase
-    .from("matches")
-    .select("id, posting_id, similarity_score, status, score_breakdown")
+  const { data: existingCards } = await supabase
+    .from("activity_cards")
+    .select("id, posting_id, score, status, data")
     .eq("user_id", userId)
+    .eq("type", "match")
     .in("posting_id", postingIds);
 
-  const matchMap = new Map(
-    existingMatches?.map((m) => [m.posting_id, m]) || [],
-  );
-
-  // Compute all breakdowns in a single batch RPC call for postings without cached breakdowns
-  const postingsNeedingBreakdown = postingIds.filter(
-    (id: string) => !matchMap.get(id)?.score_breakdown,
-  );
-  const breakdownMap = new Map<string, ScoreBreakdown>();
-
-  if (postingsNeedingBreakdown.length > 0) {
-    const { data: batchBreakdowns } = await supabase.rpc(
-      "compute_match_breakdowns_batch",
-      {
-        profile_user_id: userId,
-        posting_ids: postingsNeedingBreakdown,
-      },
-    );
-    for (const r of batchBreakdowns ?? []) {
-      breakdownMap.set(r.posting_id, r.breakdown as ScoreBreakdown);
-    }
-  }
+  const cardMap = new Map(existingCards?.map((c) => [c.posting_id, c]) || []);
 
   // Transform results into match objects
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const matches: ProfileToPostingMatch[] = data.map((row: any) => {
     const posting: Posting = {
       id: row.posting_id,
-      creator_id: row.creator_id,
-      title: row.title,
-      description: row.description,
-      team_size_min: row.team_size_min || 1,
-      team_size_max: row.team_size_max || 1,
-      category: row.category || null,
-      context_identifier: row.context_identifier || null,
-      parent_posting_id: row.parent_posting_id || null,
-      tags: row.tags || [],
-      visibility: row.visibility ?? "public",
+      creator_id: row.posting_created_by,
+      title: "",
+      description: row.posting_text || "",
+      team_size_min: 1,
+      team_size_max: 1,
+      category: row.posting_category || null,
+      context_identifier: null,
+      parent_posting_id: null,
+      tags: row.posting_tags || [],
+      visibility: "public",
       mode: "open",
-      location_preference: row.location_preference ?? null,
-      natural_language_criteria: row.natural_language_criteria || null,
-      estimated_time: row.estimated_time || null,
-      auto_accept: row.auto_accept ?? false,
-      availability_mode: row.availability_mode || "flexible",
-      timezone: row.timezone || null,
+      location_preference: null,
+      natural_language_criteria: null,
+      estimated_time: null,
+      auto_accept: false,
+      availability_mode: "flexible",
+      timezone: null,
       embedding: null,
-      status: row.status,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      expires_at: row.expires_at,
-      identified_roles: row.identified_roles ?? null,
-      in_discover: row.in_discover ?? row.visibility !== "private",
-      link_token: row.link_token ?? null,
+      status: "open",
+      created_at: "",
+      updated_at: "",
+      expires_at: "",
+      identified_roles: null,
+      in_discover: true,
+      link_token: null,
     };
 
-    const existingMatch = matchMap.get(row.posting_id);
+    const existingCard = cardMap.get(row.posting_id);
     const scoreBreakdown: ScoreBreakdown | null =
-      (existingMatch?.score_breakdown as ScoreBreakdown) ??
-      breakdownMap.get(row.posting_id) ??
-      null;
+      (existingCard?.data as { score_breakdown?: ScoreBreakdown })
+        ?.score_breakdown ?? null;
 
     return {
       posting,
-      score: row.similarity,
+      score: row.score,
       scoreBreakdown,
-      matchId: existingMatch?.id,
+      matchId: existingCard?.id,
     };
   });
 
@@ -190,12 +155,12 @@ export async function matchProfileToPostings(
   if (deepMatch && isDeepMatchAvailable()) {
     const topN = matches.slice(0, DEEP_MATCH.DEFAULT_TOP_N);
 
-    // Fetch source texts for posting and profile
-    const postingIds = topN.map((m) => m.posting.id);
+    // Fetch source texts for space_postings and profile
+    const deepPostingIds = topN.map((m) => m.posting.id);
     const { data: postingSources } = await supabase
-      .from("postings")
-      .select("id, source_text, description")
-      .in("id", postingIds);
+      .from("space_postings")
+      .select("id, text")
+      .in("id", deepPostingIds);
     const { data: profileSource } = await supabase
       .from("profiles")
       .select("source_text, bio, headline")
@@ -212,13 +177,15 @@ export async function matchProfileToPostings(
       "";
 
     if (profileText) {
-      const candidates = topN
+      const candidatesWithIds = topN
         .map((m) => {
           const ps = postingSourceMap.get(m.posting.id);
-          const postingText =
-            ps?.source_text || ps?.description || m.posting.description || "";
+          const postingText = ps?.text || m.posting.description || "";
+          if (!postingText) return null;
           return {
-            postingTitle: m.posting.title,
+            postingId: m.posting.id,
+            postingTitle:
+              m.posting.title || m.posting.category || "Space Posting",
             postingText,
             profileText,
             fastFilterScore: m.score,
@@ -228,29 +195,29 @@ export async function matchProfileToPostings(
             semanticScore: m.scoreBreakdown?.semantic ?? null,
           };
         })
-        .filter((c) => c.postingText);
+        .filter((c): c is NonNullable<typeof c> => c !== null);
 
-      if (candidates.length > 0) {
+      if (candidatesWithIds.length > 0) {
         const deepResults = await deepMatchCandidates(
-          // Use the first posting title as a placeholder — each candidate
-          // has its own posting context in the prompt
-          candidates[0].postingTitle,
-          candidates[0].postingText,
-          candidates,
+          candidatesWithIds[0].postingTitle,
+          candidatesWithIds[0].postingText,
+          candidatesWithIds,
         );
 
-        // Attach deep match results and blend scores
-        let resultIdx = 0;
+        // Map results back by index (candidatesWithIds and deepResults are 1:1)
+        const resultMap = new Map<string, DeepMatchResult>();
+        candidatesWithIds.forEach((c, i) => {
+          if (i < deepResults.length) {
+            resultMap.set(c.postingId, deepResults[i]);
+          }
+        });
+
+        // Apply deep match results to the matching topN entries
         topN.forEach((m) => {
-          if (resultIdx < deepResults.length) {
-            const ps = postingSourceMap.get(m.posting.id);
-            const postingText =
-              ps?.source_text || ps?.description || m.posting.description || "";
-            if (postingText) {
-              m.deepMatchResult = deepResults[resultIdx];
-              m.score = blendScores(m.score, deepResults[resultIdx].score);
-              resultIdx++;
-            }
+          const dr = resultMap.get(m.posting.id);
+          if (dr) {
+            m.deepMatchResult = dr;
+            m.score = blendScores(m.score, dr.score);
           }
         });
 
@@ -264,9 +231,9 @@ export async function matchProfileToPostings(
 }
 
 /**
- * Creates or updates match records in the database
+ * Creates or updates match records as activity_cards (type: 'match')
  * Called after finding matches to persist them
- * Also updates existing matches that are missing score_breakdown
+ * Also updates existing cards that are missing score data
  */
 export async function createMatchRecords(
   userId: string,
@@ -274,51 +241,57 @@ export async function createMatchRecords(
 ): Promise<void> {
   const supabase = await createClient();
 
-  // Create new matches (exclude near-zero scores)
-  const matchInserts = matches
+  // Create new activity_cards for matches (exclude near-zero scores)
+  const cardInserts = matches
     .filter((m) => !m.matchId && m.score > MATCH_SCORE_THRESHOLD)
     .map((m) => ({
       user_id: userId,
+      type: "match" as const,
+      title: m.posting.title || m.posting.category || "Match",
+      subtitle: m.posting.description?.slice(0, 100) || null,
       posting_id: m.posting.id,
-      similarity_score: m.score,
-      score_breakdown: m.scoreBreakdown,
+      from_user_id: m.posting.creator_id,
+      score: m.score,
+      data: {
+        score_breakdown: m.scoreBreakdown,
+        deep_match: m.deepMatchResult ?? null,
+      },
       status: "pending" as const,
     }));
 
-  if (matchInserts.length > 0) {
-    const { error } = await supabase.from("matches").upsert(matchInserts, {
-      onConflict: "posting_id,user_id",
-      ignoreDuplicates: false,
-    });
+  if (cardInserts.length > 0) {
+    const { error } = await supabase.from("activity_cards").insert(cardInserts);
 
     if (error) {
-      throw new Error(`Failed to create match records: ${error.message}`);
+      throw new Error(
+        `Failed to create match activity cards: ${error.message}`,
+      );
     }
   }
 
-  // Update existing matches that are missing score_breakdown
+  // Update existing cards that have new score data
   const updatesToMake = matches
-    .filter((m) => m.matchId && m.scoreBreakdown) // Has matchId and computed breakdown
+    .filter((m) => m.matchId && m.scoreBreakdown)
     .map((m) => ({
       id: m.matchId!,
-      score_breakdown: m.scoreBreakdown,
+      data: {
+        score_breakdown: m.scoreBreakdown,
+        deep_match: m.deepMatchResult ?? null,
+      },
     }));
 
   if (updatesToMake.length > 0) {
-    // Update each match individually to set score_breakdown
     for (const update of updatesToMake) {
       const { error } = await supabase
-        .from("matches")
-        .update({ score_breakdown: update.score_breakdown })
-        .eq("id", update.id)
-        .is("score_breakdown", null); // Only update if currently null
+        .from("activity_cards")
+        .update({ data: update.data })
+        .eq("id", update.id);
 
       if (error) {
         console.warn(
-          `Failed to update breakdown for match ${update.id}:`,
+          `Failed to update data for activity card ${update.id}:`,
           error,
         );
-        // Don't throw - this is not critical
       }
     }
   }

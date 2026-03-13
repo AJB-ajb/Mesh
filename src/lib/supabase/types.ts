@@ -434,6 +434,280 @@ export interface MatchWithDetails extends Match {
 }
 
 // ============================================
+// SPACE TYPES
+// ============================================
+
+export type SpaceVisibility = "private" | "public" | "link";
+
+/** Derived space type — not stored in DB, computed from space properties */
+export type SpaceType = "global" | "dm" | "small" | "large";
+
+export interface SpaceSettings {
+  posting_only?: boolean;
+  visibility?: SpaceVisibility;
+  auto_accept?: boolean;
+  max_members?: number | null;
+}
+
+export interface Space {
+  id: string;
+  name: string | null;
+  state_text: string | null;
+  parent_space_id: string | null;
+  source_posting_id: string | null;
+  created_by: string;
+  is_global: boolean;
+  inherits_members: boolean;
+  settings: SpaceSettings;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SpaceInsert {
+  id?: string;
+  name?: string | null;
+  state_text?: string | null;
+  parent_space_id?: string | null;
+  source_posting_id?: string | null;
+  created_by: string;
+  is_global?: boolean;
+  inherits_members?: boolean;
+  settings?: SpaceSettings;
+}
+
+export interface SpaceUpdate {
+  name?: string | null;
+  state_text?: string | null;
+  settings?: SpaceSettings;
+  source_posting_id?: string | null;
+  inherits_members?: boolean;
+}
+
+// ============================================
+// SPACE MEMBER TYPES
+// ============================================
+
+export type SpaceMemberRole = "member" | "admin";
+
+export interface SpaceMember {
+  space_id: string;
+  user_id: string;
+  role: SpaceMemberRole;
+  joined_at: string;
+  visible_from: string;
+  last_read_at: string;
+  unread_count: number;
+  muted: boolean;
+  pinned: boolean;
+  pin_order: number | null;
+}
+
+// ============================================
+// SPACE MESSAGE TYPES
+// ============================================
+
+export type SpaceMessageType = "message" | "posting" | "system" | "card";
+
+export interface SpaceMessage {
+  id: string;
+  space_id: string;
+  sender_id: string | null;
+  type: SpaceMessageType;
+  content: string | null;
+  posting_id: string | null;
+  card_id: string | null;
+  created_at: string;
+}
+
+export interface SpaceMessageInsert {
+  space_id: string;
+  sender_id?: string | null;
+  type: SpaceMessageType;
+  content?: string | null;
+  posting_id?: string | null;
+}
+
+// ============================================
+// SPACE POSTING TYPES
+// ============================================
+
+export type SpacePostingStatus =
+  | "open"
+  | "active"
+  | "closed"
+  | "filled"
+  | "expired";
+
+export interface SpacePosting {
+  id: string;
+  space_id: string;
+  sub_space_id: string | null;
+  created_by: string;
+  text: string;
+  category: string | null;
+  tags: string[];
+  capacity: number;
+  team_size_min: number;
+  deadline: string | null;
+  activity_date: string | null;
+  visibility: "public" | "private";
+  auto_accept: boolean;
+  status: SpacePostingStatus;
+  extracted_metadata: Json;
+  embedding: number[] | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SpacePostingInsert {
+  space_id: string;
+  created_by: string;
+  text: string;
+  category?: string | null;
+  tags?: string[];
+  capacity?: number;
+  team_size_min?: number;
+  deadline?: string | null;
+  activity_date?: string | null;
+  visibility?: "public" | "private";
+  auto_accept?: boolean;
+  extracted_metadata?: Json;
+}
+
+export interface SpacePostingUpdate {
+  text?: string;
+  category?: string | null;
+  tags?: string[];
+  capacity?: number;
+  team_size_min?: number;
+  deadline?: string | null;
+  activity_date?: string | null;
+  visibility?: "public" | "private";
+  auto_accept?: boolean;
+  status?: SpacePostingStatus;
+  extracted_metadata?: Json;
+  sub_space_id?: string | null;
+}
+
+// ============================================
+// SPACE JOIN REQUEST TYPES
+// ============================================
+
+export type JoinRequestStatus =
+  | "pending"
+  | "accepted"
+  | "rejected"
+  | "withdrawn"
+  | "waitlisted";
+
+export interface SpaceJoinRequest {
+  id: string;
+  posting_id: string;
+  user_id: string;
+  status: JoinRequestStatus;
+  responses: Json | null;
+  waitlist_position: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================
+// SPACE INVITE TYPES
+// ============================================
+
+export type InviteMode = "sequential" | "parallel";
+export type InviteStatus = "active" | "completed" | "cancelled";
+
+export interface SpaceInvite {
+  id: string;
+  posting_id: string;
+  created_by: string;
+  mode: InviteMode;
+  ordered_list: string[];
+  current_index: number;
+  concurrent_max: number;
+  pending: string[];
+  declined: string[];
+  status: InviteStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================
+// ACTIVITY CARD TYPES
+// ============================================
+
+export type ActivityCardType =
+  | "match"
+  | "invite"
+  | "scheduling"
+  | "connection_request"
+  | "rsvp"
+  | "join_request";
+
+export type ActivityCardStatus = "pending" | "acted" | "dismissed" | "expired";
+
+export interface ActivityCard {
+  id: string;
+  user_id: string;
+  type: ActivityCardType;
+  title: string;
+  subtitle: string | null;
+  space_id: string | null;
+  posting_id: string | null;
+  from_user_id: string | null;
+  score: number | null;
+  data: Json;
+  status: ActivityCardStatus;
+  created_at: string;
+  acted_at: string | null;
+}
+
+// ============================================
+// JOINED / ENRICHED TYPES
+// ============================================
+
+/** Space with membership info for the current user */
+export interface SpaceWithMembership extends Space {
+  space_members: SpaceMember[];
+}
+
+/** Space list item with last message preview and derived type */
+export interface SpaceListItem extends Space {
+  type: SpaceType;
+  space_members: Pick<SpaceMember, "unread_count" | "pinned" | "muted" | "role">[];
+  last_message?: Pick<SpaceMessage, "content" | "type" | "created_at" | "sender_id"> | null;
+  member_count?: number;
+  other_member_profile?: Pick<Profile, "full_name" | "user_id"> | null;
+}
+
+/** Derive space type from space properties */
+export function deriveSpaceType(space: Space, memberCount?: number): SpaceType {
+  if (space.is_global) return "global";
+  if (memberCount !== undefined && memberCount <= 2 && !space.settings.posting_only) return "dm";
+  if (space.settings.posting_only || (memberCount !== undefined && memberCount > 10)) return "large";
+  return "small";
+}
+
+/** Space posting with creator profile */
+export interface SpacePostingWithCreator extends SpacePosting {
+  profiles: Pick<Profile, "full_name" | "user_id"> | null;
+}
+
+/** Activity card with related profile info */
+export interface ActivityCardWithDetails extends ActivityCard {
+  from_profile?: Pick<Profile, "full_name" | "user_id"> | null;
+  space_posting?: Pick<SpacePosting, "text" | "category" | "tags" | "status"> | null;
+}
+
+// ============================================
+// CONSTANTS
+// ============================================
+
+/** Fixed UUID for the Global Space (Explore) */
+export const GLOBAL_SPACE_ID = "00000000-0000-0000-0000-000000000001";
+
+// ============================================
 // API RESPONSE TYPES
 // ============================================
 

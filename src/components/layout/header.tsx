@@ -16,8 +16,6 @@ import {
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { GlobalSearch } from "./global-search";
 import { Logo } from "./logo";
-import { NotificationsDropdown } from "./notifications-dropdown";
-import { useNotifications } from "@/lib/hooks/use-notifications";
 import { useSignOut } from "@/lib/hooks/use-sign-out";
 
 interface HeaderProps {
@@ -25,7 +23,6 @@ interface HeaderProps {
 }
 
 export function Header({ className }: HeaderProps) {
-  const { userInitials } = useNotifications();
   const { signOut } = useSignOut();
 
   return (
@@ -37,7 +34,7 @@ export function Header({ className }: HeaderProps) {
     >
       {/* Logo for mobile */}
       <div className="md:hidden">
-        <Logo href="/posts" />
+        <Logo href="/spaces" />
       </div>
 
       {/* Global Search - desktop only */}
@@ -52,11 +49,6 @@ export function Header({ className }: HeaderProps) {
       <div className="flex items-center gap-1 sm:gap-2">
         <ThemeToggle className="size-11 sm:size-9" />
 
-        {/* Notifications - desktop only */}
-        <div className="hidden md:block">
-          <NotificationsDropdown className="size-11 sm:size-9" />
-        </div>
-
         {/* User dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -66,7 +58,7 @@ export function Header({ className }: HeaderProps) {
               className="size-11 sm:size-9 rounded-full"
             >
               <div className="flex size-8 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">
-                {userInitials}
+                <User className="size-4" />
               </div>
               <span className="sr-only">{labels.nav.userMenu}</span>
             </Button>
