@@ -37,9 +37,8 @@ const PUBLIC_PAGES = [
 ];
 
 const AUTHED_PAGES = [
-  { path: "/posts", name: "Posts" },
-  { path: "/discover", name: "Discover" },
-  { path: "/connections", name: "Connections" },
+  { path: "/spaces", name: "Spaces" },
+  { path: "/activity", name: "Activity" },
   { path: "/profile", name: "Profile" },
 ];
 
@@ -59,9 +58,8 @@ const PAGE_HEIGHT_LIMITS: Record<string, number> = {
   "/": 8, // Landing page — many sections, expected to be tall
   "/login": 3, // Auth card
   "/signup": 3, // Auth card
-  "/posts": 2, // AppShell h-dvh
-  "/discover": 2, // AppShell h-dvh
-  "/connections": 2, // AppShell h-dvh
+  "/spaces": 2, // AppShell h-dvh
+  "/activity": 2, // AppShell h-dvh
   "/profile": 3, // Profile may have some content
 };
 
@@ -245,11 +243,11 @@ test.describe("Layout > Viewport containment", () => {
     });
   });
 
-  test("Posts — header + bottom bar + page heading visible (mobile)", async ({
+  test("Spaces — header + bottom bar + page heading visible (mobile)", async ({
     page,
   }) => {
     test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-    await navigateToPage(page, "/posts", "mobile");
+    await navigateToPage(page, "/spaces", "mobile");
 
     await expect(page.locator("header")).toBeVisible();
     await expect(
@@ -262,11 +260,11 @@ test.describe("Layout > Viewport containment", () => {
     await expect(heading).toBeInViewport();
   });
 
-  test("Posts — sidebar + header visible, bottom bar hidden (desktop)", async ({
+  test("Spaces — sidebar + header visible, bottom bar hidden (desktop)", async ({
     page,
   }) => {
     test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-    await navigateToPage(page, "/posts", "desktop");
+    await navigateToPage(page, "/spaces", "desktop");
 
     await expect(page.locator("header")).toBeVisible();
     await expect(page.locator("aside")).toBeVisible();
@@ -323,24 +321,9 @@ test.describe("Layout > Page height", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("Layout > Element overlap", () => {
-  test("FAB does not overlap bottom bar (mobile)", async ({ page }) => {
-    test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-    await navigateToPage(page, "/posts", "mobile");
-
-    const result = await checkElementsDoNotOverlap(
-      page,
-      'a[href="/postings/new"]',
-      'nav[role="navigation"][aria-label="Tab navigation"]',
-    );
-    expect(
-      result.overlaps,
-      `FAB overlaps bottom bar — FAB: ${JSON.stringify(result.rectA)}, BottomBar: ${JSON.stringify(result.rectB)}`,
-    ).toBe(false);
-  });
-
   test("Header does not overlap main content (mobile)", async ({ page }) => {
     test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-    await navigateToPage(page, "/posts", "mobile");
+    await navigateToPage(page, "/spaces", "mobile");
 
     const result = await checkElementsDoNotOverlap(
       page,
@@ -480,152 +463,7 @@ test.describe("Layout > No clipped positioned elements", () => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// Group 10: Connections page — chat view on mobile
-//   The layout tests above only check the initial state (connection list).
-//   These tests click a connection to show the chat area and verify it
-//   renders properly on mobile — no clipping, text wrapping, input visible.
-// ---------------------------------------------------------------------------
-
-test.describe("Layout > Connections chat view (mobile)", () => {
-  test("Chat panel fits within viewport after selecting a connection", async ({
-    page,
-  }) => {
-    test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-    await navigateToPage(page, "/connections", "mobile");
-
-    // Click the first connection item
-    const firstConn = page.locator('button[class*="items-start"]').first();
-    const hasConnections = (await firstConn.count()) > 0;
-    test.skip(!hasConnections, "No connections to test");
-
-    await firstConn.click();
-    await page.waitForTimeout(500);
-
-    // The chat panel (Card) should be visible
-    const chatCard = page.locator('[data-slot="card"]').first();
-    await expect(chatCard).toBeVisible();
-
-    // Chat card should not exceed viewport width
-    const cardRect = await chatCard.boundingBox();
-    const viewport = page.viewportSize()!;
-    expect(
-      cardRect!.width,
-      `Chat card width (${cardRect!.width}px) should not exceed viewport width (${viewport.width}px)`,
-    ).toBeLessThanOrEqual(viewport.width);
-
-    // Chat card should not be clipped — its right edge should be within viewport
-    expect(
-      cardRect!.x + cardRect!.width,
-      `Chat card right edge exceeds viewport`,
-    ).toBeLessThanOrEqual(viewport.width + 1);
-  });
-
-  test("Chat header text is contained (not overflowing)", async ({ page }) => {
-    test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-    await navigateToPage(page, "/connections", "mobile");
-
-    const firstConn = page.locator('button[class*="items-start"]').first();
-    const hasConnections = (await firstConn.count()) > 0;
-    test.skip(!hasConnections, "No connections to test");
-
-    await firstConn.click();
-    await page.waitForTimeout(500);
-
-    // Check that no text elements inside the chat panel overflow their container
-    const textOverflows = await page.evaluate(() => {
-      const chatCard = document.querySelector('[data-slot="card"]');
-      if (!chatCard) return [];
-
-      const violations: Array<{
-        selector: string;
-        text: string;
-        scrollWidth: number;
-        clientWidth: number;
-      }> = [];
-
-      const textEls = chatCard.querySelectorAll("p, h4, span, a");
-      for (const el of textEls) {
-        if (!(el instanceof HTMLElement)) continue;
-        const style = getComputedStyle(el);
-        if (style.display === "none" || style.visibility === "hidden") continue;
-
-        // Skip elements using intentional truncation
-        if (style.textOverflow === "ellipsis") continue;
-
-        if (el.scrollWidth > el.clientWidth + 1) {
-          let s = el.tagName.toLowerCase();
-          if (el.className && typeof el.className === "string") {
-            s += "." + el.className.split(" ").slice(0, 3).join(".");
-          }
-          violations.push({
-            selector: s,
-            text: (el.textContent || "").slice(0, 60),
-            scrollWidth: el.scrollWidth,
-            clientWidth: el.clientWidth,
-          });
-        }
-      }
-      return violations;
-    });
-
-    expect(
-      textOverflows,
-      `Chat text overflows container: ${JSON.stringify(textOverflows)}`,
-    ).toEqual([]);
-  });
-
-  test("Chat message input is visible and in viewport", async ({ page }) => {
-    test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-    await navigateToPage(page, "/connections", "mobile");
-
-    const firstConn = page.locator('button[class*="items-start"]').first();
-    const hasConnections = (await firstConn.count()) > 0;
-    test.skip(!hasConnections, "No connections to test");
-
-    await firstConn.click();
-    await page.waitForTimeout(500);
-
-    // The message input textarea should be visible
-    const textarea = page.locator('[data-slot="card"] textarea').first();
-    await expect(textarea).toBeVisible();
-
-    // Send button should be visible
-    const sendBtn = page.locator('[data-slot="card"] button:has(svg)').last();
-    await expect(sendBtn).toBeVisible();
-  });
-
-  test("Connection list cards wrap text properly on mobile", async ({
-    page,
-  }) => {
-    test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-    await navigateToPage(page, "/connections", "mobile");
-
-    const connItems = page.locator('button[class*="items-start"]');
-    const count = await connItems.count();
-    test.skip(count === 0, "No connections to test");
-
-    // Check that connection list items fit within viewport
-    for (let i = 0; i < Math.min(count, 5); i++) {
-      const item = connItems.nth(i);
-      const box = await item.boundingBox();
-      if (!box) continue;
-
-      const viewport = page.viewportSize()!;
-      expect(
-        box.x + box.width,
-        `Connection item ${i} right edge (${box.x + box.width}px) exceeds viewport (${viewport.width}px)`,
-      ).toBeLessThanOrEqual(viewport.width + 1);
-    }
-
-    // Check no horizontal overflow in the connections grid
-    const result = await checkNoHorizontalPageOverflow(page);
-    expect(
-      result.overflows,
-      `Horizontal overflow on /connections (mobile) with connection list: scrollWidth=${result.scrollWidth}, clientWidth=${result.clientWidth}`,
-    ).toBe(false);
-  });
-});
+// Group 10: Connections chat view — REMOVED (connections page replaced by spaces)
 
 // ---------------------------------------------------------------------------
 // Group 11: Minimum vertical spacing between key layout regions
@@ -702,8 +540,8 @@ test.describe("Layout > Long text overflow (mobile)", () => {
     page,
   }) => {
     test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-    // Navigate to a page with markdown content — discover has posting cards
-    await navigateToPage(page, "/discover", "mobile");
+    // Navigate to a page with markdown content — spaces has posting cards
+    await navigateToPage(page, "/spaces", "mobile");
 
     const hasMarkdown = (await page.locator(".markdown-content").count()) > 0;
     test.skip(!hasMarkdown, "No markdown content on page");
@@ -743,114 +581,4 @@ test.describe("Layout > Long text overflow (mobile)", () => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// Group 13: Connections chat — long text stress test (mobile)
-//   Extends Group 10 by injecting long text into the chat header, message
-//   previews, and "Re: ..." subject to verify proper containment.
-// ---------------------------------------------------------------------------
-
-test.describe("Layout > Connections chat long text (mobile)", () => {
-  test("Chat header handles long 'Re: ...' subject", async ({ page }) => {
-    test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-    await navigateToPage(page, "/connections", "mobile");
-
-    const firstConn = page.locator('button[class*="items-start"]').first();
-    const hasConnections = (await firstConn.count()) > 0;
-    test.skip(!hasConnections, "No connections to test");
-
-    await firstConn.click();
-    await page.waitForTimeout(500);
-
-    const chatCard = page.locator('[data-slot="card"]').first();
-    const isVisible = await chatCard.isVisible().catch(() => false);
-    test.skip(!isVisible, "No chat card visible");
-
-    // Inject long text into chat header elements and check overflow.
-    // Chat messages (whitespace-pre-wrap break-words) and timestamps are
-    // excluded — they already have CSS word-break and timestamps are fixed content.
-    const chatAllowlist = [
-      ...LONG_TEXT_ALLOWLIST,
-      ".whitespace-pre-wrap", // Chat messages — break-words handles wrap visually
-      ".text-xs.mt-1", // Message timestamps — fixed-length content
-    ] as const;
-    const violations = await findLongTextOverflowViolations(
-      page,
-      '[data-slot="card"]',
-      chatAllowlist,
-    );
-    expect(
-      violations,
-      `Long text causes overflow in chat panel: ${JSON.stringify(violations, null, 2)}`,
-    ).toEqual([]);
-  });
-
-  test("Connection list cards handle long names and messages", async ({
-    page,
-  }) => {
-    test.skip(!hasAuth, "TEST_USER_PASSWORD not set");
-    await navigateToPage(page, "/connections", "mobile");
-
-    const connItems = page.locator('button[class*="items-start"]');
-    const count = await connItems.count();
-    test.skip(count === 0, "No connections to test");
-
-    // Inject long text into the first few connection cards
-    const violations = await page.evaluate(() => {
-      const items = document.querySelectorAll('button[class*="items-start"]');
-      const results: Array<{
-        index: number;
-        selector: string;
-        text: string;
-        scrollWidth: number;
-        clientWidth: number;
-      }> = [];
-
-      const LONG_TEXT =
-        "VeryLongUserNameWithoutAnySpacesThatShouldBeTruncatedProperlyOnMobileDevices";
-
-      for (let i = 0; i < Math.min(items.length, 3); i++) {
-        const item = items[i];
-        const textEls = item.querySelectorAll("p, span, h4");
-
-        for (const el of textEls) {
-          if (!(el instanceof HTMLElement)) continue;
-          const style = getComputedStyle(el);
-          if (style.display === "none" || style.visibility === "hidden")
-            continue;
-          if (style.textOverflow === "ellipsis") continue;
-          // Skip positioned elements (badges, dots)
-          if (style.position === "absolute" || style.position === "fixed")
-            continue;
-          // Skip very small elements (icons, badges)
-          const rect = el.getBoundingClientRect();
-          if (rect.width < 30 || rect.height < 10) continue;
-
-          const original = el.innerHTML;
-          el.textContent = LONG_TEXT;
-          void el.offsetWidth;
-
-          if (el.scrollWidth > el.clientWidth + 1) {
-            let s = el.tagName.toLowerCase();
-            if (el.className && typeof el.className === "string") {
-              s += "." + el.className.split(" ").slice(0, 3).join(".");
-            }
-            results.push({
-              index: i,
-              selector: s,
-              text: LONG_TEXT.slice(0, 30),
-              scrollWidth: el.scrollWidth,
-              clientWidth: el.clientWidth,
-            });
-          }
-          el.innerHTML = original;
-        }
-      }
-      return results;
-    });
-
-    expect(
-      violations,
-      `Connection cards overflow with long text: ${JSON.stringify(violations)}`,
-    ).toEqual([]);
-  });
-});
+// Group 13: Connections chat long text — REMOVED (connections page replaced by spaces)
