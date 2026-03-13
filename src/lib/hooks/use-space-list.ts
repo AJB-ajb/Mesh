@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { cacheKeys } from "@/lib/swr/keys";
 import {
   subscribeToSpaceMemberChanges,
-  subscribeToSpaceMessages,
+  subscribeToSpaceMessagesBatch,
   unsubscribeChannel,
 } from "@/lib/supabase/realtime";
 import type { SpaceListItem } from "@/lib/supabase/types";
@@ -68,28 +68,48 @@ async function fetchSpaces(): Promise<SpaceListData> {
         .eq("space_id", space.id),
     ]);
 
-    // Resolve sender name if we have a message with a sender
-    let senderName: string | null = null;
-    if (msgResult.data?.sender_id) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("user_id", msgResult.data.sender_id)
-        .maybeSingle();
-      senderName = profile?.full_name ?? null;
-    }
-
     return {
       spaceId: space.id,
-      message: msgResult.data
-        ? { ...msgResult.data, sender_name: senderName }
-        : null,
+      message: msgResult.data,
       memberCount: countResult.count ?? 0,
     };
   });
 
   const enrichments = await Promise.all(enrichPromises);
-  const enrichMap = new Map(enrichments.map((e) => [e.spaceId, e]));
+
+  // Batch-fetch sender profiles for all last messages in a single query
+  const senderIds = [
+    ...new Set(
+      enrichments
+        .map((e) => e.message?.sender_id)
+        .filter((id): id is string => !!id),
+    ),
+  ];
+  const senderMap = new Map<string, string>();
+  if (senderIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("user_id, full_name")
+      .in("user_id", senderIds);
+    for (const p of profiles ?? []) {
+      if (p.full_name) senderMap.set(p.user_id, p.full_name);
+    }
+  }
+
+  const enrichMap = new Map(
+    enrichments.map((e) => [
+      e.spaceId,
+      {
+        ...e,
+        message: e.message
+          ? {
+              ...e.message,
+              sender_name: senderMap.get(e.message.sender_id!) ?? null,
+            }
+          : null,
+      },
+    ]),
+  );
 
   // Enrich spaces with last message, member count, and derived type
   const enriched = spaces.map((space) => {
@@ -124,6 +144,21 @@ async function fetchSpaces(): Promise<SpaceListData> {
 }
 
 // ---------------------------------------------------------------------------
+// Debounced mutate helper
+// ---------------------------------------------------------------------------
+
+function debouncedMutate(
+  mutateRef: React.RefObject<() => void>,
+  timerRef: React.RefObject<ReturnType<typeof setTimeout> | null>,
+  delayMs = 500,
+) {
+  if (timerRef.current) clearTimeout(timerRef.current);
+  timerRef.current = setTimeout(() => {
+    mutateRef.current?.();
+  }, delayMs);
+}
+
+// ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
 
@@ -135,19 +170,25 @@ export function useSpaceList() {
   );
 
   const userId = data?.userId ?? null;
-  const spaceIds = data?.spaces.map((s) => s.id) ?? [];
+  // Sort IDs to produce a stable key regardless of fetch-time sort order
+  const spaceIdsKey = (data?.spaces.map((s) => s.id) ?? [])
+    .slice()
+    .sort()
+    .join(",");
 
   const mutateRef = useRef(mutate);
   useEffect(() => {
     mutateRef.current = mutate;
   }, [mutate]);
 
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Subscribe to space_members changes for badge/unread updates
   useEffect(() => {
     if (!userId) return;
 
     const channel = subscribeToSpaceMemberChanges(userId, () => {
-      mutateRef.current();
+      debouncedMutate(mutateRef, debounceTimerRef);
     });
 
     return () => {
@@ -156,20 +197,17 @@ export function useSpaceList() {
   }, [userId]);
 
   // Subscribe to space_messages for live preview updates
-  // We listen to all user's spaces and revalidate on any new message
-  const spaceIdsKey = spaceIds.join(",");
+  // Single channel with in() filter instead of one channel per space
   useEffect(() => {
     if (!spaceIdsKey) return;
 
     const ids = spaceIdsKey.split(",");
-    const channels = ids.map((id) =>
-      subscribeToSpaceMessages(id, () => {
-        mutateRef.current();
-      }),
-    );
+    const channel = subscribeToSpaceMessagesBatch(ids, () => {
+      debouncedMutate(mutateRef, debounceTimerRef);
+    });
 
     return () => {
-      channels.forEach(unsubscribeChannel);
+      unsubscribeChannel(channel);
     };
   }, [spaceIdsKey]);
 
