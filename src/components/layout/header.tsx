@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { User, Settings, LogOut } from "lucide-react";
+import { User, Settings, LogOut, MessageSquarePlus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
@@ -17,6 +17,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { GlobalSearch } from "./global-search";
 import { Logo } from "./logo";
 import { useSignOut } from "@/lib/hooks/use-sign-out";
+import { openFeedbackSheet } from "@/components/feedback/use-feedback-sheet";
 import { ROUTES } from "@/lib/routes";
 
 interface HeaderProps {
@@ -76,6 +77,11 @@ export function Header({ className }: HeaderProps) {
                 <Settings className="size-4" />
                 {labels.nav.settings}
               </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={openFeedbackSheet}>
+              <MessageSquarePlus className="size-4" />
+              {labels.feedback.sheetTitle}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
