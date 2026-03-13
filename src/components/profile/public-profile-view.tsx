@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, Loader2, Check, X, MessageSquare } from "lucide-react";
 import { useState } from "react";
 import { labels } from "@/lib/labels";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -202,7 +203,7 @@ export default function PublicProfileView({
         {!isOwnProfile && currentUserId && (
           <ConnectionActions
             currentUserId={currentUserId}
-            profileUserId={profile.user_id}
+            profileUserId={profileUserId}
           />
         )}
       </div>
@@ -215,9 +216,9 @@ export default function PublicProfileView({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground whitespace-pre-wrap">
-              {profile.bio}
-            </p>
+            <div className="text-muted-foreground">
+              <MarkdownRenderer content={profile.bio} />
+            </div>
           </CardContent>
         </Card>
       )}

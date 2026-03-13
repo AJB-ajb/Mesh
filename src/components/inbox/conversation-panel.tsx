@@ -14,11 +14,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { ComposeEditor } from "@/components/editor/compose-editor";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { OnlineStatus, OnlineStatusBadge } from "@/components/ui/online-status";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { useRovingIndex } from "@/lib/hooks/use-roving-index";
 import { useRealtimeChat } from "@/lib/hooks/use-realtime-chat";
 import { useSendMessage } from "@/lib/hooks/use-send-message";
@@ -280,9 +282,9 @@ export function ChatPanel({
                     : "bg-muted",
                 )}
               >
-                <p className="text-sm whitespace-pre-wrap break-words">
-                  {message.content}
-                </p>
+                <div className="text-sm break-words">
+                  <MarkdownRenderer content={message.content} />
+                </div>
                 <p
                   className={cn(
                     "text-xs mt-1",
@@ -312,29 +314,23 @@ export function ChatPanel({
 
       {/* Message input */}
       <div className="border-t border-border p-4">
-        <div className="flex gap-2">
-          <textarea
-            value={newMessage}
-            onChange={(e) => {
-              setNewMessage(e.target.value);
-              if (e.target.value.length > 0) {
-                setIsTyping(true);
-              } else {
-                setIsTyping(false);
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
+        <div className="flex gap-2 items-end">
+          <div className="flex-1">
+            <ComposeEditor
+              context="message"
+              content={newMessage}
+              onChange={(text) => {
+                setNewMessage(text);
+                setIsTyping(text.length > 0);
+              }}
+              onSubmit={() => {
                 setIsTyping(false);
                 handleSendMessage();
-              }
-            }}
-            onBlur={() => setIsTyping(false)}
-            placeholder={labels.chat.messagePlaceholder}
-            rows={1}
-            className="flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          />
+              }}
+              onTypingChange={(typing) => setIsTyping(typing)}
+              placeholder={labels.chat.messagePlaceholder}
+            />
+          </div>
           <Button
             onClick={() => {
               setIsTyping(false);
