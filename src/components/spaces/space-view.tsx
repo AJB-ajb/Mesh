@@ -103,7 +103,7 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
                 space.members.find((m) => m.user_id === userId)?.profiles
                   ?.full_name ?? null
               }
-              postingOnly={space.settings.posting_only ?? false}
+              postingOnly={space.settings?.posting_only ?? false}
             />
           )}
         </>

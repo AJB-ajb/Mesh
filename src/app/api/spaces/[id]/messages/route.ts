@@ -123,12 +123,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     .update({ updated_at: new Date().toISOString() })
     .eq("id", spaceId);
 
-  // Increment unread_count for other members
-  // (uses raw RPC or a manual update for all members except sender)
-  await supabase.rpc("increment_unread_counts", {
-    p_space_id: spaceId,
-    p_sender_id: user.id,
-  });
+  // unread_count is incremented by the trg_space_messages_unread trigger
 
   return apiSuccess({ message }, 201);
 });
