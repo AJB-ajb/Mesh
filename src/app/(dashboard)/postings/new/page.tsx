@@ -6,27 +6,14 @@ import Link from "next/link";
 import useSWR from "swr";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import type { EditorView } from "@codemirror/view";
 
 import { Button } from "@/components/ui/button";
 import { labels } from "@/lib/labels";
 import { TextTools } from "@/components/shared/text-tools";
-import { MeshEditor } from "@/components/editor/mesh-editor";
-import { SpeechInput } from "@/components/ai-elements/speech-input";
-import { transcribeAudio } from "@/lib/transcribe";
-import { useEditorSlashCommands } from "@/lib/hooks/use-editor-slash-commands";
-import { useMobileKeyboard } from "@/lib/hooks/use-mobile-keyboard";
-import { SlashCommandMenu } from "@/components/shared/slash-command-menu";
-import { MobileCommandSheet } from "@/components/shared/mobile-command-sheet";
-import { SlashTriggerButton } from "@/components/shared/slash-trigger-button";
-import { MarkdownToolbar } from "@/components/shared/markdown-toolbar";
 import {
-  TimePickerOverlay,
-  LocationOverlay,
-  SkillPickerOverlay,
-  TemplateOverlay,
-  type OverlayResult,
-} from "@/components/shared/slash-command-overlays";
+  ComposeEditor,
+  type ComposeEditorHandle,
+} from "@/components/editor/compose-editor";
 import {
   SettingPicker,
   type SettingOption,
@@ -38,17 +25,6 @@ import {
 } from "@/components/posting/posting-context-bar";
 import { useProfileData } from "@/lib/hooks/use-profile-data";
 import { autoFormat, autoClean } from "@/lib/text-tools-api";
-import { meshLinkExtension } from "@/components/editor/extensions/mesh-link-plugin";
-import { hiddenSyntaxExtension } from "@/components/editor/extensions/hidden-syntax-plugin";
-
-/** Insert text at cursor in a CodeMirror EditorView. */
-function insertAtCursor(view: EditorView, text: string) {
-  const pos = view.state.selection.main.head;
-  view.dispatch({
-    changes: { from: pos, to: pos, insert: text },
-  });
-  view.focus();
-}
 
 // ---------------------------------------------------------------------------
 // Setting picker options (for slash commands)
@@ -105,11 +81,10 @@ function NewPostingPageInner() {
   const [text, setText] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [editorFocused, setEditorFocused] = useState(false);
-  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
-  const editorRef = useRef<EditorView | null>(null);
+  const [contextOverlay, setContextOverlay] = useState<string | null>(null);
+  const [pickerPosition, setPickerPosition] = useState({ top: 200, left: 100 });
+  const composeRef = useRef<ComposeEditorHandle>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
-  const { keyboardVisible } = useMobileKeyboard();
 
   // Context bar state (replaces PostingFormCard)
   const [contextBar, setContextBar] = useState<ContextBarState>({
@@ -137,6 +112,7 @@ function NewPostingPageInner() {
   // Sync parent title into context bar state
   useEffect(() => {
     if (parentTitle && parentTitle !== contextBar.parentPostingTitle) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional one-time sync from async SWR data
       setContextBar((prev) => ({
         ...prev,
         parentPostingTitle: parentTitle,
@@ -176,23 +152,6 @@ function NewPostingPageInner() {
     },
     [text],
   );
-
-  // Slash commands via CodeMirror plugin
-  const slash = useEditorSlashCommands({
-    context: "posting",
-    onImmediateCommand: handleImmediateCommand,
-  });
-
-  // CodeMirror extensions (stable reference)
-  const [extensions] = useState(() => [
-    slash.slashExtension,
-    ...meshLinkExtension(),
-    ...hiddenSyntaxExtension(),
-  ]);
-
-  const handleEditorReady = useCallback((view: EditorView) => {
-    editorRef.current = view;
-  }, []);
 
   // Warn on unsaved changes when navigating away
   useEffect(() => {
@@ -287,67 +246,39 @@ function NewPostingPageInner() {
     }
   }, [text, contextBar, router]);
 
-  /** Handle overlay result — all overlays return mesh: link strings. */
-  const handleOverlayResult = useCallback(
-    (result: string | OverlayResult) => {
-      const insertText = typeof result === "string" ? result : result.display;
-      const view = editorRef.current;
-      if (view) {
-        insertAtCursor(view, insertText);
-      }
-      slash.closeOverlay();
-      editorRef.current?.focus();
-    },
-    [slash],
-  );
-
   /** Handle setting selection from SettingPicker (via slash commands) */
-  const handleSettingSelect = useCallback(
-    (key: string, value: string) => {
-      if (key === "expire") {
-        setContextBar((prev) => ({
-          ...prev,
-          settings: {
-            ...prev.settings,
-            expiresAt: daysFromNow(Number(value)),
-          },
-        }));
-        const label = EXPIRE_OPTIONS.find((o) => o.value === value)?.label;
-        toast.success(
-          labels.slashCommands.settingApplied.expire(label ?? value),
-        );
-      } else if (key === "autoaccept") {
-        setContextBar((prev) => ({
-          ...prev,
-          settings: { ...prev.settings, autoAccept: value === "true" },
-        }));
-        toast.success(
-          labels.slashCommands.settingApplied.autoaccept(
-            value === "true" ? "enabled" : "disabled",
-          ),
-        );
-      } else if (key === "visibility") {
-        setContextBar((prev) => ({
-          ...prev,
-          inDiscover: value === "public",
-        }));
-        toast.success(labels.slashCommands.settingApplied.visibility(value));
-      }
-      slash.closeOverlay();
-      editorRef.current?.focus();
-    },
-    [slash],
-  );
-
-  /** Get picker position from editor cursor */
-  const getPickerPosition = () => {
-    const view = editorRef.current;
-    if (!view) return { top: 200, left: 100 };
-    const head = view.state.selection.main.head;
-    const coords = view.coordsAtPos(head);
-    if (!coords) return { top: 200, left: 100 };
-    return { top: coords.bottom + 4, left: coords.left };
-  };
+  const handleSettingSelect = useCallback((key: string, value: string) => {
+    if (key === "expire") {
+      setContextBar((prev) => ({
+        ...prev,
+        settings: {
+          ...prev.settings,
+          expiresAt: daysFromNow(Number(value)),
+        },
+      }));
+      const label = EXPIRE_OPTIONS.find((o) => o.value === value)?.label;
+      toast.success(labels.slashCommands.settingApplied.expire(label ?? value));
+    } else if (key === "autoaccept") {
+      setContextBar((prev) => ({
+        ...prev,
+        settings: { ...prev.settings, autoAccept: value === "true" },
+      }));
+      toast.success(
+        labels.slashCommands.settingApplied.autoaccept(
+          value === "true" ? "enabled" : "disabled",
+        ),
+      );
+    } else if (key === "visibility") {
+      setContextBar((prev) => ({
+        ...prev,
+        inDiscover: value === "public",
+      }));
+      toast.success(labels.slashCommands.settingApplied.visibility(value));
+    }
+    setContextOverlay(null);
+    composeRef.current?.closeOverlay();
+    composeRef.current?.focus();
+  }, []);
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-20">
@@ -370,97 +301,31 @@ function NewPostingPageInner() {
       )}
 
       {/* Hero editor */}
-      <div className="relative">
-        <MeshEditor
-          content={text}
-          placeholder={labels.postingCreation.textPlaceholder}
-          onChange={setText}
-          onSubmit={handleSubmit}
-          autoFocus
-          extensions={extensions}
-          onEditorReady={handleEditorReady}
-          onFocus={() => setEditorFocused(true)}
-          onBlur={() => setEditorFocused(false)}
-          className="min-h-[200px]"
-        />
-        <SpeechInput
-          className="absolute right-1.5 top-1.5 h-7 w-7 shrink-0 p-0"
-          size="icon"
-          variant="ghost"
-          type="button"
-          onAudioRecorded={transcribeAudio}
-          onTranscriptionChange={(transcript) => {
-            const view = editorRef.current;
-            if (view) {
-              insertAtCursor(view, transcript);
+      <ComposeEditor
+        ref={composeRef}
+        context="posting"
+        content={text}
+        onChange={setText}
+        onSubmit={handleSubmit}
+        placeholder={labels.postingCreation.textPlaceholder}
+        autoFocus
+        onImmediateCommand={handleImmediateCommand}
+        onContextOverlay={(name) => {
+          const view = composeRef.current?.editorView;
+          if (view) {
+            const head = view.state.selection.main.head;
+            const coords = view.coordsAtPos(head);
+            if (coords) {
+              setPickerPosition({ top: coords.bottom + 4, left: coords.left });
             }
-          }}
-        />
-      </div>
-
-      {/* Slash command menu */}
-      {/* eslint-disable react-hooks/refs -- editor ref access is intentional */}
-      {slash.menuState.isOpen && editorRef.current && (
-        <SlashCommandMenu
-          commands={slash.menuState.commands}
-          selectedIndex={slash.menuState.selectedIndex}
-          position={(() => {
-            const coords = editorRef.current!.coordsAtPos(slash.menuState.from);
-            if (!coords) return { top: 0, left: 0 };
-            return { top: coords.bottom + 4, left: coords.left };
-          })()}
-          onSelect={(cmd) => slash.selectCommand(editorRef.current!, cmd)}
-          onClose={() => slash.closeMenu(editorRef.current)}
-        />
-      )}
-      {/* eslint-enable react-hooks/refs */}
-
-      {/* Slash command overlays */}
-      {slash.activeOverlay === "time" && (
-        <TimePickerOverlay
-          onInsert={handleOverlayResult}
-          onClose={() => {
-            slash.closeOverlay();
-            editorRef.current?.focus();
-          }}
-        />
-      )}
-      {slash.activeOverlay === "location" && (
-        <LocationOverlay
-          onInsert={handleOverlayResult}
-          onClose={() => {
-            slash.closeOverlay();
-            editorRef.current?.focus();
-          }}
-        />
-      )}
-      {slash.activeOverlay === "skills" && (
-        <SkillPickerOverlay
-          onInsert={handleOverlayResult}
-          onClose={() => {
-            slash.closeOverlay();
-            editorRef.current?.focus();
-          }}
-        />
-      )}
-      {slash.activeOverlay === "template" && (
-        <TemplateOverlay
-          onInsert={(result) => {
-            const templateText =
-              typeof result === "string" ? result : result.display;
-            setText(templateText);
-            slash.closeOverlay();
-          }}
-          onClose={() => {
-            slash.closeOverlay();
-            editorRef.current?.focus();
-          }}
-        />
-      )}
+          }
+          setContextOverlay(name);
+        }}
+        className="min-h-[200px]"
+      />
 
       {/* Setting pickers (from slash commands) */}
-      {/* eslint-disable react-hooks/refs -- editor ref access for picker position */}
-      {slash.activeOverlay === "visibility" && (
+      {contextOverlay === "visibility" && (
         <SettingPicker
           title="Visibility"
           options={[
@@ -468,48 +333,52 @@ function NewPostingPageInner() {
             { label: "Connections only", value: "connections" },
           ]}
           currentValue={contextBar.inDiscover ? "public" : "connections"}
-          position={getPickerPosition()}
+          position={pickerPosition}
           onSelect={(v) => handleSettingSelect("visibility", v)}
           onClose={() => {
-            slash.closeOverlay();
-            editorRef.current?.focus();
+            setContextOverlay(null);
+            composeRef.current?.closeOverlay();
+            composeRef.current?.focus();
           }}
         />
       )}
-      {slash.activeOverlay === "expire" && (
+      {contextOverlay === "expire" && (
         <SettingPicker
           title="Expiry"
           options={EXPIRE_OPTIONS}
           currentValue={undefined}
-          position={getPickerPosition()}
+          position={pickerPosition}
           onSelect={(v) => handleSettingSelect("expire", v)}
           onClose={() => {
-            slash.closeOverlay();
-            editorRef.current?.focus();
+            setContextOverlay(null);
+            composeRef.current?.closeOverlay();
+            composeRef.current?.focus();
           }}
         />
       )}
-      {slash.activeOverlay === "autoaccept" && (
+      {contextOverlay === "autoaccept" && (
         <SettingPicker
           title="Auto-accept"
           options={AUTOACCEPT_OPTIONS}
           currentValue={contextBar.settings.autoAccept ? "true" : "false"}
-          position={getPickerPosition()}
+          position={pickerPosition}
           onSelect={(v) => handleSettingSelect("autoaccept", v)}
           onClose={() => {
-            slash.closeOverlay();
-            editorRef.current?.focus();
+            setContextOverlay(null);
+            composeRef.current?.closeOverlay();
+            composeRef.current?.focus();
           }}
         />
       )}
 
       {/* /invite command opens invite picker sheet */}
       <InvitePickerSheet
-        open={slash.activeOverlay === "invite"}
+        open={contextOverlay === "invite"}
         onOpenChange={(open) => {
           if (!open) {
-            slash.closeOverlay();
-            editorRef.current?.focus();
+            setContextOverlay(null);
+            composeRef.current?.closeOverlay();
+            composeRef.current?.focus();
           }
         }}
         selectedConnections={contextBar.invitedUsers.map((u) => ({
@@ -527,7 +396,6 @@ function NewPostingPageInner() {
         }}
         currentUserId={currentUserId}
       />
-      {/* eslint-enable react-hooks/refs */}
 
       {/* Compact toolbar: TextTools + Post button */}
       <div className="flex items-center justify-between">
@@ -542,28 +410,10 @@ function NewPostingPageInner() {
       </div>
 
       {/* Context bar (replaces PostingFormCard) */}
-      <PostingContextBar state={contextBar} onChange={setContextBar} currentUserId={currentUserId} />
-
-      {/* Mobile markdown toolbar */}
-      <MarkdownToolbar
-        // eslint-disable-next-line react-hooks/refs -- stable ref passed as prop
-        editor={editorRef.current}
-        visible={keyboardVisible && editorFocused}
-      />
-
-      {/* Mobile command sheet + trigger button */}
-      <SlashTriggerButton onClick={() => setMobileSheetOpen(true)} />
-      <MobileCommandSheet
-        open={mobileSheetOpen}
-        commands={slash.contextCommands}
-        onSelect={(cmd) => {
-          setMobileSheetOpen(false);
-          const view = editorRef.current;
-          if (view) {
-            slash.selectCommand(view, cmd);
-          }
-        }}
-        onClose={() => setMobileSheetOpen(false)}
+      <PostingContextBar
+        state={contextBar}
+        onChange={setContextBar}
+        currentUserId={currentUserId}
       />
     </div>
   );

@@ -5,25 +5,19 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import type { EditorView } from "@codemirror/view";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { TextTools } from "@/components/shared/text-tools";
 import { labels } from "@/lib/labels";
 import { parseList } from "@/lib/types/profile";
 import { useProfile } from "@/lib/hooks/use-profile";
 import { useCalendarBusyBlocks } from "@/lib/hooks/use-calendar-busy-blocks";
 import { useProfileExtractionReview } from "@/lib/hooks/use-profile-extraction-review";
-import { useMobileKeyboard } from "@/lib/hooks/use-mobile-keyboard";
-import { useEditorSlashCommands } from "@/lib/hooks/use-editor-slash-commands";
-import { MeshEditor } from "@/components/editor/mesh-editor";
-import { SlashCommandMenu } from "@/components/shared/slash-command-menu";
-import { MobileCommandSheet } from "@/components/shared/mobile-command-sheet";
-import { SlashTriggerButton } from "@/components/shared/slash-trigger-button";
-import { MarkdownToolbar } from "@/components/shared/markdown-toolbar";
-import { TextTools } from "@/components/shared/text-tools";
-import { SpeechInput } from "@/components/ai-elements/speech-input";
-import { transcribeAudio } from "@/lib/transcribe";
+import {
+  ComposeEditor,
+  type ComposeEditorHandle,
+} from "@/components/editor/compose-editor";
 import { AvailabilityEditor } from "@/components/availability/availability-editor";
 import { CalendarConnect } from "@/components/calendar/calendar-connect";
 import { ProfileExtractionReviewCard } from "@/components/profile/profile-extraction-review-card";
@@ -32,23 +26,7 @@ import {
   CalendarOverlay,
   UpdateOverlay,
 } from "@/components/profile/profile-command-overlays";
-import {
-  TimePickerOverlay,
-  LocationOverlay,
-  SkillPickerOverlay,
-  type OverlayResult,
-} from "@/components/shared/slash-command-overlays";
-import { meshLinkExtension } from "@/components/editor/extensions/mesh-link-plugin";
-import { hiddenSyntaxExtension } from "@/components/editor/extensions/hidden-syntax-plugin";
 import { autoFormat, autoClean } from "@/lib/text-tools-api";
-
-function insertAtCursor(view: EditorView, text: string) {
-  const pos = view.state.selection.main.head;
-  view.dispatch({
-    changes: { from: pos, to: pos, insert: text },
-  });
-  view.focus();
-}
 
 function ProfilePageContent() {
   const searchParams = useSearchParams();
@@ -69,19 +47,18 @@ function ProfilePageContent() {
   } = useProfile();
 
   const { busyWindows } = useCalendarBusyBlocks(profileId);
-  const { keyboardVisible } = useMobileKeyboard();
   // Editor state
   const [editorText, setEditorText] = useState("");
-  const [editorFocused, setEditorFocused] = useState(false);
-  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+  const [contextOverlay, setContextOverlay] = useState<string | null>(null);
   const [calendarError, setCalendarError] = useState<string | null>(null);
-  const editorRef = useRef<EditorView | null>(null);
+  const composeRef = useRef<ComposeEditorHandle>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [editorInitialized, setEditorInitialized] = useState(false);
 
-  // Initialize editor text from source_text or bio
+  // Initialize editor text from source_text or bio (one-time sync from async data)
   useEffect(() => {
     if (!editorInitialized && !isLoading) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional one-time init from async profile data
       setEditorText(sourceText ?? form.bio ?? "");
       setEditorInitialized(true);
     }
@@ -127,22 +104,6 @@ function ProfilePageContent() {
     [editorText],
   );
 
-  // Slash commands
-  const slash = useEditorSlashCommands({
-    context: "profile",
-    onImmediateCommand: handleImmediateCommand,
-  });
-
-  const [extensions] = useState(() => [
-    slash.slashExtension,
-    ...meshLinkExtension(),
-    ...hiddenSyntaxExtension(),
-  ]);
-
-  const handleEditorReady = useCallback((view: EditorView) => {
-    editorRef.current = view;
-  }, []);
-
   // Auto-save on blur (debounced)
   const saveProfile = useCallback(async () => {
     try {
@@ -166,7 +127,6 @@ function ProfilePageContent() {
   }, [form, editorText, availabilityWindows, mutate]);
 
   const handleEditorBlur = useCallback(() => {
-    setEditorFocused(false);
     // Debounced auto-save
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
@@ -191,20 +151,6 @@ function ProfilePageContent() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [handleExplicitSave]);
-
-  // Handle overlay results
-  const handleOverlayResult = useCallback(
-    (result: string | OverlayResult) => {
-      const text = typeof result === "string" ? result : result.display;
-      const view = editorRef.current;
-      if (view) {
-        insertAtCursor(view, text);
-      }
-      slash.closeOverlay();
-      editorRef.current?.focus();
-    },
-    [slash],
-  );
 
   // Extracted metadata for badges
   const skillsList =
@@ -271,111 +217,55 @@ function ProfilePageContent() {
       )}
 
       {/* MeshEditor — always editable */}
-      <div className="relative">
-        <MeshEditor
-          content={editorText}
-          placeholder={labels.profileEditor.placeholder}
-          onChange={setEditorText}
-          onSubmit={handleExplicitSave}
-          autoFocus
-          extensions={extensions}
-          onEditorReady={handleEditorReady}
-          onFocus={() => setEditorFocused(true)}
-          onBlur={handleEditorBlur}
-          className="min-h-[200px]"
-        />
-        <SpeechInput
-          className="absolute right-1.5 top-1.5 size-7 shrink-0 p-0"
-          size="icon"
-          variant="ghost"
-          type="button"
-          onAudioRecorded={transcribeAudio}
-          onTranscriptionChange={(transcript) => {
-            const view = editorRef.current;
-            if (view) {
-              insertAtCursor(view, transcript);
-            }
-          }}
-        />
-      </div>
-
-      {/* Slash command menu (desktop) */}
-      {/* eslint-disable react-hooks/refs -- editor ref access is intentional */}
-      {slash.menuState.isOpen && editorRef.current && (
-        <SlashCommandMenu
-          commands={slash.menuState.commands}
-          selectedIndex={slash.menuState.selectedIndex}
-          position={(() => {
-            const coords = editorRef.current!.coordsAtPos(slash.menuState.from);
-            if (!coords) return { top: 0, left: 0 };
-            return { top: coords.bottom + 4, left: coords.left };
-          })()}
-          onSelect={(cmd) => slash.selectCommand(editorRef.current!, cmd)}
-          onClose={() => slash.closeMenu(editorRef.current)}
-        />
-      )}
-      {/* eslint-enable react-hooks/refs */}
-
-      {/* Shared slash command overlays */}
-      {slash.activeOverlay === "time" && (
-        <TimePickerOverlay
-          onInsert={handleOverlayResult}
-          onClose={() => {
-            slash.closeOverlay();
-            editorRef.current?.focus();
-          }}
-        />
-      )}
-      {slash.activeOverlay === "location" && (
-        <LocationOverlay
-          onInsert={handleOverlayResult}
-          onClose={() => {
-            slash.closeOverlay();
-            editorRef.current?.focus();
-          }}
-        />
-      )}
-      {slash.activeOverlay === "skills" && (
-        <SkillPickerOverlay
-          onInsert={handleOverlayResult}
-          onClose={() => {
-            slash.closeOverlay();
-            editorRef.current?.focus();
-          }}
-        />
-      )}
+      <ComposeEditor
+        ref={composeRef}
+        context="profile"
+        content={editorText}
+        onChange={setEditorText}
+        onSubmit={handleExplicitSave}
+        placeholder={labels.profileEditor.placeholder}
+        autoFocus
+        onImmediateCommand={handleImmediateCommand}
+        onBlur={handleEditorBlur}
+        onContextOverlay={setContextOverlay}
+        className="min-h-[200px]"
+      />
 
       {/* Profile-specific overlays */}
-      {slash.activeOverlay === "availability" && (
+      {contextOverlay === "availability" && (
         <AvailabilityOverlay
           windows={availabilityWindows}
           busyBlocks={busyWindows}
           onChange={(w) => {
             onAvailabilityWindowsChange(w);
-            slash.closeOverlay();
+            setContextOverlay(null);
+            composeRef.current?.closeOverlay();
           }}
           onClose={() => {
-            slash.closeOverlay();
-            editorRef.current?.focus();
+            setContextOverlay(null);
+            composeRef.current?.closeOverlay();
+            composeRef.current?.focus();
           }}
         />
       )}
-      {slash.activeOverlay === "calendar" && (
+      {contextOverlay === "calendar" && (
         <CalendarOverlay
           onClose={() => {
-            slash.closeOverlay();
-            editorRef.current?.focus();
+            setContextOverlay(null);
+            composeRef.current?.closeOverlay();
+            composeRef.current?.focus();
           }}
         />
       )}
-      {slash.activeOverlay === "update" && (
+      {contextOverlay === "update" && (
         <UpdateOverlay
           sourceText={sourceText}
           currentFormState={form as unknown as Record<string, unknown>}
           onApplied={() => mutate()}
           onClose={() => {
-            slash.closeOverlay();
-            editorRef.current?.focus();
+            setContextOverlay(null);
+            composeRef.current?.closeOverlay();
+            composeRef.current?.focus();
           }}
         />
       )}
@@ -454,28 +344,6 @@ function ProfilePageContent() {
           onSuccess={() => setCalendarError(null)}
         />
       </div>
-
-      {/* Mobile markdown toolbar */}
-      <MarkdownToolbar
-        // eslint-disable-next-line react-hooks/refs -- stable ref passed as prop
-        editor={editorRef.current}
-        visible={keyboardVisible && editorFocused}
-      />
-
-      {/* Mobile command sheet + trigger */}
-      <SlashTriggerButton onClick={() => setMobileSheetOpen(true)} />
-      <MobileCommandSheet
-        open={mobileSheetOpen}
-        commands={slash.contextCommands}
-        onSelect={(cmd) => {
-          setMobileSheetOpen(false);
-          const view = editorRef.current;
-          if (view) {
-            slash.selectCommand(view, cmd);
-          }
-        }}
-        onClose={() => setMobileSheetOpen(false)}
-      />
     </div>
   );
 }

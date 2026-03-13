@@ -1,6 +1,7 @@
 import { keymap, EditorView } from "@codemirror/view";
 import {
   EditorState,
+  Facet,
   Prec,
   StateField,
   StateEffect,
@@ -36,10 +37,12 @@ const closeSlashMenu = StateEffect.define<void>();
 const selectSlashItem = StateEffect.define<number>();
 
 // ---------------------------------------------------------------------------
-// Available commands (set per-editor-instance; single editor on page)
+// Facet — per-editor-instance command set (safe with multiple editors)
 // ---------------------------------------------------------------------------
 
-let _availableCommands: SlashCommand[] = SLASH_COMMANDS;
+const commandsFacet = Facet.define<SlashCommand[], SlashCommand[]>({
+  combine: (lists) => lists.flat(),
+});
 
 // ---------------------------------------------------------------------------
 // Initial state
@@ -113,10 +116,9 @@ export const slashMenuState = StateField.define<SlashMenuState>({
       if (ctx) {
         const { from, query } = ctx;
         const to = tr.state.selection.main.head;
+        const available = tr.state.facet(commandsFacet);
         const commands =
-          query === ""
-            ? _availableCommands
-            : filterCommands(query, _availableCommands);
+          query === "" ? available : filterCommands(query, available);
 
         if (!value.isOpen) {
           // Open the menu
@@ -266,12 +268,8 @@ function createSlashListener(callbacks: SlashCommandCallbacks) {
 export function slashCommandPlugin(
   options: SlashCommandPluginOptions,
 ): Extension {
-  if (options.commands) {
-    _availableCommands = options.commands;
-  } else {
-    _availableCommands = SLASH_COMMANDS;
-  }
   return [
+    commandsFacet.of(options.commands ?? SLASH_COMMANDS),
     slashMenuState,
     createSlashKeymap(options),
     createSlashListener(options),

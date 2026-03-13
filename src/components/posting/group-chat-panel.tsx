@@ -12,9 +12,11 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { ComposeEditor } from "@/components/editor/compose-editor";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { getInitials, formatTimeAgoShort } from "@/lib/format";
 import { RelativeTime } from "@/components/ui/relative-time";
 import {
@@ -212,9 +214,9 @@ export function GroupChatPanel({
                       isOwn ? "bg-primary text-primary-foreground" : "bg-muted",
                     )}
                   >
-                    <p className="text-sm whitespace-pre-wrap break-words">
-                      {message.content}
-                    </p>
+                    <div className="text-sm break-words">
+                      <MarkdownRenderer content={message.content} />
+                    </div>
                     <p
                       className={cn(
                         "text-xs mt-1",
@@ -246,24 +248,20 @@ export function GroupChatPanel({
 
       {/* Input area */}
       <div className="border-t border-border p-4 shrink-0">
-        <div className="flex gap-2">
-          <textarea
-            value={newMessage}
-            onChange={(e) => {
-              setNewMessage(e.target.value);
-              setIsTyping(e.target.value.length > 0);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            onBlur={() => setIsTyping(false)}
-            placeholder={labels.groupChat.messagePlaceholder}
-            rows={1}
-            className="flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          />
+        <div className="flex gap-2 items-end">
+          <div className="flex-1">
+            <ComposeEditor
+              context="message"
+              content={newMessage}
+              onChange={(text) => {
+                setNewMessage(text);
+                setIsTyping(text.length > 0);
+              }}
+              onSubmit={handleSend}
+              onTypingChange={(typing) => setIsTyping(typing)}
+              placeholder={labels.groupChat.messagePlaceholder}
+            />
+          </div>
           <Button
             onClick={handleSend}
             disabled={!newMessage.trim() || isSending}
