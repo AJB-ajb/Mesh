@@ -1156,6 +1156,19 @@ export const labels = {
     postingVisibility: "Visibility",
     postingAutoAccept: "Auto-accept",
     postingTags: "Tags",
+    postingBrowser: {
+      filters: "Filters",
+      sortNewest: "Newest",
+      sortRelevance: "Best match",
+      statusAll: "All",
+      statusOpen: "Open",
+      statusActive: "Active",
+      statusClosed: "Closed",
+      categoryAll: "All categories",
+      noResults: "No postings match your filters",
+      enableMatching: "Enable matching",
+      enableMatchingDescription: "Run matching on postings in this Space",
+    },
   },
 
   // ---------------------------------------------------------------------------

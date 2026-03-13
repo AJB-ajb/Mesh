@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useCallback } from "react";
+
 import { labels } from "@/lib/labels";
 import {
   Sheet,
@@ -9,11 +11,17 @@ import {
 } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import type { SpaceDetail, SpaceMemberWithProfile } from "@/lib/hooks/use-space";
-import { GLOBAL_SPACE_ID } from "@/lib/supabase/types";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import type {
+  SpaceDetail,
+  SpaceMemberWithProfile,
+} from "@/lib/hooks/use-space";
+import { GLOBAL_SPACE_ID, type SpaceMember } from "@/lib/supabase/types";
 
 interface SpaceInfoSheetProps {
   space: SpaceDetail;
+  currentMember: SpaceMember | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -51,10 +59,41 @@ function MemberRow({ member }: { member: SpaceMemberWithProfile }) {
 
 export function SpaceInfoSheet({
   space,
+  currentMember,
   open,
   onOpenChange,
 }: SpaceInfoSheetProps) {
   const isGlobal = space.id === GLOBAL_SPACE_ID;
+  const isAdmin = currentMember?.role === "admin";
+  const [matchingEnabled, setMatchingEnabled] = useState(
+    space.settings?.matching_enabled ?? false,
+  );
+  const [saving, setSaving] = useState(false);
+
+  const toggleMatching = useCallback(
+    async (checked: boolean) => {
+      setMatchingEnabled(checked);
+      setSaving(true);
+      try {
+        const res = await fetch(`/api/spaces/${space.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            settings: { ...space.settings, matching_enabled: checked },
+          }),
+        });
+        if (!res.ok) {
+          // Revert on failure
+          setMatchingEnabled(!checked);
+        }
+      } catch {
+        setMatchingEnabled(!checked);
+      } finally {
+        setSaving(false);
+      }
+    },
+    [space.id, space.settings],
+  );
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -75,6 +114,31 @@ export function SpaceInfoSheet({
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                 {space.state_text}
               </p>
+            </div>
+          )}
+
+          {/* Admin settings */}
+          {isAdmin && (
+            <div>
+              <h3 className="text-sm font-medium mb-3">
+                {labels.spaces.spaceSettings}
+              </h3>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="matching-toggle" className="text-sm">
+                    {labels.spaces.postingBrowser.enableMatching}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {labels.spaces.postingBrowser.enableMatchingDescription}
+                  </p>
+                </div>
+                <Switch
+                  id="matching-toggle"
+                  checked={matchingEnabled}
+                  onCheckedChange={toggleMatching}
+                  disabled={saving}
+                />
+              </div>
             </div>
           )}
 
