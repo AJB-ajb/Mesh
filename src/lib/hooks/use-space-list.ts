@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { cacheKeys } from "@/lib/swr/keys";
 import {
   subscribeToSpaceMemberChanges,
+  subscribeToSpaceMessages,
   unsubscribeChannel,
 } from "@/lib/supabase/realtime";
 import type { SpaceListItem } from "@/lib/supabase/types";
@@ -67,9 +68,22 @@ async function fetchSpaces(): Promise<SpaceListData> {
         .eq("space_id", space.id),
     ]);
 
+    // Resolve sender name if we have a message with a sender
+    let senderName: string | null = null;
+    if (msgResult.data?.sender_id) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", msgResult.data.sender_id)
+        .maybeSingle();
+      senderName = profile?.full_name ?? null;
+    }
+
     return {
       spaceId: space.id,
-      message: msgResult.data,
+      message: msgResult.data
+        ? { ...msgResult.data, sender_name: senderName }
+        : null,
       memberCount: countResult.count ?? 0,
     };
   });
@@ -121,6 +135,7 @@ export function useSpaceList() {
   );
 
   const userId = data?.userId ?? null;
+  const spaceIds = data?.spaces.map((s) => s.id) ?? [];
 
   const mutateRef = useRef(mutate);
   useEffect(() => {
@@ -139,6 +154,24 @@ export function useSpaceList() {
       unsubscribeChannel(channel);
     };
   }, [userId]);
+
+  // Subscribe to space_messages for live preview updates
+  // We listen to all user's spaces and revalidate on any new message
+  const spaceIdsKey = spaceIds.join(",");
+  useEffect(() => {
+    if (!spaceIdsKey) return;
+
+    const ids = spaceIdsKey.split(",");
+    const channels = ids.map((id) =>
+      subscribeToSpaceMessages(id, () => {
+        mutateRef.current();
+      }),
+    );
+
+    return () => {
+      channels.forEach(unsubscribeChannel);
+    };
+  }, [spaceIdsKey]);
 
   return {
     spaces: data?.spaces ?? [],

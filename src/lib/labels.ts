@@ -1116,6 +1116,7 @@ export const labels = {
     filterPublic: "Public",
     filterPinned: "Pinned",
     filterArchived: "Archived",
+    searchSpaces: "Search spaces...",
     emptyTitle: "No spaces yet",
     emptyHint: "Browse Explore or create a new Space to get started.",
     members: (n: number) => `${n} member${n !== 1 ? "s" : ""}`,
