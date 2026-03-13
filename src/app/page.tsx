@@ -18,6 +18,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { ScenarioSection } from "@/components/landing/scenario-comparison";
 import { createClient } from "@/lib/supabase/server";
 import { labels } from "@/lib/labels";
+import { ROUTES } from "@/lib/routes";
 
 const problemItems = [
   {
@@ -69,7 +70,7 @@ export default async function LandingPage() {
 
   // If logged in, redirect to active page
   if (user) {
-    redirect("/posts");
+    redirect(ROUTES.home);
   }
 
   return (
@@ -117,7 +118,7 @@ export default async function LandingPage() {
             style={{ animationDelay: "200ms" }}
           >
             <Button size="lg" className="gap-2 px-8" asChild>
-              <Link href="/login?next=/postings/new">
+              <Link href={`${ROUTES.login}?next=${ROUTES.spaces}`}>
                 {labels.landing.postSomethingButton}
                 <ArrowRight className="size-4" />
               </Link>

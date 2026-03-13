@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { labels } from "@/lib/labels";
+import { ROUTES } from "@/lib/routes";
 
 /**
  * Trigger async GitHub profile sync
@@ -27,7 +28,7 @@ async function triggerGitHubSync(origin: string): Promise<void> {
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/posts";
+  const next = searchParams.get("next") ?? ROUTES.home;
   const isLinking = searchParams.get("link") === "true";
 
   if (code) {
@@ -161,7 +162,7 @@ export async function GET(request: Request) {
       if (!profileCompleted) {
         // Brand new user - send directly to posting creation for fast onboarding
         // Profile will be auto-created when they submit their first posting
-        const destination = next === "/posts" ? "/postings/new" : next;
+        const destination = next === ROUTES.home ? ROUTES.spaces : next;
         return NextResponse.redirect(`${origin}${destination}`);
       }
 

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
+import { ROUTES } from "@/lib/routes";
 
 function OnboardingContent() {
   const router = useRouter();
@@ -39,7 +40,7 @@ function OnboardingContent() {
         .single();
 
       if (profile) {
-        router.replace(next || "/posts");
+        router.replace(next || ROUTES.home);
         return;
       }
 
@@ -51,7 +52,7 @@ function OnboardingContent() {
         .limit(1);
 
       if (postings && postings.length > 0) {
-        router.replace(next || "/posts");
+        router.replace(next || ROUTES.home);
         return;
       }
 
@@ -64,7 +65,7 @@ function OnboardingContent() {
         return;
       }
 
-      router.replace(next || "/posts");
+      router.replace(next || ROUTES.home);
     };
 
     checkUser().catch(() => {

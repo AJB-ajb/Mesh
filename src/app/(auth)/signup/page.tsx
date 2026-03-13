@@ -19,6 +19,7 @@ import {
   useOAuthSignIn,
   getOAuthCallbackUrl,
 } from "@/lib/hooks/use-oauth-sign-in";
+import { ROUTES } from "@/lib/routes";
 
 function SignUpForm() {
   const searchParams = useSearchParams();
@@ -94,7 +95,7 @@ function SignUpForm() {
 
     if (data.session) {
       // Email confirmation disabled — user is immediately authenticated
-      const destination = next || "/postings/new";
+      const destination = next || ROUTES.spaces;
       window.location.href = destination;
       return;
     }

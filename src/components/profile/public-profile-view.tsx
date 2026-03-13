@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getInitials } from "@/lib/format";
 import { useConnectionStatus } from "@/lib/hooks/use-connection-status";
+import { ROUTES } from "@/lib/routes";
 
 export type ProfileSkillRow = {
   skill_id: string;
@@ -181,7 +182,7 @@ export default function PublicProfileView({
   return (
     <div className="space-y-6">
       <Link
-        href="/posts"
+        href={ROUTES.home}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />

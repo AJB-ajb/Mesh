@@ -17,6 +17,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { GlobalSearch } from "./global-search";
 import { Logo } from "./logo";
 import { useSignOut } from "@/lib/hooks/use-sign-out";
+import { ROUTES } from "@/lib/routes";
 
 interface HeaderProps {
   className?: string;
@@ -34,7 +35,7 @@ export function Header({ className }: HeaderProps) {
     >
       {/* Logo for mobile */}
       <div className="md:hidden">
-        <Logo href="/spaces" />
+        <Logo href={ROUTES.home} />
       </div>
 
       {/* Global Search - desktop only */}
@@ -65,13 +66,13 @@ export function Header({ className }: HeaderProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem asChild>
-              <Link href="/profile" className="flex items-center gap-2">
+              <Link href={ROUTES.profile} className="flex items-center gap-2">
                 <User className="size-4" />
                 {labels.nav.profile}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href="/settings" className="flex items-center gap-2">
+              <Link href={ROUTES.settings} className="flex items-center gap-2">
                 <Settings className="size-4" />
                 {labels.nav.settings}
               </Link>

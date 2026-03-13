@@ -19,6 +19,7 @@ import {
   useOAuthSignIn,
   getOAuthCallbackUrl,
 } from "@/lib/hooks/use-oauth-sign-in";
+import { ROUTES } from "@/lib/routes";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -48,7 +49,7 @@ function LoginForm() {
       setFormError(signInError.message);
       setIsLoading(false);
     } else {
-      router.push(next || "/posts");
+      router.push(next || ROUTES.home);
     }
   };
 

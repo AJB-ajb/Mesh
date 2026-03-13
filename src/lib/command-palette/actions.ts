@@ -1,14 +1,13 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  Compass,
-  FolderKanban,
-  Users,
+  MessageSquare,
+  Bell,
   User,
   Settings,
-  Plus,
   Palette,
 } from "lucide-react";
 import { labels } from "@/lib/labels";
+import { ROUTES } from "@/lib/routes";
 
 export type PaletteAction = {
   id: string;
@@ -27,28 +26,20 @@ export type ActionContext = {
 export function createActions(ctx: ActionContext): PaletteAction[] {
   return [
     {
-      id: "go-discover",
-      label: labels.commandPalette.goToDiscover,
-      description: labels.commandPalette.goToDiscoverDesc,
-      icon: Compass,
-      keywords: ["browse", "explore", "find", "search", "discover"],
-      execute: () => ctx.router.push("/discover"),
+      id: "go-spaces",
+      label: labels.commandPalette.goToSpaces,
+      description: labels.commandPalette.goToSpacesDesc,
+      icon: MessageSquare,
+      keywords: ["browse", "explore", "find", "search", "discover", "postings", "projects"],
+      execute: () => ctx.router.push(ROUTES.spaces),
     },
     {
-      id: "go-posts",
-      label: labels.commandPalette.goToPosts,
-      description: labels.commandPalette.goToPostsDesc,
-      icon: FolderKanban,
-      keywords: ["postings", "projects", "my"],
-      execute: () => ctx.router.push("/posts"),
-    },
-    {
-      id: "go-connections",
-      label: labels.commandPalette.goToConnections,
-      description: labels.commandPalette.goToConnectionsDesc,
-      icon: Users,
-      keywords: ["friends", "network", "people", "messages", "chat"],
-      execute: () => ctx.router.push("/connections"),
+      id: "go-activity",
+      label: labels.commandPalette.goToActivity,
+      description: labels.commandPalette.goToActivityDesc,
+      icon: Bell,
+      keywords: ["notifications", "updates", "feed"],
+      execute: () => ctx.router.push(ROUTES.activity),
     },
     {
       id: "go-profile",
@@ -56,7 +47,7 @@ export function createActions(ctx: ActionContext): PaletteAction[] {
       description: labels.commandPalette.goToProfileDesc,
       icon: User,
       keywords: ["me", "account", "edit"],
-      execute: () => ctx.router.push("/profile"),
+      execute: () => ctx.router.push(ROUTES.profile),
     },
     {
       id: "go-settings",
@@ -64,15 +55,7 @@ export function createActions(ctx: ActionContext): PaletteAction[] {
       description: labels.commandPalette.goToSettingsDesc,
       icon: Settings,
       keywords: ["preferences", "config", "account"],
-      execute: () => ctx.router.push("/settings"),
-    },
-    {
-      id: "create-posting",
-      label: labels.commandPalette.createPosting,
-      description: labels.commandPalette.createPostingDesc,
-      icon: Plus,
-      keywords: ["new", "post", "add"],
-      execute: () => ctx.router.push("/postings/new"),
+      execute: () => ctx.router.push(ROUTES.settings),
     },
     {
       id: "toggle-theme",

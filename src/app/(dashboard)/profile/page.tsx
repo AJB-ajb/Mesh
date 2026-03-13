@@ -27,6 +27,7 @@ import {
   UpdateOverlay,
 } from "@/components/profile/profile-command-overlays";
 import { autoFormat, autoClean } from "@/lib/text-tools-api";
+import { ROUTES } from "@/lib/routes";
 
 function ProfilePageContent() {
   const searchParams = useSearchParams();
@@ -172,7 +173,7 @@ function ProfilePageContent() {
     <div className="mx-auto max-w-2xl space-y-6 pb-20">
       {/* Back link */}
       <Link
-        href="/posts"
+        href={ROUTES.home}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" />

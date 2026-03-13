@@ -260,6 +260,7 @@ These are ideas without a target milestone. They'll be prioritized as the produc
 - Quick chips (deferred) — context-sensitive suggestion chips below text field. Revisit when core flow is polished.
 - Post-write nudges (deferred) — LLM suggests missing dimensions. Revisit when core flow is polished.
 - Email auth fix (SMTP) (#37) — configure Supabase SMTP for confirmation emails
+- Centralize API endpoint paths — ~21 files still use raw `fetch("/api/...")` strings instead of going through a shared constants module (like SWR cache keys). Consolidate to prevent drift when API routes are renamed.
 
 ---
 
