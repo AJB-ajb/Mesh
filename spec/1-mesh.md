@@ -1,14 +1,14 @@
 # Mesh
 
-> Platform for effective activity coordination in small groups — finding the right people for projects, activities, and spontaneous plans.
+> Platform for effective activity coordination in small groups — finding the right people for projects, activities, and spontaneous plans. Coordination happens in Spaces: conversation contexts with embedded postings and coordination intelligence.
 
 ## Problem
 
-Activity coordination through messaging apps requires excessive back-and-forth because messaging apps treat everything as a message. They don't understand the structure of an activity (who, when, where, what, how many), so they can't help resolve it. Mesh substitutes each negotiation dimension with an intelligent mechanism. See [0-vision.md](0-vision.md) for the full philosophy.
+Activity coordination through messaging apps requires excessive back-and-forth because messaging apps treat everything as a message. They don't understand the structure of an activity (who, when, where, what, how many), so they can't help resolve it. Mesh uses a Spaces model — conversation is the primary interface, but posting-messages within conversations carry structured coordination properties that the platform can act on. Each negotiation dimension is substituted with an intelligent mechanism. See [0-vision.md](0-vision.md) for the full philosophy.
 
 ## Approach
 
-- **Activity-first**: start with what you want to do, then find people
+- **Conversation-first**: start with a Space, coordinate through messages — posting-messages add structure when needed
 - **Fast setup**: post in 30 seconds, no profile required
 - **Natural language**: describe your activity like you would in a chat message; AI extracts structure
 - **Text-first**: structure is derived from text, not inputted through forms. See [1-text-first.md](1-text-first.md)
@@ -26,12 +26,12 @@ Activity coordination through messaging apps requires excessive back-and-forth b
 
 ## Core Features
 
-- Text-first posting (paste from Slack/WhatsApp, AI extracts features)
+- Space-based coordination (messenger-like interface with embedded posting-messages)
 - AI matching: fast filter + deep LLM evaluation. See [1-matching.md](1-matching.md)
 - Sequential and parallel invites for connections
 - One-click OAuth login, no setup required
-- Nested postings for groups, channels, recurring activities. See [1-nested-postings.md](1-nested-postings.md)
-- Notifications: in-app bell + daily digest + push (planned)
+- Spaces model for groups, communities, discovery. See [1-spaces.md](1-spaces.md)
+- Activity tab for personal action cards (matches, invites, scheduling proposals) + in-app badges + daily digest + push (planned)
 
 ## Monetization
 

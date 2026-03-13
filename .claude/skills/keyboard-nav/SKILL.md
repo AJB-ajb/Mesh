@@ -1,6 +1,6 @@
 ---
 name: keyboard-nav
-description: "Keyboard navigation patterns for building accessible UI. Use this skill whenever creating or modifying interactive components — buttons, menus, dropdowns, modals, pickers, lists, toolbars, drag-and-drop surfaces, or any custom widget. Also use when reviewing components for keyboard accessibility, fixing focus issues, or when the user mentions keyboard navigation, tab order, focus management, or 'can't use without a mouse'."
+description: "Keyboard navigation patterns for building accessible UI. IMPORTANT: Trigger proactively whenever you are writing or editing interactive UI components (buttons, menus, dropdowns, modals, pickers, lists, toolbars, drag-and-drop surfaces, or custom widgets) — even if the user hasn't mentioned accessibility or keyboard support. Also use when reviewing components for keyboard accessibility, fixing focus issues, or when the user mentions keyboard navigation, tab order, focus management, or 'can't use without a mouse'."
 ---
 
 # Keyboard Navigation Patterns

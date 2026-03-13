@@ -4,8 +4,8 @@
 
 ## Version & Status
 
-- **Current version**: 0.6.0
-- **Last updated**: 2026-03-10
+- **Current version**: 0.7.0
+- **Last updated**: 2026-03-13
 - **Versioning**: Milestone-based semver (`MAJOR.MINOR.PATCH`). See [Update Protocol](#update-protocol).
 
 ---
@@ -141,11 +141,11 @@
 
 ## Milestones
 
-> **Direction**: [1-text-first.md](1-text-first.md) defines the text-first philosophy. Milestones are organized around its phases. Where this roadmap and the behavior specs conflict, the specs take precedence.
+> **Direction**: [1-text-first.md](1-text-first.md) defines the text-first philosophy; [1-spaces.md](1-spaces.md) defines the Spaces model that replaces the posting-centric architecture. Milestones v0.7+ are organized around the Spaces rewrite. Where this roadmap and the behavior specs conflict, the specs take precedence.
 
 ### v0.6 — Text-First Rendering & Syntax
 
-The editor and rendering system adopt the new markdown syntax (`mesh:` links, `||hidden||`, `||?||`) and the text-first card rendering philosophy. See [1-text-first.md](1-text-first.md) §3a, §3b, §6.
+The editor and rendering system adopt the new markdown syntax (`mesh:` links, `||hidden||`, `||?||`) and the text-first card rendering philosophy. See [1-text-first.md](1-text-first.md) §3a, §3b, §6. Some items (e.g., `mesh:` syntax, `||hidden||`) may be folded into v0.7 Spaces Phase 1.
 
 | Feature                        | Issue | Effort | Description                                                                                                                                                                                                                                     |
 | ------------------------------ | ----- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -165,33 +165,40 @@ The editor and rendering system adopt the new markdown syntax (`mesh:` links, `|
 | Mobile command bottom sheet    | —     | Medium | "/" button near editor opens bottom sheet with command list on mobile. Replace cursor-position dropdown. Fix touch handling (`onPointerDown`).                                                                                                  |
 | `/update` command              | —     | Medium | NL instruction command for profile context. Takes inline argument or opens inline text input. LLM applies changes to profile text + re-extracts structured fields.                                                                              |
 
-### v0.7 — Command Palette & Coordination
+### v0.7 — Spaces Phase 1: Structural Rewrite
 
-Expand slash commands into a full command palette. Add link invites and repost for coordination efficiency. See [1-text-first.md](1-text-first.md) §4.
+The core model change. After Phase 1, the app is a messenger with Spaces, posting-messages, and the existing matching/invite machinery. Subsumes the old v0.7 (Command Palette) — useful items folded in or deferred to backlog. See [1-spaces.md](1-spaces.md) and [designs/spaces-rewrite.md](designs/spaces-rewrite.md) §16.
 
-| Feature                         | Issue | Effort    | Description                                                                                                      |
-| ------------------------------- | ----- | --------- | ---------------------------------------------------------------------------------------------------------------- |
-| Tab-complete + inline arguments | —     | Medium    | Tab completes command word, Enter executes. Commands accept inline args (`/visibility public`, `/size 3`).       |
-| Setting commands                | —     | Medium    | `/visibility`, `/size`, `/autoaccept`, `/expire`, `/sequential` — modify posting state, show current value.      |
-| `/invite` command               | —     | Medium    | Inline connection search with autocomplete. Edits invite list. Posting context only.                             |
-| `/link` command + share UI      | —     | Medium    | Generate shareable URL. View-only (default) or direct-join mode. Share button on posting detail page.            |
-| Link invite landing page        | —     | Medium    | `/p/[id]` route: view posting without account, join requires OAuth. Expired links show "posting ended" message.  |
-| `/repost` command + button      | —     | Small-Med | Duplicate past posting into editor with dates reset. LLM suggests new dates. "Repost" button on closed postings. |
-| `/format`, `/clean`, `/preview` | —     | Small     | Action commands: trigger auto-format, auto-clean, or preview rendering. Keyboard shortcut for existing buttons.  |
-| Context-dependent command list  | —     | Small     | Filter available commands by context (posting vs. profile). `/invite`, `/link` only in posting context.          |
+| Feature                | Issue | Effort | Description                                                                                                                                                                                          |
+| ---------------------- | ----- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| New DB tables          | —     | Large  | `spaces`, `space_members`, `space_messages`, `space_postings`, `space_join_requests`, `space_invites`                                                                                                |
+| Global Space (Explore) | —     | Medium | Created on migration, all users added. Posting-only. Replaces Discover feed.                                                                                                                         |
+| DM Spaces              | —     | Medium | Created for existing connections. 2-person Spaces replace DM conversations.                                                                                                                          |
+| Space list UI          | —     | Large  | Main screen: Space list with filters, pins, badges, message previews. Polish: sender name in preview, message type icons, text search, mute indicator, realtime preview updates. Archiving deferred. |
+| Activity tab           | —     | Medium | Personal cards for matches, invites, connection requests                                                                                                                                             |
+| Space view             | —     | Large  | Conversation timeline with posting-cards inline                                                                                                                                                      |
+| Compose area           | —     | Medium | Message/Posting toggle, inline posting creation                                                                                                                                                      |
+| State text             | —     | Medium | Editable state text per Space, `/summarize` command                                                                                                                                                  |
+| Posting-messages       | —     | Large  | Create postings within Spaces, spawn sub-Spaces                                                                                                                                                      |
+| Matching               | —     | Medium | Existing pipeline, scoped by Space (candidate pool = Space members)                                                                                                                                  |
+| Realtime               | —     | Medium | Supabase Realtime per-Space channels                                                                                                                                                                 |
+| Drop old tables        | —     | Medium | Remove old `postings`, `conversations`, `messages`, `group_messages`                                                                                                                                 |
+| 3-tab navigation       | —     | Medium | ✅ Spaces / Activity / Profile bottom bar (mobile) + sidebar (desktop). Decision: consider dropping Settings from sidebar (accessible via header dropdown).                                          |
 
-### v0.8 — Smart Acceptance & Calendar
+### v0.8 — Spaces Phase 2: Rich Interactive Cards
 
-LLM-generated acceptance flow that eliminates post-acceptance back-and-forth. See [1-text-first.md](1-text-first.md) §11.
+Built on Phase 1. The card system that replaces back-and-forth coordination. Subsumes the old v0.8 (Smart Acceptance & Calendar) — acceptance flow is now a card type. See [designs/spaces-rewrite.md](designs/spaces-rewrite.md) §16.
 
-| Feature                         | Issue | Effort       | Description                                                                                                          |
-| ------------------------------- | ----- | ------------ | -------------------------------------------------------------------------------------------------------------------- |
-| `\|\|?\|\|` syntax (editor)     | —     | Small        | Editor rendering: dimmed + question icon + "asked on acceptance" label. Parser for block form.                       |
-| Smart acceptance card           | —     | Large        | LLM reads posting, generates structured acceptance UI: time slot selector, context-aware questions, role pickers.    |
-| Calendar overlap time slots     | #10   | Medium-Large | On acceptance, show mutually available time slots from both parties' calendars. Context-aware filtering.             |
-| `\|\|?\|\|` → interactive forms | —     | Medium       | LLM converts poster's natural-language questions to form elements (selectors, yes/no, free text) on acceptance card. |
-| Post-acceptance summary         | —     | Medium       | Auto-generated confirmation: who/what/when/where. Calendar event export. Poster notification with responses.         |
-| Notify previous participants    | —     | Small        | On repost: optional "Notify previous participants?" sends "Alice is running this again — join?" notification.        |
+| Feature                    | Issue | Effort | Description                                                                     |
+| -------------------------- | ----- | ------ | ------------------------------------------------------------------------------- |
+| `space_cards` table        | —     | Medium | Card state tracking (active, resolved, superseded)                              |
+| Card types                 | —     | Large  | Time proposal, RSVP, poll, task claim, location, trade-off                      |
+| Card rendering             | —     | Large  | Interactive cards in conversation timeline, live updates                        |
+| Card actions               | —     | Medium | Buttons: vote, change vote, cancel, add options                                 |
+| Card resolution            | —     | Medium | Auto-confirm on consensus, calendar event creation                              |
+| Card invalidation Phase 2a | —     | Medium | Explicit actions only — buttons on cards                                        |
+| Card invalidation Phase 2b | —     | Large  | Free-text detection — LLM reads messages against active cards, suggests updates |
+| LLM card generation        | —     | Large  | Detect coordination intent from messages, suggest appropriate card type         |
 
 ### v0.9 — Mobile (Capacitor, Android)
 
@@ -210,23 +217,22 @@ Minimal native Android shell wrapping the hosted web app. iOS deferred — PWA c
 
 ### v1.0 — Launch
 
-| Feature               | Issue | Effort       | Description                                                                                                                                                        |
-| --------------------- | ----- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Email + push notifs   | #14   | Large        | Email and push delivery channels (in-app already implemented)                                                                                                      |
-| Channels              | #27   | Medium-Large | Shared posting contexts for hackathons, courses, orgs. Subsumed by [nested-postings.md](1-nested-postings.md) — channels are parent postings with open membership. |
-| Match pre-computation | #13   | Large        | Background pre-computation for instant match results at scale                                                                                                      |
-| LLM cost tiering      | —     | Medium       | Tier models by feature: cheap for format, mid for extraction, high for deep matching                                                                               |
-| Production hardening  | —     | Large        | Performance audit, error monitoring, rate limiting, security review                                                                                                |
+| Feature               | Issue | Effort | Description                                                                          |
+| --------------------- | ----- | ------ | ------------------------------------------------------------------------------------ |
+| Email + push notifs   | #14   | Large  | Email and push delivery channels (in-app already implemented)                        |
+| Match pre-computation | #13   | Large  | Background pre-computation for instant match results at scale                        |
+| LLM cost tiering      | —     | Medium | Tier models by feature: cheap for format, mid for extraction, high for deep matching |
+| Production hardening  | —     | Large  | Performance audit, error monitoring, rate limiting, security review                  |
 
 ### v1.1 — Post-Launch
 
-| Feature                      | Issue | Effort       | Description                                                                                                                                                                              |
-| ---------------------------- | ----- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Posting images               | #29   | Medium       | Upload and display images on postings (Supabase Storage)                                                                                                                                 |
-| Ghost text (LLM suggestions) | —     | Medium       | Context-aware inline suggestions as user types, including prefilled slash commands                                                                                                       |
-| Auto-translation             | —     | Medium-Large | Posts auto-translated based on user language settings                                                                                                                                    |
-| Recurring postings           | —     | Medium       | `/recur weekly tue` — auto-create posting instances on schedule. Uses nested posting model: instances are children of a standing parent. See [nested-postings.md](1-nested-postings.md). |
-| Daily digest                 | —     | Medium       | Cron-based email digest of new relevant postings (Resend)                                                                                                                                |
+| Feature                      | Issue | Effort       | Description                                                                                                             |
+| ---------------------------- | ----- | ------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| Posting images               | #29   | Medium       | Upload and display images on postings (Supabase Storage)                                                                |
+| Ghost text (LLM suggestions) | —     | Medium       | Context-aware inline suggestions as user types, including prefilled slash commands                                      |
+| Auto-translation             | —     | Medium-Large | Posts auto-translated based on user language settings                                                                   |
+| Recurring postings           | —     | Medium       | `/recur weekly tue` — auto-create posting-message instances on schedule within a Space. See [1-spaces.md](1-spaces.md). |
+| Daily digest                 | —     | Medium       | Cron-based email digest of new relevant postings (Resend)                                                               |
 
 ---
 
@@ -234,6 +240,7 @@ Minimal native Android shell wrapping the hosted web app. iOS deferred — PWA c
 
 Design areas that need deeper thinking before they become milestones. See `designs/` for detailed notes.
 
+- **Spaces rewrite** — replaces the posting-centric model with a messenger-like interface where the fundamental unit is the Space. Full design in `designs/spaces-rewrite.md`. Phases 1 and 2 are now milestones v0.7 and v0.8.
 - **Continuous profile building & failure-driven context capture** — profiles grow from usage (postings, acceptances, rejections) rather than upfront forms. Coordination failures (no matches, cancelled invites, exhausted sequences) become prompts for adding constraints or profile context. See `designs/continuous-profile-and-failure-recovery.md`.
 
 ---
@@ -253,6 +260,7 @@ These are ideas without a target milestone. They'll be prioritized as the produc
 - Quick chips (deferred) — context-sensitive suggestion chips below text field. Revisit when core flow is polished.
 - Post-write nudges (deferred) — LLM suggests missing dimensions. Revisit when core flow is polished.
 - Email auth fix (SMTP) (#37) — configure Supabase SMTP for confirmation emails
+- Centralize API endpoint paths — ~21 files still use raw `fetch("/api/...")` strings instead of going through a shared constants module (like SWR cache keys). Consolidate to prevent drift when API routes are renamed.
 
 ---
 

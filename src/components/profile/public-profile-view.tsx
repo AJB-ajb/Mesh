@@ -4,12 +4,14 @@ import Link from "next/link";
 import { ArrowLeft, Loader2, Check, X, MessageSquare } from "lucide-react";
 import { useState } from "react";
 import { labels } from "@/lib/labels";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getInitials } from "@/lib/format";
 import { useConnectionStatus } from "@/lib/hooks/use-connection-status";
+import { ROUTES } from "@/lib/routes";
 
 export type ProfileSkillRow = {
   skill_id: string;
@@ -180,7 +182,7 @@ export default function PublicProfileView({
   return (
     <div className="space-y-6">
       <Link
-        href="/posts"
+        href={ROUTES.home}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -202,7 +204,7 @@ export default function PublicProfileView({
         {!isOwnProfile && currentUserId && (
           <ConnectionActions
             currentUserId={currentUserId}
-            profileUserId={profile.user_id}
+            profileUserId={profileUserId}
           />
         )}
       </div>
@@ -215,9 +217,9 @@ export default function PublicProfileView({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground whitespace-pre-wrap">
-              {profile.bio}
-            </p>
+            <div className="text-muted-foreground">
+              <MarkdownRenderer content={profile.bio} />
+            </div>
           </CardContent>
         </Card>
       )}

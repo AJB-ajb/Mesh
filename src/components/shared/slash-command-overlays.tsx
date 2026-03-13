@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -34,12 +34,17 @@ interface OverlayProps {
   onClose: () => void;
 }
 
-const isMac =
-  typeof navigator !== "undefined" &&
-  /Mac|iPhone|iPad/.test(navigator.userAgent);
+function useIsMac() {
+  const [isMac, setIsMac] = useState(false);
+  useEffect(() => {
+    queueMicrotask(() => setIsMac(/Mac|iPhone|iPad/.test(navigator.userAgent)));
+  }, []);
+  return isMac;
+}
 
 /** Shared kbd hint for the Cmd/Ctrl+Enter shortcut on Insert buttons. */
 function InsertKbd() {
+  const isMac = useIsMac();
   return (
     <kbd className="ml-1.5 hidden text-[10px] opacity-60 sm:inline">
       {isMac ? "\u2318\u23CE" : "Ctrl+\u23CE"}

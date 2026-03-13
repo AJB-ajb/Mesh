@@ -10,6 +10,7 @@ import { Logo } from "@/components/layout/logo";
 import { GuidedPrompts } from "@/components/profile/guided-prompts";
 import { createClient } from "@/lib/supabase/client";
 import { type ProfileFormState, defaultFormState } from "@/lib/types/profile";
+import { ROUTES } from "@/lib/routes";
 
 function DeveloperOnboardingContent() {
   const router = useRouter();
@@ -114,7 +115,7 @@ function DeveloperOnboardingContent() {
   };
 
   const handleSkip = () => {
-    const destination = next || "/posts";
+    const destination = next || ROUTES.home;
     router.replace(destination);
   };
 

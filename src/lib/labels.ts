@@ -651,7 +651,7 @@ export const labels = {
     edit: "Edit",
     delete: "Delete",
     backToDashboard: "Back",
-    backToPostings: "Back to postings",
+    backToPostings: "Back to spaces",
     backToDiscover: "Back to discover",
     newPosting: "New Posting",
     goToProfile: "Go to Profile",
@@ -689,7 +689,7 @@ export const labels = {
     errorIdPrefix: "Error ID: ",
     tryAgain: "Try again",
     goHome: "Go home",
-    goToPosts: "Go to posts",
+    goToSpaces: "Go to spaces",
     backToLogin: "Back to login",
   },
 
@@ -739,6 +739,12 @@ export const labels = {
       checkEmail: "Check your email to confirm your account.",
       errorPasswordMismatch: "Passwords do not match.",
       errorPasswordLength: "Password must be at least 6 characters.",
+      errorDuplicateEmail: (providers: string[]) =>
+        `This email is already registered via ${providers.join(", ")}. Please sign in with ${providers[0]} instead, then link your email/password in Settings.`,
+    },
+    callback: {
+      duplicateAccountError:
+        "An account already exists with this email using a different sign-in method. Please sign in with your original method, then link additional providers in Settings.",
     },
     forgotPassword: {
       title: "Forgot password?",
@@ -1093,6 +1099,102 @@ export const labels = {
     collapseSidebar: "Collapse sidebar",
     expandSidebar: "Expand sidebar",
     clearSearch: "Clear search",
+    // Spaces navigation
+    spaces: "Spaces",
+    activity: "Activity",
+    newSpace: "New Space",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Spaces
+  // ---------------------------------------------------------------------------
+  spaces: {
+    explore: "Explore",
+    filterAll: "All",
+    filterDMs: "DMs",
+    filterGroups: "Groups",
+    filterPublic: "Public",
+    filterPinned: "Pinned",
+    filterArchived: "Archived",
+    emptyTitle: "No spaces yet",
+    emptyHint: "Browse Explore or create a new Space to get started.",
+    members: (n: number) => `${n} member${n !== 1 ? "s" : ""}`,
+    unread: (n: number) => `${n} unread`,
+    pinned: "Pinned",
+    muted: "Muted",
+    stateText: "Description",
+    composeMessage: "Message...",
+    composePosting: "Write a posting...",
+    send: "Send",
+    messageMode: "Message mode",
+    postingMode: "Posting mode",
+    info: "Space info",
+    memberList: "Members",
+    spaceSettings: "Space settings",
+    editStateText: "Edit description",
+    searchPostings: "Search postings...",
+    noPostings: "No postings yet",
+    noPostingsMatch: "No postings match your search",
+    joinRequest: "Request to join",
+    joined: "Joined",
+    typingIndicator: (names: string[]) =>
+      names.length === 1
+        ? `${names[0]} is typing...`
+        : `${names.join(", ")} are typing...`,
+    posting: {
+      join: "Join",
+      requestToJoin: "Request to join",
+      joinConfirm: "Join this posting?",
+      requestPending: "Request pending",
+      submitRequest: "Submit request",
+      cancel: "Cancel",
+      messagePlaceholder: "Add a message (optional)...",
+    },
+    postingCategory: "Category",
+    postingCapacity: "Capacity",
+    postingDeadline: "Deadline",
+    postingVisibility: "Visibility",
+    postingAutoAccept: "Auto-accept",
+    postingTags: "Tags",
+    postingBrowser: {
+      filters: "Filters",
+      sortNewest: "Newest",
+      sortRelevance: "Best match",
+      statusAll: "All",
+      statusOpen: "Open",
+      statusActive: "Active",
+      statusClosed: "Closed",
+      categoryAll: "All categories",
+      noResults: "No postings match your filters",
+      enableMatching: "Enable matching",
+      enableMatchingDescription: "Run matching on postings in this Space",
+    },
+  },
+
+  // ---------------------------------------------------------------------------
+  // Activity
+  // ---------------------------------------------------------------------------
+  activity: {
+    title: "Activity",
+    emptyTitle: "All caught up",
+    emptyHint: "No actions needed right now.",
+    pendingCount: (n: number) => `${n} pending`,
+    cardTypes: {
+      match: "Match",
+      invite: "Invite",
+      scheduling: "Scheduling",
+      connection_request: "Connection Request",
+      rsvp: "RSVP",
+      join_request: "Join Request",
+    } as const,
+    actions: {
+      join: "Join",
+      pass: "Pass",
+      accept: "Accept",
+      decline: "Decline",
+      confirm: "Confirm",
+      dismiss: "Dismiss",
+    } as const,
   },
 
   // ---------------------------------------------------------------------------
@@ -1232,11 +1334,13 @@ export const labels = {
     successMessage: "Thank you for your feedback!",
     errorGeneric: "Something went wrong. Please try again.",
     errorEmptyMessage: "Please enter a message.",
-    screenshotLabel: "Screenshot",
+    screenshotLabel: "Screenshots",
     screenshotAdd: "Tap, paste, or drop an image",
+    screenshotAddMore: "Add another image",
     screenshotUploading: "Uploading...",
     screenshotRemove: "Remove",
     screenshotError: "Failed to upload screenshot. Please try again.",
+    screenshotLimitReached: "Maximum 5 screenshots allowed",
     debugContextLabel: "Debug info attached automatically",
   },
 
@@ -1280,6 +1384,8 @@ export const labels = {
     skipToMainContent: "Skip to main content",
     toggleTheme: "Toggle theme",
     deleteAvailabilityBlock: "Delete availability block",
+    previousDays: "Previous days",
+    nextDays: "Next days",
     shortcuts: {
       openSearch: "Open search / command palette",
       showHelp: "Show keyboard shortcuts",
@@ -1295,18 +1401,14 @@ export const labels = {
   // ---------------------------------------------------------------------------
   commandPalette: {
     actionsHeading: "Quick Actions",
-    goToDiscover: "Go to Discover",
-    goToDiscoverDesc: "Browse and find postings",
-    goToPosts: "Go to Posts",
-    goToPostsDesc: "View your postings and projects",
-    goToConnections: "Go to Connections",
-    goToConnectionsDesc: "Your network and messages",
+    goToSpaces: "Go to Spaces",
+    goToSpacesDesc: "Browse and find spaces and postings",
+    goToActivity: "Go to Activity",
+    goToActivityDesc: "View notifications and updates",
     goToProfile: "Go to Profile",
     goToProfileDesc: "View and edit your profile",
     goToSettings: "Go to Settings",
     goToSettingsDesc: "App preferences and account",
-    createPosting: "Create New Posting",
-    createPostingDesc: "Start a new posting",
     toggleTheme: "Toggle Theme",
     toggleThemeDesc: "Switch between light, dark, and dusk",
     keyboardShortcuts: "Keyboard Shortcuts",
@@ -1913,6 +2015,8 @@ export const labels = {
     typeAnswer: "Type your answer...",
     yes: "Yes",
     no: "No",
+    dialogTitle: "Join this posting",
+    dialogDescription: "Review details and confirm joining",
   },
 
   // ---------------------------------------------------------------------------

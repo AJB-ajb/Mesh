@@ -1,24 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { updateSession } from "@/lib/supabase/middleware";
-
-/**
- * Protected routes require an authenticated user.
- * Unauthenticated visitors are redirected to /login with a ?next= param.
- *
- * Note: /onboarding is intentionally NOT protected — users reach it pre-profile.
- */
-const PROTECTED_ROUTES = [
-  "/posts",
-  "/discover",
-  "/connections",
-  "/settings",
-  "/profile",
-  "/postings",
-  "/my-postings",
-  "/active",
-];
-const AUTH_ROUTES = ["/login", "/signup"];
+import {
+  ROUTES,
+  PROTECTED_ROUTES,
+  AUTH_ROUTES,
+} from "@/lib/routes";
 
 export async function proxy(request: NextRequest) {
   const { response, user } = await updateSession(request);
@@ -36,7 +23,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isAuthRoute && user) {
-    return NextResponse.redirect(new URL("/posts", request.url));
+    return NextResponse.redirect(new URL(ROUTES.home, request.url));
   }
 
   return response;

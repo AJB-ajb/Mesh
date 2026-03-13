@@ -37,48 +37,33 @@ export async function matchPostingToProfiles(
 ): Promise<PostingToProfileMatch[]> {
   const supabase = await createClient();
 
-  // First, get the posting and its embedding
+  // First, get the space_posting and its embedding
   const { data: posting, error: postingError } = await supabase
-    .from("postings")
-    .select(
-      "embedding, creator_id, title, description, location_mode, location_lat, location_lng, max_distance_km",
-    )
+    .from("space_postings")
+    .select("embedding, created_by, text, category, space_id")
     .eq("id", postingId)
     .single();
 
   if (postingError || !posting) {
-    throw new Error(`Posting not found: ${postingId}`);
+    throw new Error(`Space posting not found: ${postingId}`);
   }
 
   // If no embedding exists, matching cannot proceed — embeddings are generated
   // asynchronously via the batch processor after posting save
   const embedding = posting.embedding;
   if (!embedding || !Array.isArray(embedding)) {
-    console.warn(`[matching] Posting embedding not ready for ${postingId}, returning empty matches`);
+    console.warn(`[matching] Space posting embedding not ready for ${postingId}, returning empty matches`);
     return [];
   }
 
-  // Build RPC params with hard filters from posting's location data
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rpcParams: Record<string, any> = {
-    posting_embedding: embedding,
-    posting_id_param: postingId,
-    match_limit: limit,
+  // Use v2 RPC which handles embedding lookup internally
+  const rpcParams = {
+    target_posting_id: postingId,
+    match_count: limit,
   };
 
-  if (posting.location_mode) {
-    rpcParams.location_mode_filter = posting.location_mode;
-  }
-  if (posting.location_lat != null && posting.location_lng != null) {
-    rpcParams.posting_location_lat = posting.location_lat;
-    rpcParams.posting_location_lng = posting.location_lng;
-  }
-  if (posting.max_distance_km != null) {
-    rpcParams.max_distance_km = posting.max_distance_km;
-  }
-
   const { data, error } = await supabase.rpc(
-    "match_users_to_posting",
+    "match_users_to_posting_v2",
     rpcParams,
   );
 
@@ -90,72 +75,51 @@ export async function matchPostingToProfiles(
     return [];
   }
 
-  // Check for existing match records
+  // v2 RPC returns only user_id and score — fetch profile data separately
   const userIds = data.map((row: { user_id: string }) => row.user_id);
-  const { data: existingMatches } = await supabase
-    .from("matches")
-    .select("id, user_id, similarity_score, status, score_breakdown")
+
+  const { data: profileRows } = await supabase
+    .from("profiles")
+    .select(
+      "user_id, full_name, headline, bio, location_lat, location_lng, location_preference, location_mode, availability_slots",
+    )
+    .in("user_id", userIds);
+
+  const profileMap = new Map(
+    profileRows?.map((p) => [p.user_id, p]) || [],
+  );
+
+  // Check for existing activity_cards (type: 'match') for this posting
+  const { data: existingCards } = await supabase
+    .from("activity_cards")
+    .select("id, user_id, score, data")
+    .eq("type", "match")
     .eq("posting_id", postingId)
     .in("user_id", userIds);
 
-  const matchMap = new Map(existingMatches?.map((m) => [m.user_id, m]) || []);
+  const cardMap = new Map(
+    existingCards?.map((c) => [c.user_id, c]) || [],
+  );
 
-  // Determine which users need a fresh breakdown computed
-  const usersNeedingBreakdown: string[] = [];
-  const cachedBreakdowns = new Map<string, ScoreBreakdown>();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  for (const row of data as any[]) {
-    const existingMatch = matchMap.get(row.user_id);
-    if (existingMatch?.score_breakdown) {
-      cachedBreakdowns.set(
-        row.user_id,
-        existingMatch.score_breakdown as ScoreBreakdown,
-      );
-    } else {
-      usersNeedingBreakdown.push(row.user_id);
-    }
-  }
-
-  // Batch-compute breakdowns for all users that need one (single RPC call)
-  const batchBreakdowns = new Map<string, ScoreBreakdown>();
-  if (usersNeedingBreakdown.length > 0) {
-    const { data: batchData, error: batchError } = await supabase.rpc(
-      "compute_match_breakdowns_for_posting",
-      {
-        target_posting_id: postingId,
-        user_ids: usersNeedingBreakdown,
-      },
-    );
-
-    if (!batchError && batchData) {
-      for (const row of batchData as {
-        user_id: string;
-        breakdown: ScoreBreakdown;
-      }[]) {
-        batchBreakdowns.set(row.user_id, row.breakdown);
-      }
-    }
-  }
-
-  // Transform results into match objects using pre-computed breakdowns
+  // Transform results into match objects
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const matches: PostingToProfileMatch[] = (data as any[]).map((row: any) => {
+    const pr = profileMap.get(row.user_id);
     const profile: Profile = {
       user_id: row.user_id,
-      full_name: row.full_name,
-      headline: row.headline,
-      bio: row.bio,
+      full_name: pr?.full_name ?? null,
+      headline: pr?.headline ?? null,
+      bio: pr?.bio ?? null,
       location: null,
-      location_lat: row.location_lat ?? null,
-      location_lng: row.location_lng ?? null,
+      location_lat: pr?.location_lat ?? null,
+      location_lng: pr?.location_lng ?? null,
       interests: null,
       languages: null,
       portfolio_url: null,
       github_url: null,
-      location_preference: row.location_preference ?? null,
-      location_mode: row.location_mode ?? null,
-      availability_slots: row.availability_slots || null,
+      location_preference: pr?.location_preference ?? null,
+      location_mode: pr?.location_mode ?? null,
+      availability_slots: pr?.availability_slots || null,
       source_text: null,
       previous_source_text: null,
       previous_profile_snapshot: null,
@@ -167,17 +131,16 @@ export async function matchPostingToProfiles(
       updated_at: "",
     };
 
-    const existingMatch = matchMap.get(row.user_id);
-    const scoreBreakdown =
-      cachedBreakdowns.get(row.user_id) ??
-      batchBreakdowns.get(row.user_id) ??
-      null;
+    const existingCard = cardMap.get(row.user_id);
+    const scoreBreakdown: ScoreBreakdown | null =
+      (existingCard?.data as { score_breakdown?: ScoreBreakdown })
+        ?.score_breakdown ?? null;
 
     return {
       profile,
-      score: row.similarity,
+      score: row.score,
       scoreBreakdown,
-      matchId: existingMatch?.id,
+      matchId: existingCard?.id,
     };
   });
 
@@ -185,16 +148,23 @@ export async function matchPostingToProfiles(
   if (deepMatch && isDeepMatchAvailable()) {
     const topN = matches.slice(0, DEEP_MATCH.DEFAULT_TOP_N);
 
-    // Fetch posting source text
-    const { data: postingSource } = await supabase
-      .from("postings")
-      .select("title, source_text, description")
-      .eq("id", postingId)
+    // Fetch posting text from space_postings
+    const postingTitle = posting.category || "Space Posting";
+    let postingText = posting.text || "";
+
+    // Fetch parent space state_text for additional context
+    const { data: parentSpace } = await supabase
+      .from("spaces")
+      .select("state_text")
+      .eq("id", posting.space_id)
       .single();
 
-    const postingTitle = postingSource?.title || "";
-    const postingText =
-      postingSource?.source_text || postingSource?.description || "";
+    const parentStateText = parentSpace?.state_text || "";
+
+    // Prepend parent space context when available
+    if (parentStateText) {
+      postingText = `[Space context: ${parentStateText}]\n\n${postingText}`;
+    }
 
     if (postingText) {
       // Fetch profile source texts
@@ -214,6 +184,7 @@ export async function matchPostingToProfiles(
           const profileText = ps?.source_text || ps?.bio || ps?.headline || "";
           return {
             profileText,
+            parentStateText,
             fastFilterScore: m.score,
             sharedSkills: [] as string[],
             availabilityOverlap: m.scoreBreakdown?.availability ?? null,
@@ -255,7 +226,7 @@ export async function matchPostingToProfiles(
 }
 
 /**
- * Creates or updates match records in the database
+ * Creates or updates match records as activity_cards (type: 'match')
  * Called after finding matches to persist them
  */
 export async function createMatchRecordsForPosting(
@@ -264,50 +235,52 @@ export async function createMatchRecordsForPosting(
 ): Promise<void> {
   const supabase = await createClient();
 
-  const matchInserts = matches
-    .filter((m) => !m.matchId && m.score > MATCH_SCORE_THRESHOLD) // Only create new matches above threshold
+  const cardInserts = matches
+    .filter((m) => !m.matchId && m.score > MATCH_SCORE_THRESHOLD)
     .map((m) => ({
-      posting_id: postingId,
       user_id: m.profile.user_id,
-      similarity_score: m.score,
-      score_breakdown: m.scoreBreakdown,
+      type: "match" as const,
+      title: "You matched with a posting",
+      posting_id: postingId,
+      score: m.score,
+      data: {
+        score_breakdown: m.scoreBreakdown,
+        deep_match: m.deepMatchResult ?? null,
+      },
       status: "pending" as const,
     }));
 
-  if (matchInserts.length > 0) {
-    const { error } = await supabase.from("matches").upsert(matchInserts, {
-      onConflict: "posting_id,user_id",
-      ignoreDuplicates: false,
-    });
+  if (cardInserts.length > 0) {
+    const { error } = await supabase.from("activity_cards").insert(cardInserts);
 
     if (error) {
-      throw new Error(`Failed to create match records: ${error.message}`);
+      throw new Error(`Failed to create match activity cards: ${error.message}`);
     }
   }
 
-  // Update existing matches that are missing score_breakdown
+  // Update existing cards with new score data
   const updatesToMake = matches
-    .filter((m) => m.matchId && m.scoreBreakdown) // Has matchId and computed breakdown
+    .filter((m) => m.matchId && m.scoreBreakdown)
     .map((m) => ({
       id: m.matchId!,
-      score_breakdown: m.scoreBreakdown,
+      data: {
+        score_breakdown: m.scoreBreakdown,
+        deep_match: m.deepMatchResult ?? null,
+      },
     }));
 
   if (updatesToMake.length > 0) {
-    // Update each match individually to set score_breakdown
     for (const update of updatesToMake) {
       const { error } = await supabase
-        .from("matches")
-        .update({ score_breakdown: update.score_breakdown })
-        .eq("id", update.id)
-        .is("score_breakdown", null); // Only update if currently null
+        .from("activity_cards")
+        .update({ data: update.data })
+        .eq("id", update.id);
 
       if (error) {
         console.warn(
-          `Failed to update breakdown for match ${update.id}:`,
+          `Failed to update data for activity card ${update.id}:`,
           error,
         );
-        // Don't throw - this is not critical
       }
     }
   }

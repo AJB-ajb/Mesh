@@ -1,365 +1,238 @@
 ---
 name: test-ui
-description: "Browser-based UI testing for Mesh. Tests use-case flows end-to-end from the user's perspective, flags bugs, UX friction, and unintuitive behavior. Supports multi-user scenarios via a two-agent pattern (one in the browser, one via API). Produces structured bug reports. Use whenever someone says 'test the UI', 'run browser tests', 'QA the app', 'check the pages', 'visual regression', 'test mobile layout', 'test the flow', or 'run use-case tests'."
-argument-hint: "[use-case description | flows | visual | full] [mobile | desktop] [route-or-area]"
+description: "Browser-based UI testing. Tests use-case flows end-to-end from the user's perspective, flags bugs, UX friction, and unintuitive behavior. Prioritizes critical user journeys and adapts to whatever the app currently offers. Supports multi-user scenarios via a two-agent pattern. Use whenever someone says 'test the UI', 'run browser tests', 'QA the app', 'check the pages', 'visual regression', 'test mobile layout', 'test the flow', or 'run use-case tests'."
+argument-hint: "[use-case description | visual | full] [mobile | desktop] [route-or-area]"
 ---
 
-# Browser UI Testing Skill
+# Browser UI Testing
 
-## 1. Philosophy
+## Philosophy
 
-Test Mesh **the way a real user would use it** — not as a checklist of UI elements, but as someone trying to accomplish a goal. The most valuable findings are not pixel-level bugs but **UX friction**: confusing flows, unintuitive interactions, missing feedback, dead ends, and moments where a user would hesitate or give up.
+Test **the way a real user would** — not as a checklist of UI elements, but as someone trying to accomplish a goal. The most valuable findings are **UX friction**: confusing flows, dead ends, missing feedback, and moments where a user would hesitate or give up.
 
 ### What to look for
 
 - **Friction**: Steps that feel unnecessary, confusing, or slow
 - **Dead ends**: States where the user doesn't know what to do next
-- **Missing feedback**: Actions with no visible response (loading, success, error)
-- **Inconsistency**: Similar actions that behave differently across pages
-- **Discoverability**: Features that exist but are hard to find
+- **Missing feedback**: Actions with no visible response
+- **Inconsistency**: Similar actions that behave differently
 - **Broken flows**: Errors, crashes, wrong redirects, lost data
 - **Responsive issues**: Layout problems at different viewport sizes
 
-## 2. Mode Selection
+## Arguments
 
-Parse `$ARGUMENTS` along four dimensions:
+Parse `$ARGUMENTS` along these dimensions:
 
-| Dimension    | Values                                                       | Default                   |
-| ------------ | ------------------------------------------------------------ | ------------------------- |
-| **Scope**    | `flows`, `visual`, `full`, or a **use-case description**     | `full` (run both)         |
-| **Viewport** | `mobile`, `desktop`                                          | both                      |
-| **Target**   | route path or area name (e.g. `/settings`, `authentication`) | all                       |
-| **Server**   | `dev`, `prod`                                                | `prod` (production build) |
+| Dimension    | Values                                 | Default |
+| ------------ | -------------------------------------- | ------- |
+| **Scope**    | use-case description, `visual`, `full` | `full`  |
+| **Viewport** | `mobile`, `desktop`                    | both    |
+| **Target**   | route path or area name                | all     |
+| **Server**   | `dev`, `prod`                          | `prod`  |
 
-When the argument is a **use-case description** (e.g. "new user creates a posting and someone applies"), treat it as a use-case-driven test session (see section 7).
+When the argument is a **use-case description** (e.g. "new user signs up and creates their first project"), treat it as a use-case-driven test — skip discovery and go straight to that flow.
 
-Examples:
+## Prerequisites
 
-- `a user creates a tennis posting and a stranger applies` — use-case-driven test
-- `flows mobile` — flow tests at mobile viewport only
-- `visual /profile` — visual tests on the profile page only
-- `full desktop` — all tests, desktop only
-- `dev flows` — flow tests using dev server
-- (empty) — full test suite, both viewports
-
-## 3. Prerequisites
-
-Before starting, verify each of these. If any fails, report it and stop.
-
-1. **Server running** at `http://localhost:3000` — start it if needed, then navigate and confirm the page loads.
-
-   **Production mode (default):**
+1. **Dev server running** at `http://localhost:3000`:
 
    ```bash
-   pnpm build
-   pnpm start &
+   # Production build (default — faster, no StrictMode double-renders)
+   pnpm build && pnpm start &
+   # Dev mode (when `dev` flag is set)
+   pnpm dev &
    ```
 
-   **Dev mode (when `dev` flag is set):** Use `pnpm dev &` instead.
+   If a server is already running on port 3000, check it matches the requested mode. Reuse if so.
 
-   **If a server is already running on port 3000:** Check whether it matches the requested mode. Reuse it if so, otherwise ask the user.
+2. **Browser automation** — Claude-in-Chrome MCP tools respond. Call `tabs_context_mcp` first.
+3. **Test credentials** — read `spec/testing.md` for test user setup and `.env` for `TEST_USER_PASSWORD`.
 
-   _Why production by default_: Production builds load faster, produce no compilation delays, and avoid React StrictMode double-renders that confuse element detection.
+## Discovery
 
-2. **Browser automation available** — Claude-in-Chrome MCP tools respond.
+Before testing, understand what the app does and what matters most.
 
-3. **Test credentials available** — read `spec/testing.md` for test user setup. Verify `.env` contains `TEST_USER_PASSWORD`.
+### 1. Read use cases
 
-## 4. Setup
+Read `spec/0-use-cases.md` (or equivalent). These are the source of truth for what real users do. Each use case becomes a candidate test flow, ordered by criticality.
 
-1. Call `tabs_context_mcp` to get browser context.
-2. Create a new tab with `tabs_create_mcp`.
-3. Read `TEST_USER_PASSWORD` from `.env`.
-4. Initialize a **test-data tracking list** — an in-memory list to record IDs of any entities created during testing (posting IDs, bookmarks, connection requests, etc.). This drives cleanup at the end.
-5. Read `spec/testing.md` for test user credentials and multi-user patterns:
-   - **User 1** (primary/browser): `ajb60721@gmail.com`
-   - **User 2** (secondary/API): `ajb60722@gmail.com`
-   - Password for both: value from `.env`
-
-## 5. App Discovery
-
-Before testing, understand the current state of the app. Routes change as Mesh evolves — discover dynamically.
-
-### Route Discovery
+### 2. Discover routes
 
 ```
 Glob pattern="src/app/**/page.tsx"
 ```
 
-Parse the Next.js App Router directory structure to build a route table. Read `references/pages.md` for guidance on interpreting the directory layout, route groups, and what to look for on each type of page.
+See `references/pages.md` for how to interpret Next.js App Router structure. Build a route table grouped by access level (public, auth, protected, dynamic).
 
-### Understand What's Available
+### 3. Explore the app
 
-Before writing test flows, spend a few minutes exploring:
+Navigate the main authenticated pages. Identify:
 
-1. Navigate to the main authenticated page
-2. Identify the navigation structure (sidebar, header, mobile nav)
-3. Note which features are implemented vs. placeholder
-4. Check what actions are available on each page
+- Navigation structure (sidebar, header, bottom bar, mobile nav)
+- Which features are implemented vs. placeholder
+- What actions are available on each page
 
-This exploration informs which use cases can actually be tested end-to-end.
+This informs which use cases can actually be tested end-to-end.
 
-## 6. Multi-User Testing (Two-Agent Pattern)
+## Test Prioritization
 
-Mesh's core features involve two users interacting. The skill uses a split approach:
+Not all flows are equally important. Test in this order:
 
-- **User 1** (primary) interacts through the browser UI normally
-- **User 2** (secondary) actions are simulated via authenticated API calls
+### Tier 1 — Critical (test these first)
 
-See `spec/testing.md` for the full list of multi-user scenarios.
+- **Authentication**: Login, session persistence, sign-out. If this is broken, nothing else works.
+- **Core creation flow**: Whatever the primary "create" action is (a post, project, document, etc.)
+- **Core discovery flow**: Can users find things other users created?
 
-### Setting Up User 2's Session
+### Tier 2 — Important
 
-1. Log in as User 2 via the browser to establish a session
-2. Extract auth cookies/tokens from the browser
-3. Switch back to User 1 in the browser
-4. Use `javascript_tool` with `fetch()` against `localhost:3000/api/...` routes, passing User 2's credentials
+- **Multi-user interactions**: The flows where two users interact (apply, accept, message, connect)
+- **Navigation**: All nav links work, mobile nav adapts, no dead links
+- **Profile/settings**: Edit, save, verify persistence
 
-### Key Multi-User Patterns
+### Tier 3 — Polish
 
-- User 1 creates posting -> User 2 requests to join -> User 1 accepts -> conversation opens
-- User 1 sends connection request -> User 2 accepts
-- Sequential invite: User 1 creates posting -> selects User 2 -> User 2 responds
+- **Edge cases**: Empty states, long text, back button, refresh mid-flow
+- **Visual consistency**: Layout, spacing, responsive behavior across viewports
+- **Error recovery**: What happens when things go wrong?
 
-After User 2 acts via API, verify in User 1's browser that the result is visible (notification, updated state, etc.).
+Within each tier, **align with spec use cases** — test the scenarios documented in `spec/0-use-cases.md` rather than inventing abstract test cases. The use cases describe real user goals; the test should verify those goals are achievable.
 
-## 7. Use-Case-Driven Testing
+## Use-Case-Driven Testing
 
-When a use-case description is provided (or as part of `full` mode), test end-to-end user journeys.
+Each test is a user journey with a goal. Follow this pattern:
 
-### Use-Case Sources
-
-1. **User-provided**: The developer describes a scenario to test
-2. **From spec**: Read `spec/use-cases.md` for documented Mesh use cases — these describe real scenarios with expected behaviors
-3. **Access model**: `spec/use-cases.md` also contains access & composition use cases (UC-A1 through UC-A12) with specific verify steps
-
-### How to Run a Use-Case Test
-
-1. **Define the goal**: What is the user trying to accomplish?
+1. **Define the goal**: What is the user trying to accomplish? (from spec use case or user-provided)
 2. **Identify the entry point**: Where does the user start?
-3. **Walk through naturally**: Follow the path a real user would take, making choices as they would
+3. **Walk through naturally**: Follow the path a real user would take
 4. **Note every friction point**: Anything that makes you pause, re-read, or try multiple approaches
-5. **Test the happy path first**, then try edge cases (empty inputs, long text, back button, refresh)
+5. **Test the happy path first**, then edge cases
 6. **Verify the outcome**: Did the user achieve their goal? Is the result visible and correct?
+7. **Test the return trip**: If you created something, check it appears in lists, can be edited/deleted
 
-### What Makes a Good Use-Case Test
+### Documenting friction
 
-- **Be specific**: "A user creates a tennis partner posting and a stranger discovers and applies" is better than "test postings"
-- **Cross multiple pages**: Good use cases naturally span several routes
-- **Include the return trip**: If you create something, check it appears in lists, can be edited, can be deleted
-- **Test as a confused user**: Try clicking the "wrong" thing. Is recovery easy?
-
-### Documenting Friction
-
-For each friction point, record:
+For each friction point:
 
 - **What happened**: The exact interaction that felt wrong
 - **Why it's a problem**: What a user would think/feel
-- **Severity**: From "mildly confusing" to "completely blocked"
-- **Suggestion**: How it could be improved (if obvious)
+- **Severity**: "mildly confusing" to "completely blocked"
+- **Suggestion**: How it could be improved
 
-## 8. Login Helper
+## Multi-User Testing
 
-1. Navigate to `/login`
-2. Take a screenshot to verify the form renders
-3. Enter the user's email and password
-4. Click "Sign In"
-5. Wait for redirect — take a screenshot and note the actual post-login URL
-6. Verify the page content loads (not a blank page or error)
+Many apps involve two users interacting. Use a split approach:
 
-**Skip if already authenticated**: Check if the current page shows the authenticated app shell. If so, verify the correct user is logged in.
+- **User 1** (primary) interacts through the browser
+- **User 2** (secondary) acts via authenticated API calls
 
-If login fails, report it as a critical bug and stop.
+See `spec/testing.md` for multi-user credentials and patterns.
 
-### Switching Users
+### Setting Up User 2
 
-To switch from User 1 to User 2 (or vice versa):
+1. Log in as User 2 via the browser to establish a session
+2. Extract auth cookies/tokens
+3. Switch back to User 1
+4. Use `javascript_tool` with `fetch()` against API routes, passing User 2's credentials
 
-1. Sign out via the avatar dropdown -> "Sign out"
-2. Run the login helper with the other user's email
+After User 2 acts via API, verify in User 1's browser that the result is visible.
 
-## 9. Flow Tests
-
-**When scope is `flows` or `full`.**
-
-These are generic flow patterns — adapt them to what you discover in section 5. Read `references/flows.md` for detailed guidance on each flow.
-
-1. **Authentication** — login works, redirects correctly, session persists
-2. **Navigation** — all nav links work, pages load, mobile nav works
-3. **Create posting** — full creation flow through the editor/form, track the posting ID
-4. **Browse & search** — discover page: search, filter, sort, bookmark
-5. **Posting detail** — owner view vs. visitor view, multi-user interaction (User 2 applies)
-6. **My content** — find your postings, verify management controls
-7. **Connections** — connection list, chat, multi-user flow (User 2 sends request)
-8. **Profile** — edit a field, save, verify persistence, revert
-9. **Settings** — toggle a preference, verify persistence, revert
-10. **Sign out** — session clears, protected routes redirect
-
-For each flow:
-
-- Take screenshots at key verification points
-- Record PASS or FAIL
-- If FAIL, record a detailed bug
-- **Also record UX friction** even on PASS — a flow can work but still be confusing
-
-## 10. Visual Tests
+## Visual Tests
 
 **When scope is `visual` or `full`.**
 
 For each discovered page:
 
-1. Navigate to the page (log in first if protected)
-2. **Desktop check** (skip if viewport is `mobile` only) — resize to 1440x900, screenshot, apply checklist
-3. **Mobile check** (skip if viewport is `desktop` only) — resize to 375x812, screenshot, apply checklist
-4. Record any issues found
+1. Navigate to the page
+2. **Desktop** (1440x900) — screenshot, apply checklist
+3. **Mobile** (375x812) — screenshot, apply checklist
 
-### Visual Checklist
+### Checklist
 
-1. **Layout integrity** — no overflow, no overlapping elements, no unintended horizontal scroll
-2. **Typography** — readable sizes (min 14px body), proper hierarchy
-3. **Spacing** — consistent padding/margins, nothing cramped or floating
-4. **Touch targets** — buttons/links min 44px on mobile, visible hover/focus states
-5. **Responsive behavior** — content reflows properly, nav adapts, nothing cut off
-6. **Color & contrast** — text readable, interactive elements distinguishable
-7. **Empty states** — helpful messages when no data, clear call to action
-8. **Loading states** — feedback during data fetch, not a blank void
-9. **Error states** — what happens on bad input, failed requests, missing data?
-10. **Consistency** — similar elements styled the same across pages
+1. Layout integrity — no overflow, overlap, horizontal scroll
+2. Typography — readable sizes, proper hierarchy
+3. Spacing — consistent, nothing cramped
+4. Touch targets — min 44px on mobile
+5. Responsive behavior — content reflows, nav adapts
+6. Empty/loading/error states — helpful, not blank
+7. Consistency — similar elements styled the same
 
-## 11. Stateful Testing
+## Stateful Testing
 
-Exercise full CRUD — don't just look at pages, interact with them.
+When creating test data:
 
-- **Prefix test data** with `[TEST]` so it's identifiable
-- **Track all created entity IDs** in the test-data tracking list
-- **Types to track**: posting IDs, bookmark IDs, connection request IDs, profile field changes, settings changes
-- After all tests, the cleanup protocol (section 14) reverses these changes
+- Prefix with `[TEST]` for easy identification
+- Track all created entity IDs for cleanup
+- After tests complete, reverse all changes (delete test entities, revert edits)
 
-## 12. Report Generation
+## Login Helper
 
-After all tests complete, generate a report:
+1. Navigate to `/login`
+2. Screenshot to verify form renders
+3. Enter credentials, submit
+4. Verify redirect to authenticated page
+5. If already authenticated, verify correct user
 
-- Path: `.reports/browser-test-YYYY-MM-DD[-suffix].md` (add `-v02` etc. if a report already exists for today)
-- Create `.reports/` if it doesn't exist
+To switch users: sign out via UI, log in with other credentials.
 
-### Report Template
+## Report
+
+Path: `.reports/browser-test-YYYY-MM-DD[-suffix].md`
 
 ```markdown
-# Mesh UI Test Report — YYYY-MM-DD
+# UI Test Report — YYYY-MM-DD
 
 ## Summary
 
-- **Date**: YYYY-MM-DD
-- **Mode**: flows | visual | full | use-case
+- **Scope**: [use-case description | visual | full]
 - **Viewport**: desktop | mobile | both
-- **Target**: all | specific route/flow/use-case
 - **Bugs Found**: N (C critical, H high, M medium, L low)
 - **UX Friction Points**: N
-- **Flows Passed**: X/10 (if flows were run)
-- **Pages Scanned**: Y (if visual was run)
 - **Test Data Cleaned**: yes | partial | no
+
+## Use Cases Tested
+
+| #   | Use Case                     | Status    | Notes |
+| --- | ---------------------------- | --------- | ----- |
+| 1   | [from spec or user-provided] | PASS/FAIL |       |
 
 ## UX Friction Points
 
-Issues that aren't bugs but make the experience worse. Ordered by impact.
-
 ### FRICTION-001: [Short description]
 
-- **Where**: /route or flow name
-- **What happened**: Describe the interaction
-- **Why it's a problem**: What a user would think/feel
+- **Where**: /route or flow
+- **What happened**: ...
 - **Impact**: high | medium | low
-- **Suggestion**: How to improve it
+- **Suggestion**: ...
 
 ## Bugs
 
 ### BUG-001: [Title]
 
 - **Severity**: critical | high | medium | low
-- **Category**: layout | functionality | UX | accessibility | responsiveness
 - **Page**: /route
 - **Viewport**: desktop | mobile | both
-- **Steps to Reproduce**:
-  1. Step one
-  2. Step two
-- **Expected**: What should happen
-- **Actual**: What actually happens
-- **Suggested Fix**: Brief suggestion
-
-## Flow Tests
-
-| #   | Flow           | Status    | Notes |
-| --- | -------------- | --------- | ----- |
-| 1   | Authentication | PASS/FAIL |       |
-| ... | ...            | ...       | ...   |
-
-## Pages Tested
-
-| Page | Route | Desktop | Mobile | Notes |
-| ---- | ----- | ------- | ------ | ----- |
-| ...  | ...   | ...     | ...    | ...   |
+- **Steps to Reproduce**: ...
+- **Expected**: ...
+- **Actual**: ...
 
 ## Cleanup
 
 | Entity | ID  | Action | Result |
 | ------ | --- | ------ | ------ |
-| ...    | ... | ...    | ...    |
-
-## Test Environment
-
-- **Browser**: Chrome (via Claude-in-Chrome)
-- **Server**: production build | dev server (localhost:3000)
-- **Date**: YYYY-MM-DD
 ```
 
-## 13. Severity Guide
+## Severity Guide
 
-| Level        | Meaning                                             | Examples                                                     |
-| ------------ | --------------------------------------------------- | ------------------------------------------------------------ |
-| **Critical** | Feature broken or unusable, blocks core workflows   | Login fails, page crashes, data loss, creation errors        |
-| **High**     | Feature works but with significant usability issues | Form doesn't validate, nav broken on mobile, wrong data      |
-| **Medium**   | Noticeable issue that doesn't block functionality   | Layout overflow, inconsistent spacing, missing loading state |
-| **Low**      | Minor cosmetic or polish issue                      | Slight alignment, icon sizing, non-ideal empty state text    |
+| Level    | Meaning                     | Examples                               |
+| -------- | --------------------------- | -------------------------------------- |
+| Critical | Blocks core workflows       | Login fails, page crashes, data loss   |
+| High     | Significant usability issue | Form broken, nav broken on mobile      |
+| Medium   | Noticeable, doesn't block   | Layout overflow, missing loading state |
+| Low      | Minor cosmetic              | Slight alignment, icon sizing          |
 
-## 14. Cleanup Protocol
+## Error Recovery
 
-After all tests complete, reverse test data using the tracking list:
-
-1. Delete test postings (navigate and use delete action, or via API)
-2. Withdraw applications/join requests
-3. Remove test connections
-4. Revert profile field changes to original values
-5. Revert settings changes to original values
-6. Log results in the report's Cleanup section
-
-If cleanup fails for any entity, log it as a warning (not a bug).
-
-## 15. Error Recovery
-
-### MCP Disconnection
-
-If a browser tool call fails:
-
-1. Wait 3-5 seconds
-2. Call `tabs_context_mcp` to reconnect
-3. Retry the failed action
-4. If it fails 3 times, report and move on
-
-### Page Load Failures
-
-1. Screenshot the state
-2. Try navigating again
-3. If still failing, record as a bug and continue
-
-### Element Not Found
-
-1. Screenshot the page
-2. Try `find` with alternative descriptions
-3. If still not found, record as a bug and continue
-
-### Test Data Leak
-
-If a session is interrupted before cleanup:
-
-1. On next run, search for entities prefixed with `[TEST]` and clean them up
-2. Log any orphaned test data in the report
+- **MCP disconnect**: Wait 3s, call `tabs_context_mcp`, retry. After 3 failures, report and move on.
+- **Page load failure**: Screenshot, retry, record as bug if persistent.
+- **Element not found**: Screenshot, try `find` with alternatives, record as bug.

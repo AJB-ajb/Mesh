@@ -133,20 +133,20 @@ Compare migration status between local and the **production** Supabase project.
 2. **Link to production**:
 
    ```
-   npx supabase link --project-ref jirgkhjdxahfsgqxprhh
+   supabase link --project-ref jirgkhjdxahfsgqxprhh
    ```
 
 3. **List migration status**:
 
    ```
-   npx supabase migration list --linked
+   supabase migration list --linked
    ```
 
 4. **Count pending migrations** — rows where the Remote column is empty. Store the count and the list of migration names for the summary.
 
 5. **Re-link to dev** (restore the saved ref):
    ```
-   npx supabase link --project-ref <saved-ref>
+   supabase link --project-ref <saved-ref>
    ```
 
 Do NOT push migrations yet — that happens after the PR is merged (step 6).
@@ -211,6 +211,16 @@ EOF
 
 Tell the user the PR URL and ask them to review and merge when ready.
 
+## 5b. Monitor CI
+
+After opening the PR, use `/loop 3m` to poll CI status every 3 minutes:
+
+```
+gh pr checks <PR-number>
+```
+
+When all checks pass (or failures are identified), report the results. If a check fails, investigate with `gh run view <run-id> --log-failed` and fix if needed (using the worktree flow from step 2f).
+
 ## 6. Post-Merge: Apply Migrations to Production
 
 After the user confirms the PR is merged:
@@ -232,19 +242,21 @@ After the user confirms the PR is merged:
 3. **Link to production**:
 
    ```
-   npx supabase link --project-ref jirgkhjdxahfsgqxprhh
+   supabase link --project-ref jirgkhjdxahfsgqxprhh
    ```
 
 4. **Push migrations** (if any were pending):
 
+   **Important**: `.env` contains `SUPABASE_DB_PASSWORD` set to the **dev** DB password. The CLI reads this automatically and will send the wrong password to the production host. You **must** unset it so the CLI falls back to stored credentials from `supabase link`:
+
    ```
-   npx supabase db push
+   SUPABASE_DB_PASSWORD= supabase db push
    ```
 
 5. **Re-link to dev project**:
 
    ```
-   npx supabase link --project-ref wcfpmyiaauclgugjrntu
+   supabase link --project-ref wcfpmyiaauclgugjrntu
    ```
 
 6. **Verify** by listing migrations again — all should now show a Remote timestamp.

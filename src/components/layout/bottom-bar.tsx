@@ -2,17 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, FolderKanban, Users } from "lucide-react";
+import { MessageSquare, Bell, User } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { useMobileKeyboard } from "@/lib/hooks/use-mobile-keyboard";
+import { ROUTES } from "@/lib/routes";
 
 const tabs = [
-  { href: "/discover", icon: Compass, label: labels.nav.discover },
-  { href: "/posts", icon: FolderKanban, label: labels.nav.posts },
-  { href: "/connections", icon: Users, label: labels.nav.connections },
-] as const;
+  { href: ROUTES.spaces, icon: MessageSquare, label: labels.nav.spaces },
+  { href: ROUTES.activity, icon: Bell, label: labels.nav.activity },
+  { href: ROUTES.profile, icon: User, label: labels.nav.profile },
+];
 
 export function BottomBar() {
   const pathname = usePathname();

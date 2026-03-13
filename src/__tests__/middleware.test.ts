@@ -9,6 +9,7 @@ vi.mock("@/lib/supabase/middleware", () => ({
 
 // Import proxy after mocks are set up
 import { proxy } from "@/proxy";
+import { ROUTES } from "@/lib/routes";
 
 function createRequest(pathname: string): NextRequest {
   return new NextRequest(new URL(pathname, "http://localhost:3000"));
@@ -27,13 +28,13 @@ describe("proxy (route protection)", () => {
     const passthrough = NextResponse.next();
     mockUpdateSession.mockResolvedValue({ response: passthrough, user: null });
 
-    const request = createRequest("/discover");
+    const request = createRequest(ROUTES.spaces);
     const response = await proxy(request);
 
     expect(response.status).toBe(307);
     const location = response.headers.get("location");
     expect(location).toContain("/login");
-    expect(location).toContain("next=" + encodeURIComponent("/discover"));
+    expect(location).toContain("next=" + encodeURIComponent(ROUTES.spaces));
   });
 
   it("redirects unauthenticated user on nested protected route", async () => {
@@ -51,7 +52,7 @@ describe("proxy (route protection)", () => {
     );
   });
 
-  it("redirects authenticated user on /login to /posts", async () => {
+  it("redirects authenticated user on /login to home", async () => {
     const passthrough = NextResponse.next();
     mockUpdateSession.mockResolvedValue({
       response: passthrough,
@@ -63,10 +64,10 @@ describe("proxy (route protection)", () => {
 
     expect(response.status).toBe(307);
     const location = response.headers.get("location");
-    expect(location).toContain("/posts");
+    expect(location).toContain(ROUTES.home);
   });
 
-  it("redirects authenticated user on /signup to /posts", async () => {
+  it("redirects authenticated user on /signup to home", async () => {
     const passthrough = NextResponse.next();
     mockUpdateSession.mockResolvedValue({
       response: passthrough,
@@ -78,7 +79,7 @@ describe("proxy (route protection)", () => {
 
     expect(response.status).toBe(307);
     const location = response.headers.get("location");
-    expect(location).toContain("/posts");
+    expect(location).toContain(ROUTES.home);
   });
 
   it("allows unauthenticated user on public route (e.g. /)", async () => {
@@ -99,7 +100,7 @@ describe("proxy (route protection)", () => {
       user: mockUser(),
     });
 
-    const request = createRequest("/discover");
+    const request = createRequest(ROUTES.spaces);
     const response = await proxy(request);
 
     // Should return the passthrough response, not a redirect

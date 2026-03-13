@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { labels } from "@/lib/labels";
+import { ROUTES } from "@/lib/routes";
 
 /**
  * Trigger async GitHub profile sync
@@ -25,7 +28,7 @@ async function triggerGitHubSync(origin: string): Promise<void> {
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/posts";
+  const next = searchParams.get("next") ?? ROUTES.home;
   const isLinking = searchParams.get("link") === "true";
 
   if (code) {
@@ -52,6 +55,55 @@ export async function GET(request: Request) {
       if (hasGithubIdentity) {
         // Trigger GitHub profile extraction in background (async)
         triggerGitHubSync(origin);
+      }
+
+      // --- Duplicate account detection ---
+      // Check if another auth.users record shares this email (created by a
+      // different provider). If so, this OAuth sign-in created a duplicate.
+      // Redirect the user to login with their original method instead.
+      if (!isLinking && user.email) {
+        try {
+          const admin = createAdminClient();
+          // Query auth.users directly by email to find duplicates — O(1) instead of
+          // paginating through all users.
+          const { data: dupeRows, error: dupeError } = await admin.rpc(
+            "get_duplicate_auth_user_ids",
+            {
+              lookup_email: user.email!.toLowerCase(),
+              exclude_id: user.id,
+            },
+          );
+
+          // If the RPC doesn't exist, fall back to a raw query via the admin client
+          let foundDuplicate = false;
+          if (dupeError) {
+            // Fallback: use listUsers filtered to a single page check.
+            // Supabase GoTrue doesn't support email filter on listUsers,
+            // so we do a targeted rpc query on auth.users via the service-role client.
+            const { data: fallbackRows } = await admin
+              .schema("auth" as "public")
+              .from("users")
+              .select("id")
+              .eq("email", user.email!.toLowerCase())
+              .neq("id", user.id)
+              .limit(1);
+            foundDuplicate = (fallbackRows?.length ?? 0) > 0;
+          } else {
+            foundDuplicate = (dupeRows?.length ?? 0) > 0;
+          }
+
+          if (foundDuplicate) {
+            // Sign out the duplicate session so the user can't proceed
+            await supabase.auth.signOut();
+            const errorMsg = encodeURIComponent(
+              labels.auth.callback.duplicateAccountError,
+            );
+            return NextResponse.redirect(`${origin}/login?error=${errorMsg}`);
+          }
+        } catch (err) {
+          // Log but don't block the flow if duplicate detection fails
+          console.error("[OAuth Callback] Duplicate detection failed:", err);
+        }
       }
 
       // If this was an account linking flow, redirect to settings
@@ -110,7 +162,7 @@ export async function GET(request: Request) {
       if (!profileCompleted) {
         // Brand new user - send directly to posting creation for fast onboarding
         // Profile will be auto-created when they submit their first posting
-        const destination = next === "/posts" ? "/postings/new" : next;
+        const destination = next === ROUTES.home ? ROUTES.spaces : next;
         return NextResponse.redirect(`${origin}${destination}`);
       }
 

@@ -12,13 +12,15 @@ type DragMode = "create" | "move" | "resize-top" | "resize-bottom";
 type DragState = {
   mode: DragMode;
   dayOfWeek: number;
-  /** For create: the initial minute. For move/resize: the starting mouse Y. */
+  /** For create: the initial minute. For move/resize: the starting pointer Y. */
   startMinutes: number;
   currentMinutes: number;
   /** Index of the window being moved/resized (null for create) */
   windowIndex: number | null;
   /** Original window snapshot for move/resize */
   originalWindow: RecurringWindow | null;
+  /** Pointer ID for capture (touch support) */
+  pointerId: number | null;
 };
 
 function snapMinutes(m: number): number {
@@ -40,26 +42,26 @@ function minutesFromY(
 
 export type UseCalendarDragResult = {
   dragState: DragState | null;
-  handleMouseDown: (
-    e: React.MouseEvent,
+  handlePointerDown: (
+    e: React.PointerEvent,
     dayOfWeek: number,
     containerRef: React.RefObject<HTMLDivElement | null>,
     startHour: number,
   ) => void;
-  handleBlockMouseDown: (
-    e: React.MouseEvent,
+  handleBlockPointerDown: (
+    e: React.PointerEvent,
     mode: "move" | "resize-top" | "resize-bottom",
     windowIndex: number,
     window: RecurringWindow,
     containerRef: React.RefObject<HTMLDivElement | null>,
     startHour: number,
   ) => void;
-  handleMouseMove: (
-    e: React.MouseEvent,
+  handlePointerMove: (
+    e: React.PointerEvent,
     containerRef: React.RefObject<HTMLDivElement | null>,
     startHour: number,
   ) => void;
-  handleMouseUp: () => void;
+  handlePointerUp: (e: React.PointerEvent) => void;
   /** Preview window during drag-to-create */
   previewWindow: RecurringWindow | null;
 };
@@ -70,16 +72,20 @@ export function useCalendarDrag(
 ): UseCalendarDragResult {
   const [dragState, setDragState] = useState<DragState | null>(null);
   const dragRef = useRef<DragState | null>(null);
+  /** Element that received setPointerCapture — release must target the same element */
+  const captureElementRef = useRef<HTMLElement | null>(null);
 
-  const handleMouseDown = useCallback(
+  const handlePointerDown = useCallback(
     (
-      e: React.MouseEvent,
+      e: React.PointerEvent,
       dayOfWeek: number,
       containerRef: React.RefObject<HTMLDivElement | null>,
       startHour: number,
     ) => {
       if (e.button !== 0) return;
       e.preventDefault();
+      captureElementRef.current = e.currentTarget as HTMLElement;
+      captureElementRef.current.setPointerCapture(e.pointerId);
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
 
@@ -94,6 +100,7 @@ export function useCalendarDrag(
         currentMinutes: minutes,
         windowIndex: null,
         originalWindow: null,
+        pointerId: e.pointerId,
       };
       dragRef.current = state;
       setDragState(state);
@@ -101,9 +108,9 @@ export function useCalendarDrag(
     [],
   );
 
-  const handleBlockMouseDown = useCallback(
+  const handleBlockPointerDown = useCallback(
     (
-      e: React.MouseEvent,
+      e: React.PointerEvent,
       mode: "move" | "resize-top" | "resize-bottom",
       windowIndex: number,
       window: RecurringWindow,
@@ -113,6 +120,8 @@ export function useCalendarDrag(
       if (e.button !== 0) return;
       e.preventDefault();
       e.stopPropagation();
+      captureElementRef.current = e.currentTarget as HTMLElement;
+      captureElementRef.current.setPointerCapture(e.pointerId);
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
 
@@ -125,6 +134,7 @@ export function useCalendarDrag(
         currentMinutes: minutes,
         windowIndex,
         originalWindow: { ...window },
+        pointerId: e.pointerId,
       };
       dragRef.current = state;
       setDragState(state);
@@ -132,9 +142,9 @@ export function useCalendarDrag(
     [],
   );
 
-  const handleMouseMove = useCallback(
+  const handlePointerMove = useCallback(
     (
-      e: React.MouseEvent,
+      e: React.PointerEvent,
       containerRef: React.RefObject<HTMLDivElement | null>,
       startHour: number,
     ) => {
@@ -202,34 +212,45 @@ export function useCalendarDrag(
     [windows, onChange],
   );
 
-  const handleMouseUp = useCallback(() => {
-    const state = dragRef.current;
-    if (!state) return;
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      const state = dragRef.current;
+      if (!state) return;
 
-    if (state.mode === "create") {
-      const min = Math.min(state.startMinutes, state.currentMinutes);
-      const max = Math.max(state.startMinutes, state.currentMinutes);
-      const start = snapMinutes(clampMinutes(min));
-      const end = snapMinutes(clampMinutes(max));
-
-      // Only create if there's a meaningful duration (at least one snap unit)
-      if (end - start >= SNAP_MINUTES) {
-        onChange([
-          ...windows,
-          {
-            window_type: "recurring",
-            day_of_week: state.dayOfWeek,
-            start_minutes: start,
-            end_minutes: end,
-          },
-        ]);
+      // Release pointer capture on the same element that called setPointerCapture
+      try {
+        captureElementRef.current?.releasePointerCapture(e.pointerId);
+      } catch {
+        // Pointer capture may already be released
       }
-    }
-    // For move/resize, the changes were applied during mouse move
+      captureElementRef.current = null;
 
-    dragRef.current = null;
-    setDragState(null);
-  }, [windows, onChange]);
+      if (state.mode === "create") {
+        const min = Math.min(state.startMinutes, state.currentMinutes);
+        const max = Math.max(state.startMinutes, state.currentMinutes);
+        const start = snapMinutes(clampMinutes(min));
+        const end = snapMinutes(clampMinutes(max));
+
+        // Only create if there's a meaningful duration (at least one snap unit)
+        if (end - start >= SNAP_MINUTES) {
+          onChange([
+            ...windows,
+            {
+              window_type: "recurring",
+              day_of_week: state.dayOfWeek,
+              start_minutes: start,
+              end_minutes: end,
+            },
+          ]);
+        }
+      }
+      // For move/resize, the changes were applied during pointer move
+
+      dragRef.current = null;
+      setDragState(null);
+    },
+    [windows, onChange],
+  );
 
   // Compute preview window for drag-to-create
   let previewWindow: RecurringWindow | null = null;
@@ -250,10 +271,10 @@ export function useCalendarDrag(
 
   return {
     dragState,
-    handleMouseDown,
-    handleBlockMouseDown,
-    handleMouseMove,
-    handleMouseUp,
+    handlePointerDown,
+    handleBlockPointerDown,
+    handlePointerMove,
+    handlePointerUp,
     previewWindow,
   };
 }

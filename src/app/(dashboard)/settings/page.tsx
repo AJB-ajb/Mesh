@@ -19,6 +19,7 @@ import { ConnectedAccountsCard } from "@/components/settings/connected-accounts-
 import { GithubSyncCard } from "@/components/settings/github-sync-card";
 import { NotificationPreferencesCard } from "@/components/settings/notification-preferences-card";
 import { DangerZoneCard } from "@/components/settings/danger-zone-card";
+import { ROUTES } from "@/lib/routes";
 
 function SettingsContent() {
   const router = useRouter();
@@ -86,7 +87,7 @@ function SettingsContent() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-20">
       <Link
-        href="/posts"
+        href={ROUTES.home}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
