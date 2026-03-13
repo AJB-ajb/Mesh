@@ -5,7 +5,9 @@ import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { SpaceMessageWithSender } from "@/lib/hooks/use-space-messages";
+import type { SpacePosting } from "@/lib/supabase/types";
 import { MessageBubble } from "./message-bubble";
+import { PostingCardInline } from "./posting-card-inline";
 import { SystemMessage } from "./system-message";
 
 interface ConversationTimelineProps {
@@ -14,6 +16,7 @@ interface ConversationTimelineProps {
   hasMore: boolean;
   isLoading: boolean;
   onLoadMore: () => void;
+  postings?: Map<string, SpacePosting>;
 }
 
 export function ConversationTimeline({
@@ -22,6 +25,7 @@ export function ConversationTimeline({
   hasMore,
   isLoading,
   onLoadMore,
+  postings,
 }: ConversationTimelineProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -73,6 +77,23 @@ export function ConversationTimeline({
 
         const isOwn = msg.sender_id === userId;
         const senderName = msg.profiles?.full_name ?? "Unknown";
+
+        // Render posting messages as inline cards
+        const posting = msg.posting_id
+          ? postings?.get(msg.posting_id)
+          : undefined;
+        if (msg.type === "posting" && posting) {
+          return (
+            <PostingCardInline
+              key={msg.id}
+              posting={posting}
+              creatorName={senderName}
+              createdAt={msg.created_at}
+              isOwn={isOwn}
+            />
+          );
+        }
+
         const senderInitials = senderName
           .split(" ")
           .map((w) => w[0])

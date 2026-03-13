@@ -6,7 +6,15 @@ import { Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
-import { useSendSpaceMessage, type SendPayload } from "@/lib/hooks/use-send-space-message";
+import {
+  useSendSpaceMessage,
+  type SendPayload,
+} from "@/lib/hooks/use-send-space-message";
+import {
+  PostingComposeFields,
+  INITIAL_POSTING_FIELDS,
+  type PostingFields,
+} from "./posting-compose-fields";
 
 interface ComposeAreaProps {
   spaceId: string;
@@ -23,6 +31,9 @@ export function ComposeArea({
 }: ComposeAreaProps) {
   const [text, setText] = useState("");
   const [mode, setMode] = useState<"M" | "P">(postingOnly ? "P" : "M");
+  const [postingFields, setPostingFields] = useState<PostingFields>(
+    INITIAL_POSTING_FIELDS,
+  );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { send, isSending } = useSendSpaceMessage({
@@ -39,15 +50,25 @@ export function ComposeArea({
     if (mode === "M") {
       payload = { mode: "message", content: trimmed };
     } else {
-      payload = { mode: "posting", text: trimmed };
+      payload = {
+        mode: "posting",
+        text: trimmed,
+        category: postingFields.category,
+        capacity: postingFields.capacity,
+        deadline: postingFields.deadline,
+        visibility: postingFields.visibility,
+        autoAccept: postingFields.autoAccept,
+        tags: postingFields.tags,
+      };
     }
 
     const ok = await send(payload);
     if (ok) {
       setText("");
+      setPostingFields(INITIAL_POSTING_FIELDS);
       textareaRef.current?.focus();
     }
-  }, [text, mode, send, isSending]);
+  }, [text, mode, postingFields, send, isSending]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -123,6 +144,16 @@ export function ComposeArea({
           <Send className="size-4" />
         </Button>
       </div>
+
+      {/* Posting fields — shown when in P mode */}
+      {mode === "P" && (
+        <div className="mt-2">
+          <PostingComposeFields
+            fields={postingFields}
+            onChange={setPostingFields}
+          />
+        </div>
+      )}
     </div>
   );
 }

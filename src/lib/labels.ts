@@ -1132,12 +1132,30 @@ export const labels = {
     memberList: "Members",
     spaceSettings: "Space settings",
     editStateText: "Edit description",
+    searchPostings: "Search postings...",
+    noPostings: "No postings yet",
+    noPostingsMatch: "No postings match your search",
     joinRequest: "Request to join",
     joined: "Joined",
     typingIndicator: (names: string[]) =>
       names.length === 1
         ? `${names[0]} is typing...`
         : `${names.join(", ")} are typing...`,
+    posting: {
+      join: "Join",
+      requestToJoin: "Request to join",
+      joinConfirm: "Join this posting?",
+      requestPending: "Request pending",
+      submitRequest: "Submit request",
+      cancel: "Cancel",
+      messagePlaceholder: "Add a message (optional)...",
+    },
+    postingCategory: "Category",
+    postingCapacity: "Capacity",
+    postingDeadline: "Deadline",
+    postingVisibility: "Visibility",
+    postingAutoAccept: "Auto-accept",
+    postingTags: "Tags",
   },
 
   // ---------------------------------------------------------------------------
