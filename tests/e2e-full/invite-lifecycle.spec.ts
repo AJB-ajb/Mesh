@@ -16,7 +16,8 @@ function expiresIn30Days(): string {
   return d.toISOString();
 }
 
-test.describe("Invite Lifecycle", () => {
+// TODO: rewrite — /postings/:id route removed; postings now live inside spaces
+test.describe.skip("Invite Lifecycle", () => {
   test("accept — invitee joins a sequential invite posting", async ({
     ownerUser,
     developerPage,

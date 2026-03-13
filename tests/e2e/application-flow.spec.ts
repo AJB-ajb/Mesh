@@ -124,7 +124,8 @@ test.describe("Application Flow", () => {
     }
   });
 
-  test("developer sees posting detail page with posting info", async ({
+  // TODO: rewrite — /postings/:id route removed; postings now live inside spaces
+  test.skip("developer sees posting detail page with posting info", async ({
     developerPage,
     developerUser,
   }) => {

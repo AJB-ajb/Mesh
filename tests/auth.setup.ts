@@ -16,7 +16,7 @@ setup("authenticate as test user", async ({ page }) => {
   await page.locator('input[type="email"]').fill("ajb60721@gmail.com");
   await page.locator('input[type="password"]').fill(password);
   await page.locator('button[type="submit"]').click();
-  await page.waitForURL("**/posts", {
+  await page.waitForURL("**/spaces", {
     timeout: 30000,
     waitUntil: "domcontentloaded",
   });
