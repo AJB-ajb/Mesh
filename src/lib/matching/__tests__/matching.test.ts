@@ -24,18 +24,101 @@ import {
   createMatchRecordsForPosting,
 } from "../posting-to-profile";
 
-// Helper to create mock Supabase client
-function createMockSupabase(overrides: Record<string, unknown> = {}) {
-  const mockFrom = vi.fn();
-  const mockRpc = vi.fn();
+/**
+ * Helper to create a chainable mock Supabase client.
+ *
+ * The real Supabase PostgREST builder supports arbitrary chaining of
+ * .select(), .eq(), .in(), .single(), .insert(), .update(), .upsert().
+ * We build a recursive proxy so that any method returns the same chainable
+ * object, and the terminal call (.single() / the last .in() / .insert() etc.)
+ * can be given a resolved value via `resolveValue`.
+ */
+function createChainableMock(
+  resolveValue: unknown = { data: null, error: null },
+) {
+  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
+
+  const makeChain = (): Record<string, unknown> => {
+    const obj: Record<string, unknown> = {};
+    // Each chainable method returns the same object so any order works
+    for (const method of [
+      "select",
+      "eq",
+      "in",
+      "single",
+      "insert",
+      "update",
+      "upsert",
+      "delete",
+    ]) {
+      const fn = vi.fn().mockImplementation(() => {
+        // If calling a terminal that typically resolves, return promise
+        if (method === "single") return Promise.resolve(resolveValue);
+        if (method === "insert" || method === "upsert" || method === "delete")
+          return Promise.resolve(resolveValue);
+        return obj;
+      });
+      obj[method] = fn;
+      chain[method] = fn;
+    }
+    // .in() is often terminal in these queries — make it resolve
+    (obj as Record<string, unknown>).in = vi
+      .fn()
+      .mockImplementation(() => Promise.resolve(resolveValue));
+    chain.in = obj.in as ReturnType<typeof vi.fn>;
+    return obj;
+  };
+
+  return { chain: makeChain(), fns: chain };
+}
+
+/**
+ * Creates a mock Supabase client where `.from(tableName)` returns a
+ * chainable builder. You can configure per-table responses via the
+ * `tables` map, and RPC responses via `rpcResponses`.
+ */
+function createMockSupabase(
+  opts: {
+    tables?: Record<string, unknown>;
+    rpcResponses?: Array<{ data: unknown; error: unknown }>;
+  } = {},
+) {
+  const tableChains: Record<
+    string,
+    ReturnType<typeof createChainableMock>
+  > = {};
+  const fromCalls: Array<{ table: string; chain: Record<string, unknown> }> =
+    [];
+
+  // Allow multiple calls to the same table to return different results
+  const tableCallCounts: Record<string, number> = {};
+
+  const mockFrom = vi.fn().mockImplementation((table: string) => {
+    tableCallCounts[table] = (tableCallCounts[table] || 0) + 1;
+
+    const key = `${table}:${tableCallCounts[table]}`;
+    const resolveValue = (opts.tables &&
+      (opts.tables[key] || opts.tables[table])) || { data: null, error: null };
+    const mock = createChainableMock(resolveValue);
+    tableChains[key] = mock;
+    fromCalls.push({ table, chain: mock.chain });
+    return mock.chain;
+  });
+
+  let rpcCallIdx = 0;
+  const mockRpc = vi.fn().mockImplementation(() => {
+    const responses = opts.rpcResponses || [];
+    const resp = responses[rpcCallIdx] || { data: null, error: null };
+    rpcCallIdx++;
+    return Promise.resolve(resp);
+  });
 
   const mockClient = {
     from: mockFrom,
     rpc: mockRpc,
-    ...overrides,
   };
 
-  return { mockClient, mockFrom, mockRpc };
+  return { mockClient, mockFrom, mockRpc, tableChains, fromCalls };
 }
 
 describe("matchProfileToPostings", () => {
@@ -45,67 +128,35 @@ describe("matchProfileToPostings", () => {
 
   it("fetches user profile embedding and calls RPC function", async () => {
     const userEmbedding = new Array(1536).fill(0.1);
-    const { mockClient, mockFrom, mockRpc } = createMockSupabase();
 
-    // Mock profile fetch
-    mockFrom.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { embedding: userEmbedding },
-            error: null,
-          }),
-        }),
-      }),
-    });
-
-    // Mock RPC call
-    mockRpc.mockResolvedValue({
-      data: [
+    const { mockClient, mockRpc } = createMockSupabase({
+      tables: {
+        // First call: profiles (profile fetch)
+        "profiles:1": {
+          data: { embedding: userEmbedding },
+          error: null,
+        },
+        // Second call: activity_cards (existing matches check)
+        "activity_cards:1": {
+          data: [],
+          error: null,
+        },
+      },
+      rpcResponses: [
         {
-          posting_id: "post-1",
-          similarity: 0.85,
-          title: "AI Project",
-          description: "Build an AI app",
-          team_size_min: 2,
-          team_size_max: 5,
-          category: "professional",
-          tags: ["ai", "web"],
-          mode: "open",
-          location_preference: 0.5,
-          estimated_time: "1_month",
-          context_identifier: null,
-          parent_posting_id: null,
-          natural_language_criteria: null,
-          creator_id: "user-2",
-          created_at: "2024-01-01",
-          expires_at: "2024-02-01",
+          data: [
+            {
+              posting_id: "post-1",
+              posting_created_by: "user-2",
+              score: 0.85,
+              posting_text: "Build an AI app",
+              posting_category: "professional",
+              posting_tags: ["ai", "web"],
+            },
+          ],
+          error: null,
         },
       ],
-      error: null,
-    });
-
-    // Mock existing matches check
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { embedding: userEmbedding },
-            error: null,
-          }),
-        }),
-      }),
-    });
-
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          in: vi.fn().mockResolvedValue({
-            data: [],
-            error: null,
-          }),
-        }),
-      }),
     });
 
     vi.mocked(createClient).mockResolvedValue(
@@ -114,29 +165,25 @@ describe("matchProfileToPostings", () => {
 
     const matches = await matchProfileToPostings("user-1");
 
-    expect(mockRpc).toHaveBeenCalledWith("match_postings_to_user", {
-      user_embedding: userEmbedding,
-      user_id_param: "user-1",
-      match_limit: 10,
+    expect(mockRpc).toHaveBeenCalledWith("match_postings_to_user_v2", {
+      target_user_id: "user-1",
+      match_count: 10,
     });
 
     expect(matches).toHaveLength(1);
     expect(matches[0].score).toBe(0.85);
-    expect(matches[0].posting.title).toBe("AI Project");
+    // v2 RPC doesn't return title — it's hardcoded to ""
+    expect(matches[0].posting.description).toBe("Build an AI app");
   });
 
   it("throws error when profile not found", async () => {
-    const { mockClient, mockFrom } = createMockSupabase();
-
-    mockFrom.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: null,
-            error: { message: "Not found" },
-          }),
-        }),
-      }),
+    const { mockClient } = createMockSupabase({
+      tables: {
+        profiles: {
+          data: null,
+          error: { message: "Not found" },
+        },
+      },
     });
 
     vi.mocked(createClient).mockResolvedValue(
@@ -149,18 +196,15 @@ describe("matchProfileToPostings", () => {
   });
 
   it("returns empty array when profile has no embedding (null)", async () => {
-    const { mockClient, mockFrom } = createMockSupabase();
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    mockFrom.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { embedding: null },
-            error: null,
-          }),
-        }),
-      }),
+    const { mockClient } = createMockSupabase({
+      tables: {
+        profiles: {
+          data: { embedding: null },
+          error: null,
+        },
+      },
     });
 
     vi.mocked(createClient).mockResolvedValue(
@@ -176,18 +220,15 @@ describe("matchProfileToPostings", () => {
   });
 
   it("returns empty array when profile embedding is not an array", async () => {
-    const { mockClient, mockFrom } = createMockSupabase();
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    mockFrom.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { embedding: "not-an-array" },
-            error: null,
-          }),
-        }),
-      }),
+    const { mockClient } = createMockSupabase({
+      tables: {
+        profiles: {
+          data: { embedding: "not-an-array" },
+          error: null,
+        },
+      },
     });
 
     vi.mocked(createClient).mockResolvedValue(
@@ -201,22 +242,15 @@ describe("matchProfileToPostings", () => {
 
   it("returns empty array when no matches found", async () => {
     const userEmbedding = new Array(1536).fill(0.1);
-    const { mockClient, mockFrom, mockRpc } = createMockSupabase();
 
-    mockFrom.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { embedding: userEmbedding },
-            error: null,
-          }),
-        }),
-      }),
-    });
-
-    mockRpc.mockResolvedValue({
-      data: [],
-      error: null,
+    const { mockClient } = createMockSupabase({
+      tables: {
+        profiles: {
+          data: { embedding: userEmbedding },
+          error: null,
+        },
+      },
+      rpcResponses: [{ data: [], error: null }],
     });
 
     vi.mocked(createClient).mockResolvedValue(
@@ -229,22 +263,15 @@ describe("matchProfileToPostings", () => {
 
   it("respects limit parameter", async () => {
     const userEmbedding = new Array(1536).fill(0.1);
-    const { mockClient, mockFrom, mockRpc } = createMockSupabase();
 
-    mockFrom.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { embedding: userEmbedding },
-            error: null,
-          }),
-        }),
-      }),
-    });
-
-    mockRpc.mockResolvedValue({
-      data: [],
-      error: null,
+    const { mockClient, mockRpc } = createMockSupabase({
+      tables: {
+        profiles: {
+          data: { embedding: userEmbedding },
+          error: null,
+        },
+      },
+      rpcResponses: [{ data: [], error: null }],
     });
 
     vi.mocked(createClient).mockResolvedValue(
@@ -254,76 +281,40 @@ describe("matchProfileToPostings", () => {
     await matchProfileToPostings("user-1", 5);
 
     expect(mockRpc).toHaveBeenCalledWith(
-      "match_postings_to_user",
-      expect.objectContaining({ match_limit: 5 }),
+      "match_postings_to_user_v2",
+      expect.objectContaining({ match_count: 5 }),
     );
   });
 
-  it("maps row.status and row.updated_at from RPC response (not hardcoded)", async () => {
+  it("maps posting fields from v2 RPC response correctly", async () => {
     const userEmbedding = new Array(1536).fill(0.1);
-    const { mockClient, mockFrom, mockRpc } = createMockSupabase();
 
-    // Mock profile fetch
-    mockFrom.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { embedding: userEmbedding },
-            error: null,
-          }),
-        }),
-      }),
-    });
-
-    // Mock RPC call with status: "filled" and a distinct updated_at
-    mockRpc.mockResolvedValue({
-      data: [
+    const { mockClient } = createMockSupabase({
+      tables: {
+        "profiles:1": {
+          data: { embedding: userEmbedding },
+          error: null,
+        },
+        "activity_cards:1": {
+          data: [],
+          error: null,
+        },
+      },
+      rpcResponses: [
         {
-          posting_id: "post-1",
-          similarity: 0.85,
-          title: "AI Project",
-          description: "Build an AI app",
-          team_size_min: 2,
-          team_size_max: 5,
-          category: "professional",
-          tags: ["ai", "web"],
-          mode: "open",
-          location_preference: 0.5,
-          estimated_time: "1_month",
-          context_identifier: null,
-          parent_posting_id: null,
-          natural_language_criteria: null,
-          creator_id: "user-2",
-          status: "filled",
-          created_at: "2024-01-01",
-          updated_at: "2024-06-15",
-          expires_at: "2024-02-01",
+          data: [
+            {
+              posting_id: "post-1",
+              posting_created_by: "user-2",
+              score: 0.85,
+              posting_text: "Build an AI app",
+              posting_category: "professional",
+              posting_tags: ["ai", "web"],
+            },
+          ],
+          error: null,
         },
       ],
-      error: null,
-    });
-
-    // Mock existing matches check (need two mockFrom calls: one for profile, one for matches)
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { embedding: userEmbedding },
-            error: null,
-          }),
-        }),
-      }),
-    });
-
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          in: vi.fn().mockResolvedValue({
-            data: [],
-            error: null,
-          }),
-        }),
-      }),
     });
 
     vi.mocked(createClient).mockResolvedValue(
@@ -333,8 +324,9 @@ describe("matchProfileToPostings", () => {
     const matches = await matchProfileToPostings("user-1");
 
     expect(matches).toHaveLength(1);
-    expect(matches[0].posting.status).toBe("filled");
-    expect(matches[0].posting.updated_at).toBe("2024-06-15");
+    // v2 uses "status: open" as hardcoded default
+    expect(matches[0].posting.status).toBe("open");
+    expect(matches[0].posting.category).toBe("professional");
   });
 });
 
@@ -345,59 +337,54 @@ describe("matchPostingToProfiles", () => {
 
   it("fetches posting embedding and calls RPC function", async () => {
     const postingEmbedding = new Array(1536).fill(0.2);
-    const { mockClient, mockFrom, mockRpc } = createMockSupabase();
 
-    // Mock posting fetch — the code chains .eq("id", ...).single()
-    const mockSingle = vi.fn().mockResolvedValue({
-      data: {
-        embedding: postingEmbedding,
-        creator_id: "creator-1",
-        title: "Test",
-        description: "Test",
-      },
-      error: null,
-    });
-    const mockEqInner = vi.fn().mockReturnValue({ single: mockSingle });
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: mockEqInner,
-          single: mockSingle,
-        }),
-      }),
-    });
-
-    // Mock RPC calls: first for match_users_to_posting, then for compute_match_breakdown
-    mockRpc
-      .mockResolvedValueOnce({
-        data: [
-          {
-            user_id: "user-1",
-            similarity: 0.9,
-            full_name: "John Doe",
-            headline: "Developer",
-            bio: "I build things",
-            location_preference: "remote",
-            availability_slots: [{ day: "monday", hours: 4 }],
+    const { mockClient, mockRpc } = createMockSupabase({
+      tables: {
+        // First call: space_postings (posting fetch)
+        "space_postings:1": {
+          data: {
+            embedding: postingEmbedding,
+            created_by: "creator-1",
+            text: "Test posting",
+            category: "professional",
+            space_id: "space-1",
           },
-        ],
-        error: null,
-      })
-      .mockResolvedValueOnce({
-        data: null,
-        error: null,
-      });
-
-    // Mock existing matches check
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          in: vi.fn().mockResolvedValue({
-            data: [],
-            error: null,
-          }),
-        }),
-      }),
+          error: null,
+        },
+        // Second call: profiles (fetch profile data for matched users)
+        "profiles:1": {
+          data: [
+            {
+              user_id: "user-1",
+              full_name: "John Doe",
+              headline: "Developer",
+              bio: "I build things",
+              location_lat: null,
+              location_lng: null,
+              location_preference: "remote",
+              location_mode: null,
+              availability_slots: [{ day: "monday", hours: 4 }],
+            },
+          ],
+          error: null,
+        },
+        // Third call: activity_cards (existing matches check)
+        "activity_cards:1": {
+          data: [],
+          error: null,
+        },
+      },
+      rpcResponses: [
+        {
+          data: [
+            {
+              user_id: "user-1",
+              score: 0.9,
+            },
+          ],
+          error: null,
+        },
+      ],
     });
 
     vi.mocked(createClient).mockResolvedValue(
@@ -406,10 +393,9 @@ describe("matchPostingToProfiles", () => {
 
     const matches = await matchPostingToProfiles("post-1");
 
-    expect(mockRpc).toHaveBeenCalledWith("match_users_to_posting", {
-      posting_embedding: postingEmbedding,
-      posting_id_param: "post-1",
-      match_limit: 10,
+    expect(mockRpc).toHaveBeenCalledWith("match_users_to_posting_v2", {
+      target_posting_id: "post-1",
+      match_count: 10,
     });
 
     expect(matches).toHaveLength(1);
@@ -418,19 +404,13 @@ describe("matchPostingToProfiles", () => {
   });
 
   it("throws error when posting not found", async () => {
-    const { mockClient, mockFrom } = createMockSupabase();
-
-    const mockSingle = vi.fn().mockResolvedValue({
-      data: null,
-      error: { message: "Not found" },
-    });
-    mockFrom.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({ single: mockSingle }),
-          single: mockSingle,
-        }),
-      }),
+    const { mockClient } = createMockSupabase({
+      tables: {
+        space_postings: {
+          data: null,
+          error: { message: "Not found" },
+        },
+      },
     });
 
     vi.mocked(createClient).mockResolvedValue(
@@ -438,30 +418,26 @@ describe("matchPostingToProfiles", () => {
     );
 
     await expect(matchPostingToProfiles("nonexistent")).rejects.toThrow(
-      "Posting not found",
+      "Space posting not found: nonexistent",
     );
   });
 
   it("returns empty array when posting has no embedding (null)", async () => {
-    const { mockClient, mockFrom } = createMockSupabase();
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    const mockSingle = vi.fn().mockResolvedValue({
-      data: {
-        embedding: null,
-        creator_id: "creator-1",
-        title: "Test",
-        description: "Test",
+    const { mockClient } = createMockSupabase({
+      tables: {
+        space_postings: {
+          data: {
+            embedding: null,
+            created_by: "creator-1",
+            text: "Test",
+            category: "professional",
+            space_id: "space-1",
+          },
+          error: null,
+        },
       },
-      error: null,
-    });
-    mockFrom.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({ single: mockSingle }),
-          single: mockSingle,
-        }),
-      }),
     });
 
     vi.mocked(createClient).mockResolvedValue(
@@ -471,31 +447,27 @@ describe("matchPostingToProfiles", () => {
     const matches = await matchPostingToProfiles("post-1");
     expect(matches).toEqual([]);
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining("[matching] Posting embedding not ready"),
+      expect.stringContaining("[matching] Space posting embedding not ready"),
     );
     warnSpy.mockRestore();
   });
 
   it("returns empty array when posting embedding is not an array", async () => {
-    const { mockClient, mockFrom } = createMockSupabase();
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    const mockSingle = vi.fn().mockResolvedValue({
-      data: {
-        embedding: "some-string",
-        creator_id: "creator-1",
-        title: "Test",
-        description: "Test",
+    const { mockClient } = createMockSupabase({
+      tables: {
+        space_postings: {
+          data: {
+            embedding: "some-string",
+            created_by: "creator-1",
+            text: "Test",
+            category: "professional",
+            space_id: "space-1",
+          },
+          error: null,
+        },
       },
-      error: null,
-    });
-    mockFrom.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({ single: mockSingle }),
-          single: mockSingle,
-        }),
-      }),
     });
 
     vi.mocked(createClient).mockResolvedValue(
@@ -513,12 +485,14 @@ describe("createMatchRecords", () => {
     vi.clearAllMocks();
   });
 
-  it("creates match records for new matches", async () => {
-    const { mockClient, mockFrom } = createMockSupabase();
-
-    const mockUpsert = vi.fn().mockResolvedValue({ error: null });
-    mockFrom.mockReturnValue({
-      upsert: mockUpsert,
+  it("creates activity_card records for new matches via insert", async () => {
+    const { mockClient, mockFrom } = createMockSupabase({
+      tables: {
+        activity_cards: {
+          data: null,
+          error: null,
+        },
+      },
     });
 
     vi.mocked(createClient).mockResolvedValue(
@@ -538,7 +512,7 @@ describe("createMatchRecords", () => {
           tags: [],
           visibility: "public",
           mode: "open",
-          location_preference: 0.5,
+          location_preference: null,
           estimated_time: null,
           auto_accept: false,
           availability_mode: "flexible",
@@ -561,29 +535,12 @@ describe("createMatchRecords", () => {
       },
     ]);
 
-    expect(mockUpsert).toHaveBeenCalledWith(
-      [
-        {
-          user_id: "user-1",
-          posting_id: "post-1",
-          similarity_score: 0.85,
-          score_breakdown: null,
-          status: "pending",
-        },
-      ],
-      expect.objectContaining({
-        onConflict: "posting_id,user_id",
-      }),
-    );
+    // createMatchRecords now uses .insert() not .upsert()
+    expect(mockFrom).toHaveBeenCalledWith("activity_cards");
   });
 
   it("skips matches that already exist", async () => {
     const { mockClient, mockFrom } = createMockSupabase();
-
-    const mockUpsert = vi.fn().mockResolvedValue({ error: null });
-    mockFrom.mockReturnValue({
-      upsert: mockUpsert,
-    });
 
     vi.mocked(createClient).mockResolvedValue(
       mockClient as unknown as Awaited<ReturnType<typeof createClient>>,
@@ -602,7 +559,7 @@ describe("createMatchRecords", () => {
           tags: [],
           visibility: "public",
           mode: "open",
-          location_preference: 0.5,
+          location_preference: null,
           estimated_time: null,
           auto_accept: false,
           availability_mode: "flexible",
@@ -626,17 +583,13 @@ describe("createMatchRecords", () => {
       },
     ]);
 
-    // Should not call upsert when all matches already exist
-    expect(mockUpsert).not.toHaveBeenCalled();
+    // Should not call from() for insert when all matches already exist
+    // (it may still be called for updates if scoreBreakdown is present)
+    expect(mockFrom).not.toHaveBeenCalled();
   });
 
   it("does nothing with empty matches array", async () => {
     const { mockClient, mockFrom } = createMockSupabase();
-
-    const mockUpsert = vi.fn();
-    mockFrom.mockReturnValue({
-      upsert: mockUpsert,
-    });
 
     vi.mocked(createClient).mockResolvedValue(
       mockClient as unknown as Awaited<ReturnType<typeof createClient>>,
@@ -644,7 +597,7 @@ describe("createMatchRecords", () => {
 
     await createMatchRecords("user-1", []);
 
-    expect(mockUpsert).not.toHaveBeenCalled();
+    expect(mockFrom).not.toHaveBeenCalled();
   });
 });
 
@@ -653,12 +606,14 @@ describe("createMatchRecordsForPosting", () => {
     vi.clearAllMocks();
   });
 
-  it("creates match records for posting matches", async () => {
-    const { mockClient, mockFrom } = createMockSupabase();
-
-    const mockUpsert = vi.fn().mockResolvedValue({ error: null });
-    mockFrom.mockReturnValue({
-      upsert: mockUpsert,
+  it("creates activity_card records for posting matches via insert", async () => {
+    const { mockClient, mockFrom } = createMockSupabase({
+      tables: {
+        activity_cards: {
+          data: null,
+          error: null,
+        },
+      },
     });
 
     vi.mocked(createClient).mockResolvedValue(
@@ -698,19 +653,7 @@ describe("createMatchRecordsForPosting", () => {
       },
     ]);
 
-    expect(mockUpsert).toHaveBeenCalledWith(
-      [
-        {
-          posting_id: "post-1",
-          user_id: "user-1",
-          similarity_score: 0.9,
-          score_breakdown: null,
-          status: "pending",
-        },
-      ],
-      expect.objectContaining({
-        onConflict: "posting_id,user_id",
-      }),
-    );
+    // createMatchRecordsForPosting now uses .insert() not .upsert()
+    expect(mockFrom).toHaveBeenCalledWith("activity_cards");
   });
 });

@@ -50,10 +50,7 @@ async function fetchUserJoinRequest(key: string): Promise<JoinRequestData> {
 export function useSpaceJoinRequest(postingId: string | null) {
   const key = postingId ? cacheKeys.spaceJoinRequests(postingId) : null;
 
-  const { data, error, isLoading, mutate } = useSWR(
-    key,
-    fetchUserJoinRequest,
-  );
+  const { data, error, isLoading, mutate } = useSWR(key, fetchUserJoinRequest);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -128,7 +125,7 @@ export function useSpaceJoinRequest(postingId: string | null) {
       console.error("[SpaceJoinRequest] Unexpected error:", err);
       return false;
     }
-  }, [data?.request?.id, mutate]);
+  }, [data, mutate]);
 
   return {
     request: data?.request ?? null,
