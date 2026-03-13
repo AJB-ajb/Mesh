@@ -16,6 +16,7 @@ export interface DeepMatchInput {
   postingTitle: string;
   postingText: string;
   profileText: string;
+  parentStateText?: string;
   fastFilterScore: number;
   sharedSkills: string[];
   availabilityOverlap: number | null;
@@ -53,6 +54,11 @@ export async function deepMatchCandidate(
       : "Semantic: not available",
   ].join("\n");
 
+  // Include parent space context when available
+  const effectivePostingText = input.parentStateText
+    ? `[Space context: ${input.parentStateText}]\n\n${input.postingText}`
+    : input.postingText;
+
   const result = await generateStructuredJSON<{
     identified_roles: string[];
     matched_role: string;
@@ -63,7 +69,7 @@ export async function deepMatchCandidate(
     systemPrompt: DEEP_MATCH_SYSTEM_PROMPT,
     userPrompt: buildDeepMatchUserPrompt({
       postingTitle: input.postingTitle,
-      postingText: input.postingText,
+      postingText: effectivePostingText,
       profileText: input.profileText,
       fastFilterSummary,
     }),
@@ -89,6 +95,7 @@ export async function deepMatchCandidates(
   postingText: string,
   candidates: Array<{
     profileText: string;
+    parentStateText?: string;
     fastFilterScore: number;
     sharedSkills: string[];
     availabilityOverlap: number | null;
@@ -110,6 +117,7 @@ export async function deepMatchCandidates(
           postingTitle,
           postingText,
           profileText: candidate.profileText,
+          parentStateText: candidate.parentStateText,
           fastFilterScore: candidate.fastFilterScore,
           sharedSkills: candidate.sharedSkills,
           availabilityOverlap: candidate.availabilityOverlap,
