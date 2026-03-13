@@ -680,10 +680,11 @@ export interface SpaceListItem extends Space {
     SpaceMember,
     "unread_count" | "pinned" | "muted" | "role"
   >[];
-  last_message?: Pick<
-    SpaceMessage,
-    "content" | "type" | "created_at" | "sender_id"
-  > | null;
+  last_message?:
+    | (Pick<SpaceMessage, "content" | "type" | "created_at" | "sender_id"> & {
+        sender_name?: string | null;
+      })
+    | null;
   member_count?: number;
   other_member_profile?: Pick<Profile, "full_name" | "user_id"> | null;
 }

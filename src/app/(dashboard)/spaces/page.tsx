@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, MessageSquare, Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Plus, MessageSquare, Loader2, Search, X } from "lucide-react";
 
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useSpaceList } from "@/lib/hooks/use-space-list";
 import { SpaceList } from "@/components/spaces/space-list";
@@ -14,19 +15,35 @@ import { NewSpaceDialog } from "@/components/spaces/new-space-dialog";
 export type SpaceFilter = "all" | "dms" | "groups" | "public" | "pinned";
 
 export default function SpacesPage() {
-  const { spaces, isLoading } = useSpaceList();
+  const { spaces, userId, isLoading } = useSpaceList();
   const [filter, setFilter] = useState<SpaceFilter>("all");
+  const [search, setSearch] = useState("");
   const [showNewSpace, setShowNewSpace] = useState(false);
 
-  const filteredSpaces = spaces.filter((space) => {
-    if (filter === "all") return true;
-    if (filter === "dms") return space.type === "dm";
-    if (filter === "groups")
-      return space.type === "small" || space.type === "large";
-    if (filter === "public") return space.type === "large" || space.is_global;
-    if (filter === "pinned") return space.space_members?.[0]?.pinned;
-    return true;
-  });
+  const filteredSpaces = useMemo(() => {
+    let result = spaces;
+
+    // Text search by name
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      result = result.filter((s) => s.name?.toLowerCase().includes(q));
+    }
+
+    // Category filter
+    if (filter !== "all") {
+      result = result.filter((space) => {
+        if (filter === "dms") return space.type === "dm";
+        if (filter === "groups")
+          return space.type === "small" || space.type === "large";
+        if (filter === "public")
+          return space.type === "large" || space.is_global;
+        if (filter === "pinned") return space.space_members?.[0]?.pinned;
+        return true;
+      });
+    }
+
+    return result;
+  }, [spaces, filter, search]);
 
   return (
     <div className="space-y-4">
@@ -39,6 +56,26 @@ export default function SpacesPage() {
           <Plus className="size-4" />
           <span className="hidden sm:inline">{labels.nav.newSpace}</span>
         </Button>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+        <Input
+          placeholder={labels.spaces.searchSpaces}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9 pr-9"
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={() => setSearch("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          >
+            <X className="size-4" />
+          </button>
+        )}
       </div>
 
       {/* Filter chips */}
@@ -56,13 +93,10 @@ export default function SpacesPage() {
           description={labels.spaces.emptyHint}
         />
       ) : (
-        <SpaceList spaces={filteredSpaces} />
+        <SpaceList spaces={filteredSpaces} currentUserId={userId} />
       )}
 
-      <NewSpaceDialog
-        open={showNewSpace}
-        onOpenChange={setShowNewSpace}
-      />
+      <NewSpaceDialog open={showNewSpace} onOpenChange={setShowNewSpace} />
     </div>
   );
 }
