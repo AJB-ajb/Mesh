@@ -1,6 +1,10 @@
 "use client";
 
-import type { ActivityCardWithDetails, ActivityCardStatus } from "@/lib/supabase/types";
+import type {
+  ActivityCardWithDetails,
+  ActivityCardStatus,
+} from "@/lib/supabase/types";
+import { Stack } from "@/components/ui/stack";
 import { ActivityCard } from "./activity-card";
 
 interface ActivityFeedProps {
@@ -10,10 +14,10 @@ interface ActivityFeedProps {
 
 export function ActivityFeed({ cards, onAction }: ActivityFeedProps) {
   return (
-    <div className="space-y-3">
+    <Stack gap="md">
       {cards.map((card) => (
         <ActivityCard key={card.id} card={card} onAction={onAction} />
       ))}
-    </div>
+    </Stack>
   );
 }

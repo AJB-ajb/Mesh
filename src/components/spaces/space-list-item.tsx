@@ -6,6 +6,8 @@ import { Pin, Globe, BellOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Stack } from "@/components/ui/stack";
+import { Group } from "@/components/ui/group";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { formatTimeAgoShort } from "@/lib/format";
 import { labels } from "@/lib/labels";
@@ -96,7 +98,7 @@ export function SpaceListItemRow({
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
+        <Group gap="xs">
           {isPinned && !isGlobal && (
             <Pin className="size-3 text-muted-foreground shrink-0" />
           )}
@@ -116,7 +118,7 @@ export function SpaceListItemRow({
               · {labels.spaces.members(space.member_count)}
             </span>
           )}
-        </div>
+        </Group>
         {preview && (
           <p
             className={cn(
@@ -133,7 +135,7 @@ export function SpaceListItemRow({
       </div>
 
       {/* Right side: time + unread */}
-      <div className="flex flex-col items-end gap-1 shrink-0">
+      <Stack gap="xs" align="end" className="shrink-0">
         <RelativeTime
           date={lastMessageTime}
           formatter={formatTimeAgoShort}
@@ -149,7 +151,7 @@ export function SpaceListItemRow({
             {unreadCount}
           </Badge>
         )}
-      </div>
+      </Stack>
     </Link>
   );
 }
