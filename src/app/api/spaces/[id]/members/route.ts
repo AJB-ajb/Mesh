@@ -4,6 +4,7 @@ import {
   verifySpaceMembership,
   verifySpaceAdmin,
 } from "@/lib/api/space-guards";
+import { PG_FOREIGN_KEY_VIOLATION } from "@/lib/api/pg-error-codes";
 
 /**
  * GET /api/spaces/[id]/members
@@ -63,7 +64,11 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     .maybeSingle();
 
   if (existing) {
-    throw new AppError("CONFLICT", "User is already a member of this space", 409);
+    throw new AppError(
+      "CONFLICT",
+      "User is already a member of this space",
+      409,
+    );
   }
 
   const { data: member, error } = await supabase
@@ -82,7 +87,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     .single();
 
   if (error) {
-    if (error.code === "23503") {
+    if (error.code === PG_FOREIGN_KEY_VIOLATION) {
       throw new AppError("VALIDATION", "User not found", 400);
     }
     throw new AppError(

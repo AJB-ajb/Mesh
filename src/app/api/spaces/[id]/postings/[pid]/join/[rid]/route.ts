@@ -1,6 +1,7 @@
 import { withAuth } from "@/lib/api/with-auth";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import { verifySpaceMembership } from "@/lib/api/space-guards";
+import { PG_UNIQUE_VIOLATION } from "@/lib/api/pg-error-codes";
 
 /**
  * PATCH /api/spaces/[id]/postings/[pid]/join/[rid]
@@ -57,9 +58,9 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
     );
   }
 
-  const body = await parseBody<{ status: "accepted" | "rejected" | "waitlisted" }>(
-    req,
-  );
+  const body = await parseBody<{
+    status: "accepted" | "rejected" | "waitlisted";
+  }>(req);
 
   if (!["accepted", "rejected", "waitlisted"].includes(body.status)) {
     throw new AppError(
@@ -86,16 +87,14 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
 
   // If accepted and posting has a sub-space, add user to the sub-space
   if (body.status === "accepted" && posting.sub_space_id) {
-    const { error: memberError } = await supabase
-      .from("space_members")
-      .insert({
-        space_id: posting.sub_space_id,
-        user_id: joinRequest.user_id,
-        role: "member",
-      });
+    const { error: memberError } = await supabase.from("space_members").insert({
+      space_id: posting.sub_space_id,
+      user_id: joinRequest.user_id,
+      role: "member",
+    });
 
-    if (memberError && memberError.code !== "23505") {
-      // 23505 = already a member (idempotent)
+    if (memberError && memberError.code !== PG_UNIQUE_VIOLATION) {
+      // unique violation = already a member (idempotent)
       console.error("Failed to add user to sub-space:", memberError.message);
     }
   }
