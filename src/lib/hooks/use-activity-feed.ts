@@ -93,10 +93,75 @@ export function useActivityFeed() {
     data?.cards.filter((c: ActivityCardWithDetails) => c.status === "pending")
       .length ?? 0;
 
+  // Dispatch side-effect API call based on card type and action
+  const dispatchSideEffect = useCallback(
+    async (card: ActivityCardWithDetails, status: ActivityCardStatus) => {
+      const cardData = (card.data ?? {}) as Record<string, unknown>;
+
+      switch (card.type) {
+        case "join_request": {
+          // Only dispatch for admin cards (no "action" in data = admin card)
+          if (cardData.action) return; // notification card, no side-effect
+          const joinRequestId = cardData.join_request_id as string | undefined;
+          if (!joinRequestId || !card.space_id || !card.posting_id) return;
+          const jrStatus = status === "acted" ? "accepted" : "rejected";
+          await fetch(
+            `/api/spaces/${card.space_id}/postings/${card.posting_id}/join/${joinRequestId}`,
+            {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ status: jrStatus }),
+            },
+          );
+          break;
+        }
+        case "invite": {
+          if (cardData.action) return; // notification card, no side-effect
+          const inviteId = cardData.invite_id as string | undefined;
+          if (!inviteId || !card.space_id || !card.posting_id) return;
+          const inviteResponse = status === "acted" ? "accepted" : "declined";
+          await fetch(
+            `/api/spaces/${card.space_id}/postings/${card.posting_id}/invites/${inviteId}`,
+            {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ response: inviteResponse }),
+            },
+          );
+          break;
+        }
+        case "match": {
+          // Navigate to the space/posting only on accept, not dismiss
+          if (status === "acted" && card.space_id) {
+            window.location.href = `/spaces/${card.space_id}`;
+          }
+          break;
+        }
+        case "connection_request": {
+          const friendshipId = cardData.friendship_id as string | undefined;
+          if (!friendshipId) return;
+          const crStatus = status === "acted" ? "accepted" : "declined";
+          await fetch(`/api/friendships/${friendshipId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: crStatus }),
+          });
+          break;
+        }
+      }
+    },
+    [],
+  );
+
   // Act on a card (change status)
   const actOnCard = useCallback(
     async (cardId: string, status: ActivityCardStatus) => {
       const supabase = createClient();
+
+      // Look up the full card for side-effect dispatch
+      const card = data?.cards.find(
+        (c: ActivityCardWithDetails) => c.id === cardId,
+      );
 
       const update: Record<string, unknown> = { status };
       if (status === "acted") {
@@ -109,8 +174,8 @@ export function useActivityFeed() {
           if (!current) return current;
           return {
             ...current,
-            cards: current.cards.map((card: ActivityCardWithDetails) =>
-              card.id === cardId ? { ...card, status } : card,
+            cards: current.cards.map((c: ActivityCardWithDetails) =>
+              c.id === cardId ? { ...c, status } : c,
             ),
           };
         },
@@ -129,11 +194,22 @@ export function useActivityFeed() {
         return false;
       }
 
+      // Dispatch side-effect for the card type
+      if (card) {
+        try {
+          await dispatchSideEffect(card, status);
+        } catch (err) {
+          console.error("[ActivityFeed] Side-effect error:", err);
+          // Revalidate to restore correct state on failure
+          mutate();
+        }
+      }
+
       // Revalidate for consistency
       mutate();
       return true;
     },
-    [mutate],
+    [mutate, data?.cards, dispatchSideEffect],
   );
 
   return {

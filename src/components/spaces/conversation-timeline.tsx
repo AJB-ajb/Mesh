@@ -4,8 +4,10 @@ import { useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { labels } from "@/lib/labels";
 import type { SpaceMessageWithSender } from "@/lib/hooks/use-space-messages";
 import type { SpacePosting } from "@/lib/supabase/types";
+import type { SpaceMemberWithProfile } from "@/lib/hooks/use-space";
 import { MessageBubble } from "./message-bubble";
 import { PostingCardInline } from "./posting-card-inline";
 import { SystemMessage } from "./system-message";
@@ -17,6 +19,10 @@ interface ConversationTimelineProps {
   isLoading: boolean;
   onLoadMore: () => void;
   postings?: Map<string, SpacePosting>;
+  spaceId?: string;
+  isAdmin?: boolean;
+  typingUsers?: string[];
+  members?: SpaceMemberWithProfile[];
 }
 
 export function ConversationTimeline({
@@ -26,6 +32,10 @@ export function ConversationTimeline({
   isLoading,
   onLoadMore,
   postings,
+  spaceId,
+  isAdmin,
+  typingUsers,
+  members,
 }: ConversationTimelineProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -85,6 +95,8 @@ export function ConversationTimeline({
               creatorName={senderName}
               createdAt={msg.created_at}
               isOwn={isOwn}
+              spaceId={spaceId}
+              isAdmin={isAdmin}
             />
           );
         }
@@ -107,6 +119,18 @@ export function ConversationTimeline({
           />
         );
       })}
+
+      {/* Typing indicator */}
+      {typingUsers && typingUsers.length > 0 && (
+        <p className="text-xs text-muted-foreground px-1 animate-pulse">
+          {labels.spaces.typingIndicator(
+            typingUsers.map((uid) => {
+              const member = members?.find((m) => m.user_id === uid);
+              return member?.profiles?.full_name ?? "Someone";
+            }),
+          )}
+        </p>
+      )}
 
       <div ref={bottomRef} />
     </div>

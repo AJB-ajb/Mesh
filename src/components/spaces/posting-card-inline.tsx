@@ -1,7 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { Users, Clock, Tag } from "lucide-react";
+import { useState, useCallback } from "react";
+import {
+  Users,
+  Clock,
+  Tag,
+  Pencil,
+  Trash2,
+  XCircle,
+  CheckCircle2,
+} from "lucide-react";
+import { useSWRConfig } from "swr";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,16 +20,20 @@ import { Group } from "@/components/ui/group";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { formatTimeAgoShort } from "@/lib/format";
 import { labels } from "@/lib/labels";
+import { cacheKeys } from "@/lib/swr/keys";
 import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { cn } from "@/lib/utils";
 import type { SpacePosting, SpacePostingStatus } from "@/lib/supabase/types";
 import { JoinRequestDialog } from "./join-request-dialog";
+import { PostingEditDialog } from "./posting-edit-dialog";
 
 interface PostingCardInlineProps {
   posting: SpacePosting;
   creatorName: string;
   createdAt: string;
   isOwn: boolean;
+  spaceId?: string;
+  isAdmin?: boolean;
   onJoin?: () => void;
 }
 
@@ -40,10 +53,42 @@ export function PostingCardInline({
   creatorName,
   createdAt,
   isOwn,
+  spaceId,
+  isAdmin,
 }: PostingCardInlineProps) {
+  const { mutate } = useSWRConfig();
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const showJoinButton = posting.status === "open" && !isOwn;
+  const showControls = (isOwn || isAdmin) && spaceId;
+
+  const invalidatePostings = useCallback(() => {
+    if (spaceId) mutate(cacheKeys.spacePostings(spaceId));
+  }, [spaceId, mutate]);
+
+  const handleStatusChange = useCallback(
+    async (status: string) => {
+      if (!spaceId) return;
+      await fetch(`/api/spaces/${spaceId}/postings/${posting.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      invalidatePostings();
+    },
+    [spaceId, posting.id, invalidatePostings],
+  );
+
+  const handleDelete = useCallback(async () => {
+    if (!spaceId) return;
+    const { createClient } = await import("@/lib/supabase/client");
+    const supabase = createClient();
+    await supabase.from("space_postings").delete().eq("id", posting.id);
+    setConfirmingDelete(false);
+    invalidatePostings();
+  }, [spaceId, posting.id, invalidatePostings]);
 
   return (
     <>
@@ -113,6 +158,71 @@ export function PostingCardInline({
                     : labels.spaces.posting.requestToJoin}
                 </Button>
               )}
+
+              {/* Owner/admin controls */}
+              {showControls && posting.status === "open" && (
+                <Group gap="sm" className="pt-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs gap-1"
+                    onClick={() => handleStatusChange("closed")}
+                    aria-label={labels.spaces.posting.close}
+                  >
+                    <XCircle className="size-3" />
+                    {labels.spaces.posting.close}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs gap-1"
+                    onClick={() => handleStatusChange("filled")}
+                    aria-label={labels.spaces.posting.filled}
+                  >
+                    <CheckCircle2 className="size-3" />
+                    {labels.spaces.posting.filled}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs gap-1"
+                    onClick={() => setEditDialogOpen(true)}
+                    aria-label={labels.spaces.posting.editPosting}
+                  >
+                    <Pencil className="size-3" />
+                  </Button>
+                  {confirmingDelete ? (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="h-7 text-xs"
+                        onClick={handleDelete}
+                      >
+                        {labels.activity.actions.confirm}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs"
+                        onClick={() => setConfirmingDelete(false)}
+                      >
+                        {labels.spaces.posting.cancel}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs gap-1 text-destructive"
+                      onClick={() => setConfirmingDelete(true)}
+                      aria-label={labels.spaces.posting.deletePosting}
+                    >
+                      <Trash2 className="size-3" />
+                    </Button>
+                  )}
+                </Group>
+              )}
             </Stack>
           </CardContent>
         </Card>
@@ -126,6 +236,16 @@ export function PostingCardInline({
         open={joinDialogOpen}
         onOpenChange={setJoinDialogOpen}
       />
+
+      {/* Edit dialog */}
+      {spaceId && (
+        <PostingEditDialog
+          posting={posting}
+          spaceId={spaceId}
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+        />
+      )}
     </>
   );
 }

@@ -562,6 +562,78 @@ export function subscribeToPostings(
 }
 
 // ---------------------------------------------------------------------------
+// Space posting types & subscription
+// ---------------------------------------------------------------------------
+
+export type SpacePostingPayload = {
+  id: string;
+  space_id: string;
+  created_by: string;
+  status: string;
+  created_at: string;
+};
+
+function isSpacePosting(value: unknown): value is SpacePostingPayload {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.id === "string" &&
+    typeof v.space_id === "string" &&
+    typeof v.created_at === "string"
+  );
+}
+
+export type SpacePostingEvent = {
+  eventType: "INSERT" | "UPDATE" | "DELETE";
+  posting: SpacePostingPayload;
+};
+
+/**
+ * Subscribe to real-time space posting changes for a given space.
+ */
+export function subscribeToSpacePostings(
+  spaceId: string,
+  onEvent: (event: SpacePostingEvent) => void,
+): RealtimeChannel {
+  const supabase = createClient();
+
+  const channel = supabase
+    .channel(`space-postings:${spaceId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "space_postings",
+        filter: `space_id=eq.${spaceId}`,
+      },
+      (payload) => {
+        const record =
+          payload.eventType === "DELETE" ? payload.old : payload.new;
+        if (isSpacePosting(record)) {
+          onEvent({
+            eventType: payload.eventType as SpacePostingEvent["eventType"],
+            posting: record,
+          });
+        }
+      },
+    )
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        console.log(
+          `[Realtime] Subscribed to space postings for space ${spaceId}`,
+        );
+      } else if (status === "CHANNEL_ERROR") {
+        console.error(
+          `[Realtime] Error subscribing to space postings for space ${spaceId}`,
+        );
+      }
+    });
+
+  return channel;
+}
+
+// ---------------------------------------------------------------------------
 // Space message types & subscription
 // ---------------------------------------------------------------------------
 

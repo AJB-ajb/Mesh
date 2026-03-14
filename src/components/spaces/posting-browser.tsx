@@ -19,6 +19,7 @@ interface PostingBrowserProps {
   isLoading: boolean;
   matchingEnabled: boolean;
   userId: string | null;
+  isAdmin?: boolean;
   className?: string;
 }
 
@@ -118,10 +119,12 @@ function FilterChip({
 // ---------------------------------------------------------------------------
 
 export function PostingBrowser({
+  spaceId,
   postings,
   isLoading,
   matchingEnabled,
   userId,
+  isAdmin,
   className,
 }: PostingBrowserProps) {
   const [search, setSearch] = useState("");
@@ -247,6 +250,8 @@ export function PostingBrowser({
               key={posting.id}
               posting={posting}
               userId={userId}
+              spaceId={spaceId}
+              isAdmin={isAdmin}
             />
           ))
         ) : postings.length === 0 ? (
