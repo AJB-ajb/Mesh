@@ -76,6 +76,14 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
     .single();
 
   if (error) {
+    // The DB trigger prevents demoting the last admin
+    if (error.code === "23514" || error.message?.includes("last admin")) {
+      throw new AppError(
+        "VALIDATION",
+        "Cannot demote the last admin. Promote another member first.",
+        400,
+      );
+    }
     throw new AppError(
       "INTERNAL",
       `Failed to update member: ${error.message}`,
@@ -106,44 +114,8 @@ export const DELETE = withAuth(async (_req, { user, supabase, params }) => {
     await verifySpaceMembership(supabase, spaceId, user.id);
   }
 
-  // Prevent removing the last admin
-  if (!isSelf) {
-    const { data: targetMember } = await supabase
-      .from("space_members")
-      .select("role")
-      .eq("space_id", spaceId)
-      .eq("user_id", targetUserId)
-      .single();
-
-    if (!targetMember) {
-      throw new AppError("NOT_FOUND", "Member not found", 404);
-    }
-  } else {
-    // Check if we're the last admin before leaving
-    const { data: selfMember } = await supabase
-      .from("space_members")
-      .select("role")
-      .eq("space_id", spaceId)
-      .eq("user_id", user.id)
-      .single();
-
-    if (selfMember?.role === "admin") {
-      const { count } = await supabase
-        .from("space_members")
-        .select("*", { count: "exact", head: true })
-        .eq("space_id", spaceId)
-        .eq("role", "admin");
-
-      if ((count ?? 0) <= 1) {
-        throw new AppError(
-          "VALIDATION",
-          "Cannot leave: you are the last admin. Transfer admin role first.",
-          400,
-        );
-      }
-    }
-  }
-
+  // The DB trigger `trg_prevent_last_admin_removal` atomically prevents
+  // removing or demoting the last admin, avoiding TOCTOU races.
   const { error } = await supabase
     .from("space_members")
     .delete()
@@ -151,29 +123,19 @@ export const DELETE = withAuth(async (_req, { user, supabase, params }) => {
     .eq("user_id", targetUserId);
 
   if (error) {
+    // The trigger raises check_violation when the last admin would be removed
+    if (error.code === "23514" || error.message?.includes("last admin")) {
+      throw new AppError(
+        "VALIDATION",
+        "Cannot remove the last admin. Transfer the admin role first.",
+        400,
+      );
+    }
     throw new AppError(
       "INTERNAL",
       `Failed to remove member: ${error.message}`,
       500,
     );
-  }
-
-  // Defensive check: verify at least one admin remains after the delete.
-  // Guards against TOCTOU race where another admin was removed concurrently.
-  const { count: remainingAdmins } = await supabase
-    .from("space_members")
-    .select("*", { count: "exact", head: true })
-    .eq("space_id", spaceId)
-    .eq("role", "admin");
-
-  if ((remainingAdmins ?? 0) === 0) {
-    // Race condition: re-add as admin
-    await supabase.from("space_members").insert({
-      space_id: spaceId,
-      user_id: targetUserId,
-      role: "admin",
-    });
-    throw new AppError("CONFLICT", "Cannot remove the last admin", 409);
   }
 
   return apiSuccess({ removed: true });
