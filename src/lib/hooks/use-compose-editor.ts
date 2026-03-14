@@ -12,7 +12,6 @@ import { meshLinkExtension } from "@/components/editor/extensions/mesh-link-plug
 import { hiddenSyntaxExtension } from "@/components/editor/extensions/hidden-syntax-plugin";
 import { enterToSend } from "@/components/editor/extensions/enter-to-send";
 import { autoGrow } from "@/components/editor/extensions/auto-grow";
-import { compactEditorTheme } from "@/components/editor/extensions/compact-theme";
 import type {
   EditorContext,
   SlashCommand,
@@ -70,7 +69,7 @@ function buildExtensions(
   }
 
   if (context === "message") {
-    exts.push(enterToSend(onSubmitRef), autoGrow(150), compactEditorTheme);
+    exts.push(enterToSend(onSubmitRef), autoGrow(150));
   }
 
   return exts;

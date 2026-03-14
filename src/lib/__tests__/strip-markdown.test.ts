@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { stripMarkdown } from "../strip-markdown";
 
 describe("stripMarkdown", () => {

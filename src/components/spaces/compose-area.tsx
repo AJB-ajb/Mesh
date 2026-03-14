@@ -94,6 +94,7 @@ export function ComposeArea({
           <ComposeEditor
             ref={editorRef}
             context={editorContext}
+            className={mode === "M" ? "cm-compact" : undefined}
             content={text}
             onChange={(v) => {
               setText(v);
