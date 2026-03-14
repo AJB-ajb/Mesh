@@ -1,6 +1,7 @@
 import { withAuth } from "@/lib/api/with-auth";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import { verifySpaceMembership } from "@/lib/api/space-guards";
+import { PG_UNIQUE_VIOLATION } from "@/lib/api/pg-error-codes";
 import type { Json } from "@/lib/supabase/types";
 
 /**
@@ -36,11 +37,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
   }
 
   if (posting.created_by === user.id) {
-    throw new AppError(
-      "VALIDATION",
-      "You cannot join your own posting",
-      400,
-    );
+    throw new AppError("VALIDATION", "You cannot join your own posting", 400);
   }
 
   // Check for existing join request
@@ -78,7 +75,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     .single();
 
   if (insertError) {
-    if (insertError.code === "23505") {
+    if (insertError.code === PG_UNIQUE_VIOLATION) {
       throw new AppError(
         "CONFLICT",
         "You already have a join request for this posting",
