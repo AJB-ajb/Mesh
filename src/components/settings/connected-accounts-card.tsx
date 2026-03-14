@@ -154,10 +154,10 @@ export function ConnectedAccountsCard({
               justify="between"
               className="rounded-lg border border-border p-4"
             >
-              <Group gap="sm">
+              <Group gap="md">
                 {getProviderIcon(providerData.provider)}
                 <div>
-                  <Group gap="md">
+                  <Group gap="sm">
                     <p className="font-medium">
                       {getProviderName(providerData.provider)}
                     </p>

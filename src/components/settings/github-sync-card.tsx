@@ -63,7 +63,7 @@ export function GithubSyncCard({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Stack gap="md">
+        <Stack gap="lg">
           {githubSyncStatus?.synced && (
             <div className="text-sm">
               <p className="text-muted-foreground">

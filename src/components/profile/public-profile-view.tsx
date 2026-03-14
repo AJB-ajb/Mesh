@@ -238,7 +238,7 @@ export default function PublicProfileView({
               {profile.profile_skills
                 .filter((ps) => ps.skill_nodes)
                 .map((ps) => (
-                  <Group key={ps.skill_id} gap="sm">
+                  <Group key={ps.skill_id} gap="md">
                     <span className="w-32 truncate text-sm font-medium">
                       {ps.skill_nodes!.name}
                     </span>

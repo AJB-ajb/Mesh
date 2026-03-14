@@ -14,9 +14,9 @@ export default function ActivityPage() {
   const { cards, pendingCount, isLoading, actOnCard } = useActivityFeed();
 
   return (
-    <Stack gap="md">
+    <Stack gap="lg">
       {/* Header */}
-      <Group gap="sm">
+      <Group gap="md">
         <h1 className="text-2xl font-bold tracking-tight">
           {labels.activity.title}
         </h1>

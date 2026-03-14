@@ -16,7 +16,7 @@ type PageContentSize = keyof typeof sizeClasses;
 
 function PageContent({
   size = "full",
-  gap = "lg",
+  gap = "xl",
   className,
   children,
   ...props

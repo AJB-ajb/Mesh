@@ -51,7 +51,7 @@ export function PostingCardInline({
           <CardContent className="p-3">
             <Stack gap="sm">
               {/* Creator + time */}
-              <Group gap="md" className="text-xs text-muted-foreground">
+              <Group gap="sm" className="text-xs text-muted-foreground">
                 <span className="font-medium text-foreground">
                   {creatorName}
                 </span>
@@ -65,7 +65,7 @@ export function PostingCardInline({
               </p>
 
               {/* Meta row: tags, capacity, deadline */}
-              <Group wrap gap="md" className="text-xs text-muted-foreground">
+              <Group wrap gap="sm" className="text-xs text-muted-foreground">
                 {posting.tags?.map((tag) => (
                   <Badge
                     key={tag}
@@ -91,7 +91,7 @@ export function PostingCardInline({
               </Group>
 
               {/* Status badge */}
-              <Group gap="md">
+              <Group gap="sm">
                 <Badge variant={statusVariant[posting.status]}>
                   {posting.status.charAt(0).toUpperCase() +
                     posting.status.slice(1)}

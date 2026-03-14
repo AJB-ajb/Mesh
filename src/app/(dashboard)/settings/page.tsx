@@ -106,7 +106,7 @@ function SettingsContent() {
       {error && (
         <Group
           align="start"
-          gap="md"
+          gap="sm"
           className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
         >
           <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
@@ -117,7 +117,7 @@ function SettingsContent() {
       {success && (
         <Group
           align="start"
-          gap="md"
+          gap="sm"
           className="rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-600 dark:text-green-400"
         >
           <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />

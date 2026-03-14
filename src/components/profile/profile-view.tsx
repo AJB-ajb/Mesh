@@ -51,7 +51,7 @@ export function ProfileView({
           <CardTitle>General Information</CardTitle>
         </CardHeader>
         <CardContent>
-          <Stack gap="md">
+          <Stack gap="lg">
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <p className="text-sm text-muted-foreground">Full name</p>
@@ -103,7 +103,7 @@ export function ProfileView({
                 <p className="mb-2 text-sm text-muted-foreground">Skills</p>
                 <Stack gap="sm">
                   {form.selectedSkills.map((skill) => (
-                    <Group key={skill.skillId} gap="sm">
+                    <Group key={skill.skillId} gap="md">
                       <span className="w-32 truncate text-sm font-medium">
                         {skill.name}
                       </span>
@@ -130,7 +130,7 @@ export function ProfileView({
                 </p>
                 <Stack gap="sm">
                   {form.skillLevels.map((skill, i) => (
-                    <Group key={i} gap="sm">
+                    <Group key={i} gap="md">
                       <span className="w-32 truncate text-sm font-medium">
                         {skill.name || "Unnamed"}
                       </span>
@@ -152,7 +152,7 @@ export function ProfileView({
             {skillsList.length > 0 && (
               <div>
                 <p className="mb-2 text-sm text-muted-foreground">Skills</p>
-                <Group wrap gap="md">
+                <Group wrap gap="sm">
                   {skillsList.map((skill) => (
                     <Badge key={skill} variant="secondary">
                       {skill}
@@ -165,7 +165,7 @@ export function ProfileView({
             {interestsList.length > 0 && (
               <div>
                 <p className="mb-2 text-sm text-muted-foreground">Interests</p>
-                <Group wrap gap="md">
+                <Group wrap gap="sm">
                   {interestsList.map((interest) => (
                     <Badge key={interest} variant="outline">
                       {interest}

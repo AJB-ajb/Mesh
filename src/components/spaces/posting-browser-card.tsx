@@ -74,7 +74,7 @@ export function PostingBrowserCard({
         )}
 
         {/* Meta row */}
-        <Group gap="sm" className="text-xs text-muted-foreground">
+        <Group gap="md" className="text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
             <Users className="size-3" />
             {posting.capacity}

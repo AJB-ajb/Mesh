@@ -331,7 +331,7 @@ function ProfilePageContent() {
       )}
 
       {/* Availability + Calendar section */}
-      <Stack gap="md" className="border-t pt-6">
+      <Stack gap="lg" className="border-t pt-6">
         <h2 className="text-lg font-semibold">
           {labels.profileEditor.availabilityTitle}
         </h2>
