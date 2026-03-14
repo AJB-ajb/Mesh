@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import {
   EditorView,
   placeholder as cmPlaceholder,
@@ -67,13 +67,12 @@ export const MeshEditor = memo(function MeshEditor({
 
   // Memoize the extra extensions array identity so the effect below doesn't
   // re-fire on every render when the caller passes a literal `[]`.
-  const extKey = useRef(extraExtensions);
-  if (
-    extraExtensions.length !== extKey.current.length ||
-    extraExtensions.some((e, i) => e !== extKey.current[i])
-  ) {
-    extKey.current = extraExtensions;
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- shallow-compare array items
+  const stableExtensions = useMemo(() => extraExtensions, extraExtensions);
+
+  // Capture the initial content for the EditorView. We only read this on
+  // mount; subsequent changes are synced via the separate effect below.
+  const initialContentRef = useRef(content);
 
   // Create / destroy the EditorView
   useEffect(() => {
@@ -115,11 +114,11 @@ export const MeshEditor = memo(function MeshEditor({
       focusBlurHandlers,
       updateListener,
       ...(placeholder ? [cmPlaceholder(placeholder)] : []),
-      ...extKey.current,
+      ...stableExtensions,
     ];
 
     const state = EditorState.create({
-      doc: content,
+      doc: initialContentRef.current,
       extensions,
     });
 
@@ -145,8 +144,7 @@ export const MeshEditor = memo(function MeshEditor({
       view.destroy();
       viewRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [placeholder, autoFocus]);
+  }, [placeholder, autoFocus, stableExtensions]);
 
   // Sync external content changes (e.g. from template overlay, text tools)
   const lastExternalContent = useRef(content);
