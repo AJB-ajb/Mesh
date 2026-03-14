@@ -158,7 +158,7 @@ export async function matchProfileToPostings(
     const deepPostingIds = topN.map((m) => m.posting.id);
     const { data: postingSources } = await supabase
       .from("space_postings")
-      .select("id, text, space_id")
+      .select("id, text, space_id, extracted_metadata")
       .in("id", deepPostingIds);
     const { data: profileSource } = await supabase
       .from("profiles")
@@ -235,7 +235,10 @@ export async function matchProfileToPostings(
             profileText,
             // Per-candidate posting text — fixes the bug where all candidates
             // were evaluated against the first posting's text
-            postingTitle: entry.posting.category || "Space Posting",
+            postingTitle:
+              (ps?.extracted_metadata as { title?: string } | null)?.title ||
+              entry.posting.category ||
+              "Space Posting",
             postingText: pText,
             parentStateText: ps?.space_id
               ? (spaceMap.get(ps.space_id) ?? undefined)
