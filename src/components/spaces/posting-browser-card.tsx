@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { formatTimeAgoShort } from "@/lib/format";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { labels } from "@/lib/labels";
 import type {
   SpacePostingWithCreator,
@@ -58,7 +59,11 @@ export function PostingBrowserCard({
     <>
       <div className="rounded-lg border border-border bg-card p-4 space-y-2">
         {/* Text */}
-        <p className="text-sm line-clamp-3">{posting.text}</p>
+        <MarkdownRenderer
+          content={posting.text}
+          className="text-sm"
+          clamp={3}
+        />
 
         {/* Tags */}
         {posting.tags.length > 0 && (

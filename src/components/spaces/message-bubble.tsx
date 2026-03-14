@@ -3,6 +3,7 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { formatTimeAgoShort } from "@/lib/format";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { cn } from "@/lib/utils";
 
 interface MessageBubbleProps {
@@ -21,9 +22,7 @@ export function MessageBubble({
   isOwn,
 }: MessageBubbleProps) {
   return (
-    <div
-      className={cn("flex gap-2", isOwn ? "justify-end" : "justify-start")}
-    >
+    <div className={cn("flex gap-2", isOwn ? "justify-end" : "justify-start")}>
       {!isOwn && (
         <Avatar size="sm" className="mt-1 shrink-0">
           <AvatarFallback>{senderInitials}</AvatarFallback>
@@ -43,15 +42,13 @@ export function MessageBubble({
               : "bg-muted rounded-bl-md",
           )}
         >
-          <p className="text-sm whitespace-pre-wrap break-words">{content}</p>
+          <MarkdownRenderer content={content} className="text-sm" />
           <RelativeTime
             date={createdAt}
             formatter={formatTimeAgoShort}
             className={cn(
               "text-[10px] mt-1 block",
-              isOwn
-                ? "text-primary-foreground/60"
-                : "text-muted-foreground",
+              isOwn ? "text-primary-foreground/60" : "text-muted-foreground",
             )}
           />
         </div>

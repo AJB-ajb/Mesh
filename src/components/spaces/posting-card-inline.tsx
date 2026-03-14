@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { formatTimeAgoShort } from "@/lib/format";
 import { labels } from "@/lib/labels";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { cn } from "@/lib/utils";
 import type { SpacePosting, SpacePostingStatus } from "@/lib/supabase/types";
 import { JoinRequestDialog } from "./join-request-dialog";
@@ -55,9 +56,11 @@ export function PostingCardInline({
             </div>
 
             {/* Posting text */}
-            <p className="text-sm whitespace-pre-wrap break-words line-clamp-3">
-              {posting.text}
-            </p>
+            <MarkdownRenderer
+              content={posting.text}
+              className="text-sm"
+              clamp={3}
+            />
 
             {/* Meta row: tags, capacity, deadline */}
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
