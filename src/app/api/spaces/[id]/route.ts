@@ -51,7 +51,31 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
 
   await verifySpaceAdmin(supabase, spaceId, user.id);
 
-  const body = await parseBody<SpaceUpdate>(req);
+  const body = await parseBody<SpaceUpdate & { archived?: boolean }>(req);
+
+  // Handle archive/unarchive via RPC
+  if (body.archived !== undefined) {
+    const rpc = body.archived ? "archive_space" : "unarchive_space";
+    const { error: archiveError } = await supabase.rpc(rpc, {
+      p_space_id: spaceId,
+    });
+    if (archiveError) {
+      throw new AppError(
+        "INTERNAL",
+        `Failed to ${body.archived ? "archive" : "unarchive"} space: ${archiveError.message}`,
+        500,
+      );
+    }
+    // If only archiving, return early
+    if (Object.keys(body).length === 1) {
+      const { data: updated } = await supabase
+        .from("spaces")
+        .select()
+        .eq("id", spaceId)
+        .single();
+      return apiSuccess({ space: updated });
+    }
+  }
 
   // Only allow known updatable fields
   const update: SpaceUpdate = {};
@@ -101,11 +125,7 @@ export const DELETE = withAuth(async (_req, { user, supabase, params }) => {
   }
 
   if (space.is_global) {
-    throw new AppError(
-      "FORBIDDEN",
-      "Cannot delete the global space",
-      403,
-    );
+    throw new AppError("FORBIDDEN", "Cannot delete the global space", 403);
   }
 
   const { error: deleteError } = await supabase

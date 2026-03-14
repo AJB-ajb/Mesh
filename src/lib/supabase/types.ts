@@ -460,6 +460,7 @@ export interface Space {
   is_global: boolean;
   inherits_members: boolean;
   settings: SpaceSettings;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 }
