@@ -138,6 +138,11 @@ BEGIN
     RAISE EXCEPTION 'Card is not active';
   END IF;
 
+  -- Verify caller matches p_user_id (defense-in-depth)
+  IF p_user_id != auth.uid() THEN
+    RAISE EXCEPTION 'Cannot vote as another user';
+  END IF;
+
   -- Verify membership
   IF NOT EXISTS (
     SELECT 1 FROM space_members

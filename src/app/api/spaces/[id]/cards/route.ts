@@ -12,11 +12,12 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
 
   await verifySpaceMembership(supabase, spaceId, user.id);
 
+  // Fetch all cards (not just active) so resolved/cancelled cards
+  // still render in the timeline alongside their messages
   const { data: cards, error } = await supabase
     .from("space_cards")
     .select("*")
     .eq("space_id", spaceId)
-    .eq("status", "active")
     .order("created_at", { ascending: true });
 
   if (error) {
@@ -83,6 +84,8 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     .single();
 
   if (msgError) {
+    // Clean up orphaned card
+    await supabase.from("space_cards").delete().eq("id", card.id);
     throw new AppError(
       "INTERNAL",
       `Failed to create card message: ${msgError.message}`,
@@ -91,10 +94,14 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
   }
 
   // Back-link message to card
-  await supabase
+  const { error: linkError } = await supabase
     .from("space_cards")
     .update({ message_id: message.id })
     .eq("id", card.id);
+
+  if (linkError) {
+    console.error("[cards] Failed to back-link message to card:", linkError);
+  }
 
   // Update space's updated_at
   await supabase

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { Plus, X, Clock, Loader2 } from "lucide-react";
 
 import { labels } from "@/lib/labels";
@@ -34,18 +34,18 @@ export function CreateTimeProposalDialog({
   isLoadingSlots,
 }: CreateTimeProposalDialogProps) {
   const [title, setTitle] = useState("");
-  const initialOptions = useMemo(() => {
+  const deriveOptions = (): string[] => {
     if (suggestedSlots && suggestedSlots.length > 0) {
       return suggestedSlots.length >= MIN_OPTIONS
-        ? suggestedSlots
+        ? [...suggestedSlots]
         : [
             ...suggestedSlots,
             ...Array(MIN_OPTIONS - suggestedSlots.length).fill(""),
           ];
     }
     return ["", ""];
-  }, [suggestedSlots]);
-  const [options, setOptions] = useState<string[]>(initialOptions);
+  };
+  const [options, setOptions] = useState<string[]>(deriveOptions);
 
   const handleAddOption = useCallback(() => {
     if (options.length < MAX_OPTIONS) {

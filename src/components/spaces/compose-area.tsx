@@ -59,6 +59,8 @@ export function ComposeArea({
   );
   const [showPollDialog, setShowPollDialog] = useState(false);
   const [showTimeProposalDialog, setShowTimeProposalDialog] = useState(false);
+  // Increment key to force remount (reset state) when dialogs reopen
+  const [dialogKey, setDialogKey] = useState(0);
   const editorRef = useRef<ComposeEditorHandle>(null);
 
   const { createCard } = useSpaceCards(spaceId);
@@ -153,11 +155,21 @@ export function ComposeArea({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" side="top">
-              <DropdownMenuItem onClick={() => setShowPollDialog(true)}>
+              <DropdownMenuItem
+                onClick={() => {
+                  setDialogKey((k) => k + 1);
+                  setShowPollDialog(true);
+                }}
+              >
                 <BarChart3 className="size-4 mr-2" />
                 {labels.cards.createPoll}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowTimeProposalDialog(true)}>
+              <DropdownMenuItem
+                onClick={() => {
+                  setDialogKey((k) => k + 1);
+                  setShowTimeProposalDialog(true);
+                }}
+              >
                 <Clock className="size-4 mr-2" />
                 {labels.cards.createTimeProposal}
               </DropdownMenuItem>
@@ -220,11 +232,13 @@ export function ComposeArea({
       )}
 
       <CreatePollDialog
+        key={`poll-${dialogKey}`}
         open={showPollDialog}
         onOpenChange={setShowPollDialog}
         onSubmit={handleCreatePoll}
       />
       <CreateTimeProposalDialog
+        key={`time-${dialogKey}`}
         open={showTimeProposalDialog}
         onOpenChange={setShowTimeProposalDialog}
         onSubmit={handleCreateTimeProposal}

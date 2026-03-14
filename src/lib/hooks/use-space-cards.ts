@@ -3,7 +3,6 @@
 import { useEffect, useCallback } from "react";
 import useSWR from "swr";
 import { cacheKeys } from "@/lib/swr/keys";
-import { createClient } from "@/lib/supabase/client";
 import {
   subscribeToSpaceCards,
   unsubscribeChannel,
@@ -38,16 +37,14 @@ export function useSpaceCards(spaceId: string | null) {
   const vote = useCallback(
     async (cardId: string, optionIndex: number) => {
       if (!spaceId) return;
-      const supabase = createClient();
-      const { error } = await supabase.rpc("vote_on_card", {
-        p_card_id: cardId,
-        p_user_id: (await supabase.auth.getUser()).data.user?.id,
-        p_option_index: optionIndex,
+      const res = await fetch(`/api/spaces/${spaceId}/cards/${cardId}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ option_index: optionIndex }),
       });
-      if (error) {
-        console.error("[useSpaceCards] Vote error:", error);
+      if (!res.ok) {
+        console.error("[useSpaceCards] Vote error:", await res.text());
       }
-      // Revalidate to get updated card data
       mutate();
     },
     [spaceId, mutate],
