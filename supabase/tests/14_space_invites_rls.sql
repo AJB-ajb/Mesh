@@ -7,7 +7,7 @@
 
 BEGIN;
 SET search_path TO extensions, public, auth;
-SELECT plan(8);
+SELECT plan(10);
 SELECT tests.create_test_users();
 
 -- ============================================
@@ -116,6 +116,12 @@ SELECT lives_ok(
   'Bob (invitee in ordered_list) can update invite'
 );
 
+SELECT is(
+  (SELECT pending[1]::text FROM public.space_invites WHERE id = '5c000000-0000-0000-0000-000000000001'),
+  'b0000000-0000-0000-0000-000000000002',
+  'Bob pending update actually took effect'
+);
+
 -- ============================================
 -- 7. Creator can update invite
 -- ============================================
@@ -126,6 +132,12 @@ SET LOCAL ROLE authenticated;
 SELECT lives_ok(
   $$UPDATE public.space_invites SET status = 'completed' WHERE id = '5c000000-0000-0000-0000-000000000001'$$,
   'Alice (creator) can update invite'
+);
+
+SELECT is(
+  (SELECT status FROM public.space_invites WHERE id = '5c000000-0000-0000-0000-000000000001'),
+  'completed',
+  'Alice status update actually took effect'
 );
 
 -- ============================================

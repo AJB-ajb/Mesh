@@ -7,7 +7,7 @@
 
 BEGIN;
 SET search_path TO extensions, public, auth;
-SELECT plan(6);
+SELECT plan(7);
 SELECT tests.create_test_users();
 
 -- ============================================
@@ -99,13 +99,19 @@ DELETE FROM public.activity_cards WHERE id = 'ac000000-0000-0000-0000-0000000000
 -- Bob deletes his own card (should work)
 DELETE FROM public.activity_cards WHERE id = 'ac000000-0000-0000-0000-000000000003';
 
+SELECT is(
+  (SELECT count(*)::int FROM public.activity_cards WHERE id = 'ac000000-0000-0000-0000-000000000003'),
+  0,
+  'Bob can delete his own activity card'
+);
+
 SELECT tests.authenticate_as(tests.alice());
 SET LOCAL ROLE authenticated;
 
 SELECT is(
   (SELECT count(*)::int FROM public.activity_cards WHERE id = 'ac000000-0000-0000-0000-000000000002'),
   1,
-  'Bob cannot delete Alice''s card, but can delete his own'
+  'Bob cannot delete Alice''s card'
 );
 
 SELECT * FROM finish();

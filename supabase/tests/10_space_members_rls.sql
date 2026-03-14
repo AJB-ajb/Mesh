@@ -8,7 +8,7 @@
 
 BEGIN;
 SET search_path TO extensions, public, auth;
-SELECT plan(11);
+SELECT plan(13);
 SELECT tests.create_test_users();
 
 -- ============================================
@@ -120,6 +120,14 @@ SELECT lives_ok(
   'User (Bob) can update own membership (muted)'
 );
 
+SELECT is(
+  (SELECT muted FROM public.space_members
+   WHERE space_id = '50000000-0000-0000-0000-000000000010'
+     AND user_id = tests.bob()),
+  true,
+  'Bob muted flag is actually set to true'
+);
+
 -- ============================================
 -- 7. Admin can update another member's role
 -- ============================================
@@ -132,6 +140,14 @@ SELECT lives_ok(
     WHERE space_id = '50000000-0000-0000-0000-000000000010'
       AND user_id = 'b0000000-0000-0000-0000-000000000002'$$,
   'Admin (Alice) can update another member''s role'
+);
+
+SELECT is(
+  (SELECT role FROM public.space_members
+   WHERE space_id = '50000000-0000-0000-0000-000000000010'
+     AND user_id = tests.bob()),
+  'admin',
+  'Bob role is actually changed to admin'
 );
 
 -- ============================================
