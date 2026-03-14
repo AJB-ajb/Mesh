@@ -1,5 +1,6 @@
 import { withAuth } from "@/lib/api/with-auth";
 import { apiSuccess, AppError } from "@/lib/errors";
+import { parsePaginationParams } from "@/lib/api/pagination";
 
 /**
  * GET /api/activity
@@ -8,8 +9,10 @@ import { apiSuccess, AppError } from "@/lib/errors";
  */
 export const GET = withAuth(async (req, { user, supabase }) => {
   const { searchParams } = new URL(req.url);
-  const limit = Math.min(Number(searchParams.get("limit") || 20), 50);
-  const offset = Number(searchParams.get("offset") || 0);
+  const { limit, offset } = parsePaginationParams(searchParams, {
+    limit: 20,
+    max: 50,
+  });
   const status = searchParams.get("status"); // e.g. "pending"
   const type = searchParams.get("type"); // e.g. "invite", "join_request"
 

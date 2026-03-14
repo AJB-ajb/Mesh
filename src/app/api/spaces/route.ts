@@ -1,6 +1,7 @@
 import { withAuth } from "@/lib/api/with-auth";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import { verifySpaceMembership } from "@/lib/api/space-guards";
+import { parsePaginationParams } from "@/lib/api/pagination";
 import type { SpaceInsert, SpaceListItem } from "@/lib/supabase/types";
 
 /**
@@ -10,8 +11,10 @@ import type { SpaceInsert, SpaceListItem } from "@/lib/supabase/types";
  */
 export const GET = withAuth(async (req, { user, supabase }) => {
   const { searchParams } = new URL(req.url);
-  const limit = Math.min(Number(searchParams.get("limit") || 50), 100);
-  const offset = Number(searchParams.get("offset") || 0);
+  const { limit, offset } = parsePaginationParams(searchParams, {
+    limit: 50,
+    max: 100,
+  });
 
   // Fetch spaces where the user is a member, with membership details
   const { data: spaces, error } = await supabase
