@@ -53,7 +53,7 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
   }, [currentMember, markAsRead]);
 
   return (
-    <div className="-m-4 sm:-m-6 flex flex-col h-[calc(100dvh-4rem)]">
+    <div className="-m-4 sm:-m-6 flex flex-col h-[calc(100dvh-4rem-3.5rem)] md:h-[calc(100dvh-4rem)] overflow-hidden pb-[env(safe-area-inset-bottom)] md:pb-0">
       <SpaceHeader
         space={space}
         memberCount={space.members.length}

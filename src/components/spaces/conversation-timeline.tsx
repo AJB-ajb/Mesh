@@ -31,21 +31,16 @@ export function ConversationTimeline({
   const containerRef = useRef<HTMLDivElement>(null);
   const prevMessageCount = useRef(messages.length);
 
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    if (messages.length > prevMessageCount.current) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-    prevMessageCount.current = messages.length;
-  }, [messages.length]);
-
-  // Scroll to bottom on initial load or when message count changes
-  const messageCount = messages.length;
+  // Auto-scroll: instant on initial load, smooth on new messages
   useEffect(() => {
     if (!isLoading && bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+      const isInitial = prevMessageCount.current === 0;
+      bottomRef.current.scrollIntoView({
+        behavior: isInitial ? "instant" : "smooth",
+      });
     }
-  }, [isLoading, messageCount]);
+    prevMessageCount.current = messages.length;
+  }, [isLoading, messages.length]);
 
   if (isLoading) {
     return (
