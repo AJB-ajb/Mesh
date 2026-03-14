@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, AlertCircle, Check } from "lucide-react";
@@ -30,22 +30,20 @@ function SettingsContent() {
   const { preferences: notifPrefs, updatePreferences: updateNotifPrefs } =
     useNotificationPreferences();
 
-  const [error, setError] = useState<string | null>(() => {
-    const msg = searchParams.get("error");
-    if (msg) {
+  const [error, setError] = useState<string | null>(() =>
+    searchParams.get("error"),
+  );
+  const [success, setSuccess] = useState<string | null>(() =>
+    searchParams.get("success"),
+  );
+
+  // Strip query params from the URL after reading them — side effect belongs
+  // in useEffect, not in a useState initializer.
+  useEffect(() => {
+    if (error || success) {
       window.history.replaceState({}, "", "/settings");
-      return msg;
     }
-    return null;
-  });
-  const [success, setSuccess] = useState<string | null>(() => {
-    const msg = searchParams.get("success");
-    if (msg) {
-      window.history.replaceState({}, "", "/settings");
-      return msg;
-    }
-    return null;
-  });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentional mount-only: clear URL params once after initial read
 
   const handleToggleNotification = async (
     type: NotificationType,

@@ -1,6 +1,7 @@
 import { withAuth } from "@/lib/api/with-auth";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import { verifySpaceMembership } from "@/lib/api/space-guards";
+import { parsePaginationParams } from "@/lib/api/pagination";
 import type { SpacePostingInsert } from "@/lib/supabase/types";
 
 /**
@@ -13,8 +14,10 @@ export const GET = withAuth(async (req, { user, supabase, params }) => {
   await verifySpaceMembership(supabase, spaceId, user.id);
 
   const { searchParams } = new URL(req.url);
-  const limit = Math.min(Number(searchParams.get("limit") || 20), 50);
-  const offset = Number(searchParams.get("offset") || 0);
+  const { limit, offset } = parsePaginationParams(searchParams, {
+    limit: 20,
+    max: 50,
+  });
   const status = searchParams.get("status"); // optional filter
 
   let query = supabase
@@ -81,7 +84,10 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       category: body.category ?? null,
       tags: body.tags ?? [],
       capacity: Math.max(1, Math.min(100, Number(body.capacity) || 2)),
-      team_size_min: Math.max(1, Math.min(Number(body.capacity) || 2, Number(body.team_size_min) || 1)),
+      team_size_min: Math.max(
+        1,
+        Math.min(Number(body.capacity) || 2, Number(body.team_size_min) || 1),
+      ),
       deadline: body.deadline ?? null,
       activity_date: body.activity_date ?? null,
       visibility: body.visibility ?? "public",
