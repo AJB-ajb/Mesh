@@ -109,7 +109,6 @@ export function ComposeArea({
             onTypingChange={(typing) => {
               if (!typing) onStopTyping?.();
             }}
-            onBlur={onStopTyping}
           />
         </div>
 

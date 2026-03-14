@@ -27,7 +27,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     label: labels.slashCommands.time.label,
     description: labels.slashCommands.time.description,
     type: "action",
-    context: ["message", "posting", "profile"],
+    context: ["message", "posting", "profile", "state-text"],
   },
   {
     name: "location",
@@ -35,7 +35,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     label: labels.slashCommands.location.label,
     description: labels.slashCommands.location.description,
     type: "action",
-    context: ["message", "posting", "profile"],
+    context: ["message", "posting", "profile", "state-text"],
   },
   {
     name: "skills",

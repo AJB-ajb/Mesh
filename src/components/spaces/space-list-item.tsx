@@ -130,7 +130,7 @@ export function SpaceListItemRow({
         {preview && (
           <div
             className={cn(
-              "text-sm truncate",
+              "text-sm",
               isSystem && "italic",
               unreadCount > 0 && !isMuted
                 ? "text-foreground font-medium"

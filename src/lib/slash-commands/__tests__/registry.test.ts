@@ -62,11 +62,13 @@ describe("slash-commands registry", () => {
       expect(names).not.toContain("template");
     });
 
-    it("returns only universal commands for state-text context", () => {
+    it("returns state-text commands including time/location", () => {
       const stCmds = filterCommandsByContext("state-text");
       const names = stCmds.map((c) => c.name);
 
       expect(names).toContain("format");
+      expect(names).toContain("time");
+      expect(names).toContain("location");
       expect(names).not.toContain("invite");
       expect(names).not.toContain("calendar");
     });
