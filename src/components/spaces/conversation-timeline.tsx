@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { labels } from "@/lib/labels";
 import type { SpaceMessageWithSender } from "@/lib/hooks/use-space-messages";
-import type { SpacePosting } from "@/lib/supabase/types";
+import type { SpacePostingWithCreator } from "@/lib/supabase/types";
 import type { SpaceMemberWithProfile } from "@/lib/hooks/use-space";
 import { MessageBubble } from "./message-bubble";
 import { PostingCardInline } from "./posting-card-inline";
@@ -18,7 +18,7 @@ interface ConversationTimelineProps {
   hasMore: boolean;
   isLoading: boolean;
   onLoadMore: () => void;
-  postings?: Map<string, SpacePosting>;
+  postings?: Map<string, SpacePostingWithCreator>;
   spaceId?: string;
   isAdmin?: boolean;
   typingUsers?: string[];
@@ -97,6 +97,7 @@ export function ConversationTimeline({
               isOwn={isOwn}
               spaceId={spaceId}
               isAdmin={isAdmin}
+              replyCount={posting.replyCount}
             />
           );
         }

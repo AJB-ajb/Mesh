@@ -43,7 +43,7 @@ async function fetchActivityFeed(): Promise<ActivityFeedData> {
       `
       *,
       from_profile:from_user_id(full_name, user_id),
-      space_posting:posting_id(text, category, tags, status)
+      space_posting:posting_id(text, category, tags, status, sub_space_id, space_id)
     `,
     )
     .eq("user_id", user.id)
@@ -131,9 +131,16 @@ export function useActivityFeed() {
           break;
         }
         case "match": {
-          // Navigate to the space/posting only on accept, not dismiss
-          if (status === "acted" && card.space_id) {
-            window.location.href = `/spaces/${card.space_id}`;
+          // Navigate to the sub-space (thread) or parent space on accept
+          if (status === "acted") {
+            const subSpaceId = cardData.sub_space_id as string | undefined;
+            const spaceId =
+              subSpaceId ??
+              (cardData.space_id as string | undefined) ??
+              card.space_id;
+            if (spaceId) {
+              window.location.href = `/spaces/${spaceId}`;
+            }
           }
           break;
         }

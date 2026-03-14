@@ -8,7 +8,7 @@ import {
   subscribeToSpacePostings,
   unsubscribeChannel,
 } from "@/lib/supabase/realtime";
-import type { SpacePostingWithCreator, Profile } from "@/lib/supabase/types";
+import type { SpacePostingWithCreator } from "@/lib/supabase/types";
 
 // ---------------------------------------------------------------------------
 // Fetcher
@@ -27,7 +27,35 @@ async function fetchSpacePostings(
     .order("created_at", { ascending: false });
 
   if (error) throw error;
-  return (data ?? []) as SpacePostingWithCreator[];
+
+  const postings = (data ?? []) as SpacePostingWithCreator[];
+
+  // Fetch reply counts for postings that have sub-spaces
+  const subSpaceIds = postings
+    .map((p) => p.sub_space_id)
+    .filter((id): id is string => id != null);
+
+  if (subSpaceIds.length > 0) {
+    const { data: counts } = await supabase.rpc("get_reply_counts", {
+      sub_space_ids: subSpaceIds,
+    });
+
+    if (counts) {
+      const countMap = new Map(
+        (counts as { space_id: string; count: number }[]).map((r) => [
+          r.space_id,
+          Number(r.count),
+        ]),
+      );
+      for (const p of postings) {
+        if (p.sub_space_id) {
+          p.replyCount = countMap.get(p.sub_space_id) ?? 0;
+        }
+      }
+    }
+  }
+
+  return postings;
 }
 
 // ---------------------------------------------------------------------------

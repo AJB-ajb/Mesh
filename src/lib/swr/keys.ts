@@ -41,12 +41,13 @@ export const cacheKeys = {
   space: (id: string) => `/api/spaces/${id}` as const,
   spaceMessages: (spaceId: string) =>
     `/api/spaces/${spaceId}/messages` as const,
-  spaceMembers: (spaceId: string) =>
-    `/api/spaces/${spaceId}/members` as const,
+  spaceMembers: (spaceId: string) => `/api/spaces/${spaceId}/members` as const,
   spacePostings: (spaceId: string) =>
     `/api/spaces/${spaceId}/postings` as const,
   spaceJoinRequests: (postingId: string) =>
     `space-join-requests/${postingId}` as const,
+  spaceSearch: (spaceId: string, query: string) =>
+    `/api/spaces/${spaceId}/search?q=${query}` as const,
 
   // Activity
   activityCards: () => "/api/activity" as const,

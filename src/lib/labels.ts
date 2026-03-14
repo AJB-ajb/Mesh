@@ -1156,6 +1156,17 @@ export const labels = {
       deletePosting: "Delete posting",
       save: "Save",
     },
+    thread: {
+      replies: (n: number) => `${n} repl${n === 1 ? "y" : "ies"}`,
+      viewThread: "View thread",
+    },
+    search: {
+      toggle: "Search messages",
+      placeholder: "Search messages...",
+      noResults: "No messages found",
+      close: "Close search",
+    },
+    backToSpaces: "Back",
     memberManagement: {
       admin: "Admin",
       member: "Member",

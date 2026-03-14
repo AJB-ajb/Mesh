@@ -3,6 +3,7 @@
  * Finds profiles that match a posting using pgvector cosine similarity
  */
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, ScoreBreakdown } from "@/lib/supabase/types";
 import { MATCHING, DEEP_MATCH } from "@/lib/constants";
@@ -33,8 +34,9 @@ export async function matchPostingToProfiles(
   postingId: string,
   limit: number = MATCHING.DEFAULT_RESULT_LIMIT,
   deepMatch: boolean = false,
+  externalClient?: SupabaseClient,
 ): Promise<PostingToProfileMatch[]> {
-  const supabase = await createClient();
+  const supabase = externalClient ?? (await createClient());
 
   // First, get the space_posting and its embedding
   const { data: posting, error: postingError } = await supabase
@@ -208,8 +210,16 @@ export async function matchPostingToProfiles(
 export async function createMatchRecordsForPosting(
   postingId: string,
   matches: PostingToProfileMatch[],
+  externalClient?: SupabaseClient,
 ): Promise<void> {
-  const supabase = await createClient();
+  const supabase = externalClient ?? (await createClient());
+
+  // Fetch posting to get space_id and sub_space_id for card data
+  const { data: postingRow } = await supabase
+    .from("space_postings")
+    .select("space_id, sub_space_id")
+    .eq("id", postingId)
+    .single();
 
   const cardInserts = matches
     .filter((m) => !m.matchId && m.score > MATCH_SCORE_THRESHOLD)
@@ -218,10 +228,13 @@ export async function createMatchRecordsForPosting(
       type: "match" as const,
       title: "You matched with a posting",
       posting_id: postingId,
+      space_id: postingRow?.space_id ?? null,
       score: m.score,
       data: {
         score_breakdown: m.scoreBreakdown,
         deep_match: m.deepMatchResult ?? null,
+        space_id: postingRow?.space_id ?? null,
+        sub_space_id: postingRow?.sub_space_id ?? null,
       },
       status: "pending" as const,
     }));

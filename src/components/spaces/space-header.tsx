@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Info } from "lucide-react";
+import { ArrowLeft, Info, Search } from "lucide-react";
 import { useState } from "react";
 
 import { labels } from "@/lib/labels";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import type { SpaceDetail } from "@/lib/hooks/use-space";
 import { GLOBAL_SPACE_ID, type SpaceMember } from "@/lib/supabase/types";
 import { SpaceInfoSheet } from "./space-info-sheet";
+import { SpaceSearch } from "./space-search";
 
 interface SpaceHeaderProps {
   space: SpaceDetail;
@@ -23,7 +24,11 @@ export function SpaceHeader({
 }: SpaceHeaderProps) {
   const router = useRouter();
   const [showInfo, setShowInfo] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const isGlobal = space.id === GLOBAL_SPACE_ID;
+  const backTarget = space.parent_space_id
+    ? `/spaces/${space.parent_space_id}`
+    : "/spaces";
 
   return (
     <>
@@ -32,8 +37,8 @@ export function SpaceHeader({
           variant="ghost"
           size="icon"
           className="size-8"
-          onClick={() => router.push("/spaces")}
-          aria-label="Back to spaces"
+          onClick={() => router.push(backTarget)}
+          aria-label={labels.spaces.backToSpaces}
         >
           <ArrowLeft className="size-4" />
         </Button>
@@ -51,12 +56,26 @@ export function SpaceHeader({
           variant="ghost"
           size="icon"
           className="size-8"
+          onClick={() => setShowSearch((v) => !v)}
+          aria-label={labels.spaces.search.toggle}
+        >
+          <Search className="size-4" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8"
           onClick={() => setShowInfo(true)}
           aria-label={labels.spaces.info}
         >
           <Info className="size-4" />
         </Button>
       </div>
+
+      {showSearch && (
+        <SpaceSearch spaceId={space.id} onClose={() => setShowSearch(false)} />
+      )}
 
       <SpaceInfoSheet
         space={space}

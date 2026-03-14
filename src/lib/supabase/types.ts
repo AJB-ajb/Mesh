@@ -709,6 +709,8 @@ export function deriveSpaceType(space: Space, memberCount?: number): SpaceType {
 /** Space posting with creator profile */
 export interface SpacePostingWithCreator extends SpacePosting {
   profiles: Pick<Profile, "full_name" | "user_id"> | null;
+  /** Client-side enrichment: message count in the sub-space thread */
+  replyCount?: number;
 }
 
 /** Activity card with related profile info */
@@ -716,7 +718,7 @@ export interface ActivityCardWithDetails extends ActivityCard {
   from_profile?: Pick<Profile, "full_name" | "user_id"> | null;
   space_posting?: Pick<
     SpacePosting,
-    "text" | "category" | "tags" | "status"
+    "text" | "category" | "tags" | "status" | "sub_space_id" | "space_id"
   > | null;
 }
 

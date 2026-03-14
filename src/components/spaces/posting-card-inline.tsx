@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Users,
   Clock,
@@ -9,6 +10,7 @@ import {
   Trash2,
   XCircle,
   CheckCircle2,
+  MessageSquare,
 } from "lucide-react";
 import { useSWRConfig } from "swr";
 
@@ -34,6 +36,7 @@ interface PostingCardInlineProps {
   isOwn: boolean;
   spaceId?: string;
   isAdmin?: boolean;
+  replyCount?: number;
   onJoin?: () => void;
 }
 
@@ -55,7 +58,9 @@ export function PostingCardInline({
   isOwn,
   spaceId,
   isAdmin,
+  replyCount,
 }: PostingCardInlineProps) {
+  const router = useRouter();
   const { mutate } = useSWRConfig();
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -138,12 +143,26 @@ export function PostingCardInline({
                 )}
               </Group>
 
-              {/* Status badge */}
+              {/* Status badge + thread link */}
               <Group gap="sm">
                 <Badge variant={statusVariant[posting.status]}>
                   {posting.status.charAt(0).toUpperCase() +
                     posting.status.slice(1)}
                 </Badge>
+                {posting.sub_space_id && (
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 text-xs text-primary hover:underline"
+                    onClick={() =>
+                      router.push(`/spaces/${posting.sub_space_id}`)
+                    }
+                  >
+                    <MessageSquare className="size-3" />
+                    {replyCount
+                      ? labels.spaces.thread.replies(replyCount)
+                      : labels.spaces.thread.viewThread}
+                  </button>
+                )}
               </Group>
 
               {/* Join button */}
