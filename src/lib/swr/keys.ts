@@ -49,6 +49,9 @@ export const cacheKeys = {
   spaceSearch: (spaceId: string, query: string) =>
     `/api/spaces/${spaceId}/search?q=${encodeURIComponent(query)}` as const,
 
+  // Space cards
+  spaceCards: (spaceId: string) => `/api/spaces/${spaceId}/cards` as const,
+
   // Activity
   activityCards: () => "/api/activity" as const,
   activityPendingCount: () => "activity-pending-count" as const,

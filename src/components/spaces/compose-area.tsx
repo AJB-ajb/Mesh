@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { Send } from "lucide-react";
+import { Send, BarChart3 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
@@ -19,6 +19,9 @@ import {
   INITIAL_POSTING_FIELDS,
   type PostingFields,
 } from "./posting-compose-fields";
+import { CreatePollDialog } from "./cards/create-poll-dialog";
+import { useSpaceCards } from "@/lib/hooks/use-space-cards";
+import type { PollData } from "@/lib/supabase/types";
 
 interface ComposeAreaProps {
   spaceId: string;
@@ -47,8 +50,10 @@ export function ComposeArea({
   const [postingFields, setPostingFields] = useState<PostingFields>(
     INITIAL_POSTING_FIELDS,
   );
+  const [showPollDialog, setShowPollDialog] = useState(false);
   const editorRef = useRef<ComposeEditorHandle>(null);
 
+  const { createCard } = useSpaceCards(spaceId);
   const { send, isSending } = useSendSpaceMessage({
     spaceId,
     senderId,
@@ -85,6 +90,13 @@ export function ComposeArea({
     }
   }, [text, mode, postingFields, send, isSending, postingOnly, onStopTyping]);
 
+  const handleCreatePoll = useCallback(
+    async (pollData: PollData) => {
+      await createCard("poll", pollData);
+    },
+    [createCard],
+  );
+
   const editorContext = mode === "M" ? "message" : "posting";
 
   return (
@@ -111,6 +123,19 @@ export function ComposeArea({
             }}
           />
         </div>
+
+        {/* Create card button — hidden in posting-only mode */}
+        {!postingOnly && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-10 rounded-full shrink-0"
+            onClick={() => setShowPollDialog(true)}
+            aria-label={labels.cards.createCardButton}
+          >
+            <BarChart3 className="size-4" />
+          </Button>
+        )}
 
         {/* M/P toggle — hidden in posting-only mode */}
         {!postingOnly && (
@@ -165,6 +190,12 @@ export function ComposeArea({
           />
         </div>
       )}
+
+      <CreatePollDialog
+        open={showPollDialog}
+        onOpenChange={setShowPollDialog}
+        onSubmit={handleCreatePoll}
+      />
     </div>
   );
 }

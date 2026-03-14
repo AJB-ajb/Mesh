@@ -1198,6 +1198,33 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
+  // Cards (interactive structured messages)
+  // ---------------------------------------------------------------------------
+  cards: {
+    poll: "Poll",
+    timeProposal: "Time Proposal",
+    rsvp: "RSVP",
+    taskClaim: "Task",
+    location: "Location",
+    resolved: "Resolved",
+    cancelled: "Cancelled",
+    active: "Active",
+    totalVotes: (n: number) => `${n} vote${n !== 1 ? "s" : ""}`,
+    cancelCard: "Cancel",
+    resolveCard: "Resolve",
+    createPoll: "Create Poll",
+    pollQuestion: "Question",
+    pollQuestionPlaceholder: "What would you like to ask?",
+    pollOptions: "Options",
+    pollOptionPlaceholder: (n: number) => `Option ${n}`,
+    addOption: "Add option",
+    removeOption: "Remove option",
+    cancel: "Cancel",
+    createPollSubmit: "Create Poll",
+    createCardButton: "Create card",
+  },
+
+  // ---------------------------------------------------------------------------
   // Activity
   // ---------------------------------------------------------------------------
   activity: {
