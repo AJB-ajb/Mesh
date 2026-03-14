@@ -8,9 +8,8 @@ import type { Profile, ScoreBreakdown } from "@/lib/supabase/types";
 import { MATCHING, DEEP_MATCH } from "@/lib/constants";
 import { MATCH_SCORE_THRESHOLD } from "@/lib/matching/scoring";
 import {
-  deepMatchCandidates,
   isDeepMatchAvailable,
-  blendScores,
+  applyDeepMatchResults,
   type DeepMatchResult,
 } from "@/lib/matching/deep-match";
 
@@ -52,7 +51,9 @@ export async function matchPostingToProfiles(
   // asynchronously via the batch processor after posting save
   const embedding = posting.embedding;
   if (!embedding || !Array.isArray(embedding)) {
-    console.warn(`[matching] Space posting embedding not ready for ${postingId}, returning empty matches`);
+    console.warn(
+      `[matching] Space posting embedding not ready for ${postingId}, returning empty matches`,
+    );
     return [];
   }
 
@@ -85,9 +86,7 @@ export async function matchPostingToProfiles(
     )
     .in("user_id", userIds);
 
-  const profileMap = new Map(
-    profileRows?.map((p) => [p.user_id, p]) || [],
-  );
+  const profileMap = new Map(profileRows?.map((p) => [p.user_id, p]) || []);
 
   // Check for existing activity_cards (type: 'match') for this posting
   const { data: existingCards } = await supabase
@@ -97,9 +96,7 @@ export async function matchPostingToProfiles(
     .eq("posting_id", postingId)
     .in("user_id", userIds);
 
-  const cardMap = new Map(
-    existingCards?.map((c) => [c.user_id, c]) || [],
-  );
+  const cardMap = new Map(existingCards?.map((c) => [c.user_id, c]) || []);
 
   // Transform results into match objects
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -178,47 +175,26 @@ export async function matchPostingToProfiles(
         profileSources?.map((p) => [p.user_id, p]) ?? [],
       );
 
-      const candidates = topN
-        .map((m) => {
-          const ps = profileSourceMap.get(m.profile.user_id);
+      await applyDeepMatchResults({
+        topN,
+        allMatches: matches,
+        postingTitle,
+        postingText,
+        buildCandidate: (entry) => {
+          const ps = profileSourceMap.get(entry.profile.user_id);
           const profileText = ps?.source_text || ps?.bio || ps?.headline || "";
+          if (!profileText) return null;
           return {
             profileText,
             parentStateText,
-            fastFilterScore: m.score,
-            sharedSkills: [] as string[],
-            availabilityOverlap: m.scoreBreakdown?.availability ?? null,
-            distanceKm: null as number | null,
-            semanticScore: m.scoreBreakdown?.semantic ?? null,
+            fastFilterScore: entry.score,
+            sharedSkills: [],
+            availabilityOverlap: entry.scoreBreakdown?.availability ?? null,
+            distanceKm: null,
+            semanticScore: entry.scoreBreakdown?.semantic ?? null,
           };
-        })
-        .filter((c) => c.profileText);
-
-      if (candidates.length > 0) {
-        const deepResults = await deepMatchCandidates(
-          postingTitle,
-          postingText,
-          candidates,
-        );
-
-        // Attach deep match results and blend scores
-        let resultIdx = 0;
-        topN.forEach((m) => {
-          if (resultIdx < deepResults.length) {
-            const ps = profileSourceMap.get(m.profile.user_id);
-            const profileText =
-              ps?.source_text || ps?.bio || ps?.headline || "";
-            if (profileText) {
-              m.deepMatchResult = deepResults[resultIdx];
-              m.score = blendScores(m.score, deepResults[resultIdx].score);
-              resultIdx++;
-            }
-          }
-        });
-
-        // Re-sort by blended score
-        matches.sort((a, b) => b.score - a.score);
-      }
+        },
+      });
     }
   }
 
@@ -254,7 +230,9 @@ export async function createMatchRecordsForPosting(
     const { error } = await supabase.from("activity_cards").insert(cardInserts);
 
     if (error) {
-      throw new Error(`Failed to create match activity cards: ${error.message}`);
+      throw new Error(
+        `Failed to create match activity cards: ${error.message}`,
+      );
     }
   }
 

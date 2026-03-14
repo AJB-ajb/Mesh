@@ -87,25 +87,34 @@ export async function deepMatchCandidate(
 }
 
 /**
+ * Candidate input for deep matching — shared shape used by both directions.
+ */
+export interface DeepMatchCandidate {
+  profileText: string;
+  parentStateText?: string;
+  fastFilterScore: number;
+  sharedSkills: string[];
+  availabilityOverlap: number | null;
+  distanceKm: number | null;
+  semanticScore: number | null;
+}
+
+/**
  * Batch evaluates multiple candidates against a posting.
  * Uses concurrency limit to avoid rate limits.
+ *
+ * Returns an array with the same length as `candidates`.
+ * Failed LLM calls produce `null` at the corresponding index,
+ * preserving the 1:1 positional correspondence.
  */
 export async function deepMatchCandidates(
   postingTitle: string,
   postingText: string,
-  candidates: Array<{
-    profileText: string;
-    parentStateText?: string;
-    fastFilterScore: number;
-    sharedSkills: string[];
-    availabilityOverlap: number | null;
-    distanceKm: number | null;
-    semanticScore: number | null;
-  }>,
+  candidates: DeepMatchCandidate[],
   options?: { concurrency?: number },
-): Promise<DeepMatchResult[]> {
+): Promise<(DeepMatchResult | null)[]> {
   const concurrency = options?.concurrency ?? DEEP_MATCH.DEFAULT_CONCURRENCY;
-  const results: DeepMatchResult[] = [];
+  const results: (DeepMatchResult | null)[] = [];
 
   // Process in batches to respect concurrency limit
   let i = 0;
@@ -129,9 +138,7 @@ export async function deepMatchCandidates(
         }),
       ),
     );
-    results.push(
-      ...batchResults.filter((r): r is DeepMatchResult => r !== null),
-    );
+    results.push(...batchResults);
     i += concurrency;
   }
 
@@ -158,4 +165,58 @@ export function blendScores(
  */
 export function isDeepMatchAvailable(): boolean {
   return isGeminiConfigured();
+}
+
+// ---------------------------------------------------------------------------
+// Shared deep-match application helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Runs deep matching on `topN` match entries, blends scores in-place,
+ * and re-sorts the full `allMatches` array.
+ *
+ * `buildCandidate` maps each entry to the LLM candidate input.
+ * Return `null` to skip an entry (e.g. missing text).
+ *
+ * Because entries are mutated by reference, the caller's original
+ * match objects are updated directly — no wrapper objects needed.
+ */
+export async function applyDeepMatchResults<
+  M extends { score: number; deepMatchResult?: DeepMatchResult },
+>(opts: {
+  topN: M[];
+  allMatches: M[];
+  postingTitle: string;
+  postingText: string;
+  buildCandidate: (entry: M) => DeepMatchCandidate | null;
+}): Promise<void> {
+  const { topN, allMatches, postingTitle, postingText, buildCandidate } = opts;
+
+  // Build candidates, tracking which topN index each one came from
+  const indexed: { idx: number; candidate: DeepMatchCandidate }[] = [];
+  for (let i = 0; i < topN.length; i++) {
+    const c = buildCandidate(topN[i]);
+    if (c) indexed.push({ idx: i, candidate: c });
+  }
+
+  if (indexed.length === 0) return;
+
+  const deepResults = await deepMatchCandidates(
+    postingTitle,
+    postingText,
+    indexed.map((x) => x.candidate),
+  );
+
+  // Attach results back — deepResults[j] corresponds to indexed[j]
+  for (let j = 0; j < indexed.length; j++) {
+    const dr = deepResults[j];
+    if (dr) {
+      const entry = topN[indexed[j].idx];
+      entry.deepMatchResult = dr;
+      entry.score = blendScores(entry.score, dr.score);
+    }
+  }
+
+  // Re-sort by blended score
+  allMatches.sort((a, b) => b.score - a.score);
 }

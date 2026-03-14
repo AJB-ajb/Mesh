@@ -8,9 +8,8 @@ import type { Posting, ScoreBreakdown } from "@/lib/supabase/types";
 import { MATCH_SCORE_THRESHOLD } from "@/lib/matching/scoring";
 import { MATCHING, DEEP_MATCH } from "@/lib/constants";
 import {
-  deepMatchCandidates,
   isDeepMatchAvailable,
-  blendScores,
+  applyDeepMatchResults,
   type DeepMatchResult,
 } from "@/lib/matching/deep-match";
 
@@ -177,52 +176,42 @@ export async function matchProfileToPostings(
       "";
 
     if (profileText) {
-      const candidatesWithIds = topN
-        .map((m) => {
-          const ps = postingSourceMap.get(m.posting.id);
-          const postingText = ps?.text || m.posting.description || "";
-          if (!postingText) return null;
-          return {
-            postingId: m.posting.id,
-            postingTitle:
-              m.posting.title || m.posting.category || "Space Posting",
-            postingText,
-            profileText,
-            fastFilterScore: m.score,
-            sharedSkills: [] as string[],
-            availabilityOverlap: m.scoreBreakdown?.availability ?? null,
-            distanceKm: null as number | null,
-            semanticScore: m.scoreBreakdown?.semantic ?? null,
-          };
-        })
-        .filter((c): c is NonNullable<typeof c> => c !== null);
+      // Resolve posting text for the first viable candidate to use as the
+      // shared posting text passed to deepMatchCandidates (matches original
+      // behavior — the batch function uses one posting text for all candidates)
+      let firstPostingTitle = "Space Posting";
+      let firstPostingText = "";
+      for (const m of topN) {
+        const ps = postingSourceMap.get(m.posting.id);
+        const pText = ps?.text || m.posting.description || "";
+        if (pText) {
+          firstPostingTitle =
+            m.posting.title || m.posting.category || "Space Posting";
+          firstPostingText = pText;
+          break;
+        }
+      }
 
-      if (candidatesWithIds.length > 0) {
-        const deepResults = await deepMatchCandidates(
-          candidatesWithIds[0].postingTitle,
-          candidatesWithIds[0].postingText,
-          candidatesWithIds,
-        );
-
-        // Map results back by index (candidatesWithIds and deepResults are 1:1)
-        const resultMap = new Map<string, DeepMatchResult>();
-        candidatesWithIds.forEach((c, i) => {
-          if (i < deepResults.length) {
-            resultMap.set(c.postingId, deepResults[i]);
-          }
+      if (firstPostingText) {
+        await applyDeepMatchResults({
+          topN,
+          allMatches: matches,
+          postingTitle: firstPostingTitle,
+          postingText: firstPostingText,
+          buildCandidate: (entry) => {
+            const ps = postingSourceMap.get(entry.posting.id);
+            const pText = ps?.text || entry.posting.description || "";
+            if (!pText) return null;
+            return {
+              profileText,
+              fastFilterScore: entry.score,
+              sharedSkills: [],
+              availabilityOverlap: entry.scoreBreakdown?.availability ?? null,
+              distanceKm: null,
+              semanticScore: entry.scoreBreakdown?.semantic ?? null,
+            };
+          },
         });
-
-        // Apply deep match results to the matching topN entries
-        topN.forEach((m) => {
-          const dr = resultMap.get(m.posting.id);
-          if (dr) {
-            m.deepMatchResult = dr;
-            m.score = blendScores(m.score, dr.score);
-          }
-        });
-
-        // Re-sort by blended score
-        matches.sort((a, b) => b.score - a.score);
       }
     }
   }
