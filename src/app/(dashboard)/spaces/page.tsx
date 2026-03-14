@@ -6,6 +6,8 @@ import { Plus, MessageSquare, Loader2, Search, X } from "lucide-react";
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Stack } from "@/components/ui/stack";
+import { Group } from "@/components/ui/group";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useSpaceList } from "@/lib/hooks/use-space-list";
 import { SpaceList } from "@/components/spaces/space-list";
@@ -46,9 +48,9 @@ export default function SpacesPage() {
   }, [spaces, filter, search]);
 
   return (
-    <div className="space-y-4">
+    <Stack gap="md">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <Group justify="between">
         <h1 className="text-2xl font-bold tracking-tight">
           {labels.nav.spaces}
         </h1>
@@ -56,7 +58,7 @@ export default function SpacesPage() {
           <Plus className="size-4" />
           <span className="hidden sm:inline">{labels.nav.newSpace}</span>
         </Button>
-      </div>
+      </Group>
 
       {/* Search */}
       <div className="relative">
@@ -97,6 +99,6 @@ export default function SpacesPage() {
       )}
 
       <NewSpaceDialog open={showNewSpace} onOpenChange={setShowNewSpace} />
-    </div>
+    </Stack>
   );
 }

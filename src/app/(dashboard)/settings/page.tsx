@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Loader2, AlertCircle, Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Group } from "@/components/ui/group";
 import { labels } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/client";
 import { useSettings } from "@/lib/hooks/use-settings";
@@ -19,6 +20,7 @@ import { ConnectedAccountsCard } from "@/components/settings/connected-accounts-
 import { GithubSyncCard } from "@/components/settings/github-sync-card";
 import { NotificationPreferencesCard } from "@/components/settings/notification-preferences-card";
 import { DangerZoneCard } from "@/components/settings/danger-zone-card";
+import { PageContent } from "@/components/layout";
 import { ROUTES } from "@/lib/routes";
 
 function SettingsContent() {
@@ -85,7 +87,7 @@ function SettingsContent() {
   )?.connected;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 pb-20">
+    <PageContent size="md" className="pb-20">
       <Link
         href={ROUTES.home}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
@@ -102,17 +104,25 @@ function SettingsContent() {
       </div>
 
       {error && (
-        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive flex items-start gap-2">
+        <Group
+          align="start"
+          gap="md"
+          className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
           <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
           <span>{error}</span>
-        </div>
+        </Group>
       )}
 
       {success && (
-        <div className="rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-600 dark:text-green-400 flex items-start gap-2">
+        <Group
+          align="start"
+          gap="md"
+          className="rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-600 dark:text-green-400"
+        >
           <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
           <span>{success}</span>
-        </div>
+        </Group>
       )}
 
       <ConnectedAccountsCard
@@ -155,7 +165,7 @@ function SettingsContent() {
       </div>
 
       <DangerZoneCard />
-    </div>
+    </PageContent>
   );
 }
 

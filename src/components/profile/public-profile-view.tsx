@@ -9,6 +9,8 @@ import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Stack } from "@/components/ui/stack";
+import { Group } from "@/components/ui/group";
 import { getInitials } from "@/lib/format";
 import { useConnectionStatus } from "@/lib/hooks/use-connection-status";
 import { ROUTES } from "@/lib/routes";
@@ -180,7 +182,7 @@ export default function PublicProfileView({
   const isOwnProfile = currentUserId === profile.user_id;
 
   return (
-    <div className="space-y-6">
+    <Stack gap="lg">
       <Link
         href={ROUTES.home}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
@@ -232,11 +234,11 @@ export default function PublicProfileView({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
+            <Stack gap="sm">
               {profile.profile_skills
                 .filter((ps) => ps.skill_nodes)
                 .map((ps) => (
-                  <div key={ps.skill_id} className="flex items-center gap-3">
+                  <Group key={ps.skill_id} gap="sm">
                     <span className="w-32 truncate text-sm font-medium">
                       {ps.skill_nodes!.name}
                     </span>
@@ -249,12 +251,12 @@ export default function PublicProfileView({
                     <span className="text-xs text-muted-foreground w-24 text-right">
                       {ps.level}/10 ({skillLevelLabel(ps.level)})
                     </span>
-                  </div>
+                  </Group>
                 ))}
-            </div>
+            </Stack>
           </CardContent>
         </Card>
       )}
-    </div>
+    </Stack>
   );
 }

@@ -5,6 +5,8 @@ import { Users, Clock } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Stack } from "@/components/ui/stack";
+import { Group } from "@/components/ui/group";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { formatTimeAgoShort } from "@/lib/format";
 import { labels } from "@/lib/labels";
@@ -56,7 +58,7 @@ export function PostingBrowserCard({
 
   return (
     <>
-      <div className="rounded-lg border border-border bg-card p-4 space-y-2">
+      <Stack gap="sm" className="rounded-lg border border-border bg-card p-4">
         {/* Text */}
         <p className="text-sm line-clamp-3">{posting.text}</p>
 
@@ -72,7 +74,7 @@ export function PostingBrowserCard({
         )}
 
         {/* Meta row */}
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <Group gap="sm" className="text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
             <Users className="size-3" />
             {posting.capacity}
@@ -89,10 +91,10 @@ export function PostingBrowserCard({
           >
             {posting.status}
           </Badge>
-        </div>
+        </Group>
 
         {/* Footer: creator + join */}
-        <div className="flex items-center justify-between pt-1">
+        <Group justify="between" className="pt-1">
           <span className="text-xs text-muted-foreground">
             {creatorName}
             {" \u00b7 "}
@@ -112,8 +114,8 @@ export function PostingBrowserCard({
                 : labels.spaces.posting.requestToJoin}
             </Button>
           )}
-        </div>
-      </div>
+        </Group>
+      </Stack>
 
       <JoinRequestDialog
         postingId={posting.id}

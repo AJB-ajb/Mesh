@@ -4,6 +4,8 @@ import { Bell, Loader2 } from "lucide-react";
 
 import { labels } from "@/lib/labels";
 import { Badge } from "@/components/ui/badge";
+import { Stack } from "@/components/ui/stack";
+import { Group } from "@/components/ui/group";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useActivityFeed } from "@/lib/hooks/use-activity-feed";
 import { ActivityFeed } from "@/components/activity/activity-feed";
@@ -12,9 +14,9 @@ export default function ActivityPage() {
   const { cards, pendingCount, isLoading, actOnCard } = useActivityFeed();
 
   return (
-    <div className="space-y-4">
+    <Stack gap="md">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <Group gap="sm">
         <h1 className="text-2xl font-bold tracking-tight">
           {labels.activity.title}
         </h1>
@@ -23,7 +25,7 @@ export default function ActivityPage() {
             {labels.activity.pendingCount(pendingCount)}
           </Badge>
         )}
-      </div>
+      </Group>
 
       {/* Activity feed */}
       {isLoading ? (
@@ -39,6 +41,6 @@ export default function ActivityPage() {
       ) : (
         <ActivityFeed cards={cards} onAction={actOnCard} />
       )}
-    </div>
+    </Stack>
   );
 }

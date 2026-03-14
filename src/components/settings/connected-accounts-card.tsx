@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X, Github, Linkedin, Loader2, Link2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Group } from "@/components/ui/group";
 import {
   Card,
   CardContent,
@@ -148,14 +149,15 @@ export function ConnectedAccountsCard({
         </CardHeader>
         <CardContent className="space-y-4">
           {providers.map((providerData) => (
-            <div
+            <Group
               key={providerData.provider}
-              className="flex items-center justify-between rounded-lg border border-border p-4"
+              justify="between"
+              className="rounded-lg border border-border p-4"
             >
-              <div className="flex items-center gap-3">
+              <Group gap="sm">
                 {getProviderIcon(providerData.provider)}
                 <div>
-                  <div className="flex items-center gap-2">
+                  <Group gap="md">
                     <p className="font-medium">
                       {getProviderName(providerData.provider)}
                     </p>
@@ -164,14 +166,14 @@ export function ConnectedAccountsCard({
                         {labels.common.primary}
                       </Badge>
                     )}
-                  </div>
+                  </Group>
                   <p className="text-sm text-muted-foreground">
                     {providerData.connected
                       ? labels.common.connected
                       : labels.common.notConnected}
                   </p>
                 </div>
-              </div>
+              </Group>
 
               {providerData.connected ? (
                 <Button
@@ -206,7 +208,7 @@ export function ConnectedAccountsCard({
                   )}
                 </Button>
               )}
-            </div>
+            </Group>
           ))}
         </CardContent>
       </Card>

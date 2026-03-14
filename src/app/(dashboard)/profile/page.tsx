@@ -8,6 +8,8 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Stack } from "@/components/ui/stack";
+import { Group } from "@/components/ui/group";
 import { TextTools } from "@/components/shared/text-tools";
 import { labels } from "@/lib/labels";
 import { parseList } from "@/lib/types/profile";
@@ -27,6 +29,7 @@ import {
   UpdateOverlay,
 } from "@/components/profile/profile-command-overlays";
 import { autoFormat, autoClean } from "@/lib/text-tools-api";
+import { PageContent } from "@/components/layout";
 import { ROUTES } from "@/lib/routes";
 
 function ProfilePageContent() {
@@ -170,7 +173,7 @@ function ProfilePageContent() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 pb-20">
+    <PageContent size="md" className="pb-20">
       {/* Back link */}
       <Link
         href={ROUTES.home}
@@ -272,7 +275,7 @@ function ProfilePageContent() {
       )}
 
       {/* Toolbar: TextTools + Save */}
-      <div className="flex items-center justify-between">
+      <Group justify="between">
         <TextTools text={editorText} onTextChange={setEditorText} />
         <Button
           onClick={handleExplicitSave}
@@ -284,51 +287,51 @@ function ProfilePageContent() {
             ? labels.profileEditor.saving
             : labels.profileEditor.saveButton}
         </Button>
-      </div>
+      </Group>
 
       {/* Extracted metadata badges */}
       {(skillsList.length > 0 ||
         interestsList.length > 0 ||
         languagesList.length > 0 ||
         form.location) && (
-        <div className="space-y-2">
+        <Stack gap="sm">
           {skillsList.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
+            <Group wrap gap="xs">
               {skillsList.map((skill) => (
                 <Badge key={skill} variant="secondary">
                   {skill}
                 </Badge>
               ))}
-            </div>
+            </Group>
           )}
           {interestsList.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
+            <Group wrap gap="xs">
               {interestsList.map((interest) => (
                 <Badge key={interest} variant="outline">
                   {interest}
                 </Badge>
               ))}
-            </div>
+            </Group>
           )}
           {form.location && (
-            <div className="flex flex-wrap gap-1.5">
+            <Group wrap gap="xs">
               <Badge variant="outline">{form.location}</Badge>
-            </div>
+            </Group>
           )}
           {languagesList.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
+            <Group wrap gap="xs">
               {languagesList.map((lang) => (
                 <Badge key={lang} variant="outline">
                   {lang}
                 </Badge>
               ))}
-            </div>
+            </Group>
           )}
-        </div>
+        </Stack>
       )}
 
       {/* Availability + Calendar section */}
-      <div className="space-y-4 border-t pt-6">
+      <Stack gap="md" className="border-t pt-6">
         <h2 className="text-lg font-semibold">
           {labels.profileEditor.availabilityTitle}
         </h2>
@@ -344,8 +347,8 @@ function ProfilePageContent() {
           onError={(msg) => setCalendarError(msg)}
           onSuccess={() => setCalendarError(null)}
         />
-      </div>
-    </div>
+      </Stack>
+    </PageContent>
   );
 }
 
