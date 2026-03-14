@@ -761,7 +761,8 @@ export interface RsvpData {
 
 export interface TaskClaimData {
   description: string;
-  claimed_by: string | null;
+  options: CardOption[]; // Single "Claim" option; votes[0] = claimer
+  claimed_by?: string | null; // Convenience field set on resolve
 }
 
 export interface LocationData {

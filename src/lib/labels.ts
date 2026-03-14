@@ -1231,6 +1231,12 @@ export const labels = {
     timeSlotPlaceholder: "e.g. Tue Mar 18, 6:00 PM",
     loadingSlots: "Finding common availability...",
     createTimeProposalSubmit: "Suggest Times",
+    rsvpThreshold: (current: number, target: number) =>
+      `${current} / ${target} confirmed`,
+    rsvpThresholdMet: "Threshold met!",
+    taskClaimButton: "I'll do it",
+    taskClaimedByYou: "You claimed this task",
+    taskClaimedBy: (name: string) => `Claimed by ${name}`,
   },
 
   // ---------------------------------------------------------------------------
