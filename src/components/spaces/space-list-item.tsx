@@ -11,6 +11,7 @@ import { Group } from "@/components/ui/group";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { formatTimeAgoShort } from "@/lib/format";
 import { labels } from "@/lib/labels";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import type { SpaceListItem } from "@/lib/supabase/types";
 import { GLOBAL_SPACE_ID } from "@/lib/supabase/types";
 
@@ -29,16 +30,26 @@ function getInitials(name: string | null): string {
     .toUpperCase();
 }
 
-/** Build the preview text with sender name and message type prefix */
+interface PreviewData {
+  /** Plain-text prefix (emoji + sender name) */
+  prefix: string;
+  /** Markdown content to render */
+  content: string;
+}
+
+/** Build the preview with sender name prefix and message content */
 function buildPreview(
   space: SpaceListItem,
   currentUserId?: string | null,
-): string | null {
+): PreviewData | null {
   const msg = space.last_message;
   if (!msg) return null;
 
-  // System messages: show content as-is, no sender prefix
-  if (msg.type === "system") return msg.content ?? null;
+  const content = msg.content ?? "";
+  if (!content) return null;
+
+  // System messages: plain content, no sender prefix
+  if (msg.type === "system") return { prefix: "", content };
 
   // Type prefix for non-text messages
   let prefix = "";
@@ -47,19 +58,16 @@ function buildPreview(
   else if (msg.type === "card") prefix = "\uD83C\uDFB4 "; // 🎴
 
   // Sender prefix (skip for DMs where it's obvious)
-  let sender = "";
   if (space.type !== "dm" && msg.sender_id) {
     if (msg.sender_id === currentUserId) {
-      sender = "You: ";
+      prefix += "You: ";
     } else if (msg.sender_name) {
       const firstName = msg.sender_name.split(" ")[0];
-      sender = `${firstName}: `;
+      prefix += `${firstName}: `;
     }
   }
 
-  const content = msg.content ?? "";
-  if (!content) return null;
-  return `${prefix}${sender}${content}`;
+  return { prefix, content };
 }
 
 export function SpaceListItemRow({
@@ -120,17 +128,22 @@ export function SpaceListItemRow({
           )}
         </Group>
         {preview && (
-          <p
+          <div
             className={cn(
-              "text-sm truncate",
+              "text-sm",
               isSystem && "italic",
               unreadCount > 0 && !isMuted
                 ? "text-foreground font-medium"
                 : "text-muted-foreground",
             )}
           >
-            {preview}
-          </p>
+            {preview.prefix && <span>{preview.prefix}</span>}
+            <MarkdownRenderer
+              content={preview.content}
+              clamp={1}
+              className="inline [&_p]:inline [&_p]:mb-0"
+            />
+          </div>
         )}
       </div>
 

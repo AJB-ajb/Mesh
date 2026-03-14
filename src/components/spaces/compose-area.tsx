@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, useCallback, useRef, type KeyboardEvent } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Send } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
+import {
+  ComposeEditor,
+  type ComposeEditorHandle,
+} from "@/components/editor/compose-editor";
 import {
   useSendSpaceMessage,
   type SendPayload,
@@ -43,7 +47,7 @@ export function ComposeArea({
   const [postingFields, setPostingFields] = useState<PostingFields>(
     INITIAL_POSTING_FIELDS,
   );
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<ComposeEditorHandle>(null);
 
   const { send, isSending } = useSendSpaceMessage({
     spaceId,
@@ -77,40 +81,36 @@ export function ComposeArea({
     if (ok) {
       setText("");
       setPostingFields(INITIAL_POSTING_FIELDS);
-      textareaRef.current?.focus();
+      editorRef.current?.focus();
     }
   }, [text, mode, postingFields, send, isSending, postingOnly, onStopTyping]);
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        handleSend();
-      }
-    },
-    [handleSend],
-  );
+  const editorContext = mode === "M" ? "message" : "posting";
 
   return (
     <div className="border-t border-border bg-background px-3 py-2 shrink-0">
       <div className="flex items-end gap-2">
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-            onTyping?.();
-          }}
-          onKeyDown={handleKeyDown}
-          onBlur={onStopTyping}
-          placeholder={
-            mode === "M"
-              ? labels.spaces.composeMessage
-              : labels.spaces.composePosting
-          }
-          rows={1}
-          className="flex-1 resize-none rounded-xl border border-input bg-muted/50 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px] max-h-24"
-        />
+        <div className="flex-1 min-w-0">
+          <ComposeEditor
+            ref={editorRef}
+            context={editorContext}
+            className={mode === "M" ? "cm-compact" : undefined}
+            content={text}
+            onChange={(v) => {
+              setText(v);
+              onTyping?.();
+            }}
+            onSubmit={handleSend}
+            placeholder={
+              mode === "M"
+                ? labels.spaces.composeMessage
+                : labels.spaces.composePosting
+            }
+            onTypingChange={(typing) => {
+              if (!typing) onStopTyping?.();
+            }}
+          />
+        </div>
 
         {/* M/P toggle — hidden in posting-only mode */}
         {!postingOnly && (

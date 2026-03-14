@@ -521,6 +521,23 @@
 }
 
 /* ===========================================
+   Compact CodeMirror editor (message compose)
+   =========================================== */
+.cm-compact .cm-editor {
+  min-height: unset !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  border-radius: 0.75rem !important;
+  background-color: var(--muted) !important;
+}
+.cm-compact .cm-editor .cm-content {
+  padding: 0.5rem 0.75rem !important;
+}
+.cm-compact .cm-editor .cm-line {
+  padding: 0 !important;
+}
+
+/* ===========================================
    Markdown Content Typography
    =========================================== */
 @layer components {
