@@ -7,6 +7,7 @@ import type { SpaceDetail } from "@/lib/hooks/use-space";
 import { useSpaceMessages } from "@/lib/hooks/use-space-messages";
 import { useSpacePostings } from "@/lib/hooks/use-space-postings";
 import { useSpacePresence } from "@/lib/hooks/use-space-presence";
+import { useSpaceCards } from "@/lib/hooks/use-space-cards";
 import { SpaceHeader } from "./space-header";
 import { StateTextBanner } from "./state-text-banner";
 import { ConversationTimeline } from "./conversation-timeline";
@@ -32,6 +33,13 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
   const { postings: postingsList, isLoading: postingsLoading } =
     useSpacePostings(space.id);
 
+  const {
+    cards,
+    vote: voteOnCard,
+    resolve: resolveCard,
+    cancel: cancelCard,
+  } = useSpaceCards(space.id);
+
   // Build a Map<postingId, SpacePosting> for quick lookup in timeline
   const postingsMap = useMemo(() => {
     const map = new Map<string, (typeof postingsList)[number]>();
@@ -40,6 +48,15 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
     }
     return map;
   }, [postingsList]);
+
+  // Build a Map<cardId, SpaceCard> for quick lookup in timeline
+  const cardsMap = useMemo(() => {
+    const map = new Map<string, (typeof cards)[number]>();
+    for (const c of cards) {
+      map.set(c.id, c);
+    }
+    return map;
+  }, [cards]);
 
   const userId = currentMember?.user_id ?? null;
   const isAdmin = currentMember?.role === "admin";
@@ -103,10 +120,14 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
             isLoading={messagesLoading}
             onLoadMore={loadMore}
             postings={postingsMap}
+            cards={cardsMap}
             spaceId={space.id}
             isAdmin={isAdmin}
             typingUsers={typingUsers}
             members={space.members}
+            onCardVote={voteOnCard}
+            onCardResolve={resolveCard}
+            onCardCancel={cancelCard}
           />
 
           {currentMember && userId && (

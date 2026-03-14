@@ -460,6 +460,7 @@ export interface Space {
   is_global: boolean;
   inherits_members: boolean;
   settings: SpaceSettings;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -526,6 +527,7 @@ export interface SpaceMessageInsert {
   type: SpaceMessageType;
   content?: string | null;
   posting_id?: string | null;
+  card_id?: string | null;
 }
 
 // ============================================
@@ -720,6 +722,83 @@ export interface ActivityCardWithDetails extends ActivityCard {
     SpacePosting,
     "text" | "category" | "tags" | "status" | "sub_space_id" | "space_id"
   > | null;
+}
+
+// ============================================
+// SPACE CARD TYPES
+// ============================================
+
+export type SpaceCardType =
+  | "poll"
+  | "time_proposal"
+  | "rsvp"
+  | "task_claim"
+  | "location";
+
+export type SpaceCardStatus = "active" | "resolved" | "cancelled";
+
+/** Individual option in a poll/time_proposal card */
+export interface CardOption {
+  label: string;
+  votes: string[]; // user IDs
+}
+
+export interface PollData {
+  question: string;
+  options: CardOption[];
+}
+
+export interface TimeProposalData {
+  title: string;
+  options: CardOption[];
+  resolved_slot?: string | null;
+}
+
+export interface RsvpData {
+  title: string;
+  options: CardOption[]; // Yes / No / Maybe
+  threshold: number;
+}
+
+export interface TaskClaimData {
+  description: string;
+  options: CardOption[]; // Single "Claim" option; votes[0] = claimer
+  claimed_by?: string | null; // Convenience field set on resolve
+}
+
+export interface LocationData {
+  label: string;
+  lat?: number | null;
+  lng?: number | null;
+  options: CardOption[]; // Confirm / Suggest different
+}
+
+export type SpaceCardData =
+  | PollData
+  | TimeProposalData
+  | RsvpData
+  | TaskClaimData
+  | LocationData;
+
+export interface SpaceCard {
+  id: string;
+  space_id: string;
+  message_id: string | null;
+  created_by: string;
+  type: SpaceCardType;
+  status: SpaceCardStatus;
+  data: SpaceCardData;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SpaceCardInsert {
+  space_id: string;
+  created_by: string;
+  type: SpaceCardType;
+  data: SpaceCardData;
+  message_id?: string | null;
+  status?: SpaceCardStatus;
 }
 
 // ============================================

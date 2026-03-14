@@ -818,6 +818,75 @@ export function subscribeToActivityCards(
 }
 
 // ---------------------------------------------------------------------------
+// Space card types & subscription
+// ---------------------------------------------------------------------------
+
+export type SpaceCardPayload = {
+  id: string;
+  space_id: string;
+  type: string;
+  status: string;
+  data: Record<string, unknown>;
+  updated_at: string;
+};
+
+function isSpaceCard(value: unknown): value is SpaceCardPayload {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.id === "string" &&
+    typeof v.space_id === "string" &&
+    typeof v.type === "string" &&
+    typeof v.status === "string"
+  );
+}
+
+/**
+ * Subscribe to real-time space card UPDATE events (vote changes, resolution).
+ */
+export function subscribeToSpaceCards(
+  spaceId: string,
+  onUpdate: (card: SpaceCardPayload) => void,
+): RealtimeChannel {
+  const supabase = createClient();
+
+  const channel = supabase
+    .channel(`space-cards:${spaceId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "space_cards",
+        filter: `space_id=eq.${spaceId}`,
+      },
+      (payload) => {
+        if (isSpaceCard(payload.new)) {
+          onUpdate(payload.new);
+        } else {
+          console.warn(
+            "[Realtime] Unexpected space card payload shape:",
+            payload.new,
+          );
+        }
+      },
+    )
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        console.log(
+          `[Realtime] Subscribed to space cards for space ${spaceId}`,
+        );
+      } else if (status === "CHANNEL_ERROR") {
+        console.error(
+          `[Realtime] Error subscribing to space cards for space ${spaceId}`,
+        );
+      }
+    });
+
+  return channel;
+}
+
+// ---------------------------------------------------------------------------
 // Space member changes subscription (for badge/unread updates)
 // ---------------------------------------------------------------------------
 

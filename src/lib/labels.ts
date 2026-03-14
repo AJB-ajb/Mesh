@@ -1198,6 +1198,48 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
+  // Cards (interactive structured messages)
+  // ---------------------------------------------------------------------------
+  cards: {
+    poll: "Poll",
+    timeProposal: "Time Proposal",
+    rsvp: "RSVP",
+    taskClaim: "Task",
+    location: "Location",
+    resolved: "Resolved",
+    cancelled: "Cancelled",
+    active: "Active",
+    totalVotes: (n: number) => `${n} vote${n !== 1 ? "s" : ""}`,
+    cancelCard: "Cancel",
+    resolveCard: "Resolve",
+    createPoll: "Create Poll",
+    pollQuestion: "Question",
+    pollQuestionPlaceholder: "What would you like to ask?",
+    pollOptions: "Options",
+    pollOptionPlaceholder: (n: number) => `Option ${n}`,
+    addOption: "Add option",
+    removeOption: "Remove option",
+    cancel: "Cancel",
+    createPollSubmit: "Create Poll",
+    createCardButton: "Create card",
+    createTimeProposal: "Suggest Times",
+    timeProposalTitle: "Title",
+    timeProposalTitlePlaceholder: "What are we scheduling?",
+    timeProposalHint: "Vote for all times that work for you",
+    timeProposalVoteHint: "Select all that work",
+    timeSlots: "Time slots",
+    timeSlotPlaceholder: "e.g. Tue Mar 18, 6:00 PM",
+    loadingSlots: "Finding common availability...",
+    createTimeProposalSubmit: "Suggest Times",
+    rsvpThreshold: (current: number, target: number) =>
+      `${current} / ${target} confirmed`,
+    rsvpThresholdMet: "Threshold met!",
+    taskClaimButton: "I'll do it",
+    taskClaimedByYou: "You claimed this task",
+    taskClaimedBy: (name: string) => `Claimed by ${name}`,
+  },
+
+  // ---------------------------------------------------------------------------
   // Activity
   // ---------------------------------------------------------------------------
   activity: {

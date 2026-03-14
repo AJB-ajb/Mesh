@@ -6,11 +6,12 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { labels } from "@/lib/labels";
 import type { SpaceMessageWithSender } from "@/lib/hooks/use-space-messages";
-import type { SpacePostingWithCreator } from "@/lib/supabase/types";
+import type { SpacePostingWithCreator, SpaceCard } from "@/lib/supabase/types";
 import type { SpaceMemberWithProfile } from "@/lib/hooks/use-space";
 import { MessageBubble } from "./message-bubble";
 import { PostingCardInline } from "./posting-card-inline";
 import { SystemMessage } from "./system-message";
+import { SpaceCardInline } from "./cards/space-card-inline";
 
 interface ConversationTimelineProps {
   messages: SpaceMessageWithSender[];
@@ -19,10 +20,14 @@ interface ConversationTimelineProps {
   isLoading: boolean;
   onLoadMore: () => void;
   postings?: Map<string, SpacePostingWithCreator>;
+  cards?: Map<string, SpaceCard>;
   spaceId?: string;
   isAdmin?: boolean;
   typingUsers?: string[];
   members?: SpaceMemberWithProfile[];
+  onCardVote?: (cardId: string, optionIndex: number) => void;
+  onCardResolve?: (cardId: string) => void;
+  onCardCancel?: (cardId: string) => void;
 }
 
 export function ConversationTimeline({
@@ -32,10 +37,14 @@ export function ConversationTimeline({
   isLoading,
   onLoadMore,
   postings,
+  cards,
   spaceId,
   isAdmin,
   typingUsers,
   members,
+  onCardVote,
+  onCardResolve,
+  onCardCancel,
 }: ConversationTimelineProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -78,6 +87,24 @@ export function ConversationTimeline({
       {messages.map((msg) => {
         if (msg.type === "system") {
           return <SystemMessage key={msg.id} content={msg.content ?? ""} />;
+        }
+
+        // Render card messages
+        if (msg.type === "card" && msg.card_id) {
+          const card = cards?.get(msg.card_id);
+          if (card) {
+            return (
+              <SpaceCardInline
+                key={msg.id}
+                card={card}
+                userId={userId}
+                members={members}
+                onVote={onCardVote ?? (() => {})}
+                onResolve={onCardResolve ?? (() => {})}
+                onCancel={onCardCancel ?? (() => {})}
+              />
+            );
+          }
         }
 
         const isOwn = msg.sender_id === userId;

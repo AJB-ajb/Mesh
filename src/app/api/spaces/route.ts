@@ -16,9 +16,10 @@ export const GET = withAuth(async (req, { user, supabase }) => {
     limit: 50,
     max: 100,
   });
+  const archived = searchParams.get("archived");
 
   // Fetch spaces where the user is a member, with membership details
-  const { data: spaces, error } = await supabase
+  let query = supabase
     .from("spaces")
     .select(
       `
@@ -35,6 +36,16 @@ export const GET = withAuth(async (req, { user, supabase }) => {
     .eq("space_members.user_id", user.id)
     .order("updated_at", { ascending: false })
     .range(offset, offset + limit - 1);
+
+  // Filter by archive status
+  if (archived === "true") {
+    query = query.not("archived_at", "is", null);
+  } else if (archived !== "all") {
+    // Default: show only active (non-archived) spaces
+    query = query.is("archived_at", null);
+  }
+
+  const { data: spaces, error } = await query;
 
   if (error) {
     throw new AppError(
