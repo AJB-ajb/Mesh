@@ -37,17 +37,18 @@ export function CalendarConnect({ onError, onSuccess }: CalendarConnectProps) {
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user || cancelled) return;
+      if (!user || controller.signal.aborted) return;
       supabase
         .from("profiles")
         .select("calendar_visibility")
         .eq("user_id", user.id)
+        .abortSignal(controller.signal)
         .single()
         .then(({ data }) => {
-          if (!cancelled && data?.calendar_visibility) {
+          if (!controller.signal.aborted && data?.calendar_visibility) {
             queueMicrotask(() => {
               setVisibility(data.calendar_visibility as CalendarVisibility);
             });
@@ -55,7 +56,7 @@ export function CalendarConnect({ onError, onSuccess }: CalendarConnectProps) {
         });
     });
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, []);
 
