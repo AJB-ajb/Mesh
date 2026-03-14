@@ -229,7 +229,7 @@ export function ConnectedAccountsCard({
                   getProviderName(unlinkingProvider),
                 )}
               {unlinkingProvider === "github" && (
-                <span className="block mt-2 text-yellow-600 dark:text-yellow-500">
+                <span className="block mt-2 text-warning">
                   {labels.settings.disconnectGithubNote}
                 </span>
               )}

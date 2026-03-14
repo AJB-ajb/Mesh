@@ -16,14 +16,12 @@ export const categoryIcons: Record<string, LucideIcon> = {
 };
 
 export const categoryStyles: Record<string, string> = {
-  study: "bg-blue-500/10 text-blue-700 border-blue-500/20 dark:text-blue-400",
-  hackathon:
-    "bg-purple-500/10 text-purple-700 border-purple-500/20 dark:text-purple-400",
-  personal:
-    "bg-green-500/10 text-green-700 border-green-500/20 dark:text-green-400",
+  study: "bg-cat-study/10 text-cat-study border-cat-study/20",
+  hackathon: "bg-cat-hackathon/10 text-cat-hackathon border-cat-hackathon/20",
+  personal: "bg-cat-personal/10 text-cat-personal border-cat-personal/20",
   professional:
-    "bg-orange-500/10 text-orange-700 border-orange-500/20 dark:text-orange-400",
-  social: "bg-pink-500/10 text-pink-700 border-pink-500/20 dark:text-pink-400",
+    "bg-cat-professional/10 text-cat-professional border-cat-professional/20",
+  social: "bg-cat-social/10 text-cat-social border-cat-social/20",
 };
 
 export const statusColors: Record<string, string> = {
@@ -43,9 +41,9 @@ export const statusLabels: Record<string, string> = {
 export function getStatusColor(status: string) {
   switch (status) {
     case "open":
-      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+      return "bg-success/10 text-success";
     case "filled":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
+      return "bg-info/10 text-info";
     case "closed":
       return "bg-muted text-muted-foreground";
     default:

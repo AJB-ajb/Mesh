@@ -83,7 +83,7 @@ export function IntegrationsSection({
               </div>
             </div>
             {connectedProviders[provider.key] ? (
-              <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+              <div className="flex items-center gap-2 text-success">
                 <Check className="h-4 w-4" />
                 <span className="text-sm font-medium">Connected</span>
               </div>

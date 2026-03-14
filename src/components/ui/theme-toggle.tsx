@@ -1,14 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Moon, Sun, Sunset } from "lucide-react";
+import { Cloud, Sun, Sunset } from "lucide-react";
 import { useTheme } from "next-themes";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 
-const THEMES = ["light", "dark", "dusk"] as const;
+const THEMES = ["light", "overcast", "dusk"] as const;
 
 interface ThemeToggleProps {
   className?: string;
@@ -42,7 +42,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
 
   const themeNames: Record<string, string> = {
     light: labels.common.themeLight,
-    dark: labels.common.themeDark,
+    overcast: labels.common.themeOvercast,
     dusk: labels.common.themeDusk,
   };
 
@@ -55,7 +55,9 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
       title={themeNames[effective] ?? effective}
     >
       {effective === "light" && <Sun className="h-5 w-5 animate-fade-in" />}
-      {effective === "dark" && <Moon className="h-5 w-5 animate-fade-in" />}
+      {effective === "overcast" && (
+        <Cloud className="h-5 w-5 animate-fade-in" />
+      )}
       {effective === "dusk" && <Sunset className="h-5 w-5 animate-fade-in" />}
       <span className="sr-only">Toggle theme</span>
     </Button>
