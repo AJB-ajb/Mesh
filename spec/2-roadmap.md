@@ -203,6 +203,7 @@ The core model change. After Phase 1, the app is a messenger with Spaces, postin
 | DM Space creation flow             | Medium | Auto-create 2-person Space on connection accept.                                                      |
 | `visible_from` enforcement         | Small  | Filter messages by `visible_from` in queries.                                                         |
 | Matching → Spaces integration      | Medium | Wire matching pipeline to use Space candidate pool. Deep match receives state text.                   |
+| Space search (FTS)                 | Medium | Search RPC + API endpoint + UI for full-text search within a Space. FTS indexes already exist.        |
 | Inherited → independent transition | Small  | Auto-set `inherits_members = false` when outsider joins via matching/invite.                          |
 | Old table cleanup                  | Medium | Drop migration for old `postings`, `conversations`, `messages`, `group_messages`.                     |
 
@@ -220,6 +221,8 @@ Built on Phase 1. The card system that replaces back-and-forth coordination. Sub
 | Card invalidation Phase 2a | —     | Medium | Explicit actions only — buttons on cards                                        |
 | Card invalidation Phase 2b | —     | Large  | Free-text detection — LLM reads messages against active cards, suggests updates |
 | LLM card generation        | —     | Large  | Detect coordination intent from messages, suggest appropriate card type         |
+| Space archiving            | —     | Small  | 30-day auto-archive, collapsed "Archived" section, admin reactivation           |
+| Cross-Space promotion      | —     | Small  | Promote posting to Explore as linked posting-message back to original sub-Space |
 
 ### v0.9 — Mobile (Capacitor, Android)
 

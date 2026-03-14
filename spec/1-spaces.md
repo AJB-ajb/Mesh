@@ -361,8 +361,7 @@ Phase 1 implementation status as of 2026-03-14. Items marked Done have DB schema
 | Matching integration with Spaces                 | Not implemented | `matching_enabled` toggle exists but pipeline not wired to Spaces model.                                                                                               |
 | DM Spaces                                        | Not implemented | Schema supports 2-person Spaces but no creation flow on connection accept.                                                                                             |
 | Inherited vs. independent membership transitions | Not implemented | `inherits_members` flag exists. No auto-transition when outsiders join.                                                                                                |
-| Space archiving (30-day auto-archive)            | Deferred        | No archiving mechanism. Low priority for Phase 1.                                                                                                                      |
-| Cross-Space posting promotion                    | Deferred        | Linking, not moving. Low priority for Phase 1.                                                                                                                         |
+| Space search (FTS)                               | Not implemented | FTS indexes exist on messages and postings. No search RPC, API endpoint, or UI.                                                                                        |
 
 ### Phase 2 (not started)
 
@@ -371,3 +370,5 @@ Phase 1 implementation status as of 2026-03-14. Items marked Done have DB schema
 | Rich interactive cards          | Time proposals, RSVPs, polls, task claims, location, trade-off. `space_cards` table. |
 | Card invalidation from messages | Phase 2b: LLM detection from messages.                                               |
 | LLM card generation             | Detect coordination intent, suggest card type.                                       |
+| Space archiving                 | 30-day auto-archive, collapsed "Archived" section, admin reactivation.               |
+| Cross-Space posting promotion   | Promote posting to Explore as linked posting-message. Linking, not moving.           |
