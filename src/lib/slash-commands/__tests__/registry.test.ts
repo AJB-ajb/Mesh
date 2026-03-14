@@ -42,15 +42,18 @@ describe("slash-commands registry", () => {
       expect(names).not.toContain("calendar");
     });
 
-    it("returns only universal commands for message context", () => {
+    it("returns only message-relevant commands for message context", () => {
       const messageCmds = filterCommandsByContext("message");
       const names = messageCmds.map((c) => c.name);
 
-      // Universal (no context) commands
+      // Message-scoped commands
       expect(names).toContain("time");
       expect(names).toContain("location");
-      expect(names).toContain("format");
-      expect(names).toContain("clean");
+
+      // Not useful in messages
+      expect(names).not.toContain("format");
+      expect(names).not.toContain("clean");
+      expect(names).not.toContain("skills");
 
       // No context-specific commands
       expect(names).not.toContain("visibility");
