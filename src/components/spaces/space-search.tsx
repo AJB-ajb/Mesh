@@ -17,8 +17,15 @@ interface SpaceSearchProps {
 
 export function SpaceSearch({ spaceId, onClose }: SpaceSearchProps) {
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const { results, isLoading } = useSpaceSearch(spaceId, query);
+  const { results, isLoading } = useSpaceSearch(spaceId, debouncedQuery);
+
+  // Debounce search query by 300ms
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   useEffect(() => {
     inputRef.current?.focus();
