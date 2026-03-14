@@ -201,10 +201,12 @@ The core model change. After Phase 1, the app is a messenger with Spaces, postin
 
 #### Remaining
 
-| Feature                            | Effort | Description                                                                       |
-| ---------------------------------- | ------ | --------------------------------------------------------------------------------- |
-| Inherited → independent transition | Small  | Auto-set `inherits_members = false` when outsider joins via matching/invite.      |
-| Old table cleanup                  | Medium | Drop migration for old `postings`, `conversations`, `messages`, `group_messages`. |
+| Feature                             | Effort | Description                                                                                                                                                                    |
+| ----------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Inherited → independent transition  | Small  | Auto-set `inherits_members = false` when outsider joins via matching/invite.                                                                                                   |
+| Old table cleanup                   | Medium | Drop migration for old `postings`, `conversations`, `messages`, `group_messages`.                                                                                              |
+| Conversation summary as LLM context | Small  | Pass last ~5 messages from the Space conversation to extraction and deep-match LLM calls so the LLM understands conversational context (e.g. "same as last week but Tuesday"). |
+| Space context in explanations/cards | Small  | Propagate parent Space `state_text` to match explanation generation and acceptance card LLM calls (currently only deep match receives it).                                     |
 
 ### v0.8 — Spaces Phase 2: Rich Interactive Cards
 
