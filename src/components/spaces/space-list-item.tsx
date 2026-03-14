@@ -11,6 +11,7 @@ import { Group } from "@/components/ui/group";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { formatTimeAgoShort } from "@/lib/format";
 import { labels } from "@/lib/labels";
+import { stripMarkdown } from "@/lib/strip-markdown";
 import type { SpaceListItem } from "@/lib/supabase/types";
 import { GLOBAL_SPACE_ID } from "@/lib/supabase/types";
 
@@ -59,7 +60,7 @@ function buildPreview(
 
   const content = msg.content ?? "";
   if (!content) return null;
-  return `${prefix}${sender}${content}`;
+  return `${prefix}${sender}${stripMarkdown(content)}`;
 }
 
 export function SpaceListItemRow({
