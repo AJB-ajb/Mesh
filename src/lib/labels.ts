@@ -1222,6 +1222,15 @@ export const labels = {
     cancel: "Cancel",
     createPollSubmit: "Create Poll",
     createCardButton: "Create card",
+    createTimeProposal: "Suggest Times",
+    timeProposalTitle: "Title",
+    timeProposalTitlePlaceholder: "What are we scheduling?",
+    timeProposalHint: "Vote for all times that work for you",
+    timeProposalVoteHint: "Select all that work",
+    timeSlots: "Time slots",
+    timeSlotPlaceholder: "e.g. Tue Mar 18, 6:00 PM",
+    loadingSlots: "Finding common availability...",
+    createTimeProposalSubmit: "Suggest Times",
   },
 
   // ---------------------------------------------------------------------------

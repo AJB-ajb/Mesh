@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { Send, BarChart3 } from "lucide-react";
+import { Send, Plus, BarChart3, Clock } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
@@ -20,8 +20,15 @@ import {
   type PostingFields,
 } from "./posting-compose-fields";
 import { CreatePollDialog } from "./cards/create-poll-dialog";
+import { CreateTimeProposalDialog } from "./cards/create-time-proposal-dialog";
 import { useSpaceCards } from "@/lib/hooks/use-space-cards";
-import type { PollData } from "@/lib/supabase/types";
+import type { PollData, TimeProposalData } from "@/lib/supabase/types";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ComposeAreaProps {
   spaceId: string;
@@ -51,6 +58,7 @@ export function ComposeArea({
     INITIAL_POSTING_FIELDS,
   );
   const [showPollDialog, setShowPollDialog] = useState(false);
+  const [showTimeProposalDialog, setShowTimeProposalDialog] = useState(false);
   const editorRef = useRef<ComposeEditorHandle>(null);
 
   const { createCard } = useSpaceCards(spaceId);
@@ -97,6 +105,13 @@ export function ComposeArea({
     [createCard],
   );
 
+  const handleCreateTimeProposal = useCallback(
+    async (proposalData: TimeProposalData) => {
+      await createCard("time_proposal", proposalData);
+    },
+    [createCard],
+  );
+
   const editorContext = mode === "M" ? "message" : "posting";
 
   return (
@@ -124,17 +139,30 @@ export function ComposeArea({
           />
         </div>
 
-        {/* Create card button — hidden in posting-only mode */}
+        {/* Create card menu — hidden in posting-only mode */}
         {!postingOnly && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-10 rounded-full shrink-0"
-            onClick={() => setShowPollDialog(true)}
-            aria-label={labels.cards.createCardButton}
-          >
-            <BarChart3 className="size-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-10 rounded-full shrink-0"
+                aria-label={labels.cards.createCardButton}
+              >
+                <Plus className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" side="top">
+              <DropdownMenuItem onClick={() => setShowPollDialog(true)}>
+                <BarChart3 className="size-4 mr-2" />
+                {labels.cards.createPoll}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowTimeProposalDialog(true)}>
+                <Clock className="size-4 mr-2" />
+                {labels.cards.createTimeProposal}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
 
         {/* M/P toggle — hidden in posting-only mode */}
@@ -195,6 +223,11 @@ export function ComposeArea({
         open={showPollDialog}
         onOpenChange={setShowPollDialog}
         onSubmit={handleCreatePoll}
+      />
+      <CreateTimeProposalDialog
+        open={showTimeProposalDialog}
+        onOpenChange={setShowTimeProposalDialog}
+        onSubmit={handleCreateTimeProposal}
       />
     </div>
   );

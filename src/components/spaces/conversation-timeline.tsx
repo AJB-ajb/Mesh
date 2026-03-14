@@ -98,6 +98,7 @@ export function ConversationTimeline({
                 key={msg.id}
                 card={card}
                 userId={userId}
+                members={members}
                 onVote={onCardVote ?? (() => {})}
                 onResolve={onCardResolve ?? (() => {})}
                 onCancel={onCardCancel ?? (() => {})}
