@@ -131,8 +131,8 @@ export function useActivityFeed() {
           break;
         }
         case "match": {
-          // Navigate to the space/posting
-          if (card.space_id && card.posting_id) {
+          // Navigate to the space/posting only on accept, not dismiss
+          if (status === "acted" && card.space_id) {
             window.location.href = `/spaces/${card.space_id}`;
           }
           break;

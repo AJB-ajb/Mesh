@@ -57,29 +57,68 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
 
   if (error) return apiError("INTERNAL", error.message, 500);
 
-  // On accept, auto-create a 2-person DM space
+  // On accept, auto-create a 2-person DM space (idempotent)
   if (status === "accepted") {
     const user1 = friendship.user_id;
     const user2 = friendship.friend_id;
 
-    const { data: dmSpace, error: spaceError } = await supabase
-      .from("spaces")
-      .insert({
-        name: null,
-        created_by: user2, // recipient creates it
-        settings: { visibility: "private" },
-      })
-      .select()
-      .single();
+    // Check if a DM space already exists between these two users
+    const { data: existingSpaces } = await supabase
+      .from("space_members")
+      .select("space_id")
+      .eq("user_id", user1);
 
-    if (spaceError) {
-      console.error("Failed to create DM space:", spaceError.message);
-    } else {
-      // Add both users as admins
-      await supabase.from("space_members").insert([
-        { space_id: dmSpace.id, user_id: user1, role: "admin" },
-        { space_id: dmSpace.id, user_id: user2, role: "admin" },
-      ]);
+    let alreadyHasDm = false;
+    if (existingSpaces && existingSpaces.length > 0) {
+      const spaceIds = existingSpaces.map((s) => s.space_id);
+      const { data: sharedMembers } = await supabase
+        .from("space_members")
+        .select("space_id")
+        .eq("user_id", user2)
+        .in("space_id", spaceIds);
+
+      if (sharedMembers && sharedMembers.length > 0) {
+        // Check if any shared space is a 2-person private space (DM)
+        for (const sm of sharedMembers) {
+          const { data: space } = await supabase
+            .from("spaces")
+            .select("id, settings")
+            .eq("id", sm.space_id)
+            .single();
+          if (space?.settings?.visibility === "private") {
+            const { count } = await supabase
+              .from("space_members")
+              .select("*", { count: "exact", head: true })
+              .eq("space_id", sm.space_id);
+            if (count === 2) {
+              alreadyHasDm = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    if (!alreadyHasDm) {
+      const { data: dmSpace, error: spaceError } = await supabase
+        .from("spaces")
+        .insert({
+          name: null,
+          created_by: user2, // recipient creates it
+          settings: { visibility: "private" },
+        })
+        .select()
+        .single();
+
+      if (spaceError) {
+        console.error("Failed to create DM space:", spaceError.message);
+      } else {
+        // Add both users as admins
+        await supabase.from("space_members").insert([
+          { space_id: dmSpace.id, user_id: user1, role: "admin" },
+          { space_id: dmSpace.id, user_id: user2, role: "admin" },
+        ]);
+      }
     }
   }
 

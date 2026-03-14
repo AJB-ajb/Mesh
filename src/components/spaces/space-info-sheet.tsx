@@ -53,17 +53,18 @@ function MemberRow({
     .slice(0, 2)
     .toUpperCase();
 
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
   const isSelf = member.user_id === currentUserId;
   const showActions = isAdmin && !isSelf;
 
   const handleRemove = useCallback(async () => {
-    if (!confirm(`Remove ${name} from this space?`)) return;
     const res = await fetch(
       `/api/spaces/${spaceId}/members/${member.user_id}`,
       { method: "DELETE" },
     );
     if (res.ok) onMemberChange();
-  }, [spaceId, member.user_id, name, onMemberChange]);
+    setConfirmingRemove(false);
+  }, [spaceId, member.user_id, onMemberChange]);
 
   const handleRoleToggle = useCallback(async () => {
     const newRole = member.role === "admin" ? "member" : "admin";
@@ -105,17 +106,40 @@ function MemberRow({
             onClick={handleRoleToggle}
             className="text-[10px] px-1.5 py-0.5 rounded border border-border hover:bg-muted transition-colors"
           >
-            {member.role === "admin" ? "Admin" : "Member"}
+            {member.role === "admin"
+              ? labels.spaces.memberManagement.admin
+              : labels.spaces.memberManagement.member}
           </button>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="size-7 text-destructive"
-            onClick={handleRemove}
-            aria-label={`Remove ${name}`}
-          >
-            <Trash2 className="size-3.5" />
-          </Button>
+          {confirmingRemove ? (
+            <>
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-7 text-xs"
+                onClick={handleRemove}
+              >
+                {labels.activity.actions.confirm}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs"
+                onClick={() => setConfirmingRemove(false)}
+              >
+                {labels.spaces.posting.cancel}
+              </Button>
+            </>
+          ) : (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="size-7 text-destructive"
+              onClick={() => setConfirmingRemove(true)}
+              aria-label={labels.spaces.memberManagement.remove(name)}
+            >
+              <Trash2 className="size-3.5" />
+            </Button>
+          )}
         </div>
       ) : (
         member.role === "admin" && (
@@ -165,10 +189,12 @@ function InviteMemberSection({
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-medium">Invite member</h3>
+      <h3 className="text-sm font-medium">
+        {labels.spaces.memberManagement.inviteMember}
+      </h3>
       <Input
         type="text"
-        placeholder="Search by name..."
+        placeholder={labels.spaces.memberManagement.searchByName}
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         className="h-9 text-sm"
@@ -176,10 +202,12 @@ function InviteMemberSection({
       {searchQuery.trim().length >= 2 && (
         <div className="max-h-40 overflow-y-auto space-y-1">
           {searchLoading ? (
-            <p className="text-xs text-muted-foreground py-2">Searching...</p>
+            <p className="text-xs text-muted-foreground py-2">
+              {labels.spaces.memberManagement.searching}
+            </p>
           ) : filtered.length === 0 ? (
             <p className="text-xs text-muted-foreground py-2">
-              No results found
+              {labels.spaces.memberManagement.noResults}
             </p>
           ) : (
             filtered.map((profile) => (

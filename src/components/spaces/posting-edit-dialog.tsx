@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSWRConfig } from "swr";
 
 import { labels } from "@/lib/labels";
@@ -44,6 +44,21 @@ export function PostingEditDialog({
   });
   const [saving, setSaving] = useState(false);
 
+  // Reset state when dialog opens (posting may have changed externally)
+  useEffect(() => {
+    if (open) {
+      setText(posting.text);
+      setFields({
+        category: posting.category ?? undefined,
+        capacity: posting.capacity,
+        deadline: posting.deadline ?? undefined,
+        visibility: posting.visibility as "public" | "private",
+        autoAccept: posting.auto_accept,
+        tags: posting.tags.length > 0 ? posting.tags : undefined,
+      });
+    }
+  }, [open, posting]);
+
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
@@ -73,7 +88,7 @@ export function PostingEditDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit posting</DialogTitle>
+          <DialogTitle>{labels.spaces.posting.editPosting}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-3">
@@ -91,7 +106,7 @@ export function PostingEditDialog({
             {labels.spaces.posting.cancel}
           </Button>
           <Button onClick={handleSave} disabled={!text.trim() || saving}>
-            Save
+            {labels.spaces.posting.save}
           </Button>
         </DialogFooter>
       </DialogContent>
