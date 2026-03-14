@@ -1,6 +1,7 @@
 import { withAuth } from "@/lib/api/with-auth";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import { verifySpaceMembership } from "@/lib/api/space-guards";
+import { PG_FOREIGN_KEY_VIOLATION } from "@/lib/api/pg-error-codes";
 import type { SpaceInsert, SpaceListItem } from "@/lib/supabase/types";
 
 /**
@@ -72,7 +73,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     .single();
 
   if (insertError) {
-    if (insertError.code === "23503") {
+    if (insertError.code === PG_FOREIGN_KEY_VIOLATION) {
       throw new AppError("VALIDATION", "Parent space not found", 400);
     }
     throw new AppError(
