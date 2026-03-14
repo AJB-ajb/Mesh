@@ -158,7 +158,7 @@ export async function matchProfileToPostings(
     const deepPostingIds = topN.map((m) => m.posting.id);
     const { data: postingSources } = await supabase
       .from("space_postings")
-      .select("id, text")
+      .select("id, text, space_id")
       .in("id", deepPostingIds);
     const { data: profileSource } = await supabase
       .from("profiles")
@@ -176,43 +176,78 @@ export async function matchProfileToPostings(
       "";
 
     if (profileText) {
-      // Resolve posting text for the first viable candidate to use as the
-      // shared posting text passed to deepMatchCandidates (matches original
-      // behavior — the batch function uses one posting text for all candidates)
-      let firstPostingTitle = "Space Posting";
-      let firstPostingText = "";
-      for (const m of topN) {
-        const ps = postingSourceMap.get(m.posting.id);
-        const pText = ps?.text || m.posting.description || "";
-        if (pText) {
-          firstPostingTitle =
-            m.posting.title || m.posting.category || "Space Posting";
-          firstPostingText = pText;
-          break;
+      // Fetch shared skills: user's skills and each posting's skills
+      const { data: userSkills } = await supabase
+        .from("profile_skills")
+        .select("skill_id, skill_nodes(name)")
+        .eq("profile_id", userId);
+      const { data: postingSkillRows } = await supabase
+        .from("posting_skills")
+        .select("space_posting_id, skill_id, skill_nodes(name)")
+        .in("space_posting_id", deepPostingIds);
+
+      const userSkillIds = new Set(userSkills?.map((s) => s.skill_id) ?? []);
+      const postingSkillMap = new Map<string, string[]>();
+      for (const row of postingSkillRows ?? []) {
+        if (!row.space_posting_id) continue;
+        const shared = postingSkillMap.get(row.space_posting_id) ?? [];
+        if (userSkillIds.has(row.skill_id)) {
+          const nodes = row.skill_nodes as
+            | { name: string }
+            | { name: string }[]
+            | null;
+          const name = Array.isArray(nodes) ? nodes[0]?.name : nodes?.name;
+          if (name) shared.push(name);
         }
+        postingSkillMap.set(row.space_posting_id, shared);
       }
 
-      if (firstPostingText) {
-        await applyDeepMatchResults({
-          topN,
-          allMatches: matches,
-          postingTitle: firstPostingTitle,
-          postingText: firstPostingText,
-          buildCandidate: (entry) => {
-            const ps = postingSourceMap.get(entry.posting.id);
-            const pText = ps?.text || entry.posting.description || "";
-            if (!pText) return null;
-            return {
-              profileText,
-              fastFilterScore: entry.score,
-              sharedSkills: [],
-              availabilityOverlap: entry.scoreBreakdown?.availability ?? null,
-              distanceKm: null,
-              semanticScore: entry.scoreBreakdown?.semantic ?? null,
-            };
-          },
-        });
-      }
+      // Fetch parent space state_text for context
+      const spaceIds = [
+        ...new Set(
+          postingSources
+            ?.map((p) => p.space_id)
+            .filter((id): id is string => !!id) ?? [],
+        ),
+      ];
+      const { data: spaceRows } =
+        spaceIds.length > 0
+          ? await supabase
+              .from("spaces")
+              .select("id, state_text")
+              .in("id", spaceIds)
+          : { data: [] };
+      const spaceMap = new Map(
+        spaceRows?.map((s) => [s.id, s.state_text]) ?? [],
+      );
+
+      await applyDeepMatchResults({
+        topN,
+        allMatches: matches,
+        // Defaults — overridden per-candidate below
+        postingTitle: "Space Posting",
+        postingText: "",
+        buildCandidate: (entry) => {
+          const ps = postingSourceMap.get(entry.posting.id);
+          const pText = ps?.text || entry.posting.description || "";
+          if (!pText) return null;
+          return {
+            profileText,
+            // Per-candidate posting text — fixes the bug where all candidates
+            // were evaluated against the first posting's text
+            postingTitle: entry.posting.category || "Space Posting",
+            postingText: pText,
+            parentStateText: ps?.space_id
+              ? (spaceMap.get(ps.space_id) ?? undefined)
+              : undefined,
+            fastFilterScore: entry.score,
+            sharedSkills: postingSkillMap.get(entry.posting.id) ?? [],
+            availabilityOverlap: entry.scoreBreakdown?.availability ?? null,
+            distanceKm: null,
+            semanticScore: entry.scoreBreakdown?.semantic ?? null,
+          };
+        },
+      });
     }
   }
 

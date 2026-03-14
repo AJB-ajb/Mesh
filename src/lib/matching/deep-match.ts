@@ -88,6 +88,11 @@ export async function deepMatchCandidate(
 
 /**
  * Candidate input for deep matching — shared shape used by both directions.
+ *
+ * For posting-to-profile matching the batch-level postingTitle/postingText
+ * applies to every candidate.  For profile-to-posting matching each candidate
+ * represents a *different* posting, so `postingTitle` and `postingText` can be
+ * set per-candidate to override the batch-level values.
  */
 export interface DeepMatchCandidate {
   profileText: string;
@@ -97,6 +102,10 @@ export interface DeepMatchCandidate {
   availabilityOverlap: number | null;
   distanceKm: number | null;
   semanticScore: number | null;
+  /** Override the batch-level posting title for this candidate. */
+  postingTitle?: string;
+  /** Override the batch-level posting text for this candidate. */
+  postingText?: string;
 }
 
 /**
@@ -123,8 +132,8 @@ export async function deepMatchCandidates(
     const batchResults = await Promise.all(
       batch.map((candidate) =>
         deepMatchCandidate({
-          postingTitle,
-          postingText,
+          postingTitle: candidate.postingTitle ?? postingTitle,
+          postingText: candidate.postingText ?? postingText,
           profileText: candidate.profileText,
           parentStateText: candidate.parentStateText,
           fastFilterScore: candidate.fastFilterScore,

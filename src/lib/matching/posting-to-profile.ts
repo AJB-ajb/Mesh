@@ -41,7 +41,9 @@ export async function matchPostingToProfiles(
   // First, get the space_posting and its embedding
   const { data: posting, error: postingError } = await supabase
     .from("space_postings")
-    .select("embedding, created_by, text, category, space_id")
+    .select(
+      "embedding, created_by, text, category, space_id, extracted_metadata",
+    )
     .eq("id", postingId)
     .single();
 
@@ -147,9 +149,10 @@ export async function matchPostingToProfiles(
   if (deepMatch && isDeepMatchAvailable()) {
     const topN = matches.slice(0, DEEP_MATCH.DEFAULT_TOP_N);
 
-    // Fetch posting text from space_postings
-    const postingTitle = posting.category || "Space Posting";
-    let postingText = posting.text || "";
+    // Use extracted title from metadata when available, fall back to category
+    const meta = posting.extracted_metadata as { title?: string } | null;
+    const postingTitle = meta?.title || posting.category || "Space Posting";
+    const postingText = posting.text || "";
 
     // Fetch parent space state_text for additional context
     const { data: parentSpace } = await supabase
@@ -159,11 +162,6 @@ export async function matchPostingToProfiles(
       .single();
 
     const parentStateText = parentSpace?.state_text || "";
-
-    // Prepend parent space context when available
-    if (parentStateText) {
-      postingText = `[Space context: ${parentStateText}]\n\n${postingText}`;
-    }
 
     if (postingText) {
       // Fetch profile source texts
@@ -176,6 +174,34 @@ export async function matchPostingToProfiles(
       const profileSourceMap = new Map(
         profileSources?.map((p) => [p.user_id, p]) ?? [],
       );
+
+      // Fetch shared skills: posting's skills and each candidate's skills
+      const { data: postingSkills } = await supabase
+        .from("posting_skills")
+        .select("skill_id, skill_nodes(name)")
+        .eq("space_posting_id", postingId);
+      const postingSkillIds = new Set(
+        postingSkills?.map((s) => s.skill_id) ?? [],
+      );
+
+      const { data: candidateSkillRows } = await supabase
+        .from("profile_skills")
+        .select("profile_id, skill_id, skill_nodes(name)")
+        .in("profile_id", deepUserIds);
+
+      const candidateSharedSkillMap = new Map<string, string[]>();
+      for (const row of candidateSkillRows ?? []) {
+        if (postingSkillIds.has(row.skill_id)) {
+          const shared = candidateSharedSkillMap.get(row.profile_id) ?? [];
+          const nodes = row.skill_nodes as
+            | { name: string }
+            | { name: string }[]
+            | null;
+          const name = Array.isArray(nodes) ? nodes[0]?.name : nodes?.name;
+          if (name) shared.push(name);
+          candidateSharedSkillMap.set(row.profile_id, shared);
+        }
+      }
 
       await applyDeepMatchResults({
         topN,
@@ -190,7 +216,8 @@ export async function matchPostingToProfiles(
             profileText,
             parentStateText,
             fastFilterScore: entry.score,
-            sharedSkills: [],
+            sharedSkills:
+              candidateSharedSkillMap.get(entry.profile.user_id) ?? [],
             availabilityOverlap: entry.scoreBreakdown?.availability ?? null,
             distanceKm: null,
             semanticScore: entry.scoreBreakdown?.semantic ?? null,
