@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Users,
-  UserPlus,
-  Calendar,
-  Mail,
-  Check,
-  Star,
-} from "lucide-react";
+import { Users, UserPlus, Calendar, Mail, Check, Star } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
@@ -28,48 +21,76 @@ interface ActivityCardProps {
 
 const typeConfig: Record<
   ActivityCardType,
-  { icon: typeof Star; color: string; badgeVariant: "default" | "secondary" | "info" | "success" | "warning" }
+  {
+    icon: typeof Star;
+    color: string;
+    badgeVariant: "default" | "secondary" | "info" | "success" | "warning";
+  }
 > = {
-  match: { icon: Star, color: "text-yellow-500", badgeVariant: "warning" },
-  invite: { icon: Mail, color: "text-blue-500", badgeVariant: "info" },
-  scheduling: { icon: Calendar, color: "text-green-500", badgeVariant: "success" },
-  connection_request: { icon: UserPlus, color: "text-purple-500", badgeVariant: "secondary" },
-  rsvp: { icon: Check, color: "text-teal-500", badgeVariant: "info" },
-  join_request: { icon: Users, color: "text-orange-500", badgeVariant: "warning" },
+  match: { icon: Star, color: "text-cat-match", badgeVariant: "warning" },
+  invite: { icon: Mail, color: "text-info", badgeVariant: "info" },
+  scheduling: {
+    icon: Calendar,
+    color: "text-cat-scheduling",
+    badgeVariant: "success",
+  },
+  connection_request: {
+    icon: UserPlus,
+    color: "text-cat-hackathon",
+    badgeVariant: "secondary",
+  },
+  rsvp: { icon: Check, color: "text-info", badgeVariant: "info" },
+  join_request: {
+    icon: Users,
+    color: "text-cat-professional",
+    badgeVariant: "warning",
+  },
 };
 
-function getActions(cardType: ActivityCardType): { label: string; status: ActivityCardStatus }[][] {
+function getActions(
+  cardType: ActivityCardType,
+): { label: string; status: ActivityCardStatus }[][] {
   switch (cardType) {
     case "match":
-      return [[
-        { label: labels.activity.actions.join, status: "acted" },
-        { label: labels.activity.actions.pass, status: "dismissed" },
-      ]];
+      return [
+        [
+          { label: labels.activity.actions.join, status: "acted" },
+          { label: labels.activity.actions.pass, status: "dismissed" },
+        ],
+      ];
     case "invite":
-      return [[
-        { label: labels.activity.actions.join, status: "acted" },
-        { label: labels.activity.actions.decline, status: "dismissed" },
-      ]];
+      return [
+        [
+          { label: labels.activity.actions.join, status: "acted" },
+          { label: labels.activity.actions.decline, status: "dismissed" },
+        ],
+      ];
     case "connection_request":
-      return [[
-        { label: labels.activity.actions.accept, status: "acted" },
-        { label: labels.activity.actions.decline, status: "dismissed" },
-      ]];
+      return [
+        [
+          { label: labels.activity.actions.accept, status: "acted" },
+          { label: labels.activity.actions.decline, status: "dismissed" },
+        ],
+      ];
     case "join_request":
-      return [[
-        { label: labels.activity.actions.accept, status: "acted" },
-        { label: labels.activity.actions.decline, status: "dismissed" },
-      ]];
+      return [
+        [
+          { label: labels.activity.actions.accept, status: "acted" },
+          { label: labels.activity.actions.decline, status: "dismissed" },
+        ],
+      ];
     case "scheduling":
     case "rsvp":
-      return [[
-        { label: labels.activity.actions.confirm, status: "acted" },
-        { label: labels.activity.actions.dismiss, status: "dismissed" },
-      ]];
+      return [
+        [
+          { label: labels.activity.actions.confirm, status: "acted" },
+          { label: labels.activity.actions.dismiss, status: "dismissed" },
+        ],
+      ];
     default:
-      return [[
-        { label: labels.activity.actions.dismiss, status: "dismissed" },
-      ]];
+      return [
+        [{ label: labels.activity.actions.dismiss, status: "dismissed" }],
+      ];
   }
 }
 
@@ -81,7 +102,8 @@ export function ActivityCard({ card, onAction }: ActivityCardProps) {
 
   const fromName = card.from_profile?.full_name ?? "Someone";
   const postingPreview = card.space_posting?.text
-    ? card.space_posting.text.slice(0, 80) + (card.space_posting.text.length > 80 ? "..." : "")
+    ? card.space_posting.text.slice(0, 80) +
+      (card.space_posting.text.length > 80 ? "..." : "")
     : null;
 
   return (

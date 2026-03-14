@@ -13,7 +13,7 @@ export function StatusBarInit() {
 
     import("@capacitor/status-bar").then(({ StatusBar, Style }) => {
       StatusBar.setStyle({ style: Style.Dark });
-      StatusBar.setBackgroundColor({ color: "#000000" });
+      StatusBar.setBackgroundColor({ color: "#4e5567" });
     });
   }, []);
 

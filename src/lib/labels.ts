@@ -675,7 +675,7 @@ export const labels = {
     notConnected: "Not connected",
     expired: "Expired",
     themeLight: "Light",
-    themeDark: "Dark",
+    themeOvercast: "Overcast",
     themeDusk: "Dusk",
   } as const,
 

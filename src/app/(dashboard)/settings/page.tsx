@@ -116,7 +116,7 @@ function SettingsContent() {
         <Group
           align="start"
           gap="sm"
-          className="rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-600 dark:text-green-400"
+          className="rounded-md border border-success/30 bg-success/10 px-4 py-3 text-sm text-success"
         >
           <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
           <span>{success}</span>

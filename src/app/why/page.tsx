@@ -71,7 +71,7 @@ export default function WhyPage() {
         <section className="flex flex-col items-center justify-center px-6 py-16 text-center lg:px-8 lg:py-24">
           <div className="mb-8">
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-4 py-1.5 text-sm">
-              <Users className="size-4 text-blue-500" />
+              <Users className="size-4 text-info" />
               <span className="text-muted-foreground">
                 {labels.landing.heroBadge}
               </span>

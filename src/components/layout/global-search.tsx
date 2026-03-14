@@ -14,7 +14,7 @@ import type { PaletteAction } from "@/lib/command-palette/actions";
 import { filterActions } from "@/lib/command-palette/filter-actions";
 import { GlobalSearchResults } from "./global-search-results";
 
-const THEMES = ["light", "dark", "dusk"] as const;
+const THEMES = ["light", "overcast", "dusk"] as const;
 
 function useIsMac() {
   const [isMac, setIsMac] = useState(true);

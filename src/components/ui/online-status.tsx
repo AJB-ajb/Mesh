@@ -29,8 +29,8 @@ export function OnlineStatus({
           "rounded-full shrink-0",
           sizeClasses[size],
           isOnline
-            ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"
-            : "bg-gray-400",
+            ? "bg-online shadow-[0_0_8px_oklch(0.627_0.194_149.214_/_0.5)]"
+            : "bg-offline",
         )}
       />
       {showLabel && (
@@ -67,7 +67,7 @@ export function OnlineStatusBadge({
         className={cn(
           "absolute h-3 w-3 rounded-full border-2 border-background",
           positionClasses[position],
-          isOnline ? "bg-green-500" : "bg-gray-400",
+          isOnline ? "bg-online" : "bg-offline",
         )}
       />
     </div>

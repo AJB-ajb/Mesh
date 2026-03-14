@@ -92,7 +92,7 @@ export default async function LandingPage() {
           {/* Badge */}
           <div className="mb-8 animate-fade-in">
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-4 py-1.5 text-sm">
-              <Users className="size-4 text-blue-500" />
+              <Users className="size-4 text-info" />
               <span className="text-muted-foreground">
                 {labels.landing.heroBadge}
               </span>

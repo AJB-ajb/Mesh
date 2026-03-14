@@ -46,7 +46,9 @@ function collectMetadata(): FeedbackMetadata {
     connection_type: nav.connection?.effectiveType,
     app_version: "0.5.0",
     platform: navigator.platform,
-    dark_mode: document.documentElement.classList.contains("dark"),
+    dark_mode:
+      document.documentElement.classList.contains("overcast") ||
+      document.documentElement.classList.contains("dusk"),
   };
 }
 
