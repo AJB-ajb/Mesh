@@ -132,3 +132,80 @@ await apiMutate(url, { successToast: "postingUpdated" });
 ```
 
 Never use inline toast strings. This keeps copy centralized and translatable.
+
+## 7. Layout Primitives (`Stack`, `Group`, `PageContent`)
+
+Use the layout primitives instead of ad-hoc `flex`, `space-y-*`, and `gap-*` classes. They exist to collapse spacing choices into a small, named API — especially important in an AI-agent-first codebase where unconstrained Tailwind leads to layout drift.
+
+### Components
+
+| Component     | Purpose                                              | Default gap            | File                      |
+| ------------- | ---------------------------------------------------- | ---------------------- | ------------------------- |
+| `Stack`       | Vertical flex layout                                 | `md` (12px)            | `ui/stack.tsx`            |
+| `Group`       | Horizontal flex layout, center-aligned               | `sm` (8px)             | `ui/group.tsx`            |
+| `PageContent` | Page-level max-width container with vertical spacing | `xl` (24px responsive) | `layout/page-content.tsx` |
+
+### Named Gap Scale
+
+A fixed set of gap tokens. Choose from this list — don't invent new spacing.
+
+| Token  | Class                     | px         | Use for                                 |
+| ------ | ------------------------- | ---------- | --------------------------------------- |
+| `none` | —                         | 0          | No gap                                  |
+| `xs`   | `gap-1`                   | 4px        | Tight badge/icon groups                 |
+| `sm`   | `gap-2`                   | 8px        | Inline elements, small controls         |
+| `md`   | `gap-3`                   | 12px       | Related items within a section          |
+| `lg`   | `gap-4`                   | 16px       | Sibling sections, card content          |
+| `xl`   | `gap-6 sm:gap-7 md:gap-8` | 24→28→32px | Page-level section spacing (responsive) |
+
+Only `xl` scales responsively. Smaller sizes stay fixed — responsive scaling at the UI level adds noise.
+
+### Usage
+
+```tsx
+// Vertical stack of form fields
+<Stack gap="lg">
+  <Input />
+  <Input />
+  <Button>Submit</Button>
+</Stack>
+
+// Horizontal row with icon + text
+<Group gap="sm">
+  <Avatar />
+  <span>{name}</span>
+</Group>
+
+// Horizontal row, space-between
+<Group justify="between">
+  <h1>Title</h1>
+  <Button>Action</Button>
+</Group>
+
+// Badge cloud
+<Group wrap gap="xs">
+  {tags.map(t => <Badge key={t}>{t}</Badge>)}
+</Group>
+
+// Page with max-width constraint
+<PageContent size="md" className="pb-20">
+  <BackLink />
+  <h1>Settings</h1>
+  <Card>...</Card>
+</PageContent>
+```
+
+### Props
+
+**Stack:** `gap`, `align` (`start | center | end | stretch`), `as` (HTML element), `className`.
+
+**Group:** `gap`, `align` (adds `baseline`), `justify` (`start | center | end | between`), `wrap`, `as`, `className`.
+
+**PageContent:** `size` (`sm | md | lg | xl | full`), plus all Stack props. No horizontal padding — AppShell handles that.
+
+### When NOT to use
+
+- **`<Link>` or component roots** — `as` only supports HTML elements, not components.
+- **`mt-*` / `pt-*` one-offs** — intentional spacing tied to borders or separators (e.g. `border-t pt-6`).
+- **Card internals** — Card already has its own responsive gap. Don't wrap Card's children in Stack.
+- **Layout-specific patterns** — negative margin bleeds, absolute positioning, grid layouts.
