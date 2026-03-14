@@ -320,55 +320,6 @@ Numbered for cross-reference. Full rationale in [designs/spaces-rewrite.md](desi
 
 ## 12. Current Deviations
 
-Phase 1 implementation status as of 2026-03-14. Items marked Done have DB schema, API routes, hooks, and UI components in place.
-
-### Done
-
-| Feature                                          | Notes                                                                                                                                                |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `spaces` table and core data model               | All 7 tables: spaces, space_members, space_messages, space_postings, space_join_requests, space_invites, activity_cards. RLS, triggers, FTS indexes. |
-| Space list (messenger-like main screen)          | Filters (All/DMs/Groups/Public/Pinned), search, pins, unread badges, last-message previews, realtime updates.                                        |
-| Three-tab navigation (Spaces, Activity, Profile) | Bottom bar (mobile) + sidebar (desktop).                                                                                                             |
-| Global Space (Explore)                           | `is_global` flag, RLS virtual membership for all authenticated users, posting-only.                                                                  |
-| Unified conversation timeline                    | Messages + posting-cards + system messages rendered in single timeline with auto-scroll.                                                             |
-| Posting-messages (postings within Spaces)        | Create posting within Space, auto sub-Space generation, posting browser for large Spaces.                                                            |
-| Message/Posting compose toggle                   | Compose area with M/P pill toggle and inline posting fields.                                                                                         |
-| State text (living markdown document)            | Collapsible banner below header, editable by admins. `/summarize` not yet wired.                                                                     |
-| Activity tab with personal cards                 | Activity page with typed cards (match, invite, join_request, scheduling, rsvp, connection_request), realtime subscription.                           |
-| `activity_cards` table (replaces `matches`)      | Full schema with types, status, from_user_id, posting_id, score, data jsonb.                                                                         |
-| Per-member read tracking (`last_read_at`)        | DB trigger increments `unread_count` on message INSERT. Auto mark-as-read on message fetch.                                                          |
-| Join requests                                    | Submit, accept, reject, waitlist. Auto-accept when posting has `auto_accept`. Activity card created for posting creator.                             |
-| Invite batches                                   | Sequential/parallel modes, ordered list, pending/declined tracking. Activity cards for invitees.                                                     |
-| Realtime messaging                               | Supabase Realtime per-Space channels. Optimistic updates with fallback.                                                                              |
-| Presence/typing indicators                       | Hook implemented (`use-space-presence`). Not yet wired to compose area UI.                                                                           |
-
-### Remaining Phase 1
-
-| Feature                                          | Status              | Notes                                                                                                                                                                  |
-| ------------------------------------------------ | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Activity card side-effects                       | Not implemented     | `actOnCard` only flips card status. Accepting a join_request card doesn't accept the actual join request. Invite cards can't trigger join. Match cards don't navigate. |
-| Invite response flow                             | Not implemented     | Invitees receive invite activity cards but no API to accept/decline. No endpoint for invite responses.                                                                 |
-| Global Space + DM seeding                        | Not implemented     | No migration creates the Global Space row or DM Spaces for existing connections.                                                                                       |
-| Old table cleanup                                | Not implemented     | Old `postings`, `conversations`, `messages`, `group_messages` tables still exist.                                                                                      |
-| Posting-only mode enforcement                    | Not implemented     | `settings.posting_only` exists in DB but compose area doesn't check it.                                                                                                |
-| Member management UI                             | Not implemented     | `space-info-sheet` shows members but no controls to remove members, change roles, or invite.                                                                           |
-| Posting status transitions                       | Not implemented     | No UI to close/fill postings. No auto-expiration on deadline.                                                                                                          |
-| Posting edit/delete UI                           | Not implemented     | PATCH/DELETE API exists but no frontend controls.                                                                                                                      |
-| Realtime for postings                            | Not implemented     | `use-space-postings` has no realtime subscription; new postings require manual refresh.                                                                                |
-| Typing indicators wiring                         | Not implemented     | Presence hook exists but not connected to compose area.                                                                                                                |
-| Sub-Spaces and thread rendering                  | Done (Phase A)      | Reply counts via RPC, thread link on posting cards, back navigation to parent space.                                                                                   |
-| `visible_from` (pre-invite conversation hiding)  | Done (RLS enforced) | `space_messages_select` RLS policy filters by member `visible_from` timestamp. No app-level filtering needed.                                                          |
-| Matching integration with Spaces                 | Done                | Embedding pipeline wired for `space_postings`, matching triggered after embedding, activity cards include space navigation.                                            |
-| DM Spaces                                        | Not implemented     | Schema supports 2-person Spaces but no creation flow on connection accept.                                                                                             |
-| Inherited vs. independent membership transitions | Not implemented     | `inherits_members` flag exists. No auto-transition when outsiders join.                                                                                                |
-| Space search (FTS)                               | Done                | `search_space_messages` RPC with security invoker, API endpoint, search UI in space header.                                                                            |
-
-### Phase 2 (not started)
-
-| Feature                         | Notes                                                                                |
-| ------------------------------- | ------------------------------------------------------------------------------------ |
-| Rich interactive cards          | Time proposals, RSVPs, polls, task claims, location, trade-off. `space_cards` table. |
-| Card invalidation from messages | Phase 2b: LLM detection from messages.                                               |
-| LLM card generation             | Detect coordination intent, suggest card type.                                       |
-| Space archiving                 | 30-day auto-archive, collapsed "Archived" section, admin reactivation.               |
-| Cross-Space posting promotion   | Promote posting to Explore as linked posting-message. Linking, not moving.           |
+- **Inherited → independent transition**: `inherits_members` flag exists but no auto-transition when outsiders join via matching/invite. → v0.7
+- **Old table cleanup**: Old `postings`, `conversations`, `messages`, `group_messages` tables still exist. → v0.7
+- **Phase 2 features**: Rich interactive cards, card invalidation, LLM card generation, space archiving, cross-Space posting promotion. → v0.8
