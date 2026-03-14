@@ -6,6 +6,7 @@ import type { SpaceMember } from "@/lib/supabase/types";
 import type { SpaceDetail } from "@/lib/hooks/use-space";
 import { useSpaceMessages } from "@/lib/hooks/use-space-messages";
 import { useSpacePostings } from "@/lib/hooks/use-space-postings";
+import { useSpacePresence } from "@/lib/hooks/use-space-presence";
 import { SpaceHeader } from "./space-header";
 import { StateTextBanner } from "./state-text-banner";
 import { ConversationTimeline } from "./conversation-timeline";
@@ -41,7 +42,13 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
   }, [postingsList]);
 
   const userId = currentMember?.user_id ?? null;
-  const canEdit = currentMember?.role === "admin";
+  const isAdmin = currentMember?.role === "admin";
+  const canEdit = isAdmin;
+
+  const { typingUsers, sendTyping, stopTyping } = useSpacePresence(
+    space.id,
+    userId,
+  );
 
   // Mark as read when entering the space
   useEffect(() => {
@@ -70,6 +77,7 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
             isLoading={postingsLoading}
             matchingEnabled={space.settings?.matching_enabled ?? false}
             userId={userId}
+            isAdmin={isAdmin}
             className="flex-1"
           />
           {currentMember && userId && (
@@ -81,6 +89,8 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
                   ?.full_name ?? null
               }
               postingOnly={true}
+              onTyping={sendTyping}
+              onStopTyping={stopTyping}
             />
           )}
         </>
@@ -93,6 +103,10 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
             isLoading={messagesLoading}
             onLoadMore={loadMore}
             postings={postingsMap}
+            spaceId={space.id}
+            isAdmin={isAdmin}
+            typingUsers={typingUsers}
+            members={space.members}
           />
 
           {currentMember && userId && (
@@ -104,6 +118,8 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
                   ?.full_name ?? null
               }
               postingOnly={space.settings?.posting_only ?? false}
+              onTyping={sendTyping}
+              onStopTyping={stopTyping}
             />
           )}
         </>

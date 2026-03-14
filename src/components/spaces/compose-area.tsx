@@ -21,6 +21,8 @@ interface ComposeAreaProps {
   senderId: string;
   senderName: string | null;
   postingOnly?: boolean;
+  onTyping?: () => void;
+  onStopTyping?: () => void;
 }
 
 export function ComposeArea({
@@ -28,9 +30,16 @@ export function ComposeArea({
   senderId,
   senderName,
   postingOnly = false,
+  onTyping,
+  onStopTyping,
 }: ComposeAreaProps) {
   const [text, setText] = useState("");
-  const [mode, setMode] = useState<"M" | "P">(postingOnly ? "P" : "M");
+  const [modeChoice, setModeChoice] = useState<"M" | "P">(
+    postingOnly ? "P" : "M",
+  );
+  // Override to "P" when postingOnly — no effect needed
+  const mode = postingOnly ? "P" : modeChoice;
+  const setMode = setModeChoice;
   const [postingFields, setPostingFields] = useState<PostingFields>(
     INITIAL_POSTING_FIELDS,
   );
@@ -45,6 +54,8 @@ export function ComposeArea({
   const handleSend = useCallback(async () => {
     const trimmed = text.trim();
     if (!trimmed || isSending) return;
+    if (postingOnly && mode !== "P") return;
+    onStopTyping?.();
 
     let payload: SendPayload;
     if (mode === "M") {
@@ -68,7 +79,7 @@ export function ComposeArea({
       setPostingFields(INITIAL_POSTING_FIELDS);
       textareaRef.current?.focus();
     }
-  }, [text, mode, postingFields, send, isSending]);
+  }, [text, mode, postingFields, send, isSending, postingOnly, onStopTyping]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -86,8 +97,12 @@ export function ComposeArea({
         <textarea
           ref={textareaRef}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value);
+            onTyping?.();
+          }}
           onKeyDown={handleKeyDown}
+          onBlur={onStopTyping}
           placeholder={
             mode === "M"
               ? labels.spaces.composeMessage
@@ -97,41 +112,37 @@ export function ComposeArea({
           className="flex-1 resize-none rounded-xl border border-input bg-muted/50 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px] max-h-24"
         />
 
-        {/* M/P toggle */}
-        <div
-          className={cn(
-            "flex items-center rounded-full border border-border overflow-hidden shrink-0",
-            postingOnly && "opacity-50 pointer-events-none",
-          )}
-        >
-          <button
-            type="button"
-            onClick={() => setMode("M")}
-            className={cn(
-              "px-2.5 py-1.5 text-xs font-semibold transition-colors min-h-[36px]",
-              mode === "M"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-            disabled={postingOnly}
-            aria-label={labels.spaces.messageMode}
-          >
-            M
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("P")}
-            className={cn(
-              "px-2.5 py-1.5 text-xs font-semibold transition-colors min-h-[36px]",
-              mode === "P"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-            aria-label={labels.spaces.postingMode}
-          >
-            P
-          </button>
-        </div>
+        {/* M/P toggle — hidden in posting-only mode */}
+        {!postingOnly && (
+          <div className="flex items-center rounded-full border border-border overflow-hidden shrink-0">
+            <button
+              type="button"
+              onClick={() => setMode("M")}
+              className={cn(
+                "px-2.5 py-1.5 text-xs font-semibold transition-colors min-h-[36px]",
+                mode === "M"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              aria-label={labels.spaces.messageMode}
+            >
+              M
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("P")}
+              className={cn(
+                "px-2.5 py-1.5 text-xs font-semibold transition-colors min-h-[36px]",
+                mode === "P"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              aria-label={labels.spaces.postingMode}
+            >
+              P
+            </button>
+          </div>
+        )}
 
         {/* Send button */}
         <Button

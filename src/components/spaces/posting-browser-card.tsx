@@ -1,7 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { Users, Clock } from "lucide-react";
+import { useState, useCallback } from "react";
+import {
+  Users,
+  Clock,
+  Pencil,
+  Trash2,
+  XCircle,
+  CheckCircle2,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +21,7 @@ import type {
   SpacePostingStatus,
 } from "@/lib/supabase/types";
 import { JoinRequestDialog } from "./join-request-dialog";
+import { PostingEditDialog } from "./posting-edit-dialog";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -44,16 +52,41 @@ function statusBadgeVariant(
 interface PostingBrowserCardProps {
   posting: SpacePostingWithCreator;
   userId: string | null;
+  spaceId?: string;
+  isAdmin?: boolean;
 }
 
 export function PostingBrowserCard({
   posting,
   userId,
+  spaceId,
+  isAdmin,
 }: PostingBrowserCardProps) {
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const creatorName = posting.profiles?.full_name ?? "Unknown";
   const isOwn = userId === posting.created_by;
   const showJoinButton = posting.status === "open" && !isOwn;
+  const showControls = (isOwn || isAdmin) && spaceId;
+
+  const handleStatusChange = useCallback(
+    async (status: string) => {
+      if (!spaceId) return;
+      await fetch(`/api/spaces/${spaceId}/postings/${posting.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+    },
+    [spaceId, posting.id],
+  );
+
+  const handleDelete = useCallback(async () => {
+    if (!spaceId || !confirm("Delete this posting?")) return;
+    const { createClient } = await import("@/lib/supabase/client");
+    const supabase = createClient();
+    await supabase.from("space_postings").delete().eq("id", posting.id);
+  }, [spaceId, posting.id]);
 
   return (
     <>
@@ -118,6 +151,50 @@ export function PostingBrowserCard({
             </Button>
           )}
         </div>
+
+        {/* Owner/admin controls */}
+        {showControls && posting.status === "open" && (
+          <div className="flex items-center gap-1 pt-1 border-t border-border">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs gap-1"
+              onClick={() => handleStatusChange("closed")}
+              aria-label="Close posting"
+            >
+              <XCircle className="size-3" />
+              Close
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs gap-1"
+              onClick={() => handleStatusChange("filled")}
+              aria-label="Mark as filled"
+            >
+              <CheckCircle2 className="size-3" />
+              Filled
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs gap-1"
+              onClick={() => setEditDialogOpen(true)}
+              aria-label="Edit posting"
+            >
+              <Pencil className="size-3" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs gap-1 text-destructive"
+              onClick={handleDelete}
+              aria-label="Delete posting"
+            >
+              <Trash2 className="size-3" />
+            </Button>
+          </div>
+        )}
       </div>
 
       <JoinRequestDialog
@@ -127,6 +204,15 @@ export function PostingBrowserCard({
         open={joinDialogOpen}
         onOpenChange={setJoinDialogOpen}
       />
+
+      {spaceId && (
+        <PostingEditDialog
+          posting={posting}
+          spaceId={spaceId}
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+        />
+      )}
     </>
   );
 }
