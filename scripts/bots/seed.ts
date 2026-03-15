@@ -157,12 +157,11 @@ async function seedBotUsers(): Promise<SeededBot[]> {
       console.log(`    Created (${userId})`);
     }
 
-    // Upsert profile
+    // Upsert profile (profiles table has no email column)
     await admin.from("profiles").upsert(
       {
         user_id: userId,
         full_name: persona.name,
-        email: persona.email,
         source_text: persona.profileText,
         availability_slots: persona.availability,
         timezone: persona.timezone,
@@ -344,33 +343,40 @@ async function main() {
   console.log("Bot Persona Seeder");
   console.log("==================\n");
 
-  // Find the human user (first non-bot admin user)
-  const { data: profiles } = await admin
-    .from("profiles")
-    .select("user_id, email, full_name")
-    .not("email", "like", "bot-%@mesh.dev")
-    .not("email", "like", "%@meshit.test")
-    .limit(10);
+  // Find the human user via auth.users (profiles table has no email column)
+  const botEmailPattern = /^bot-.*@mesh\.dev$/;
+  const testEmailPattern = /@meshit\.test$/;
+  let humanUser: { id: string; email?: string } | null = null;
 
-  if (!profiles?.length) {
+  let page = 1;
+  outer: while (true) {
+    const { data } = await admin.auth.admin.listUsers({ perPage: 100, page });
+    if (!data?.users?.length) break;
+    for (const u of data.users) {
+      if (!u.email) continue;
+      if (botEmailPattern.test(u.email)) continue;
+      if (testEmailPattern.test(u.email)) continue;
+      humanUser = { id: u.id, email: u.email };
+      break outer;
+    }
+    if (data.users.length < 100) break;
+    page++;
+  }
+
+  if (!humanUser) {
     console.error("No human user found. Log in to the app first.");
     process.exit(1);
   }
 
-  // Prefer the user who has actual spaces (i.e., the active user)
-  const { data: activeMembers } = await admin
-    .from("space_members")
-    .select("user_id")
-    .in(
-      "user_id",
-      profiles.map((p) => p.user_id),
-    )
-    .limit(1);
+  const humanUserId = humanUser.id;
+  const { data: humanProfile } = await admin
+    .from("profiles")
+    .select("full_name")
+    .eq("user_id", humanUserId)
+    .maybeSingle();
 
-  const humanUserId = activeMembers?.[0]?.user_id ?? profiles[0].user_id;
-  const humanProfile = profiles.find((p) => p.user_id === humanUserId);
   console.log(
-    `Human user: ${humanProfile?.full_name ?? humanProfile?.email} (${humanUserId})\n`,
+    `Human user: ${humanProfile?.full_name ?? humanUser.email} (${humanUserId})\n`,
   );
 
   console.log("1. Seeding bot users & profiles...\n");

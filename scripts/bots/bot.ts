@@ -8,7 +8,6 @@
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { BotPersona } from "./personas";
-import { BOT_EMAILS } from "./personas";
 import { ApiClient } from "./api-client";
 import {
   generateReply,
@@ -72,13 +71,15 @@ export class Bot {
     this.api = new ApiClient(this.appUrl, this.accessToken);
 
     // Resolve all bot user IDs for loop prevention
-    for (const email of BOT_EMAILS) {
-      const { data: profile } = await authClient
-        .from("profiles")
-        .select("user_id")
-        .eq("email", email)
-        .maybeSingle();
-      if (profile) this.botUserIds.add(profile.user_id);
+    // Query profiles by full_name matching persona names
+    const { PERSONAS } = await import("./personas");
+    const botNames = PERSONAS.map((p) => p.name);
+    const { data: botProfiles } = await this.supabase
+      .from("profiles")
+      .select("user_id, full_name")
+      .in("full_name", botNames);
+    for (const p of botProfiles ?? []) {
+      this.botUserIds.add(p.user_id);
     }
 
     // Discover spaces this bot is a member of
