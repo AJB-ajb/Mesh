@@ -239,20 +239,35 @@ export async function createCalendarEvent({
 
   const calendar = google.calendar({ version: "v3", auth: client });
 
-  const response = await calendar.events.insert({
-    calendarId: "primary",
-    requestBody: {
-      summary,
-      description,
-      start: { dateTime: startTime.toISOString() },
-      end: { dateTime: endTime.toISOString() },
-      ...(attendees?.length
-        ? { attendees: attendees.map((email) => ({ email })) }
-        : {}),
-    },
-  });
+  try {
+    const response = await calendar.events.insert({
+      calendarId: "primary",
+      requestBody: {
+        summary,
+        description,
+        start: { dateTime: startTime.toISOString() },
+        end: { dateTime: endTime.toISOString() },
+        ...(attendees?.length
+          ? { attendees: attendees.map((email) => ({ email })) }
+          : {}),
+      },
+    });
 
-  return response.data.id ?? null;
+    return response.data.id ?? null;
+  } catch (err: unknown) {
+    // Handle insufficient scope (user authorized freebusy only, not events)
+    const status =
+      err && typeof err === "object" && "code" in err
+        ? (err as { code: number }).code
+        : undefined;
+    if (status === 403) {
+      console.warn(
+        "[google-calendar] Insufficient scope for events.insert — user needs to re-authorize with calendar.events scope",
+      );
+      return null;
+    }
+    throw err;
+  }
 }
 
 // ---------------------------------------------------------------------------

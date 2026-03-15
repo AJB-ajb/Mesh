@@ -33,7 +33,11 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       .limit(5);
 
     const senderIds = [
-      ...new Set((dbMessages ?? []).map((m) => m.sender_id).filter(Boolean)),
+      ...new Set(
+        [...(dbMessages ?? []).map((m) => m.sender_id), user.id].filter(
+          Boolean,
+        ),
+      ),
     ];
     const nameMap = new Map<string, string>();
     if (senderIds.length > 0) {
@@ -53,6 +57,10 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
         content: m.content ?? "",
       }))
       .filter((m) => m.content);
+
+    // Append the just-sent message (may not be in DB yet due to timing)
+    const senderName = nameMap.get(user.id) ?? "User";
+    recentMessages.push({ sender_name: senderName, content: body.message });
   } else {
     throw new AppError(
       "VALIDATION",

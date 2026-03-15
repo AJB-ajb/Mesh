@@ -69,6 +69,7 @@ export function PostingCardInline({
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [promoting, setPromoting] = useState(false);
 
   const showJoinButton = posting.status === "open" && !isOwn;
   const showControls = (isOwn || isAdmin) && spaceId;
@@ -221,18 +222,24 @@ export function PostingCardInline({
                       size="sm"
                       variant="ghost"
                       className="h-7 text-xs gap-1"
+                      disabled={promoting}
                       onClick={async () => {
-                        const res = await fetch(
-                          `/api/spaces/${spaceId}/postings/${posting.id}/promote`,
-                          { method: "POST" },
-                        );
-                        if (res.ok) {
-                          toast.success(labels.spaces.posting.promoteSuccess);
-                        } else {
-                          const data = await res.json().catch(() => null);
-                          toast.error(
-                            data?.error?.message ?? "Failed to promote",
+                        setPromoting(true);
+                        try {
+                          const res = await fetch(
+                            `/api/spaces/${spaceId}/postings/${posting.id}/promote`,
+                            { method: "POST" },
                           );
+                          if (res.ok) {
+                            toast.success(labels.spaces.posting.promoteSuccess);
+                          } else {
+                            const data = await res.json().catch(() => null);
+                            toast.error(
+                              data?.error?.message ?? "Failed to promote",
+                            );
+                          }
+                        } finally {
+                          setPromoting(false);
                         }
                       }}
                     >

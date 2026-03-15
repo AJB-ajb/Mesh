@@ -8,7 +8,7 @@
  */
 
 import type { SpaceCard } from "@/lib/supabase/types";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Parse a resolved slot label into a start/end datetime range.
@@ -33,11 +33,12 @@ export function parseResolvedSlot(
 /**
  * Create calendar events for all connected users who voted for
  * the winning time slot. Fire-and-forget — errors are logged.
+ *
+ * Uses admin client to bypass RLS and read all voters' calendar connections.
  */
 export async function createEventsForResolvedCard(
   card: SpaceCard,
   spaceId: string,
-  supabase: SupabaseClient,
 ): Promise<void> {
   const data = card.data as unknown as Record<string, unknown>;
   const resolvedSlot = data.resolved_slot as string | undefined;
@@ -60,8 +61,11 @@ export async function createEventsForResolvedCard(
   const voterIds = winningOption?.votes ?? [];
   if (voterIds.length === 0) return;
 
+  // Use admin client to bypass RLS — we need to read all voters' connections
+  const admin = createAdminClient();
+
   // Fetch space name for event summary
-  const { data: space } = await supabase
+  const { data: space } = await admin
     .from("spaces")
     .select("name")
     .eq("id", spaceId)
@@ -70,38 +74,46 @@ export async function createEventsForResolvedCard(
   const summary = `${(data.title as string) ?? "Meeting"} — ${space?.name ?? "Mesh"}`;
 
   // Fetch connected Google Calendar tokens for voters
-  const { data: connections } = await supabase
+  // Table uses profile_id (= user_id) and encrypted token columns
+  const { data: connections } = await admin
     .from("calendar_connections")
-    .select("user_id, access_token, refresh_token, expires_at")
+    .select(
+      "profile_id, access_token_encrypted, refresh_token_encrypted, token_expires_at",
+    )
     .eq("provider", "google")
-    .in("user_id", voterIds);
+    .in("profile_id", voterIds);
 
   if (!connections || connections.length === 0) return;
 
   // Dynamically import to avoid bundling googleapis on client
   const { createCalendarEvent } = await import("@/lib/calendar/google");
 
+  let created = 0;
   const results = await Promise.allSettled(
     connections.map(async (conn) => {
-      try {
-        await createCalendarEvent({
-          accessTokenEncrypted: conn.access_token,
-          refreshTokenEncrypted: conn.refresh_token,
-          summary,
-          startTime: parsed.start,
-          endTime: parsed.end,
-          description: `Auto-created by Mesh when "${(data.title as string) ?? "time proposal"}" was resolved.`,
-        });
-      } catch (err) {
-        console.error(
-          `[calendar-integration] Failed to create event for user ${conn.user_id}:`,
-          err,
-        );
-      }
+      await createCalendarEvent({
+        accessTokenEncrypted: conn.access_token_encrypted,
+        refreshTokenEncrypted: conn.refresh_token_encrypted,
+        summary,
+        startTime: parsed.start,
+        endTime: parsed.end,
+        description: `Auto-created by Mesh when "${(data.title as string) ?? "time proposal"}" was resolved.`,
+      });
+      created++;
     }),
   );
 
-  const created = results.filter((r) => r.status === "fulfilled").length;
+  const failed = results.filter((r) => r.status === "rejected").length;
+  if (failed > 0) {
+    for (const r of results) {
+      if (r.status === "rejected") {
+        console.error(
+          "[calendar-integration] Event creation failed:",
+          r.reason,
+        );
+      }
+    }
+  }
   console.log(
     `[calendar-integration] Created ${created}/${connections.length} calendar events for card ${card.id}`,
   );

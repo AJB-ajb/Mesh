@@ -81,6 +81,10 @@ export function ComposeArea({
   const [suggestion, setSuggestion] = useState<CardDetectionResult | null>(
     null,
   );
+  // Store prefilled data separately so it survives suggestion dismissal
+  const [prefill, setPrefill] = useState<
+    CardDetectionResult["prefilled_data"] | null
+  >(null);
   const editorRef = useRef<ComposeEditorHandle>(null);
 
   const { createCard } = useSpaceCards(spaceId);
@@ -154,6 +158,7 @@ export function ComposeArea({
     async (pollData: PollData) => {
       await createCard("poll", pollData);
       setSuggestion(null);
+      setPrefill(null);
     },
     [createCard],
   );
@@ -162,6 +167,7 @@ export function ComposeArea({
     async (proposalData: TimeProposalData) => {
       await createCard("time_proposal", proposalData);
       setSuggestion(null);
+      setPrefill(null);
     },
     [createCard],
   );
@@ -170,6 +176,7 @@ export function ComposeArea({
     async (rsvpData: RsvpData) => {
       await createCard("rsvp", rsvpData);
       setSuggestion(null);
+      setPrefill(null);
     },
     [createCard],
   );
@@ -178,6 +185,7 @@ export function ComposeArea({
     async (taskData: TaskClaimData) => {
       await createCard("task_claim", taskData);
       setSuggestion(null);
+      setPrefill(null);
     },
     [createCard],
   );
@@ -186,11 +194,14 @@ export function ComposeArea({
     async (locationData: LocationData) => {
       await createCard("location", locationData);
       setSuggestion(null);
+      setPrefill(null);
     },
     [createCard],
   );
 
   const handleAcceptSuggestion = useCallback((s: CardDetectionResult) => {
+    // Store prefilled data before clearing suggestion so dialogs can use it
+    setPrefill(s.prefilled_data);
     setDialogKey((k) => k + 1);
     switch (s.suggested_type) {
       case "poll":
@@ -353,29 +364,29 @@ export function ComposeArea({
         open={showPollDialog}
         onOpenChange={setShowPollDialog}
         onSubmit={handleCreatePoll}
-        suggestedQuestion={suggestion?.prefilled_data.question}
-        suggestedOptions={suggestion?.prefilled_data.options}
+        suggestedQuestion={prefill?.question}
+        suggestedOptions={prefill?.options}
       />
       <CreateTimeProposalDialog
         key={`time-${dialogKey}`}
         open={showTimeProposalDialog}
         onOpenChange={setShowTimeProposalDialog}
         onSubmit={handleCreateTimeProposal}
-        suggestedSlots={suggestion?.prefilled_data.options}
+        suggestedSlots={prefill?.options}
       />
       <CreateRsvpDialog
         key={`rsvp-${dialogKey}`}
         open={showRsvpDialog}
         onOpenChange={setShowRsvpDialog}
         onSubmit={handleCreateRsvp}
-        suggestedTitle={suggestion?.prefilled_data.title}
+        suggestedTitle={prefill?.title}
       />
       <CreateTaskClaimDialog
         key={`task-${dialogKey}`}
         open={showTaskClaimDialog}
         onOpenChange={setShowTaskClaimDialog}
         onSubmit={handleCreateTaskClaim}
-        suggestedDescription={suggestion?.prefilled_data.description}
+        suggestedDescription={prefill?.description}
       />
       <CreateLocationDialog
         key={`location-${dialogKey}`}

@@ -79,11 +79,9 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
     updated.type === "time_proposal" &&
     (updated.data as Record<string, unknown>).resolved_slot
   ) {
-    createEventsForResolvedCard(updated as SpaceCard, spaceId, supabase).catch(
-      (err) => {
-        console.error("[cards/PATCH] Calendar event creation failed:", err);
-      },
-    );
+    createEventsForResolvedCard(updated as SpaceCard, spaceId).catch((err) => {
+      console.error("[cards/PATCH] Calendar event creation failed:", err);
+    });
   }
 
   return apiSuccess({ card: updated });

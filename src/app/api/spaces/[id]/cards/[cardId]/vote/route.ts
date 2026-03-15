@@ -64,9 +64,8 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
           data: newData,
           status: "resolved" as const,
         };
-        createEventsForResolvedCard(resolvedCard, spaceId, supabase).catch(
-          (err) =>
-            console.error("[vote/auto-resolve] Calendar creation failed:", err),
+        createEventsForResolvedCard(resolvedCard, spaceId).catch((err) =>
+          console.error("[vote/auto-resolve] Calendar creation failed:", err),
         );
       }
     }
