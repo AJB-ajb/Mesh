@@ -1,7 +1,12 @@
 import { withAuth } from "@/lib/api/with-auth";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import { verifySpaceMembership } from "@/lib/api/space-guards";
-import type { SpaceCardType, SpaceCardData } from "@/lib/supabase/types";
+import type {
+  SpaceCardType,
+  SpaceCardData,
+  SpaceCard,
+} from "@/lib/supabase/types";
+import { checkAutoResolve } from "@/lib/cards/auto-resolve";
 
 /**
  * GET /api/spaces/[id]/cards
@@ -28,7 +33,45 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
     );
   }
 
-  return apiSuccess({ cards: cards ?? [] });
+  // On-read deadline check: auto-resolve active cards whose deadline has passed
+  const now = new Date();
+  const resolvedCards: typeof cards = [];
+  for (const card of cards ?? []) {
+    if (
+      card.status === "active" &&
+      card.deadline &&
+      new Date(card.deadline) <= now
+    ) {
+      // Get member count for auto-resolve logic
+      const { count } = await supabase
+        .from("space_members")
+        .select("*", { count: "exact", head: true })
+        .eq("space_id", spaceId);
+
+      const result = checkAutoResolve(card as SpaceCard, count ?? 0);
+      const resolvedData = result.resolvedData
+        ? { ...card.data, ...result.resolvedData }
+        : card.data;
+
+      const { data: updated } = await supabase
+        .from("space_cards")
+        .update({
+          status: "resolved",
+          data: resolvedData,
+        })
+        .eq("id", card.id)
+        .select("*")
+        .single();
+
+      resolvedCards.push(
+        updated ?? { ...card, status: "resolved", data: resolvedData },
+      );
+    } else {
+      resolvedCards.push(card);
+    }
+  }
+
+  return apiSuccess({ cards: resolvedCards });
 });
 
 /**
@@ -43,10 +86,19 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
   const body = await parseBody<{
     type: SpaceCardType;
     data: SpaceCardData;
+    deadline?: string | null;
   }>(req);
 
   if (!body.type || !body.data) {
     throw new AppError("VALIDATION", "type and data are required", 400);
+  }
+
+  // Compute deadline: use provided value, or fall back to type-based defaults
+  let deadline: string | null;
+  if (body.deadline !== undefined) {
+    deadline = body.deadline;
+  } else {
+    deadline = getDefaultDeadline(body.type);
   }
 
   // Create the card
@@ -57,6 +109,7 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       created_by: user.id,
       type: body.type,
       data: body.data,
+      deadline,
     })
     .select("*")
     .single();
@@ -111,6 +164,20 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
   return apiSuccess({ card: { ...card, message_id: message.id } }, 201);
 });
+
+/** Default deadline offsets per card type (in hours). null = no deadline. */
+function getDefaultDeadline(type: SpaceCardType): string | null {
+  const hoursMap: Record<SpaceCardType, number | null> = {
+    time_proposal: 12,
+    rsvp: 24,
+    poll: 24,
+    task_claim: null,
+    location: 24,
+  };
+  const hours = hoursMap[type];
+  if (hours == null) return null;
+  return new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
+}
 
 /** Generate a short text preview for the card message */
 function getCardContentPreview(

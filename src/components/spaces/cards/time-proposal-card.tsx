@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import type { SpaceCard, TimeProposalData } from "@/lib/supabase/types";
+import { CardDeadlineBadge } from "./card-deadline-badge";
 import type { SpaceMemberWithProfile } from "@/lib/hooks/use-space";
 
 interface TimeProposalCardProps {
@@ -40,6 +41,11 @@ export function TimeProposalCard({
         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           {labels.cards.timeProposal}
         </span>
+        {isActive && card.deadline && (
+          <span className="ml-auto">
+            <CardDeadlineBadge deadline={card.deadline} />
+          </span>
+        )}
         {!isActive && (
           <span
             className={cn(

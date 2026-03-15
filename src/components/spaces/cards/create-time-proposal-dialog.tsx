@@ -14,12 +14,17 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import type { TimeProposalData } from "@/lib/supabase/types";
+import type { SuggestedSlot } from "@/lib/ai/card-suggest";
 
 interface CreateTimeProposalDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: TimeProposalData) => void;
   suggestedSlots?: string[];
+  suggestedTitle?: string;
+  structuredSlots?: SuggestedSlot[];
+  durationMinutes?: number;
+  memberNotes?: Record<string, string>;
   isLoadingSlots?: boolean;
 }
 
@@ -31,9 +36,13 @@ export function CreateTimeProposalDialog({
   onOpenChange,
   onSubmit,
   suggestedSlots,
+  suggestedTitle,
+  structuredSlots,
+  durationMinutes,
+  memberNotes,
   isLoadingSlots,
 }: CreateTimeProposalDialogProps) {
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(suggestedTitle ?? "");
   const deriveOptions = (): string[] => {
     if (suggestedSlots && suggestedSlots.length > 0) {
       return suggestedSlots.length >= MIN_OPTIONS
@@ -72,6 +81,19 @@ export function CreateTimeProposalDialog({
 
   const handleSubmit = useCallback(() => {
     if (!canSubmit) return;
+
+    // Build slot_times from structuredSlots if available (parallel to options by index)
+    const slotTimes = structuredSlots
+      ? validOptions
+          .map((label) => {
+            const match = structuredSlots.find(
+              (s) => s.label.trim() === label.trim(),
+            );
+            return match ? { start: match.start, end: match.end } : null;
+          })
+          .filter((s): s is { start: string; end: string } => s !== null)
+      : null;
+
     const proposalData: TimeProposalData = {
       title: title.trim(),
       options: validOptions.map((label) => ({
@@ -79,12 +101,27 @@ export function CreateTimeProposalDialog({
         votes: [],
       })),
       resolved_slot: null,
+      slot_times:
+        slotTimes && slotTimes.length === validOptions.length
+          ? slotTimes
+          : null,
+      duration_minutes: durationMinutes ?? null,
+      member_notes: memberNotes ?? null,
     };
     onSubmit(proposalData);
     setTitle("");
     setOptions(["", ""]);
     onOpenChange(false);
-  }, [canSubmit, title, validOptions, onSubmit, onOpenChange]);
+  }, [
+    canSubmit,
+    title,
+    validOptions,
+    structuredSlots,
+    durationMinutes,
+    memberNotes,
+    onSubmit,
+    onOpenChange,
+  ]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -4,7 +4,7 @@ import { X, BarChart3, Clock, UserCheck, ListTodo } from "lucide-react";
 
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
-import type { CardDetectionResult } from "@/lib/ai/card-detection";
+import type { CardSuggestion } from "@/lib/ai/card-suggest";
 
 const typeIcons = {
   poll: BarChart3,
@@ -20,9 +20,25 @@ const typeLabels = {
   task_claim: labels.cards.taskClaim,
 } as const;
 
+/** Build a compact preview string for the suggestion chip */
+function buildPreview(suggestion: CardSuggestion): string | null {
+  const { prefill, suggested_type } = suggestion;
+  if (suggested_type === "time_proposal" || suggested_type === "rsvp") {
+    if (prefill.slots && prefill.slots.length > 0) {
+      return prefill.slots.map((s) => s.label).join(" · ");
+    }
+  }
+  if (suggested_type === "poll" || suggested_type === "task_claim") {
+    if (prefill.options && prefill.options.length > 0) {
+      return prefill.options.join(" · ");
+    }
+  }
+  return null;
+}
+
 interface CardSuggestionChipProps {
-  suggestion: CardDetectionResult;
-  onAccept: (suggestion: CardDetectionResult) => void;
+  suggestion: CardSuggestion;
+  onAccept: (suggestion: CardSuggestion) => void;
   onDismiss: () => void;
 }
 
@@ -35,6 +51,7 @@ export function CardSuggestionChip({
 
   const Icon = typeIcons[suggestion.suggested_type];
   const typeLabel = typeLabels[suggestion.suggested_type];
+  const preview = buildPreview(suggestion);
 
   return (
     <div className="flex items-center gap-2 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
@@ -46,9 +63,15 @@ export function CardSuggestionChip({
         <Icon className="size-3.5" />
         {labels.cards.suggestionChipCreate(typeLabel)}
       </button>
-      <span className="text-xs text-muted-foreground truncate max-w-[200px]">
-        {suggestion.reason}
-      </span>
+      {preview ? (
+        <span className="text-xs text-muted-foreground truncate max-w-[250px]">
+          {preview}
+        </span>
+      ) : (
+        <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+          {suggestion.reason}
+        </span>
+      )}
       <Button
         variant="ghost"
         size="icon"

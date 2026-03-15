@@ -44,7 +44,35 @@ export async function createEventsForResolvedCard(
   const resolvedSlot = data.resolved_slot as string | undefined;
   if (!resolvedSlot) return;
 
-  const parsed = parseResolvedSlot(resolvedSlot);
+  // Try structured slot_times first (Phase A), fall back to label parsing
+  let parsed: { start: Date; end: Date } | null = null;
+  const slotTimes = data.slot_times as
+    | Array<{ start: string; end: string }>
+    | undefined;
+  const options = (data.options ?? []) as {
+    label: string;
+    votes: string[];
+  }[];
+  if (slotTimes) {
+    const slotIndex = options.findIndex((o) => o.label === resolvedSlot);
+    if (slotIndex >= 0 && slotTimes[slotIndex]) {
+      parsed = {
+        start: new Date(slotTimes[slotIndex].start),
+        end: new Date(slotTimes[slotIndex].end),
+      };
+    }
+  }
+
+  // Fall back to parsing the label + duration_minutes
+  if (!parsed) {
+    parsed = parseResolvedSlot(resolvedSlot);
+    if (parsed && data.duration_minutes) {
+      parsed.end = new Date(
+        parsed.start.getTime() + (data.duration_minutes as number) * 60 * 1000,
+      );
+    }
+  }
+
   if (!parsed) {
     console.log(
       `[calendar-integration] Could not parse slot "${resolvedSlot}" — skipping calendar creation`,
@@ -53,10 +81,6 @@ export async function createEventsForResolvedCard(
   }
 
   // Find voters for the winning option
-  const options = (data.options ?? []) as {
-    label: string;
-    votes: string[];
-  }[];
   const winningOption = options.find((o) => o.label === resolvedSlot);
   const voterIds = winningOption?.votes ?? [];
   if (voterIds.length === 0) return;

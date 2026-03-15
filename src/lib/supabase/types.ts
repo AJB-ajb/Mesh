@@ -752,6 +752,12 @@ export interface TimeProposalData {
   title: string;
   options: CardOption[];
   resolved_slot?: string | null;
+  /** Structured start/end per slot (parallel to options by index). Optional for backward compat. */
+  slot_times?: Array<{ start: string; end: string }> | null;
+  /** Inferred activity duration in minutes */
+  duration_minutes?: number | null;
+  /** Per-member private scheduling notes, keyed by userId */
+  member_notes?: Record<string, string> | null;
 }
 
 export interface RsvpData {
@@ -790,6 +796,7 @@ export interface SpaceCard {
   data: SpaceCardData;
   created_at: string;
   updated_at: string;
+  deadline?: string | null;
 }
 
 export interface SpaceCardInsert {
@@ -799,6 +806,7 @@ export interface SpaceCardInsert {
   data: SpaceCardData;
   message_id?: string | null;
   status?: SpaceCardStatus;
+  deadline?: string | null;
 }
 
 // ============================================

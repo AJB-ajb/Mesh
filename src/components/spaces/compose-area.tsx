@@ -42,7 +42,7 @@ import type {
   TaskClaimData,
   LocationData,
 } from "@/lib/supabase/types";
-import type { CardDetectionResult } from "@/lib/ai/card-detection";
+import type { CardSuggestion } from "@/lib/ai/card-suggest";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,13 +78,11 @@ export function ComposeArea({
   const [showTaskClaimDialog, setShowTaskClaimDialog] = useState(false);
   const [showLocationDialog, setShowLocationDialog] = useState(false);
   const [dialogKey, setDialogKey] = useState(0);
-  const [suggestion, setSuggestion] = useState<CardDetectionResult | null>(
+  const [suggestion, setSuggestion] = useState<CardSuggestion | null>(null);
+  // Store prefilled data separately so it survives suggestion dismissal
+  const [prefill, setPrefill] = useState<CardSuggestion["prefill"] | null>(
     null,
   );
-  // Store prefilled data separately so it survives suggestion dismissal
-  const [prefill, setPrefill] = useState<
-    CardDetectionResult["prefilled_data"] | null
-  >(null);
   const editorRef = useRef<ComposeEditorHandle>(null);
 
   const { createCard } = useSpaceCards(spaceId);
@@ -199,9 +197,9 @@ export function ComposeArea({
     [createCard],
   );
 
-  const handleAcceptSuggestion = useCallback((s: CardDetectionResult) => {
+  const handleAcceptSuggestion = useCallback((s: CardSuggestion) => {
     // Store prefilled data before clearing suggestion so dialogs can use it
-    setPrefill(s.prefilled_data);
+    setPrefill(s.prefill);
     setDialogKey((k) => k + 1);
     switch (s.suggested_type) {
       case "poll":
@@ -372,7 +370,11 @@ export function ComposeArea({
         open={showTimeProposalDialog}
         onOpenChange={setShowTimeProposalDialog}
         onSubmit={handleCreateTimeProposal}
-        suggestedSlots={prefill?.options}
+        suggestedSlots={prefill?.slots?.map((s) => s.label) ?? prefill?.options}
+        suggestedTitle={prefill?.title}
+        structuredSlots={prefill?.slots}
+        durationMinutes={prefill?.duration_minutes}
+        memberNotes={prefill?.member_notes}
       />
       <CreateRsvpDialog
         key={`rsvp-${dialogKey}`}
@@ -380,6 +382,7 @@ export function ComposeArea({
         onOpenChange={setShowRsvpDialog}
         onSubmit={handleCreateRsvp}
         suggestedTitle={prefill?.title}
+        suggestedThreshold={prefill?.suggested_threshold}
       />
       <CreateTaskClaimDialog
         key={`task-${dialogKey}`}

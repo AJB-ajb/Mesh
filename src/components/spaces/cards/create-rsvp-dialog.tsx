@@ -20,6 +20,7 @@ interface CreateRsvpDialogProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: RsvpData) => void;
   suggestedTitle?: string;
+  suggestedThreshold?: number;
 }
 
 export function CreateRsvpDialog({
@@ -27,9 +28,10 @@ export function CreateRsvpDialog({
   onOpenChange,
   onSubmit,
   suggestedTitle,
+  suggestedThreshold,
 }: CreateRsvpDialogProps) {
   const [title, setTitle] = useState(suggestedTitle ?? "");
-  const [threshold, setThreshold] = useState(2);
+  const [threshold, setThreshold] = useState(suggestedThreshold ?? 2);
 
   const canSubmit = title.trim().length > 0;
 

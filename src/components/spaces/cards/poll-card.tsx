@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import type { SpaceCard, PollData } from "@/lib/supabase/types";
+import { CardDeadlineBadge } from "./card-deadline-badge";
 
 interface PollCardProps {
   card: SpaceCard;
@@ -44,6 +45,11 @@ export function PollCard({
         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           {labels.cards.poll}
         </span>
+        {isActive && card.deadline && (
+          <span className="ml-auto">
+            <CardDeadlineBadge deadline={card.deadline} />
+          </span>
+        )}
         {!isActive && (
           <span
             className={cn(
