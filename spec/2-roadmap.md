@@ -236,6 +236,58 @@ Built on Phase 1. The card system that replaces back-and-forth coordination. Sub
 | Card invalidation Phase 2b | Large  | Free-text detection — LLM reads messages against active cards, suggests updates |
 | Auto-archive (30-day)      | Small  | Cron-based auto-archive after 30 days of no messages                            |
 
+### v0.8.5 — Intelligent Prefill & Scheduling Intelligence
+
+Calendar-aware card suggestions, smart prefill, chained flows, and coordination norms. Implements the Card Principles ([1-spaces.md](1-spaces.md) §7) and Intelligent Coordination Flows ([0-use-cases.md](0-use-cases.md) §"Intelligent Coordination Flows"). Full design: [designs/intelligent-prefill.md](designs/intelligent-prefill.md).
+
+#### Phase A: Calendar-Aware Time Proposals
+
+The core differentiator — "dinner friday?" → pre-filled time slots from N-way calendar overlap + scheduling preferences.
+
+| Feature                         | Effort | Description                                                                                                                                                                                                                                             |
+| ------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fused detect-and-suggest LLM    | Medium | Replace separate detect + suggest with single Flash Lite call. Receives messages + calendar overlap + `\|\|hidden\|\|` profiles. Returns card type + prefilled data + member notes in one response. New `card-suggest.ts` replaces `card-detection.ts`. |
+| Suggest API calendar enrichment | Medium | Before LLM call: fetch member profiles (availability, timezone, source_text), calendar busy blocks, compute N-way overlap via `windowsToConcreteDates()`, extract `\|\|hidden\|\|` text via `parseHiddenBlocks()`.                                      |
+| Structured slot format          | Small  | Time proposal slots store `{label, start, end}` (not just string labels). Calendar integration reads structured dates instead of parsing label text. Backward-compatible.                                                                               |
+| Duration inference              | Small  | LLM infers activity duration from message context (coffee → 30 min, dinner → 2h). Stored in card data. Calendar events use actual duration instead of hardcoded 1h.                                                                                     |
+| RSVP threshold intelligence     | Small  | Default threshold = `ceil(memberCount × 0.6)` instead of hardcoded 2.                                                                                                                                                                                   |
+| Specific-time detection         | Small  | "Let's meet at 2" + all members free → RSVP (not time proposal). Conflicts → time proposal with specific time + alternatives. See Flow 2 in [0-use-cases.md](0-use-cases.md).                                                                           |
+
+#### Phase B: Suggestion UX
+
+One-tap quick-send, calendar context, deadlines on all cards.
+
+| Feature                       | Effort | Description                                                                                                                                                                                                                                      |
+| ----------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Two-path suggestion chip      | Medium | Primary: quick-send (1 tap, creates card with prefill). Secondary: edit (opens dialog). Chip shows preview: "📅 Fri 19:00 · 19:30 · 20:00". See Intelligent Pre-fill principle in [1-spaces.md](1-spaces.md) §7.                                 |
+| Calendar context strip        | Medium | Compact horizontal day view on time proposal cards showing surrounding events for the current user. Per-user rendering from cached `calendar_busy_blocks`. See Flow 2 in [0-use-cases.md](0-use-cases.md).                                       |
+| Card deadlines                | Medium | Migration: add `deadline timestamptz` to `space_cards`. Defaults: time_proposal 12h, RSVP 24h, poll 24h. Display: "Closes in 8h". Auto-resolve on-read when deadline passed. See Deadline Resolution principle in [1-spaces.md](1-spaces.md) §7. |
+| Detection prompt improvements | Small  | Disambiguate task_claim vs. poll ("who wants X?" vs. "what should we X?"), declarative RSVP vs. negotiation. Part of fused LLM prompt. See Flow 3 in [0-use-cases.md](0-use-cases.md).                                                           |
+
+#### Phase C: Chained & Reactive Flows
+
+Card events trigger follow-up suggestions; declines offer alternatives to both parties.
+
+| Feature                  | Effort | Description                                                                                                                                                                                                                           |
+| ------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Decline-and-suggest      | Medium | RSVP "No" vote triggers alternative time suggestions to BOTH the voter and card creator via Realtime. See Decline-and-Suggest principle in [1-spaces.md](1-spaces.md) §7 and Flow 2 in [0-use-cases.md](0-use-cases.md).              |
+| Chained card flow        | Medium | Card resolution triggers follow-up: time resolved → suggest location, poll resolved → suggest time proposal. Pushed via Realtime `card_suggestion` event. See Chained Card Flow principle in [1-spaces.md](1-spaces.md) §7.           |
+| Private constraint notes | Small  | Per-member notes on time proposal cards ("Your meeting ends at 18:30, ~30 min buffer"). Generated by fused LLM, stored in card `data.member_notes`. See Private Constraints principle and Flow 1 in [0-use-cases.md](0-use-cases.md). |
+
+#### Phase D: Hidden Profile Integration
+
+`||hidden||` in profile text for scheduling preferences — the data source for Phases A–C.
+
+| Feature                            | Effort | Description                                                                                              |
+| ---------------------------------- | ------ | -------------------------------------------------------------------------------------------------------- |
+| Profile `\|\|hidden\|\|` rendering | Medium | CodeMirror decoration: dimmed style + lock icon for `\|\|...\|\|` blocks in profile editor.              |
+| `/hidden` slash command            | Small  | Wraps selected text in `\|\|...\|\|` or inserts empty block. Added to profile slash command registry.    |
+| Scheduling preferences onboarding  | Small  | Profile setup prompt: "Anything we should know when scheduling?" Auto-wraps in `\|\|...\|\|`. Skippable. |
+
+#### Phase ordering
+
+Phase A first (highest impact, most infra exists). Phase B in parallel where possible. Phase D can start early (independent). Phase C last (needs A+B working). See [designs/intelligent-prefill.md](designs/intelligent-prefill.md) §3 for dependency diagram.
+
 ### v0.9 — Mobile (Capacitor, Android)
 
 Minimal native Android shell wrapping the hosted web app. iOS deferred — PWA covers iOS users.

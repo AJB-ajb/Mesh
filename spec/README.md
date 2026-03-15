@@ -50,6 +50,8 @@ Read the minimum set of files for your task:
 | Unsure about product direction | `0-vision.md` + `0-use-cases.md`                                           |
 | Need canonical term            | `1-terminology.md`                                                         |
 | Tech stack check               | `3-architecture.md`                                                        |
+| Card suggestions / prefill     | `designs/intelligent-prefill.md` + `1-spaces.md` §7 + `0-use-cases.md`     |
+| Scheduling intelligence        | `1-scheduling.md` + `designs/intelligent-prefill.md`                       |
 
 ## Spec Update Rules
 

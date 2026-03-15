@@ -392,3 +392,10 @@ These use cases test the access model from the user's perspective. Each describe
 - **Multi-context**: Can a posting belong to multiple Spaces (cross-posting)? Current answer: no — tree structure only, one parent Space. Revisit if needed.
 - **Space visibility cascade**: If a parent Space is private, are all child Spaces automatically private? Current proposal: yes — children inherit `in_discover = false` from private parents. A child cannot be more public than its parent.
 - **Revoking access**: Can a poster remove someone from the audience after posting? For invitees: yes (revoke invite). For Space members: only by removing them from the Space. For link holders: revoke the link (generate new token).
+
+---
+
+## Current Deviations
+
+- **Composable access model**: Not yet implemented. Code still uses `visibility: "public" | "private"` enum on postings. The four independent access paths (Context, Invite, Link, Discover), context bar, `in_discover` flag, and link tokens described here are target state. → v0.9+
+- **Qualitative match display**: Match scores are shown as numeric percentages in the UI, not as coarse confidence levels (`strong`/`good`/`possible`) with text explanations. → v0.9+

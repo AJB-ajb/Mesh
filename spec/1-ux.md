@@ -336,16 +336,3 @@ The posting and profile input paradigm is text-first. See [1-text-first.md](1-te
 - **Quick chips and post-write nudges**: Deferred — focus on core flow first. Revisit when base editor and commands are polished.
 
 **Profile text-first parity.** The profile uses the same text-first paradigm as postings. The user's bio/description is the single source of truth — skills, location, languages, and interests are extracted from it. Form-based profile fields (fullName, headline, bio form, skills form, interests input, etc.) are deprecated in favor of the unified text editor with slash commands. Availability remains as an explicit interactive section because it is inherently visual.
-
-## Current Deviations
-
-The following describes the gap between this spec and the current implementation:
-
-- **Navigation**: The app currently uses a 3-tab bottom bar (Discover/Posts/Connections) and a notifications bell. The Spaces/Activity/Profile navigation described here is not yet implemented.
-- **Space list**: The `/spaces` route and messenger-style Space list do not exist yet. The current landing page is `/posts`.
-- **Space view**: The `/spaces/[id]` conversation timeline view with interleaved messages and posting-messages does not exist yet. The current posting detail is at `/postings/[id]` with a tabbed Edit/Manage/Project layout.
-- **Activity tab**: The `/activity` route with personal action cards does not exist yet. Actionable items currently surface via the notifications bell dropdown.
-- **Explore (Global Space)**: The Global Space concept is not yet implemented. Discovery currently uses the `/discover` feed.
-- **Posting creation**: Postings are currently created via a standalone `/postings/new` flow, not via a compose area within a Space conversation.
-- **Rich interactive cards**: Time proposals, RSVPs, polls, task claims, and other interactive cards in conversations are not yet implemented.
-- **Connections**: DMs and connection management currently live at `/connections`. These need to migrate to 2-person Spaces in the Space list and to the Profile page respectively.

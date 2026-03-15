@@ -8,6 +8,267 @@ See [1-spaces.md](1-spaces.md) for the Spaces model, [1-matching.md](1-matching.
 
 ---
 
+## Intelligent Coordination Flows
+
+These scenarios show the exact message-by-message UX with the card principles applied: intelligent pre-fill, chained card flow, deadline resolution, private constraints, and decline-and-suggest. Each flow shows what the user sees and what the system does behind the scenes.
+
+See [1-spaces.md](1-spaces.md) §7 "Card Principles" for the named principles referenced below.
+
+### Flow 1: Friday Dinner — N-way scheduling with private constraints
+
+**Space**: 4-person friend group (Alex, Priya, Lena, Marcus).
+
+```
+Alex:  "dinner friday? :)"
+
+       ← System (Intelligent Pre-fill):
+         1. Card detection: scheduling intent → type = time_proposal
+         2. Pulls 4 calendars, computes overlap
+         3. Reads profiles:
+            - Lena ||hidden||: "I need 30 min after work to decompress"
+            - Marcus ||hidden||: "don't schedule past 21:00 on weekdays"
+            - Priya ||hidden||: "commute from Garching ~40 min"
+         4. Infers "dinner" → ~2h, not before 18:00
+         5. Generates 3 slots: 19:00, 19:30, 20:00
+
+       → Suggestion chip: "📅 Time proposal? Fri 19:00 · 19:30 · 20:00"
+
+Alex:  taps chip → pre-filled dialog → taps "Create"
+       → Time proposal card appears in conversation
+       → Deadline shown: "Closes in 12h"
+
+Priya: sees card (Private Constraints):
+         "Your Garching meeting ends at 19:00. ~40 min commute → arrive ~19:40"
+       taps 20:00
+
+Lena:  sees card:
+         "Your workday ends at 18:30, ~30 min buffer → ready by 19:00"
+       taps 19:30
+
+Marcus: sees card:
+         "You're free until 21:30 ✓"
+       taps 19:00
+
+Alex:  taps 19:00
+       → 2 votes for 19:00, 1 for 19:30, 1 for 20:00
+       → Resolves to 19:00 (plurality at deadline, or auto if threshold met)
+       → Google Calendar event created for all 4
+```
+
+**Principles active**: Intelligent Pre-fill (slots from calendars + profiles), Private Constraints (each member sees their own situation), Deadline Resolution (12h auto-resolve).
+
+**Chained Card Flow variant**: After time resolves, if no location is set:
+
+```
+       → Suggestion chip to Alex: "📍 Location? Set a meeting place"
+Alex:  taps → location confirm card with last-used or suggested place
+```
+
+### Flow 2: Quick Call — specific time, decline-and-suggest
+
+**Space**: 2-person DM (Sarah, Tom).
+
+```
+Sarah: "can we call tomorrow at 2?"
+
+       ← System (Intelligent Pre-fill):
+         1. Detects: specific time, not open scheduling
+         2. Checks Tom's calendar: free at 14:00
+         3. Card type = RSVP (not time proposal — time is already decided)
+
+       → Suggestion chip: "📅 Confirm call? Tomorrow 14:00"
+
+Sarah: taps → RSVP card: "Call tomorrow 14:00" (threshold: 1 Yes)
+
+Tom:   taps "No"
+       → Card resolves as declined
+
+       ← System (Decline-and-Suggest — offered to BOTH parties):
+         1. Pulls both calendars
+         2. Infers "call" → 15-30 min
+         3. Sarah's ||hidden||: "prefer afternoon calls"
+         4. Generates 3 slots from mutual overlap, afternoon-biased
+
+       → Suggestion to Tom: "📅 Suggest a different time? Tue 15:30 · Wed 14:00 · Thu 10:00"
+       → Suggestion to Sarah: "📅 Suggest a different time? Tue 15:30 · Wed 14:00 · Thu 10:00"
+         (both see suggestions — whoever acts first creates the card)
+
+Tom:   taps "Wed 14:00" → time proposal card created, pre-filled
+       → Sarah sees the card, taps to confirm
+       → Resolves → Google Calendar event created
+```
+
+**Total**: 1 message, 4 taps, 0 back-and-forth. The decline didn't dead-end — the system immediately offered alternatives to both parties. Whoever acts first creates the card; the other confirms.
+
+**Suggestion behavior**: suggestions are directly sendable with one tap (ideal when context is complete) but also editable — tapping opens a pre-filled dialog where the user can adjust options before creating the card. This two-path design (quick-send vs. edit-then-send) applies to all suggestion chips.
+
+**Calendar context**: when viewing time suggestions, each person sees how the proposed time fits into their day — a compact calendar strip showing surrounding events. This "view in calendar" context helps users make quick decisions without switching to their calendar app.
+
+**Contrast with messaging**: "Can we call?" / "Tomorrow at 2?" / "No, I'm busy" / "When works?" / "Wednesday?" / "Morning or afternoon?" / "Afternoon, 14:00?" / "Works" — 8 messages, spread over hours.
+
+### Flow 3: Hackathon Team — multi-type card detection and chaining
+
+**Space**: 5-person hackathon team (Kai, Mia, Jin, Leo, Sara).
+
+```
+Kai:  "ok we need to split up the work — who wants frontend, backend, or design?"
+
+      ← System (Intelligent Pre-fill):
+        1. Detects: task assignment, NOT opinion poll
+           Signal: "who wants" = volunteering, not voting
+        2. Extracts 3 roles: frontend, backend, design
+
+      → Suggestion chip: "✋ Task claim? Frontend · Backend · Design"
+
+Kai:  taps → task claim card with 3 claimable roles
+
+Mia:  claims "Design"
+Jin:  claims "Frontend"
+Leo:  claims "Backend"
+      → All 3 claimed → card resolves
+      → System message: "Tasks assigned: Mia → Design, Jin → Frontend, Leo → Backend"
+```
+
+**Chained Card Flow** — next coordination need:
+
+```
+Mia:  "when should we do standups?"
+
+      ← System:
+        1. Detects: scheduling intent for recurring event
+        2. Pulls 5 calendars
+        3. Finds morning overlaps: Mon/Wed/Fri 9:30, Tue/Thu 10:00
+
+      → Suggestion chip: "📅 Time proposal? Mon/Wed/Fri 9:30 or Tue/Thu 10:00"
+
+Mia:  taps → time proposal card
+      ... members vote ... resolves to Mon/Wed/Fri 9:30
+      → Calendar events created for all 5
+```
+
+**Declarative coordination** — specific time, no negotiation:
+
+```
+Kai:  "let's all meet at the library tomorrow at 2 to kick things off"
+
+      ← System:
+        1. Detects: specific time + location, declarative (not a question)
+        2. Card type = RSVP (confirm attendance, time is decided)
+        3. Pre-fills: "Library meetup, tomorrow 14:00"
+
+      → Suggestion chip: "📅 RSVP? Library tomorrow 14:00"
+
+Kai:  taps → RSVP card (threshold: 3 of 5)
+      → Members confirm → calendar event
+```
+
+**Key detection distinction**: "who wants X?" → task claim. "what should we X?" → poll. "when should we X?" → time proposal. "let's do X at Y" → RSVP confirmation. The card type follows the intent, not a generic "create card" flow.
+
+### Flow 4: Recurring Practice — RSVP with deadline behavior
+
+**Space**: "Weekly Spanish Practice" group (6 members, recurring).
+
+```
+      → System (or admin) creates weekly RSVP:
+        "This Tuesday's session — Cafe Frühling, 18:00"
+        Threshold: 3 Yes. Deadline: Monday 20:00.
+
+      → RSVP card appears in conversation:
+        "📋 This Tuesday's session
+         Cafe Frühling, 18:00
+         Threshold: 3 of 6 · Closes Mon 20:00"
+
+Anna:  taps "Yes" → "1 of 3 needed"
+Kai:   taps "Yes" → "2 of 3 needed"
+Ben:   taps "Yes" → "3 of 3 ✓ — threshold met"
+       → Card resolves: confirmed
+       → Calendar events for Anna, Kai, Ben
+       → Lena, Marco, Julia: no response by deadline — not included, not chased
+
+      → System message: "Tuesday's session confirmed: 3 attending"
+```
+
+**Deadline Resolution in action**: the card closes at Monday 20:00 regardless. Non-responders are simply not counted. No "hey, are you coming?" messages needed. The norm is clear: if you want to be included, tap before the deadline.
+
+---
+
+## AI Moderator Flows (Planned — Deferred)
+
+> **Status**: These flows describe a future opt-in feature. The AI Moderator is not part of the current roadmap — it builds on the card principles and suggestion system described above. Documented here to capture the design intent.
+
+The AI Moderator is an opt-in Space setting. When enabled, it appears as a participant in the conversation (system avatar, configurable name — default "Mesh") that can post messages and create cards autonomously. Users can also message the moderator privately within the Space to direct its behavior ("start coordinating our next meeting," "remind everyone about the deadline").
+
+**Calibration principle**: the moderator must be well-calibrated as a person. It should feel like a competent, helpful group member who handles logistics — not a bot that spams. False positives (unnecessary messages, wrong cards) are worse than false negatives (missed opportunities). When in doubt, the moderator stays silent.
+
+### Moderator Flow A: Non-Responder Nudge
+
+```
+      Space: 6-person project team. RSVP card active, deadline in 4h.
+      3/6 have responded.
+
+Mesh: "@Lena @Marco — the standup RSVP closes in 2 hours. Are you in?"
+      (targeted nudge — only to non-responders, not a broadcast)
+
+      ... Lena responds, Marco doesn't ...
+
+      At deadline:
+Mesh: "Standup confirmed: 4 attending. Tomorrow 9:30."
+      (post-resolution summary)
+```
+
+### Moderator Flow B: Proactive Card Creation
+
+```
+      Space: hackathon team, moderator enabled.
+
+Kai:  "we really need to figure out when we're presenting"
+Mia:  "yeah, and who's doing what section"
+
+Mesh: creates time proposal card: "Presentation prep — Wed 16:00 · Thu 10:00 · Thu 14:00"
+      creates task claim card: "Presentation sections: Intro · Demo · Q&A"
+      (autonomous card creation from conversational context — no suggestion chip)
+```
+
+### Moderator Flow C: Post-Resolution Follow-Up
+
+```
+      Time proposal resolves: Friday 19:00. No location set.
+
+Mesh: "Time's set for Friday 19:00. Where should we meet?"
+      → creates location confirm card with last-used venue pre-filled
+```
+
+### Moderator Flow D: Welcome & Context
+
+```
+      New member joins a hackathon team Space.
+
+Mesh: "Welcome @Sara! We're building an accessibility checker.
+       Kai → frontend, Mia → design, Jin → backend.
+       Standup: Mon/Wed/Fri 9:30. What would you like to work on?"
+```
+
+### Moderator Flow E: Private Direction
+
+```
+      Alex DMs the moderator within the Space:
+
+Alex: "can you set up a poll for where we should have dinner?"
+
+Mesh: creates poll card in the Space: "Where for dinner? Schillerstr Italian · Marienplatz Thai · Sendlinger Tor Ramen"
+      (directed by private message, posted to the Space)
+```
+
+**Key design constraints**:
+
+- One nudge per card maximum — never nag
+- Post-resolution summaries only when the outcome affects scheduling (calendar events, location, task assignments)
+- Welcome messages only in Spaces with >3 members where context is non-obvious
+- Private direction is always respected — the moderator acts on behalf of the requesting user
+- The moderator never generates conversational messages beyond logistics — no "Great choice everyone! 🎉"
+
+---
+
 ## Example Postings
 
 These examples illustrate the variety of matching scenarios:

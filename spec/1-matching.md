@@ -226,3 +226,7 @@ With the text-first rewrite, matching inputs are now primarily **derived from us
 - Extraction is read-only — a derivation of the text, not a modification of it
 
 ---
+
+## Current Deviations
+
+- **Multi-role matching**: LLM deep match evaluates candidates against the posting as a whole. Per-role identification and separate per-role matching is not yet implemented. → v0.8.5
