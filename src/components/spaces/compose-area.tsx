@@ -57,6 +57,10 @@ interface ComposeAreaProps {
   postingOnly?: boolean;
   onTyping?: () => void;
   onStopTyping?: () => void;
+  /** Follow-up suggestion from vote/resolve responses (decline-and-suggest, chained flow) */
+  followUpSuggestion?: CardSuggestion | null;
+  /** Called when the follow-up suggestion is consumed or dismissed */
+  onClearFollowUp?: () => void;
 }
 
 export function ComposeArea({
@@ -66,6 +70,8 @@ export function ComposeArea({
   postingOnly = false,
   onTyping,
   onStopTyping,
+  followUpSuggestion,
+  onClearFollowUp,
 }: ComposeAreaProps) {
   const [text, setText] = useState("");
   const [mode, setMode] = useState<"M" | "P">(postingOnly ? "P" : "M");
@@ -78,12 +84,27 @@ export function ComposeArea({
   const [showTaskClaimDialog, setShowTaskClaimDialog] = useState(false);
   const [showLocationDialog, setShowLocationDialog] = useState(false);
   const [dialogKey, setDialogKey] = useState(0);
-  const [suggestion, setSuggestion] = useState<CardSuggestion | null>(null);
+  const [localSuggestion, setLocalSuggestion] = useState<CardSuggestion | null>(
+    null,
+  );
   // Store prefilled data separately so it survives suggestion dismissal
   const [prefill, setPrefill] = useState<CardSuggestion["prefill"] | null>(
     null,
   );
   const editorRef = useRef<ComposeEditorHandle>(null);
+
+  // Displayed suggestion: follow-up prop takes precedence over local
+  const suggestion = followUpSuggestion?.suggested_type
+    ? followUpSuggestion
+    : localSuggestion;
+  const setSuggestion = useCallback(
+    (s: CardSuggestion | null) => {
+      setLocalSuggestion(s);
+      // Clear the follow-up prop if we're dismissing or replacing
+      if (!s) onClearFollowUp?.();
+    },
+    [onClearFollowUp],
+  );
 
   const { createCard } = useSpaceCards(spaceId);
   const { send, isSending } = useSendSpaceMessage({
@@ -150,6 +171,7 @@ export function ComposeArea({
     postingOnly,
     onStopTyping,
     spaceId,
+    setSuggestion,
   ]);
 
   const handleCreatePoll = useCallback(
@@ -158,7 +180,7 @@ export function ComposeArea({
       setSuggestion(null);
       setPrefill(null);
     },
-    [createCard],
+    [createCard, setSuggestion],
   );
 
   const handleCreateTimeProposal = useCallback(
@@ -167,7 +189,7 @@ export function ComposeArea({
       setSuggestion(null);
       setPrefill(null);
     },
-    [createCard],
+    [createCard, setSuggestion],
   );
 
   const handleCreateRsvp = useCallback(
@@ -176,7 +198,7 @@ export function ComposeArea({
       setSuggestion(null);
       setPrefill(null);
     },
-    [createCard],
+    [createCard, setSuggestion],
   );
 
   const handleCreateTaskClaim = useCallback(
@@ -185,7 +207,7 @@ export function ComposeArea({
       setSuggestion(null);
       setPrefill(null);
     },
-    [createCard],
+    [createCard, setSuggestion],
   );
 
   const handleCreateLocation = useCallback(
@@ -194,29 +216,35 @@ export function ComposeArea({
       setSuggestion(null);
       setPrefill(null);
     },
-    [createCard],
+    [createCard, setSuggestion],
   );
 
-  const handleAcceptSuggestion = useCallback((s: CardSuggestion) => {
-    // Store prefilled data before clearing suggestion so dialogs can use it
-    setPrefill(s.prefill);
-    setDialogKey((k) => k + 1);
-    switch (s.suggested_type) {
-      case "poll":
-        setShowPollDialog(true);
-        break;
-      case "time_proposal":
-        setShowTimeProposalDialog(true);
-        break;
-      case "rsvp":
-        setShowRsvpDialog(true);
-        break;
-      case "task_claim":
-        setShowTaskClaimDialog(true);
-        break;
-    }
-    setSuggestion(null);
-  }, []);
+  const handleAcceptSuggestion = useCallback(
+    (s: CardSuggestion) => {
+      // Store prefilled data before clearing suggestion so dialogs can use it
+      setPrefill(s.prefill);
+      setDialogKey((k) => k + 1);
+      switch (s.suggested_type) {
+        case "poll":
+          setShowPollDialog(true);
+          break;
+        case "time_proposal":
+          setShowTimeProposalDialog(true);
+          break;
+        case "rsvp":
+          setShowRsvpDialog(true);
+          break;
+        case "task_claim":
+          setShowTaskClaimDialog(true);
+          break;
+        case "location":
+          setShowLocationDialog(true);
+          break;
+      }
+      setSuggestion(null);
+    },
+    [setSuggestion],
+  );
 
   const editorContext = effectiveMode === "M" ? "message" : "posting";
 

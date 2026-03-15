@@ -1749,7 +1749,11 @@ export const labels = {
     location: { label: "Location", description: "Insert a location" },
     skills: { label: "Skills", description: "Insert required skills" },
     template: { label: "Template", description: "Apply a posting template" },
-    hidden: { label: "Hidden", description: "Insert hidden details block" },
+    hidden: {
+      label: "Hidden",
+      description:
+        "Wrap text as private (scheduling preferences, commute info)",
+    },
     question: {
       label: "Question",
       description: "Ask a question on acceptance",

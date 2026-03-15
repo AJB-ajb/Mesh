@@ -59,7 +59,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     label: labels.slashCommands.hidden.label,
     description: labels.slashCommands.hidden.description,
     type: "content",
-    context: "posting",
+    context: ["posting", "profile"],
   },
   {
     name: "question",

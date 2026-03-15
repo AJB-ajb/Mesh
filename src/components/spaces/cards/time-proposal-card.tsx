@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, X, Clock, Users } from "lucide-react";
+import { Check, X, Clock, Users, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
@@ -131,6 +131,14 @@ export function TimeProposalCard({
           );
         })}
       </div>
+
+      {/* Private constraint note for current user */}
+      {isActive && userId && data.member_notes?.[userId] && (
+        <div className="flex items-start gap-1.5 mt-2 text-xs text-muted-foreground">
+          <Lock className="size-3 shrink-0 mt-0.5" />
+          <span>{data.member_notes[userId]}</span>
+        </div>
+      )}
 
       {/* Footer with invalidation buttons */}
       <div className="flex items-center justify-between mt-3 pt-2 border-t border-border">

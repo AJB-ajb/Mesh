@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { SpaceMember } from "@/lib/supabase/types";
 import type { SpaceDetail } from "@/lib/hooks/use-space";
+import type { CardSuggestion } from "@/lib/ai/card-suggest";
 import { useSpaceMessages } from "@/lib/hooks/use-space-messages";
 import { useSpacePostings } from "@/lib/hooks/use-space-postings";
 import { useSpacePresence } from "@/lib/hooks/use-space-presence";
@@ -61,6 +62,26 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
   const userId = currentMember?.user_id ?? null;
   const isAdmin = currentMember?.role === "admin";
   const canEdit = isAdmin;
+
+  // Follow-up suggestion state: set by vote/resolve responses, consumed by ComposeArea
+  const [followUpSuggestion, setFollowUpSuggestion] =
+    useState<CardSuggestion | null>(null);
+
+  const handleCardVote = useCallback(
+    async (cardId: string, optionIndex: number) => {
+      const suggestion = await voteOnCard(cardId, optionIndex);
+      if (suggestion) setFollowUpSuggestion(suggestion);
+    },
+    [voteOnCard],
+  );
+
+  const handleCardResolve = useCallback(
+    async (cardId: string) => {
+      const suggestion = await resolveCard(cardId);
+      if (suggestion) setFollowUpSuggestion(suggestion);
+    },
+    [resolveCard],
+  );
 
   const { typingUsers, sendTyping, stopTyping } = useSpacePresence(
     space.id,
@@ -125,8 +146,8 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
             isAdmin={isAdmin}
             typingUsers={typingUsers}
             members={space.members}
-            onCardVote={voteOnCard}
-            onCardResolve={resolveCard}
+            onCardVote={handleCardVote}
+            onCardResolve={handleCardResolve}
             onCardCancel={cancelCard}
           />
 
@@ -141,6 +162,8 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
               postingOnly={space.settings?.posting_only ?? false}
               onTyping={sendTyping}
               onStopTyping={stopTyping}
+              followUpSuggestion={followUpSuggestion}
+              onClearFollowUp={() => setFollowUpSuggestion(null)}
             />
           )}
         </>

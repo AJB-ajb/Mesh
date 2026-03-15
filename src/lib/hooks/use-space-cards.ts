@@ -8,6 +8,7 @@ import {
   unsubscribeChannel,
 } from "@/lib/supabase/realtime";
 import type { SpaceCard } from "@/lib/supabase/types";
+import type { CardSuggestion } from "@/lib/ai/card-suggest";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -35,8 +36,11 @@ export function useSpaceCards(spaceId: string | null) {
   }, [spaceId, mutate]);
 
   const vote = useCallback(
-    async (cardId: string, optionIndex: number) => {
-      if (!spaceId) return;
+    async (
+      cardId: string,
+      optionIndex: number,
+    ): Promise<CardSuggestion | null> => {
+      if (!spaceId) return null;
       const res = await fetch(`/api/spaces/${spaceId}/cards/${cardId}/vote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -44,15 +48,22 @@ export function useSpaceCards(spaceId: string | null) {
       });
       if (!res.ok) {
         console.error("[useSpaceCards] Vote error:", await res.text());
+        mutate();
+        return null;
       }
+      const json = await res.json();
       mutate();
+      return (json.follow_up_suggestion as CardSuggestion) ?? null;
     },
     [spaceId, mutate],
   );
 
   const resolve = useCallback(
-    async (cardId: string, resolvedData?: Record<string, unknown>) => {
-      if (!spaceId) return;
+    async (
+      cardId: string,
+      resolvedData?: Record<string, unknown>,
+    ): Promise<CardSuggestion | null> => {
+      if (!spaceId) return null;
       const res = await fetch(`/api/spaces/${spaceId}/cards/${cardId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -63,8 +74,12 @@ export function useSpaceCards(spaceId: string | null) {
       });
       if (!res.ok) {
         console.error("[useSpaceCards] Resolve error:", await res.text());
+        mutate();
+        return null;
       }
+      const json = await res.json();
       mutate();
+      return (json.follow_up_suggestion as CardSuggestion) ?? null;
     },
     [spaceId, mutate],
   );

@@ -3,7 +3,8 @@ import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import { verifySpaceMembership } from "@/lib/api/space-guards";
 import { checkAutoResolve } from "@/lib/cards/auto-resolve";
 import { createEventsForResolvedCard } from "@/lib/cards/calendar-integration";
-import type { SpaceCard } from "@/lib/supabase/types";
+import { detectAndSuggest } from "@/lib/ai/card-suggest";
+import type { SpaceCard, RsvpData } from "@/lib/supabase/types";
 
 /**
  * POST /api/spaces/[id]/cards/[cardId]/vote
@@ -71,5 +72,35 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     }
   }
 
-  return apiSuccess({ data });
+  // Decline-and-suggest: when someone votes "No" on a DM-style RSVP,
+  // generate alternative time suggestions for both members.
+  let follow_up_suggestion = null;
+  if (cardResult.data && cardResult.data.type === "rsvp") {
+    const rsvpData = cardResult.data.data as RsvpData;
+    const votedOption = rsvpData.options[body.option_index];
+    const memberCount = memberCountResult.count ?? 0;
+
+    if (votedOption?.label === "No" && memberCount === 2) {
+      try {
+        const suggestion = await detectAndSuggest(
+          [
+            {
+              sender_name: "System",
+              content: `A member declined the RSVP "${rsvpData.title}". Suggest alternative times.`,
+            },
+          ],
+          [], // No member context needed for this simple trigger
+          null, // No calendar overlap available in this context
+        );
+        if (suggestion.suggested_type) {
+          follow_up_suggestion = suggestion;
+        }
+      } catch (err) {
+        // Suggestions are best-effort — don't fail the vote
+        console.error("[vote] Decline-and-suggest failed:", err);
+      }
+    }
+  }
+
+  return apiSuccess({ data, follow_up_suggestion });
 });

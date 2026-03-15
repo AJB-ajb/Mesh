@@ -22,6 +22,7 @@ describe("slash-commands registry", () => {
       // Should include profile commands
       expect(names).toContain("availability");
       expect(names).toContain("calendar");
+      expect(names).toContain("hidden");
 
       // Should NOT include posting-only commands
       expect(names).not.toContain("visibility");

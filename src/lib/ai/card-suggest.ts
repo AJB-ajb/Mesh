@@ -18,6 +18,7 @@ export type SuggestedCardType =
   | "time_proposal"
   | "rsvp"
   | "task_claim"
+  | "location"
   | null;
 
 export interface SuggestedSlot {

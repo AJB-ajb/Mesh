@@ -84,5 +84,27 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
     });
   }
 
-  return apiSuccess({ card: updated });
+  // Chained card flow: after resolving a time_proposal, suggest a location
+  // card if the space has no active location cards.
+  let follow_up_suggestion = null;
+  if (body.status === "resolved" && updated.type === "time_proposal") {
+    const { data: activeLocationCards } = await supabase
+      .from("space_cards")
+      .select("id")
+      .eq("space_id", spaceId)
+      .eq("type", "location")
+      .eq("status", "active")
+      .limit(1);
+
+    if (!activeLocationCards || activeLocationCards.length === 0) {
+      follow_up_suggestion = {
+        suggested_type: "location" as const,
+        confidence: 0.8,
+        reason: "Time\u2019s set \u2014 pick a meeting place?",
+        prefill: {},
+      };
+    }
+  }
+
+  return apiSuccess({ card: updated, follow_up_suggestion });
 });

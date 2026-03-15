@@ -1,6 +1,6 @@
 "use client";
 
-import { X, BarChart3, Clock, UserCheck, ListTodo } from "lucide-react";
+import { X, BarChart3, Clock, UserCheck, ListTodo, MapPin } from "lucide-react";
 
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ const typeIcons = {
   time_proposal: Clock,
   rsvp: UserCheck,
   task_claim: ListTodo,
+  location: MapPin,
 } as const;
 
 const typeLabels = {
@@ -18,6 +19,7 @@ const typeLabels = {
   time_proposal: labels.cards.timeProposal,
   rsvp: labels.cards.rsvp,
   task_claim: labels.cards.taskClaim,
+  location: labels.cards.location,
 } as const;
 
 /** Build a compact preview string for the suggestion chip */
