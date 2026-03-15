@@ -3,9 +3,13 @@
  * Wraps route handlers with authentication check.
  *
  * Supports three auth modes:
- * - **user** (default): requires authenticated user session
+ * - **user** (default): requires authenticated user session (cookie or Bearer JWT)
  * - **cron**: validates Bearer token against an env-var secret
  * - **optional**: provides user if logged in, null otherwise
+ *
+ * Bearer JWT fallback: when no cookie session exists, user and optional modes
+ * check for `Authorization: Bearer <jwt>` and validate via Supabase auth.
+ * This enables headless API clients (bots, mobile, scripts) without cookies.
  */
 
 import { NextResponse } from "next/server";
@@ -13,6 +17,7 @@ import * as Sentry from "@sentry/nextjs";
 import type { User } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createBrowserClient } from "@supabase/supabase-js";
 import { apiError, AppError } from "@/lib/errors";
 
 // ---------------------------------------------------------------------------
@@ -130,6 +135,50 @@ export function withAuth(
 }
 
 // ---------------------------------------------------------------------------
+// Bearer JWT fallback
+// ---------------------------------------------------------------------------
+
+/**
+ * Try to authenticate via `Authorization: Bearer <jwt>` header.
+ * Returns { user, supabase } if successful, null otherwise.
+ */
+function tryBearerAuth(
+  req: Request,
+): { user: User; supabase: SupabaseClient } | null {
+  const authHeader = req.headers.get("authorization");
+  const jwt = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  if (!jwt) return null;
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) return null;
+
+  // Create a Supabase client scoped to this JWT — respects RLS as the user
+  const supabase = createBrowserClient(url, key, {
+    global: { headers: { Authorization: `Bearer ${jwt}` } },
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  return { user: null as unknown as User, supabase };
+}
+
+/**
+ * Validate Bearer JWT by calling supabase.auth.getUser().
+ * Separated from tryBearerAuth because getUser() is async.
+ */
+async function validateBearerAuth(
+  candidate: { user: User; supabase: SupabaseClient } | null,
+): Promise<{ user: User; supabase: SupabaseClient } | null> {
+  if (!candidate) return null;
+  const {
+    data: { user },
+    error,
+  } = await candidate.supabase.auth.getUser();
+  if (error || !user) return null;
+  return { user, supabase: candidate.supabase };
+}
+
+// ---------------------------------------------------------------------------
 // Mode builders
 // ---------------------------------------------------------------------------
 
@@ -145,13 +194,23 @@ function buildUserMode(handler: AuthHandler): RouteHandler {
         error: authError,
       } = await supabase.auth.getUser();
 
-      if (authError || !user) {
-        return apiError("UNAUTHORIZED", "Unauthorized", 401);
+      if (!authError && user) {
+        const params = routeContext?.params ? await routeContext.params : {};
+        return await handler(req, { user, supabase, params });
       }
 
-      const params = routeContext?.params ? await routeContext.params : {};
+      // Fallback: try Bearer JWT from Authorization header
+      const bearer = await validateBearerAuth(tryBearerAuth(req));
+      if (bearer) {
+        const params = routeContext?.params ? await routeContext.params : {};
+        return await handler(req, {
+          user: bearer.user,
+          supabase: bearer.supabase,
+          params,
+        });
+      }
 
-      return await handler(req, { user, supabase, params });
+      return apiError("UNAUTHORIZED", "Unauthorized", 401);
     } catch (error) {
       return handleError(error, req);
     }
@@ -211,7 +270,21 @@ function buildOptionalMode(handler: OptionalAuthHandler): RouteHandler {
 
       const params = routeContext?.params ? await routeContext.params : {};
 
-      return await handler(req, { user: user ?? null, supabase, params });
+      if (user) {
+        return await handler(req, { user, supabase, params });
+      }
+
+      // Fallback: try Bearer JWT
+      const bearer = await validateBearerAuth(tryBearerAuth(req));
+      if (bearer) {
+        return await handler(req, {
+          user: bearer.user,
+          supabase: bearer.supabase,
+          params,
+        });
+      }
+
+      return await handler(req, { user: null, supabase, params });
     } catch (error) {
       return handleError(error, req);
     }
