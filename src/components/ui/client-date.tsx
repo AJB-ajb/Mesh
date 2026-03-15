@@ -2,15 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 
-function formatDate(
-  date: string | Date,
-  showTime?: boolean,
-  options?: Intl.DateTimeFormatOptions,
-): string {
+function formatDate(date: string | Date, showTime?: boolean): string {
   const d = new Date(date);
-  return showTime
-    ? d.toLocaleString(undefined, options)
-    : d.toLocaleDateString(undefined, options);
+  return showTime ? d.toLocaleString() : d.toLocaleDateString();
 }
 
 /**
@@ -22,19 +16,17 @@ function formatDate(
  */
 export function ClientDate({
   date,
-  options,
   showTime,
   className,
 }: {
   date: string | Date;
-  options?: Intl.DateTimeFormatOptions;
   /** Use toLocaleString (date + time) instead of toLocaleDateString */
   showTime?: boolean;
   className?: string;
 }) {
   const formatter = useCallback(
-    (d: string | Date) => formatDate(d, showTime, options),
-    [showTime, options],
+    (d: string | Date) => formatDate(d, showTime),
+    [showTime],
   );
   const [text, setText] = useState("");
 

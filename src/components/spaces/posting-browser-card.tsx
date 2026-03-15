@@ -89,7 +89,10 @@ export function PostingBrowserCard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
-      if (!res.ok) toast.error("Failed to update posting status");
+      if (!res.ok) {
+        toast.error("Failed to update posting status");
+        return;
+      }
       invalidatePostings();
     },
     [spaceId, posting.id, invalidatePostings],
@@ -99,13 +102,14 @@ export function PostingBrowserCard({
     if (!spaceId) return;
     const { createClient } = await import("@/lib/supabase/client");
     const supabase = createClient();
-    // Delete the associated message first to avoid orphaned records
-    await supabase.from("space_messages").delete().eq("posting_id", posting.id);
     const { error } = await supabase
       .from("space_postings")
       .delete()
       .eq("id", posting.id);
-    if (error) toast.error("Failed to delete posting");
+    if (error) {
+      toast.error("Failed to delete posting");
+      return;
+    }
     setConfirmingDelete(false);
     invalidatePostings();
   }, [spaceId, posting.id, invalidatePostings]);
