@@ -297,7 +297,7 @@ export function SpaceInfoSheet({
           </SheetTitle>
         </SheetHeader>
 
-        <div className="mt-4 space-y-6">
+        <div className="mt-4 space-y-6 px-4">
           {/* State text / description */}
           {space.state_text && (
             <div>

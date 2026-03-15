@@ -253,7 +253,7 @@ export function ProfileView({
                           form.availabilitySlots[day] ?? []
                         ).includes(slot);
                         return (
-                          <td key={slot} className="p-1 text-center">
+                          <td key={slot} className="p-1.5 sm:p-2 text-center">
                             <div
                               className={`h-6 w-full rounded-md ${
                                 active

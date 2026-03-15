@@ -173,7 +173,7 @@ function ProfilePageContent() {
   }
 
   return (
-    <PageContent size="md" className="pb-20">
+    <PageContent size="md">
       {/* Back link */}
       <Link
         href={ROUTES.home}

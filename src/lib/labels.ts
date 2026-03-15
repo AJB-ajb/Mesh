@@ -1222,6 +1222,8 @@ export const labels = {
     cancel: "Cancel",
     createPollSubmit: "Create Poll",
     createCardButton: "Create card",
+    createPosting: "Create Posting",
+    dismissPosting: "Dismiss posting mode",
     createTimeProposal: "Suggest Times",
     timeProposalTitle: "Title",
     timeProposalTitlePlaceholder: "What are we scheduling?",

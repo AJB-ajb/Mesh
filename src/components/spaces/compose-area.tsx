@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { Send, Plus, BarChart3, Clock } from "lucide-react";
+import { Send, Plus, X, BarChart3, Clock, FileText } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,18 +47,12 @@ export function ComposeArea({
   onStopTyping,
 }: ComposeAreaProps) {
   const [text, setText] = useState("");
-  const [modeChoice, setModeChoice] = useState<"M" | "P">(
-    postingOnly ? "P" : "M",
-  );
-  // Override to "P" when postingOnly — no effect needed
-  const mode = postingOnly ? "P" : modeChoice;
-  const setMode = setModeChoice;
+  const [mode, setMode] = useState<"M" | "P">(postingOnly ? "P" : "M");
   const [postingFields, setPostingFields] = useState<PostingFields>(
     INITIAL_POSTING_FIELDS,
   );
   const [showPollDialog, setShowPollDialog] = useState(false);
   const [showTimeProposalDialog, setShowTimeProposalDialog] = useState(false);
-  // Increment key to force remount (reset state) when dialogs reopen
   const [dialogKey, setDialogKey] = useState(0);
   const editorRef = useRef<ComposeEditorHandle>(null);
 
@@ -70,14 +63,14 @@ export function ComposeArea({
     senderName,
   });
 
+  const effectiveMode = postingOnly ? "P" : mode;
+
   const handleSend = useCallback(async () => {
     const trimmed = text.trim();
     if (!trimmed || isSending) return;
-    if (postingOnly && mode !== "P") return;
-    onStopTyping?.();
 
     let payload: SendPayload;
-    if (mode === "M") {
+    if (effectiveMode === "M") {
       payload = { mode: "message", content: trimmed };
     } else {
       payload = {
@@ -92,13 +85,24 @@ export function ComposeArea({
       };
     }
 
+    onStopTyping?.();
     const ok = await send(payload);
     if (ok) {
       setText("");
       setPostingFields(INITIAL_POSTING_FIELDS);
+      // Auto-reset to message mode after sending a posting
+      if (!postingOnly) setMode("M");
       editorRef.current?.focus();
     }
-  }, [text, mode, postingFields, send, isSending, postingOnly, onStopTyping]);
+  }, [
+    text,
+    effectiveMode,
+    postingFields,
+    send,
+    isSending,
+    postingOnly,
+    onStopTyping,
+  ]);
 
   const handleCreatePoll = useCallback(
     async (pollData: PollData) => {
@@ -114,16 +118,16 @@ export function ComposeArea({
     [createCard],
   );
 
-  const editorContext = mode === "M" ? "message" : "posting";
+  const editorContext = effectiveMode === "M" ? "message" : "posting";
 
   return (
-    <div className="border-t border-border bg-background px-3 py-2 shrink-0">
+    <div className="border-t border-border bg-background px-4 py-2 shrink-0">
       <div className="flex items-end gap-2">
         <div className="flex-1 min-w-0">
           <ComposeEditor
             ref={editorRef}
             context={editorContext}
-            className={mode === "M" ? "cm-compact" : undefined}
+            className={effectiveMode === "M" ? "cm-compact" : undefined}
             content={text}
             onChange={(v) => {
               setText(v);
@@ -131,7 +135,7 @@ export function ComposeArea({
             }}
             onSubmit={handleSend}
             placeholder={
-              mode === "M"
+              effectiveMode === "M"
                 ? labels.spaces.composeMessage
                 : labels.spaces.composePosting
             }
@@ -141,73 +145,56 @@ export function ComposeArea({
           />
         </div>
 
-        {/* Create card menu — hidden in posting-only mode */}
-        {!postingOnly && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-10 rounded-full shrink-0"
-                aria-label={labels.cards.createCardButton}
-              >
-                <Plus className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" side="top">
-              <DropdownMenuItem
-                onClick={() => {
-                  setDialogKey((k) => k + 1);
-                  setShowPollDialog(true);
-                }}
-              >
-                <BarChart3 className="size-4 mr-2" />
-                {labels.cards.createPoll}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  setDialogKey((k) => k + 1);
-                  setShowTimeProposalDialog(true);
-                }}
-              >
-                <Clock className="size-4 mr-2" />
-                {labels.cards.createTimeProposal}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-
-        {/* M/P toggle — hidden in posting-only mode */}
-        {!postingOnly && (
-          <div className="flex items-center rounded-full border border-border overflow-hidden shrink-0">
-            <button
-              type="button"
+        {/* + / × button — hidden in posting-only mode */}
+        {!postingOnly &&
+          (effectiveMode === "P" ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-10 rounded-full shrink-0"
+              aria-label={labels.cards.dismissPosting}
               onClick={() => setMode("M")}
-              className={cn(
-                "px-2.5 py-1.5 text-xs font-semibold transition-colors min-h-[36px]",
-                mode === "M"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-              aria-label={labels.spaces.messageMode}
             >
-              M
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("P")}
-              className={cn(
-                "px-2.5 py-1.5 text-xs font-semibold transition-colors min-h-[36px]",
-                mode === "P"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-              aria-label={labels.spaces.postingMode}
-            >
-              P
-            </button>
-          </div>
-        )}
+              <X className="size-4" />
+            </Button>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-10 rounded-full shrink-0"
+                  aria-label={labels.cards.createCardButton}
+                >
+                  <Plus className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" side="top">
+                <DropdownMenuItem onClick={() => setMode("P")}>
+                  <FileText className="size-4 mr-2" />
+                  {labels.cards.createPosting}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setDialogKey((k) => k + 1);
+                    setShowPollDialog(true);
+                  }}
+                >
+                  <BarChart3 className="size-4 mr-2" />
+                  {labels.cards.createPoll}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setDialogKey((k) => k + 1);
+                    setShowTimeProposalDialog(true);
+                  }}
+                >
+                  <Clock className="size-4 mr-2" />
+                  {labels.cards.createTimeProposal}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ))}
 
         {/* Send button */}
         <Button
@@ -222,7 +209,7 @@ export function ComposeArea({
       </div>
 
       {/* Posting fields — shown when in P mode */}
-      {mode === "P" && (
+      {effectiveMode === "P" && (
         <div className="mt-2">
           <PostingComposeFields
             fields={postingFields}
