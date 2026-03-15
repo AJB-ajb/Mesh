@@ -153,7 +153,10 @@ export function ComposeArea({
               size="icon"
               className="size-10 rounded-full shrink-0"
               aria-label={labels.cards.dismissPosting}
-              onClick={() => setMode("M")}
+              onClick={() => {
+                setMode("M");
+                setPostingFields(INITIAL_POSTING_FIELDS);
+              }}
             >
               <X className="size-4" />
             </Button>
