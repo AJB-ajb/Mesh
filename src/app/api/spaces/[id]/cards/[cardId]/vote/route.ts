@@ -82,15 +82,44 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
     if (votedOption?.label === "No" && memberCount === 2) {
       try {
+        // Fetch member profiles for context-aware suggestions
+        const { createAdminClient } = await import("@/lib/supabase/admin");
+        const { parseHiddenBlocks } = await import("@/lib/hidden-syntax");
+        const admin = createAdminClient();
+
+        const { data: memberRows } = await supabase
+          .from("space_members")
+          .select("user_id")
+          .eq("space_id", spaceId);
+        const memberIds = (memberRows ?? []).map((m) => m.user_id);
+
+        const { data: memberProfiles } = await admin
+          .from("profiles")
+          .select("user_id, full_name, source_text, availability_slots")
+          .in("user_id", memberIds);
+
+        const members = (memberProfiles ?? []).map((p) => {
+          const hidden = p.source_text ? parseHiddenBlocks(p.source_text) : [];
+          return {
+            user_id: p.user_id,
+            name: p.full_name ?? "User",
+            hidden_text:
+              hidden.length > 0
+                ? hidden.map((b) => b.content.trim()).join("\n")
+                : null,
+            timezone: null,
+          };
+        });
+
         const suggestion = await detectAndSuggest(
           [
             {
               sender_name: "System",
-              content: `A member declined the RSVP "${rsvpData.title}". Suggest alternative times.`,
+              content: `A member declined the RSVP "${rsvpData.title}". Suggest alternative times for a rescheduled meeting.`,
             },
           ],
-          [], // No member context needed for this simple trigger
-          null, // No calendar overlap available in this context
+          members,
+          null, // Calendar overlap not computed here — LLM uses preferences
         );
         if (suggestion.suggested_type) {
           follow_up_suggestion = suggestion;

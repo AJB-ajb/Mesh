@@ -35,20 +35,24 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
 
   // On-read deadline check: auto-resolve active cards whose deadline has passed
   const now = new Date();
+  const expiredCards = (cards ?? []).filter(
+    (c) => c.status === "active" && c.deadline && new Date(c.deadline) <= now,
+  );
+
+  // Hoist member count query — only fetch once if there are expired cards
+  let memberCount = 0;
+  if (expiredCards.length > 0) {
+    const { count } = await supabase
+      .from("space_members")
+      .select("*", { count: "exact", head: true })
+      .eq("space_id", spaceId);
+    memberCount = count ?? 0;
+  }
+
   const resolvedCards: typeof cards = [];
   for (const card of cards ?? []) {
-    if (
-      card.status === "active" &&
-      card.deadline &&
-      new Date(card.deadline) <= now
-    ) {
-      // Get member count for auto-resolve logic
-      const { count } = await supabase
-        .from("space_members")
-        .select("*", { count: "exact", head: true })
-        .eq("space_id", spaceId);
-
-      const result = checkAutoResolve(card as SpaceCard, count ?? 0);
+    if (expiredCards.some((e) => e.id === card.id)) {
+      const result = checkAutoResolve(card as SpaceCard, memberCount);
       const resolvedData = result.resolvedData
         ? { ...card.data, ...result.resolvedData }
         : card.data;
@@ -71,7 +75,24 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
     }
   }
 
-  return apiSuccess({ cards: resolvedCards });
+  // Strip member_notes to only the requesting user's note (privacy)
+  const sanitizedCards = (resolvedCards ?? []).map((card) => {
+    const data = card.data as Record<string, unknown>;
+    if (data?.member_notes && typeof data.member_notes === "object") {
+      const allNotes = data.member_notes as Record<string, string>;
+      const myNote = allNotes[user.id];
+      return {
+        ...card,
+        data: {
+          ...data,
+          member_notes: myNote ? { [user.id]: myNote } : null,
+        },
+      };
+    }
+    return card;
+  });
+
+  return apiSuccess({ cards: sanitizedCards });
 });
 
 /**

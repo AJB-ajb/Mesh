@@ -158,46 +158,64 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
   // -------------------------------------------------------------------------
   let overlap: OverlapWindow[] | null = null;
 
-  // Collect availability windows from all members
-  const allWindows: CommonAvailabilityWindow[] = [];
-  for (const p of profiles) {
-    if (p.availability_slots) {
-      // Convert quick-mode grid to windows
+  // Compute INTERSECTION of per-member availability windows
+  // Each member's grid → set of (day, slot) pairs. Overlap = present in ALL.
+  const dayMap: Record<string, number> = {
+    mon: 0,
+    tue: 1,
+    wed: 2,
+    thu: 3,
+    fri: 4,
+    sat: 5,
+    sun: 6,
+  };
+  const slotMap: Record<string, { start: number; end: number }> = {
+    night: { start: 0, end: 360 },
+    morning: { start: 360, end: 720 },
+    afternoon: { start: 720, end: 1080 },
+    evening: { start: 1080, end: 1440 },
+  };
+
+  const profilesWithSlots = profiles.filter((p) => p.availability_slots);
+
+  const intersectedWindows: CommonAvailabilityWindow[] = [];
+
+  if (profilesWithSlots.length > 0) {
+    // Build per-member window sets, keyed by "day:start:end"
+    const perMemberKeys: Set<string>[] = profilesWithSlots.map((p) => {
+      const keys = new Set<string>();
       const slots = p.availability_slots as Record<string, string[]>;
-      const dayMap: Record<string, number> = {
-        mon: 0,
-        tue: 1,
-        wed: 2,
-        thu: 3,
-        fri: 4,
-        sat: 5,
-        sun: 6,
-      };
-      const slotMap: Record<string, { start: number; end: number }> = {
-        night: { start: 0, end: 360 },
-        morning: { start: 360, end: 720 },
-        afternoon: { start: 720, end: 1080 },
-        evening: { start: 1080, end: 1440 },
-      };
       for (const [day, periods] of Object.entries(slots)) {
         const dow = dayMap[day];
         if (dow === undefined) continue;
         for (const period of periods) {
           const range = slotMap[period];
-          if (range) {
-            allWindows.push({
-              day_of_week: dow,
-              start_minutes: range.start,
-              end_minutes: range.end,
-            });
-          }
+          if (range) keys.add(`${dow}:${range.start}:${range.end}`);
         }
+      }
+      return keys;
+    });
+
+    // Intersect: keep only windows present in ALL members' sets
+    const firstSet = perMemberKeys[0];
+    for (const key of firstSet) {
+      if (perMemberKeys.every((s) => s.has(key))) {
+        const [dow, start, end] = key.split(":").map(Number);
+        intersectedWindows.push({
+          day_of_week: dow,
+          start_minutes: start,
+          end_minutes: end,
+        });
       }
     }
   }
 
-  if (allWindows.length > 0) {
-    const concreteSlots = windowsToConcreteDates(allWindows, new Date(), 14);
+  if (intersectedWindows.length > 0) {
+    const concreteSlots = windowsToConcreteDates(
+      intersectedWindows,
+      new Date(),
+      14,
+    );
 
     // TODO: subtract busy blocks from concrete slots for true overlap
     // For now, use availability windows as-is (busy block subtraction
