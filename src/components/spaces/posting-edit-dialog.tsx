@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useSWRConfig } from "swr";
+import { toast } from "sonner";
 
 import { labels } from "@/lib/labels";
 import { cacheKeys } from "@/lib/swr/keys";
@@ -78,7 +79,11 @@ export function PostingEditDialog({
       if (res.ok) {
         mutate(cacheKeys.spacePostings(spaceId));
         onOpenChange(false);
+      } else {
+        toast.error("Failed to save posting");
       }
+    } catch {
+      toast.error("Failed to save posting");
     } finally {
       setSaving(false);
     }

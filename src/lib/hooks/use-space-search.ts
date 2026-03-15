@@ -17,7 +17,7 @@ async function fetchSearch(key: string): Promise<SpaceSearchResult[]> {
   const res = await fetch(key);
   if (!res.ok) return [];
   const json = await res.json();
-  return json.data?.messages ?? [];
+  return json.messages ?? [];
 }
 
 export function useSpaceSearch(spaceId: string, query: string) {

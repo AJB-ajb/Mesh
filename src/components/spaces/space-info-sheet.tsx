@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { Trash2 } from "lucide-react";
 import { useSWRConfig } from "swr";
 
+import { toast } from "sonner";
 import { labels } from "@/lib/labels";
 import { cacheKeys } from "@/lib/swr/keys";
 import {
@@ -62,7 +63,11 @@ function MemberRow({
       `/api/spaces/${spaceId}/members/${member.user_id}`,
       { method: "DELETE" },
     );
-    if (res.ok) onMemberChange();
+    if (res.ok) {
+      onMemberChange();
+    } else {
+      toast.error("Failed to remove member");
+    }
     setConfirmingRemove(false);
   }, [spaceId, member.user_id, onMemberChange]);
 
@@ -177,6 +182,8 @@ function InviteMemberSection({
         if (res.ok) {
           setSearchQuery("");
           onMemberAdded();
+        } else {
+          toast.error("Failed to add member");
         }
       } finally {
         setAdding(false);

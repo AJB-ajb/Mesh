@@ -13,12 +13,14 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useSWRConfig } from "swr";
+import { toast } from "sonner";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Stack } from "@/components/ui/stack";
 import { Group } from "@/components/ui/group";
+import { ClientDate } from "@/components/ui/client-date";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { formatTimeAgoShort } from "@/lib/format";
 import { labels } from "@/lib/labels";
@@ -76,11 +78,12 @@ export function PostingCardInline({
   const handleStatusChange = useCallback(
     async (status: string) => {
       if (!spaceId) return;
-      await fetch(`/api/spaces/${spaceId}/postings/${posting.id}`, {
+      const res = await fetch(`/api/spaces/${spaceId}/postings/${posting.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
+      if (!res.ok) toast.error("Failed to update posting status");
       invalidatePostings();
     },
     [spaceId, posting.id, invalidatePostings],
@@ -90,7 +93,13 @@ export function PostingCardInline({
     if (!spaceId) return;
     const { createClient } = await import("@/lib/supabase/client");
     const supabase = createClient();
-    await supabase.from("space_postings").delete().eq("id", posting.id);
+    // Delete the associated message first to avoid orphaned records
+    await supabase.from("space_messages").delete().eq("posting_id", posting.id);
+    const { error } = await supabase
+      .from("space_postings")
+      .delete()
+      .eq("id", posting.id);
+    if (error) toast.error("Failed to delete posting");
     setConfirmingDelete(false);
     invalidatePostings();
   }, [spaceId, posting.id, invalidatePostings]);
@@ -138,7 +147,7 @@ export function PostingCardInline({
                 {posting.deadline && (
                   <span className="flex items-center gap-1">
                     <Clock className="size-3" />
-                    {new Date(posting.deadline).toLocaleDateString()}
+                    <ClientDate date={posting.deadline} />
                   </span>
                 )}
               </Group>

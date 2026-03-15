@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { labels } from "@/lib/labels";
+import { ClientDate } from "@/components/ui/client-date";
 import type { GithubSyncStatus } from "@/lib/hooks/use-settings";
 
 type GithubSyncCardProps = {
@@ -68,9 +69,11 @@ export function GithubSyncCard({
             <div className="text-sm">
               <p className="text-muted-foreground">
                 {labels.settings.lastSyncedLabel}{" "}
-                {githubSyncStatus.lastSyncedAt
-                  ? new Date(githubSyncStatus.lastSyncedAt).toLocaleString()
-                  : "Never"}
+                {githubSyncStatus.lastSyncedAt ? (
+                  <ClientDate date={githubSyncStatus.lastSyncedAt} showTime />
+                ) : (
+                  "Never"
+                )}
               </p>
               <p className="text-muted-foreground">
                 {labels.settings.statusLabel}{" "}

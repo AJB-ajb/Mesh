@@ -114,7 +114,9 @@ export function ConversationTimeline({
         const posting = msg.posting_id
           ? postings?.get(msg.posting_id)
           : undefined;
-        if (msg.type === "posting" && posting) {
+        if (msg.type === "posting") {
+          // Skip orphaned posting messages (posting was deleted but message remains)
+          if (!posting) return null;
           return (
             <PostingCardInline
               key={msg.id}

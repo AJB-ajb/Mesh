@@ -13,7 +13,7 @@ const fetcher = async (url: string) => {
   const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to fetch cards");
   const json = await res.json();
-  return json.data.cards as SpaceCard[];
+  return json.cards as SpaceCard[];
 };
 
 export function useSpaceCards(spaceId: string | null) {
@@ -99,7 +99,7 @@ export function useSpaceCards(spaceId: string | null) {
       }
       const json = await res.json();
       mutate();
-      return json.data.card as SpaceCard;
+      return json.card as SpaceCard;
     },
     [spaceId, mutate],
   );
