@@ -8,11 +8,12 @@ import {
 } from "@/lib/ai/card-suggest";
 import { parseHiddenBlocks } from "@/lib/hidden-syntax";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { windowsToConcreteDates } from "@/lib/calendar/overlap-to-slots";
 import {
-  windowsToConcreteDates,
-  formatSlotsForPrompt,
-} from "@/lib/calendar/overlap-to-slots";
-import { intersectAvailability } from "@/lib/availability/overlap";
+  intersectAvailability,
+  subtractBusyBlocks,
+  type BusyPeriod,
+} from "@/lib/availability/overlap";
 
 /**
  * POST /api/spaces/[id]/cards/suggest
@@ -127,15 +128,29 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       .in("user_id", memberIds),
     admin
       .from("calendar_busy_blocks")
-      .select("profile_id, canonical_ranges")
+      .select("profile_id, start_time, end_time")
       .in("profile_id", memberIds)
-      .not("canonical_ranges", "is", null),
+      .not("start_time", "is", null)
+      .not("end_time", "is", null),
   ]);
 
   const profiles = profilesResult.data ?? [];
-  // Busy blocks fetched for future subtraction from overlap windows
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const busyBlocks = busyBlocksResult.data ?? [];
+
+  // Group busy blocks by profile_id
+  const busyByMember = new Map<string, BusyPeriod[]>();
+  for (const block of busyBlocks) {
+    if (!block.profile_id || !block.start_time || !block.end_time) continue;
+    let list = busyByMember.get(block.profile_id);
+    if (!list) {
+      list = [];
+      busyByMember.set(block.profile_id, list);
+    }
+    list.push({
+      start: new Date(block.start_time),
+      end: new Date(block.end_time),
+    });
+  }
 
   // Build member context with hidden text extraction
   const members: MemberContext[] = profiles.map((p) => {
@@ -164,22 +179,40 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
   const intersectedWindows = intersectAvailability(memberSlots);
 
   if (intersectedWindows.length > 0) {
-    const concreteSlots = windowsToConcreteDates(
-      intersectedWindows,
-      new Date(),
-      14,
-    );
+    const rawSlots = windowsToConcreteDates(intersectedWindows, new Date(), 14);
 
-    // TODO: subtract busy blocks from concrete slots for true overlap
-    // For now, use availability windows as-is (busy block subtraction
-    // requires int4range intersection which is complex client-side)
+    // Subtract actual calendar busy blocks from the availability windows
+    const concreteSlots = subtractBusyBlocks(rawSlots, busyByMember);
 
     if (concreteSlots.length > 0) {
-      overlap = concreteSlots.slice(0, 20).map((s) => ({
-        label: formatSlotsForPrompt([s]),
-        start: s.start,
-        end: s.end,
-      }));
+      overlap = concreteSlots.slice(0, 20).map((s) => {
+        const startDt = new Date(s.start);
+        const endDt = new Date(s.end);
+        const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        const dayName = dayNames[startDt.getUTCDay()];
+        const dateStr = startDt.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          timeZone: "UTC",
+        });
+        const startTime = startDt.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+          timeZone: "UTC",
+        });
+        const endTime = endDt.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+          timeZone: "UTC",
+        });
+        return {
+          label: `${dayName} ${dateStr}: ${startTime} - ${endTime}`,
+          start: s.start,
+          end: s.end,
+        };
+      });
     } else {
       overlap = [];
     }

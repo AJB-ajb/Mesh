@@ -6,6 +6,7 @@ import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import type { SpaceCard, TimeProposalData } from "@/lib/supabase/types";
 import { CardDeadlineBadge } from "./card-deadline-badge";
+import { CalendarContextStrip } from "./calendar-context-strip";
 import type { SpaceMemberWithProfile } from "@/lib/hooks/use-space";
 
 interface TimeProposalCardProps {
@@ -88,46 +89,59 @@ export function TimeProposalCard({
             memberCount > 0 &&
             voteCount >= Math.ceil(memberCount / 2);
 
-          return (
-            <button
-              key={idx}
-              type="button"
-              disabled={!isActive || !userId}
-              onClick={() => onVote(card.id, idx)}
-              className={cn(
-                "relative w-full text-left rounded-md border px-3 py-2 text-sm transition-colors",
-                isActive && userId
-                  ? "hover:border-primary cursor-pointer"
-                  : "cursor-default",
-                isSelected ? "border-primary bg-primary/5" : "border-border",
-                isConsensus && isActive && "ring-1 ring-green-500/50",
-              )}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-2">
-                  {isSelected && (
-                    <Check className="size-3.5 text-primary shrink-0" />
-                  )}
-                  <span>{option.label}</span>
-                </span>
-                <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                  <Users className="size-3" />
-                  {voteCount}
-                </span>
-              </div>
+          const slotTime = data.slot_times?.[idx];
 
-              {/* Who voted — show names */}
-              {voteCount > 0 && members && (
-                <div className="mt-1 text-xs text-muted-foreground">
-                  {option.votes
-                    .map((uid) => {
-                      const member = members.find((m) => m.user_id === uid);
-                      return member?.profiles?.full_name ?? "Someone";
-                    })
-                    .join(", ")}
+          return (
+            <div key={idx} className="space-y-1">
+              <button
+                type="button"
+                disabled={!isActive || !userId}
+                onClick={() => onVote(card.id, idx)}
+                className={cn(
+                  "relative w-full text-left rounded-md border px-3 py-2 text-sm transition-colors",
+                  isActive && userId
+                    ? "hover:border-primary cursor-pointer"
+                    : "cursor-default",
+                  isSelected ? "border-primary bg-primary/5" : "border-border",
+                  isConsensus && isActive && "ring-1 ring-green-500/50",
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    {isSelected && (
+                      <Check className="size-3.5 text-primary shrink-0" />
+                    )}
+                    <span>{option.label}</span>
+                  </span>
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+                    <Users className="size-3" />
+                    {voteCount}
+                  </span>
                 </div>
+
+                {/* Who voted — show names */}
+                {voteCount > 0 && members && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {option.votes
+                      .map((uid) => {
+                        const member = members.find((m) => m.user_id === uid);
+                        return member?.profiles?.full_name ?? "Someone";
+                      })
+                      .join(", ")}
+                  </div>
+                )}
+              </button>
+
+              {/* Calendar context strip — shows busy blocks for this day */}
+              {isActive && slotTime && userId && (
+                <CalendarContextStrip
+                  date={slotTime.start.split("T")[0]}
+                  highlightStart={slotTime.start}
+                  highlightEnd={slotTime.end}
+                  profileId={userId}
+                />
               )}
-            </button>
+            </div>
           );
         })}
       </div>

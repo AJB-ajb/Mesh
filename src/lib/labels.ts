@@ -1261,6 +1261,8 @@ export const labels = {
     createLocationSubmit: "Suggest Location",
     suggestionChipCreate: (type: string) => `Create ${type}?`,
     suggestionChipDismiss: "Dismiss suggestion",
+    calendarStripLabel: "Your schedule for this day",
+    calendarStripLoading: "Loading schedule…",
   },
 
   // ---------------------------------------------------------------------------

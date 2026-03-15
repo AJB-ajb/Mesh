@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { intersectAvailability, type AvailabilitySlotsMap } from "../overlap";
+import {
+  intersectAvailability,
+  subtractBusyBlocks,
+  type AvailabilitySlotsMap,
+  type BusyPeriod,
+  type ConcreteSlot,
+} from "../overlap";
 
 describe("intersectAvailability", () => {
   it("returns Monday morning when both members are free Monday morning", () => {
@@ -145,5 +151,116 @@ describe("intersectAvailability", () => {
       start_minutes: 1080,
       end_minutes: 1440,
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// subtractBusyBlocks
+// ---------------------------------------------------------------------------
+
+describe("subtractBusyBlocks", () => {
+  // Helper to create a ConcreteSlot from ISO strings
+  function slot(start: string, end: string): ConcreteSlot {
+    return { start, end };
+  }
+
+  // Helper to create a BusyPeriod from ISO strings
+  function busy(start: string, end: string): BusyPeriod {
+    return { start: new Date(start), end: new Date(end) };
+  }
+
+  it("returns slots unchanged when there are no busy blocks", () => {
+    const slots = [slot("2026-03-16T09:00:00Z", "2026-03-16T12:00:00Z")];
+    const busyMap = new Map<string, BusyPeriod[]>();
+
+    const result = subtractBusyBlocks(slots, busyMap);
+    expect(result).toEqual(slots);
+  });
+
+  it("removes a slot fully covered by a busy block", () => {
+    const slots = [slot("2026-03-16T09:00:00Z", "2026-03-16T12:00:00Z")];
+    const busyMap = new Map([
+      ["user-1", [busy("2026-03-16T08:00:00Z", "2026-03-16T13:00:00Z")]],
+    ]);
+
+    const result = subtractBusyBlocks(slots, busyMap);
+    expect(result).toEqual([]);
+  });
+
+  it("trims the start of a slot when a busy block covers the beginning", () => {
+    const slots = [slot("2026-03-16T09:00:00Z", "2026-03-16T12:00:00Z")];
+    const busyMap = new Map([
+      ["user-1", [busy("2026-03-16T08:00:00Z", "2026-03-16T10:00:00Z")]],
+    ]);
+
+    const result = subtractBusyBlocks(slots, busyMap);
+    expect(result).toEqual([
+      slot("2026-03-16T10:00:00.000Z", "2026-03-16T12:00:00.000Z"),
+    ]);
+  });
+
+  it("trims the end of a slot when a busy block covers the end", () => {
+    const slots = [slot("2026-03-16T09:00:00Z", "2026-03-16T12:00:00Z")];
+    const busyMap = new Map([
+      ["user-1", [busy("2026-03-16T11:00:00Z", "2026-03-16T13:00:00Z")]],
+    ]);
+
+    const result = subtractBusyBlocks(slots, busyMap);
+    expect(result).toEqual([
+      slot("2026-03-16T09:00:00.000Z", "2026-03-16T11:00:00.000Z"),
+    ]);
+  });
+
+  it("splits a slot into two when a busy block is in the middle", () => {
+    const slots = [slot("2026-03-16T09:00:00Z", "2026-03-16T15:00:00Z")];
+    const busyMap = new Map([
+      ["user-1", [busy("2026-03-16T11:00:00Z", "2026-03-16T12:00:00Z")]],
+    ]);
+
+    const result = subtractBusyBlocks(slots, busyMap);
+    expect(result).toEqual([
+      slot("2026-03-16T09:00:00.000Z", "2026-03-16T11:00:00.000Z"),
+      slot("2026-03-16T12:00:00.000Z", "2026-03-16T15:00:00.000Z"),
+    ]);
+  });
+
+  it("subtracts busy blocks from multiple members", () => {
+    // 9:00–15:00 slot, member A busy 10:00–11:00, member B busy 13:00–14:00
+    const slots = [slot("2026-03-16T09:00:00Z", "2026-03-16T15:00:00Z")];
+    const busyMap = new Map([
+      ["user-a", [busy("2026-03-16T10:00:00Z", "2026-03-16T11:00:00Z")]],
+      ["user-b", [busy("2026-03-16T13:00:00Z", "2026-03-16T14:00:00Z")]],
+    ]);
+
+    const result = subtractBusyBlocks(slots, busyMap);
+    expect(result).toEqual([
+      slot("2026-03-16T09:00:00.000Z", "2026-03-16T10:00:00.000Z"),
+      slot("2026-03-16T11:00:00.000Z", "2026-03-16T13:00:00.000Z"),
+      slot("2026-03-16T14:00:00.000Z", "2026-03-16T15:00:00.000Z"),
+    ]);
+  });
+
+  it("drops a slot fragment shorter than 15 minutes after trimming", () => {
+    // 9:00–9:20 slot, busy 9:00–9:10 → remaining 9:10–9:20 = 10 min < 15 min
+    const slots = [slot("2026-03-16T09:00:00Z", "2026-03-16T09:20:00Z")];
+    const busyMap = new Map([
+      ["user-1", [busy("2026-03-16T09:00:00Z", "2026-03-16T09:10:00Z")]],
+    ]);
+
+    const result = subtractBusyBlocks(slots, busyMap);
+    expect(result).toEqual([]);
+  });
+
+  it("has no effect when the busy block is entirely outside the slot range", () => {
+    const slots = [slot("2026-03-16T09:00:00Z", "2026-03-16T12:00:00Z")];
+    const busyMap = new Map([
+      ["user-1", [busy("2026-03-16T14:00:00Z", "2026-03-16T15:00:00Z")]],
+    ]);
+
+    const result = subtractBusyBlocks(slots, busyMap);
+    // Normalise to .000Z for comparison
+    expect(result).toEqual([
+      slot("2026-03-16T09:00:00.000Z", "2026-03-16T12:00:00.000Z"),
+    ]);
   });
 });
