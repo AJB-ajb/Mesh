@@ -211,8 +211,13 @@ export function useSpaceList() {
     };
   }, [spaceIdsKey]);
 
+  const allSpaces = data?.spaces ?? [];
+  const activeSpaces = allSpaces.filter((s) => !s.archived_at);
+  const archivedSpaces = allSpaces.filter((s) => !!s.archived_at);
+
   return {
-    spaces: data?.spaces ?? [],
+    spaces: activeSpaces,
+    archivedSpaces,
     userId,
     error,
     isLoading,

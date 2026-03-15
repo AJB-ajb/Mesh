@@ -1,7 +1,8 @@
 import { withAuth } from "@/lib/api/with-auth";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import { verifySpaceMembership } from "@/lib/api/space-guards";
-import type { SpaceCardStatus } from "@/lib/supabase/types";
+import type { SpaceCard, SpaceCardStatus } from "@/lib/supabase/types";
+import { createEventsForResolvedCard } from "@/lib/cards/calendar-integration";
 
 /**
  * PATCH /api/spaces/[id]/cards/[cardId]
@@ -69,6 +70,19 @@ export const PATCH = withAuth(async (req, { user, supabase, params }) => {
       "INTERNAL",
       `Failed to update card: ${updateError.message}`,
       500,
+    );
+  }
+
+  // Fire-and-forget: create calendar events for resolved time proposals
+  if (
+    body.status === "resolved" &&
+    updated.type === "time_proposal" &&
+    (updated.data as Record<string, unknown>).resolved_slot
+  ) {
+    createEventsForResolvedCard(updated as SpaceCard, spaceId, supabase).catch(
+      (err) => {
+        console.error("[cards/PATCH] Calendar event creation failed:", err);
+      },
     );
   }
 

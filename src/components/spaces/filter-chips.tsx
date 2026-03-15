@@ -10,6 +10,7 @@ const filters: { value: SpaceFilter; label: string }[] = [
   { value: "groups", label: labels.spaces.filterGroups },
   { value: "public", label: labels.spaces.filterPublic },
   { value: "pinned", label: labels.spaces.filterPinned },
+  { value: "archived", label: labels.spaces.filterArchived },
 ];
 
 interface FilterChipsProps {

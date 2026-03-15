@@ -66,7 +66,10 @@ export function buildAuthUrl(state: string, origin?: string): string {
   return client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
-    scope: ["https://www.googleapis.com/auth/calendar.freebusy"],
+    scope: [
+      "https://www.googleapis.com/auth/calendar.freebusy",
+      "https://www.googleapis.com/auth/calendar.events",
+    ],
     state,
   });
 }
@@ -195,6 +198,61 @@ export async function fetchFreeBusy(accessToken: string): Promise<BusyBlock[]> {
       start: new Date(period.start),
       end: new Date(period.end),
     }));
+}
+
+// ---------------------------------------------------------------------------
+// Calendar Event Creation
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a calendar event on the user's primary calendar.
+ * Requires `calendar.events` scope. If the user only authorized
+ * `calendar.freebusy`, this will throw a 403 (insufficient scope).
+ */
+export async function createCalendarEvent({
+  accessTokenEncrypted,
+  refreshTokenEncrypted,
+  summary,
+  startTime,
+  endTime,
+  description,
+  attendees,
+}: {
+  accessTokenEncrypted: Buffer;
+  refreshTokenEncrypted: Buffer;
+  summary: string;
+  startTime: Date;
+  endTime: Date;
+  description?: string;
+  attendees?: string[];
+}): Promise<string | null> {
+  const client = getOAuthClient();
+  const tokens = decryptTokens(
+    accessTokenEncrypted,
+    refreshTokenEncrypted,
+    new Date(), // expiry doesn't matter — we set credentials directly
+  );
+  client.setCredentials({
+    access_token: tokens.accessToken,
+    refresh_token: tokens.refreshToken,
+  });
+
+  const calendar = google.calendar({ version: "v3", auth: client });
+
+  const response = await calendar.events.insert({
+    calendarId: "primary",
+    requestBody: {
+      summary,
+      description,
+      start: { dateTime: startTime.toISOString() },
+      end: { dateTime: endTime.toISOString() },
+      ...(attendees?.length
+        ? { attendees: attendees.map((email) => ({ email })) }
+        : {}),
+    },
+  });
+
+  return response.data.id ?? null;
 }
 
 // ---------------------------------------------------------------------------

@@ -1,7 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, MessageSquare, Loader2, Search, X } from "lucide-react";
+import {
+  Plus,
+  MessageSquare,
+  Loader2,
+  Search,
+  X,
+  ChevronDown,
+} from "lucide-react";
 
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
@@ -14,15 +21,32 @@ import { SpaceList } from "@/components/spaces/space-list";
 import { FilterChips } from "@/components/spaces/filter-chips";
 import { NewSpaceDialog } from "@/components/spaces/new-space-dialog";
 
-export type SpaceFilter = "all" | "dms" | "groups" | "public" | "pinned";
+export type SpaceFilter =
+  | "all"
+  | "dms"
+  | "groups"
+  | "public"
+  | "pinned"
+  | "archived";
 
 export default function SpacesPage() {
-  const { spaces, userId, isLoading } = useSpaceList();
+  const { spaces, archivedSpaces, userId, isLoading } = useSpaceList();
   const [filter, setFilter] = useState<SpaceFilter>("all");
   const [search, setSearch] = useState("");
   const [showNewSpace, setShowNewSpace] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
 
   const filteredSpaces = useMemo(() => {
+    // "archived" filter shows only archived spaces
+    if (filter === "archived") {
+      let result = archivedSpaces;
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        result = result.filter((s) => s.name?.toLowerCase().includes(q));
+      }
+      return result;
+    }
+
     let result = spaces;
 
     // Text search by name
@@ -45,7 +69,7 @@ export default function SpacesPage() {
     }
 
     return result;
-  }, [spaces, filter, search]);
+  }, [spaces, archivedSpaces, filter, search]);
 
   return (
     <Stack gap="lg">
@@ -96,6 +120,27 @@ export default function SpacesPage() {
         />
       ) : (
         <SpaceList spaces={filteredSpaces} currentUserId={userId} />
+      )}
+
+      {/* Archived section (only when not using archived filter) */}
+      {filter !== "archived" && archivedSpaces.length > 0 && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowArchived((v) => !v)}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronDown
+              className={`size-4 transition-transform ${showArchived ? "" : "-rotate-90"}`}
+            />
+            {labels.spaces.archivedSection} ({archivedSpaces.length})
+          </button>
+          {showArchived && (
+            <div className="mt-2 opacity-60">
+              <SpaceList spaces={archivedSpaces} currentUserId={userId} />
+            </div>
+          )}
+        </div>
       )}
 
       <NewSpaceDialog open={showNewSpace} onOpenChange={setShowNewSpace} />

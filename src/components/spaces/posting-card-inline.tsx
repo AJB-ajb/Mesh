@@ -11,6 +11,7 @@ import {
   XCircle,
   CheckCircle2,
   MessageSquare,
+  Globe,
 } from "lucide-react";
 import { useSWRConfig } from "swr";
 import { toast } from "sonner";
@@ -28,6 +29,7 @@ import { cacheKeys } from "@/lib/swr/keys";
 import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { cn } from "@/lib/utils";
 import type { SpacePosting, SpacePostingStatus } from "@/lib/supabase/types";
+import { GLOBAL_SPACE_ID } from "@/lib/supabase/types";
 import { JoinRequestDialog } from "./join-request-dialog";
 import { PostingEditDialog } from "./posting-edit-dialog";
 
@@ -193,7 +195,7 @@ export function PostingCardInline({
 
               {/* Owner/admin controls */}
               {showControls && posting.status === "open" && (
-                <Group gap="sm" className="pt-1">
+                <Group gap="sm" wrap className="pt-1">
                   <Button
                     size="sm"
                     variant="ghost"
@@ -214,6 +216,30 @@ export function PostingCardInline({
                     <CheckCircle2 className="size-3" />
                     {labels.spaces.posting.filled}
                   </Button>
+                  {spaceId !== GLOBAL_SPACE_ID && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs gap-1"
+                      onClick={async () => {
+                        const res = await fetch(
+                          `/api/spaces/${spaceId}/postings/${posting.id}/promote`,
+                          { method: "POST" },
+                        );
+                        if (res.ok) {
+                          toast.success(labels.spaces.posting.promoteSuccess);
+                        } else {
+                          const data = await res.json().catch(() => null);
+                          toast.error(
+                            data?.error?.message ?? "Failed to promote",
+                          );
+                        }
+                      }}
+                    >
+                      <Globe className="size-3" />
+                      {labels.spaces.posting.promote}
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="ghost"

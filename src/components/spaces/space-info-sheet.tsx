@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Archive, ArchiveRestore } from "lucide-react";
 import { useSWRConfig } from "swr";
 
 import { toast } from "sonner";
@@ -256,6 +256,8 @@ export function SpaceInfoSheet({
     space.settings?.matching_enabled ?? false,
   );
   const [saving, setSaving] = useState(false);
+  const [confirmingArchive, setConfirmingArchive] = useState(false);
+  const isArchived = !!space.archived_at;
 
   const handleMemberChange = useCallback(() => {
     mutate(cacheKeys.space(space.id));
@@ -332,6 +334,98 @@ export function SpaceInfoSheet({
                   disabled={saving}
                 />
               </div>
+
+              {/* Archive / Unarchive */}
+              {!isGlobal && (
+                <div className="pt-3 border-t border-border">
+                  {confirmingArchive ? (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        {labels.spaces.archiveConfirm}
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-7 text-xs"
+                          disabled={saving}
+                          onClick={async () => {
+                            setSaving(true);
+                            try {
+                              const res = await fetch(
+                                `/api/spaces/${space.id}`,
+                                {
+                                  method: "PATCH",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({ archived: true }),
+                                },
+                              );
+                              if (res.ok) {
+                                toast.success(labels.spaces.archiveSpace);
+                                mutate(cacheKeys.spaces());
+                                mutate(cacheKeys.space(space.id));
+                                onOpenChange(false);
+                              }
+                            } finally {
+                              setSaving(false);
+                              setConfirmingArchive(false);
+                            }
+                          }}
+                        >
+                          {labels.activity.actions.confirm}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs"
+                          onClick={() => setConfirmingArchive(false)}
+                        >
+                          {labels.spaces.posting.cancel}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : isArchived ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs gap-1.5"
+                      disabled={saving}
+                      onClick={async () => {
+                        setSaving(true);
+                        try {
+                          const res = await fetch(`/api/spaces/${space.id}`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ archived: false }),
+                          });
+                          if (res.ok) {
+                            toast.success(labels.spaces.unarchiveSpace);
+                            mutate(cacheKeys.spaces());
+                            mutate(cacheKeys.space(space.id));
+                          }
+                        } finally {
+                          setSaving(false);
+                        }
+                      }}
+                    >
+                      <ArchiveRestore className="size-3.5" />
+                      {labels.spaces.unarchiveSpace}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs gap-1.5"
+                      onClick={() => setConfirmingArchive(true)}
+                    >
+                      <Archive className="size-3.5" />
+                      {labels.spaces.archiveSpace}
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

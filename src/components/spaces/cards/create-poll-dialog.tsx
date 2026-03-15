@@ -19,6 +19,8 @@ interface CreatePollDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: PollData) => void;
+  suggestedQuestion?: string;
+  suggestedOptions?: string[];
 }
 
 const MIN_OPTIONS = 2;
@@ -28,9 +30,15 @@ export function CreatePollDialog({
   open,
   onOpenChange,
   onSubmit,
+  suggestedQuestion,
+  suggestedOptions,
 }: CreatePollDialogProps) {
-  const [question, setQuestion] = useState("");
-  const [options, setOptions] = useState(["", ""]);
+  const [question, setQuestion] = useState(suggestedQuestion ?? "");
+  const [options, setOptions] = useState(
+    suggestedOptions && suggestedOptions.length >= MIN_OPTIONS
+      ? suggestedOptions
+      : ["", ""],
+  );
 
   const handleAddOption = useCallback(() => {
     if (options.length < MAX_OPTIONS) {
