@@ -55,7 +55,7 @@ export default defineConfig({
       name: "authenticated",
       use: { ...devices["Desktop Chrome"] },
       testMatch:
-        /e2e\/(posting-creation|application-flow|discover-filtering|cross-user-visibility)\.spec\.ts/,
+        /e2e\/(posting-creation|application-flow|discover-filtering|cross-user-visibility|card-lifecycle)\.spec\.ts/,
     },
     // Full multi-user lifecycle tests — opt-in, not run by default.
     // Run with: pnpm test:e2e:full
