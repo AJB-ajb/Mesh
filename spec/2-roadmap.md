@@ -4,8 +4,8 @@
 
 ## Version & Status
 
-- **Current version**: 0.7.0
-- **Last updated**: 2026-03-13
+- **Current version**: 0.8.0
+- **Last updated**: 2026-03-15
 - **Versioning**: Milestone-based semver (`MAJOR.MINOR.PATCH`). See [Update Protocol](#update-protocol).
 
 ---
@@ -212,18 +212,29 @@ The core model change. After Phase 1, the app is a messenger with Spaces, postin
 
 Built on Phase 1. The card system that replaces back-and-forth coordination. Subsumes the old v0.8 (Smart Acceptance & Calendar) — acceptance flow is now a card type. See [designs/spaces-rewrite.md](designs/spaces-rewrite.md) §16.
 
-| Feature                    | Issue | Effort | Description                                                                     |
-| -------------------------- | ----- | ------ | ------------------------------------------------------------------------------- |
-| `space_cards` table        | —     | Medium | Card state tracking (active, resolved, superseded)                              |
-| Card types                 | —     | Large  | Time proposal, RSVP, poll, task claim, location, trade-off                      |
-| Card rendering             | —     | Large  | Interactive cards in conversation timeline, live updates                        |
-| Card actions               | —     | Medium | Buttons: vote, change vote, cancel, add options                                 |
-| Card resolution            | —     | Medium | Auto-confirm on consensus, calendar event creation                              |
-| Card invalidation Phase 2a | —     | Medium | Explicit actions only — buttons on cards                                        |
-| Card invalidation Phase 2b | —     | Large  | Free-text detection — LLM reads messages against active cards, suggests updates |
-| LLM card generation        | —     | Large  | Detect coordination intent from messages, suggest appropriate card type         |
-| Space archiving            | —     | Small  | 30-day auto-archive, collapsed "Archived" section, admin reactivation           |
-| Cross-Space promotion      | —     | Small  | Promote posting to Explore as linked posting-message back to original sub-Space |
+#### Done
+
+| Feature                   | Description                                                                                                                    |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `space_cards` table       | Card state tracking (active, resolved, cancelled). `vote_on_card` RPC for atomic voting.                                       |
+| Card types                | Time proposal, RSVP, poll, task claim, location. All 5 types with creation dialogs and rendering.                              |
+| Card rendering            | Interactive cards in conversation timeline with live vote updates via Supabase Realtime.                                       |
+| Card actions              | Vote, change vote, cancel, resolve. Per-card controls for creator/admin.                                                       |
+| Card creation dialogs     | RSVP (title + threshold), Task Claim (description), Location (place name). Fixed options per spec.                             |
+| Auto-resolve on consensus | Time proposals: all members voted + clear winner. RSVP: Yes votes >= threshold. Task claim: first claimer.                     |
+| Calendar event creation   | Resolved time proposals create Google Calendar events for connected participants (fire-and-forget, best-effort).               |
+| LLM card suggestion       | After sending a message, LLM detects coordination intent and offers suggestion chip. Accept prefills the right dialog.         |
+| Space archiving UI        | Archive/unarchive in space-info-sheet (admin). Archived section in space list with filter chip. Manual only (no auto-archive). |
+| Cross-Space promotion UI  | "Promote to Explore" button on posting controls. Creates linked posting-message in Global Space.                               |
+
+#### Remaining
+
+| Feature                    | Effort | Description                                                                     |
+| -------------------------- | ------ | ------------------------------------------------------------------------------- |
+| Trade-off card type        | Medium | "No perfect option — pick one" card with creator selection                      |
+| Card invalidation Phase 2a | Medium | Explicit actions only — buttons on cards (supersede, update)                    |
+| Card invalidation Phase 2b | Large  | Free-text detection — LLM reads messages against active cards, suggests updates |
+| Auto-archive (30-day)      | Small  | Cron-based auto-archive after 30 days of no messages                            |
 
 ### v0.9 — Mobile (Capacitor, Android)
 

@@ -280,11 +280,12 @@ A posting in a small Space can be promoted to Explore as a new posting-message t
 
 ### Space archiving
 
-- Auto-archive after 30 days of no messages
-- Archived Spaces move to a collapsed "Archived" section in the Space list
-- Still readable, not prominent
-- Admin can reactivate by sending a message
+- Admin can archive a Space via space-info-sheet (manual)
+- Archived Spaces move to a collapsed "Archived" section in the Space list, filterable via chip
+- Still readable, not prominent (rendered with reduced opacity)
+- Admin can unarchive via space-info-sheet
 - Posting lifecycle (status) is independent of Space archiving
+- Auto-archive after 30 days of no messages planned but not yet implemented
 
 ---
 
@@ -322,4 +323,6 @@ Numbered for cross-reference. Full rationale in [designs/spaces-rewrite.md](desi
 
 - **Inherited → independent transition**: `inherits_members` flag exists but no auto-transition when outsiders join via matching/invite. → v0.7
 - **Old table cleanup**: Old `postings`, `conversations`, `messages`, `group_messages` tables still exist. → v0.7
-- **Phase 2 features**: Rich interactive cards, card invalidation, LLM card generation, space archiving, cross-Space posting promotion. → v0.8
+- **Trade-off card type**: Not yet implemented. → v0.8 remaining
+- **Card invalidation**: No automatic card invalidation from messages yet (Phase 2a/2b). Cards are manually resolved/cancelled. → v0.8 remaining
+- **Auto-archive**: No 30-day auto-archive cron. Manual archive/unarchive by admin only. → v0.8 remaining
