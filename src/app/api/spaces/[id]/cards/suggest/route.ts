@@ -131,7 +131,9 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       .select("profile_id, start_time, end_time")
       .in("profile_id", memberIds)
       .not("start_time", "is", null)
-      .not("end_time", "is", null),
+      .not("end_time", "is", null)
+      .gte("end_time", new Date().toISOString())
+      .lte("start_time", new Date(Date.now() + 14 * 86400000).toISOString()),
   ]);
 
   const profiles = profilesResult.data ?? [];

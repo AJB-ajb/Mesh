@@ -263,4 +263,20 @@ describe("subtractBusyBlocks", () => {
       slot("2026-03-16T09:00:00.000Z", "2026-03-16T12:00:00.000Z"),
     ]);
   });
+
+  it("handles overlapping busy blocks from different members", () => {
+    // 9:00–17:00 slot, member A busy 10:00–14:00, member B busy 12:00–15:00
+    // Combined busy: 10:00–15:00. Expected: [9:00–10:00, 15:00–17:00]
+    const slots = [slot("2026-03-16T09:00:00Z", "2026-03-16T17:00:00Z")];
+    const busyMap = new Map([
+      ["user-a", [busy("2026-03-16T10:00:00Z", "2026-03-16T14:00:00Z")]],
+      ["user-b", [busy("2026-03-16T12:00:00Z", "2026-03-16T15:00:00Z")]],
+    ]);
+
+    const result = subtractBusyBlocks(slots, busyMap);
+    expect(result).toEqual([
+      slot("2026-03-16T09:00:00.000Z", "2026-03-16T10:00:00.000Z"),
+      slot("2026-03-16T15:00:00.000Z", "2026-03-16T17:00:00.000Z"),
+    ]);
+  });
 });

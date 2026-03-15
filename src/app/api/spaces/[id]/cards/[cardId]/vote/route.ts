@@ -122,7 +122,12 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
           null, // Calendar overlap not computed here — LLM uses preferences
         );
         if (suggestion.suggested_type) {
-          follow_up_suggestion = suggestion;
+          // Strip member_notes — they're per-user private
+          const { member_notes: _, ...safePrefill } = suggestion.prefill;
+          follow_up_suggestion = {
+            ...suggestion,
+            prefill: safePrefill,
+          };
         }
       } catch (err) {
         // Suggestions are best-effort — don't fail the vote

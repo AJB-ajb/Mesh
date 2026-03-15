@@ -17,17 +17,17 @@ const DEFAULT_RANGE_START = 420; // 7 * 60
 const DEFAULT_RANGE_END = 1380; // 23 * 60
 
 /**
- * Convert a JS Date.getDay() (0=Sun..6=Sat) to the RecurringWindow
- * convention (0=Mon..6=Sun).
+ * Convert a JS Date.getUTCDay() (0=Sun..6=Sat) to the RecurringWindow
+ * convention (0=Mon..6=Sun). Uses UTC to match busy block canonical ranges.
  */
 function jsDayToRecurringDay(jsDay: number): number {
   return jsDay === 0 ? 6 : jsDay - 1;
 }
 
-/** Minutes since midnight for an ISO datetime string. */
+/** Minutes since midnight (UTC) for an ISO datetime string. */
 function minutesOfDay(iso: string): number {
   const d = new Date(iso);
-  return d.getHours() * 60 + d.getMinutes();
+  return d.getUTCHours() * 60 + d.getUTCMinutes();
 }
 
 /** Format minutes-of-day as "HH:MM". */
@@ -47,7 +47,7 @@ export function CalendarContextStrip({
 
   const parsed = useMemo(() => {
     const d = new Date(date);
-    const dayOfWeek = jsDayToRecurringDay(d.getDay());
+    const dayOfWeek = jsDayToRecurringDay(d.getUTCDay());
 
     const slotStart = minutesOfDay(highlightStart);
     const slotEnd = minutesOfDay(highlightEnd);
@@ -85,8 +85,11 @@ export function CalendarContextStrip({
 
   /** Convert a minute value to a percentage position within the visible range. */
   const toPercent = (m: number) =>
-    ((Math.max(rangeStart, Math.min(rangeEnd, m)) - rangeStart) / rangeSpan) *
-    100;
+    rangeSpan > 0
+      ? ((Math.max(rangeStart, Math.min(rangeEnd, m)) - rangeStart) /
+          rangeSpan) *
+        100
+      : 0;
 
   return (
     <div
