@@ -96,8 +96,8 @@ BEGIN
 END;
 $$;
 
--- Seed config
+-- Seed config (URL only — secret must be inserted via Dashboard SQL editor)
+-- Run in Dashboard: INSERT INTO bot_config (key, value) VALUES ('bot_react_secret', '<your-secret>') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 INSERT INTO bot_config (key, value) VALUES
-  ('bot_react_url', 'https://mesh-dev-test.vercel.app'),
-  ('bot_react_secret', 'REDACTED_BOT_SECRET')
-ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+  ('bot_react_url', 'https://mesh-dev-test.vercel.app')
+ON CONFLICT (key) DO NOTHING;
