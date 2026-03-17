@@ -47,11 +47,11 @@ async function fetchSpacePostings(
           Number(r.count),
         ]),
       );
-      for (const p of postings) {
-        if (p.sub_space_id) {
-          p.replyCount = countMap.get(p.sub_space_id) ?? 0;
-        }
-      }
+      return postings.map((p) =>
+        p.sub_space_id
+          ? { ...p, replyCount: countMap.get(p.sub_space_id) ?? 0 }
+          : p,
+      );
     }
   }
 

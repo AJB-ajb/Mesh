@@ -13,6 +13,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import * as Sentry from "@sentry/nextjs";
 import type { User } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -241,7 +242,14 @@ function buildCronMode(
         ? authHeader.slice(7)
         : null;
 
-      if (!token || token !== expectedSecret) {
+      if (
+        !token ||
+        token.length !== expectedSecret.length ||
+        !timingSafeEqual(
+          new TextEncoder().encode(token),
+          new TextEncoder().encode(expectedSecret),
+        )
+      ) {
         return apiError("UNAUTHORIZED", "Invalid cron secret", 401);
       }
 

@@ -9,6 +9,7 @@ import { useSpaceMessages } from "@/lib/hooks/use-space-messages";
 import { useSpacePostings } from "@/lib/hooks/use-space-postings";
 import { useSpacePresence } from "@/lib/hooks/use-space-presence";
 import { useSpaceCards } from "@/lib/hooks/use-space-cards";
+import { SpaceErrorBoundary } from "@/components/shared/space-error-boundary";
 import { SpaceHeader } from "./space-header";
 import { StateTextBanner } from "./state-text-banner";
 import { ConversationTimeline } from "./conversation-timeline";
@@ -98,76 +99,78 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
   }, [currentMember, markAsRead]);
 
   return (
-    <div className="-m-4 sm:-m-6 flex flex-col h-[calc(100dvh-4rem-3.5rem)] md:h-[calc(100dvh-4rem)] overflow-hidden pb-[env(safe-area-inset-bottom)] md:pb-0">
-      <SpaceHeader
-        space={space}
-        memberCount={space.members.length}
-        currentMember={currentMember}
-      />
+    <SpaceErrorBoundary>
+      <div className="-m-4 sm:-m-6 flex flex-col h-[calc(100dvh-4rem-3.5rem)] md:h-[calc(100dvh-4rem)] overflow-hidden pb-[env(safe-area-inset-bottom)] md:pb-0">
+        <SpaceHeader
+          space={space}
+          memberCount={space.members.length}
+          currentMember={currentMember}
+        />
 
-      <StateTextBanner stateText={space.state_text} canEdit={canEdit} />
+        <StateTextBanner stateText={space.state_text} canEdit={canEdit} />
 
-      {isPostingOnly ? (
-        <>
-          <PostingBrowser
-            spaceId={space.id}
-            postings={postingsList}
-            isLoading={postingsLoading}
-            matchingEnabled={space.settings?.matching_enabled ?? false}
-            userId={userId}
-            isAdmin={isAdmin}
-            className="flex-1"
-          />
-          {currentMember && userId && (
-            <ComposeArea
+        {isPostingOnly ? (
+          <>
+            <PostingBrowser
               spaceId={space.id}
-              senderId={userId}
-              senderName={
-                space.members.find((m) => m.user_id === userId)?.profiles
-                  ?.full_name ?? null
-              }
-              postingOnly={true}
-              onTyping={sendTyping}
-              onStopTyping={stopTyping}
+              postings={postingsList}
+              isLoading={postingsLoading}
+              matchingEnabled={space.settings?.matching_enabled ?? false}
+              userId={userId}
+              isAdmin={isAdmin}
+              className="flex-1"
             />
-          )}
-        </>
-      ) : (
-        <>
-          <ConversationTimeline
-            messages={messages}
-            userId={userId}
-            hasMore={hasMore}
-            isLoading={messagesLoading}
-            onLoadMore={loadMore}
-            postings={postingsMap}
-            cards={cardsMap}
-            spaceId={space.id}
-            isAdmin={isAdmin}
-            typingUsers={typingUsers}
-            members={space.members}
-            onCardVote={handleCardVote}
-            onCardResolve={handleCardResolve}
-            onCardCancel={cancelCard}
-          />
-
-          {currentMember && userId && (
-            <ComposeArea
+            {currentMember && userId && (
+              <ComposeArea
+                spaceId={space.id}
+                senderId={userId}
+                senderName={
+                  space.members.find((m) => m.user_id === userId)?.profiles
+                    ?.full_name ?? null
+                }
+                postingOnly={true}
+                onTyping={sendTyping}
+                onStopTyping={stopTyping}
+              />
+            )}
+          </>
+        ) : (
+          <>
+            <ConversationTimeline
+              messages={messages}
+              userId={userId}
+              hasMore={hasMore}
+              isLoading={messagesLoading}
+              onLoadMore={loadMore}
+              postings={postingsMap}
+              cards={cardsMap}
               spaceId={space.id}
-              senderId={userId}
-              senderName={
-                space.members.find((m) => m.user_id === userId)?.profiles
-                  ?.full_name ?? null
-              }
-              postingOnly={space.settings?.posting_only ?? false}
-              onTyping={sendTyping}
-              onStopTyping={stopTyping}
-              followUpSuggestion={followUpSuggestion}
-              onClearFollowUp={() => setFollowUpSuggestion(null)}
+              isAdmin={isAdmin}
+              typingUsers={typingUsers}
+              members={space.members}
+              onCardVote={handleCardVote}
+              onCardResolve={handleCardResolve}
+              onCardCancel={cancelCard}
             />
-          )}
-        </>
-      )}
-    </div>
+
+            {currentMember && userId && (
+              <ComposeArea
+                spaceId={space.id}
+                senderId={userId}
+                senderName={
+                  space.members.find((m) => m.user_id === userId)?.profiles
+                    ?.full_name ?? null
+                }
+                postingOnly={space.settings?.posting_only ?? false}
+                onTyping={sendTyping}
+                onStopTyping={stopTyping}
+                followUpSuggestion={followUpSuggestion}
+                onClearFollowUp={() => setFollowUpSuggestion(null)}
+              />
+            )}
+          </>
+        )}
+      </div>
+    </SpaceErrorBoundary>
   );
 }
