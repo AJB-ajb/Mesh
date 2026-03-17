@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sanitizeTitle } from "../card-suggest";
+import { sanitizeTitle, sanitizeLLMText } from "../card-suggest";
 
 /**
  * parseMemberNotes is a private helper in card-suggest.ts.
@@ -122,5 +122,47 @@ describe("sanitizeTitle", () => {
   it("is case-insensitive for scheduling keywords", () => {
     expect(sanitizeTitle("Call (OVERLAP not found)")).toBe("Call");
     expect(sanitizeTitle("Call (Requested time unavailable)")).toBe("Call");
+  });
+});
+
+describe("sanitizeLLMText", () => {
+  it("strips scheduling parentheticals", () => {
+    expect(sanitizeLLMText("Meet up (conflict detected)")).toBe("Meet up");
+    expect(sanitizeLLMText("Dinner (no overlap found)")).toBe("Dinner");
+  });
+
+  it("strips time range annotations", () => {
+    expect(sanitizeLLMText("Coffee (14:00-15:30)")).toBe("Coffee");
+  });
+
+  it("replaces snake_case debug tokens with empty string", () => {
+    expect(sanitizeLLMText("scheduling_conflict_detected")).toBe("");
+    expect(sanitizeLLMText("no_overlap_found_between_members")).toBe("");
+  });
+
+  it("does not treat normal text with underscores as debug tokens", () => {
+    // Must be entirely snake_case to be stripped
+    expect(sanitizeLLMText("Schedule a meeting")).toBe("Schedule a meeting");
+  });
+
+  it("truncates overly long text", () => {
+    const long = "A".repeat(250);
+    const result = sanitizeLLMText(long, 200);
+    expect(result.length).toBeLessThanOrEqual(201); // 200 + ellipsis
+  });
+
+  it("preserves clean short text", () => {
+    expect(sanitizeLLMText("Schedule a meeting")).toBe("Schedule a meeting");
+    expect(sanitizeLLMText("Create a poll")).toBe("Create a poll");
+    expect(sanitizeLLMText("Italian")).toBe("Italian");
+  });
+
+  it("handles empty input", () => {
+    expect(sanitizeLLMText("")).toBe("");
+  });
+
+  it("respects custom maxLength", () => {
+    const result = sanitizeLLMText("This is a longer reason text", 10);
+    expect(result.length).toBeLessThanOrEqual(11);
   });
 });

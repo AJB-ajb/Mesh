@@ -81,7 +81,7 @@ function suggestSchema(): ObjectSchema {
       reason: {
         type: SchemaType.STRING,
         description:
-          "Brief explanation for the suggestion chip (e.g. 'Schedule a meeting')",
+          "2-4 word label for the suggestion chip shown to users. Examples: 'Schedule a meeting', 'Create a poll', 'Claim tasks'. NEVER include analysis, member names, or scheduling details.",
       },
       thinking: {
         type: SchemaType.STRING,
@@ -97,11 +97,12 @@ function suggestSchema(): ObjectSchema {
         type: SchemaType.ARRAY,
         items: { type: SchemaType.STRING },
         description:
-          "Poll options, task claim roles, or location name. NOT time slots (use slots instead).",
+          "Poll options or task claim roles. Each item is a short user-facing label (e.g. 'Italian', 'Sushi'). NOT time slots (use slots instead). NEVER include reasoning or analysis in options.",
       },
       description: {
         type: SchemaType.STRING,
-        description: "For task_claim: the task description",
+        description:
+          "For task_claim: a short, clean task description shown to users. NEVER include scheduling analysis or reasoning.",
       },
       slots: {
         type: SchemaType.ARRAY,
@@ -210,7 +211,9 @@ GENERAL RULES:
 - If messages are just casual chat, return type "none"
 - Be conservative — false negatives are better than false positives
 - Put ALL analysis and reasoning in the "thinking" field — it is not shown to users
+- ALL other fields (title, reason, options, description, slot labels) are shown directly to users — keep them clean and concise
 - Title must be ONLY the event name (e.g. "Coffee tomorrow?" not "Coffee tomorrow (13:00-15:00 requested...)")
+- Reason must be 2-4 words (e.g. "Schedule a meeting", not a sentence with analysis)
 - For time_proposal and rsvp, you MUST populate the slots array with at least 2 slots
 - Pre-fill as much as possible from the conversation context`;
 }
@@ -255,6 +258,37 @@ function buildUserPrompt(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** Strip reasoning/analysis text that the LLM may have leaked into user-facing fields.
+ *  Catches common patterns: parenthetical scheduling notes, snake_case_debug_strings,
+ *  and overly long text that's clearly analysis rather than a label. */
+export function sanitizeLLMText(text: string, maxLength: number = 200): string {
+  let cleaned = text;
+
+  // Strip trailing parenthetical blocks with scheduling keywords
+  cleaned = cleaned.replace(
+    /\s*\([^()]*(?:requested|overlap|available|proposing|conflict|slot|buffer|commute|constraint|instead|free window|detected|analyzed|checking)[^()]*\)\s*$/i,
+    "",
+  );
+
+  // Strip trailing time range annotations like "(13:00-15:00 ...)"
+  cleaned = cleaned.replace(
+    /\s*\(\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}[^)]*\)\s*$/,
+    "",
+  );
+
+  // If the entire string looks like a snake_case debug token, replace with empty
+  if (/^[a-z_]+$/.test(cleaned) && cleaned.includes("_")) {
+    return "";
+  }
+
+  // Truncate overly long text (LLM dumping analysis)
+  if (cleaned.length > maxLength) {
+    cleaned = cleaned.slice(0, maxLength).replace(/\s\S*$/, "…");
+  }
+
+  return cleaned.trim();
+}
 
 /** Strip parenthetical reasoning the LLM may have leaked into the title.
  *  Exported for testing. */
@@ -350,16 +384,27 @@ export async function detectAndSuggest(
     };
   }
 
+  // Sanitize all user-facing text fields
+  const cleanReason = sanitizeLLMText(raw.reason, 60) || raw.reason;
+  const cleanDescription = raw.description
+    ? sanitizeLLMText(raw.description)
+    : raw.description;
+  const cleanOptions = raw.options?.map((o) => sanitizeLLMText(o, 100));
+  const cleanSlots = raw.slots?.map((s) => ({
+    ...s,
+    label: sanitizeLLMText(s.label, 80) || s.label,
+  }));
+
   return {
     suggested_type: suggestedType,
     confidence: raw.confidence,
-    reason: raw.reason,
+    reason: cleanReason,
     prefill: {
       title: cleanTitle,
       question: cleanTitle, // polls use question, time/rsvp use title
-      options: raw.options,
-      description: raw.description,
-      slots: raw.slots,
+      options: cleanOptions,
+      description: cleanDescription,
+      slots: cleanSlots,
       duration_minutes: raw.duration_minutes,
       is_specific_time: raw.is_specific_time,
       suggested_threshold: raw.suggested_threshold,
