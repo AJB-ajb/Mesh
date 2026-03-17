@@ -40,7 +40,7 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
     vote: voteOnCard,
     resolve: resolveCard,
     cancel: cancelCard,
-  } = useSpaceCards(space.id);
+  } = useSpaceCards(space.id, currentMember?.user_id);
 
   // Build a Map<postingId, SpacePosting> for quick lookup in timeline
   const postingsMap = useMemo(() => {
