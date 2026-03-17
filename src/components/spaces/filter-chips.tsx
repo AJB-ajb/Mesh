@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
-import type { SpaceFilter } from "@/app/(dashboard)/spaces/page";
+import type { SpaceFilter } from "@/app/(dashboard)/spaces/spaces-page-client";
 
 const filters: { value: SpaceFilter; label: string }[] = [
   { value: "all", label: labels.spaces.filterAll },

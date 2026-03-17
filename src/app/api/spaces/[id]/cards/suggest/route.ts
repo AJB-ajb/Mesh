@@ -83,36 +83,35 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
   }
 
   // -------------------------------------------------------------------------
-  // 2. Scope guards
+  // 2. Scope guards (parallelized)
   // -------------------------------------------------------------------------
-  const { count: activeCardCount } = await supabase
-    .from("space_cards")
-    .select("id", { count: "exact", head: true })
-    .eq("space_id", spaceId)
-    .eq("status", "active");
+  const [
+    { count: activeCardCount },
+    { data: memberRows },
+    { data: currentMemberRole },
+  ] = await Promise.all([
+    supabase
+      .from("space_cards")
+      .select("id", { count: "exact", head: true })
+      .eq("space_id", spaceId)
+      .eq("status", "active"),
+    supabase.from("space_members").select("user_id").eq("space_id", spaceId),
+    supabase
+      .from("space_members")
+      .select("role")
+      .eq("space_id", spaceId)
+      .eq("user_id", user.id)
+      .single(),
+  ]);
 
   if ((activeCardCount ?? 0) >= 2) {
     return apiSuccess({ suggestion: null, reason: "max_active_cards" });
   }
 
-  const { data: memberRows } = await supabase
-    .from("space_members")
-    .select("user_id")
-    .eq("space_id", spaceId);
-
   const memberCount = memberRows?.length ?? 0;
 
-  if (memberCount > 10) {
-    const { data: member } = await supabase
-      .from("space_members")
-      .select("role")
-      .eq("space_id", spaceId)
-      .eq("user_id", user.id)
-      .single();
-
-    if (member?.role !== "admin") {
-      return apiSuccess({ suggestion: null, reason: "admin_only" });
-    }
+  if (memberCount > 10 && currentMemberRole?.role !== "admin") {
+    return apiSuccess({ suggestion: null, reason: "admin_only" });
   }
 
   // -------------------------------------------------------------------------

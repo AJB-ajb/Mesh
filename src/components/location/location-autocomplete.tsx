@@ -64,10 +64,10 @@ export function LocationAutocomplete({
       clearTimeout(searchTimeoutRef.current);
     }
 
-    // Debounce search by 500ms to respect rate limits
+    // Debounce search by 300ms to respect rate limits
     searchTimeoutRef.current = setTimeout(() => {
       performSearch(newValue);
-    }, 500);
+    }, 300);
   };
 
   // Handle result selection

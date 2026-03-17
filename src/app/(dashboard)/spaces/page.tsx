@@ -1,149 +1,51 @@
-"use client";
+import { createClient } from "@/lib/supabase/server";
+import { cacheKeys } from "@/lib/swr/keys";
+import { SWRFallback } from "@/lib/swr/fallback";
+import { SpacesPageClient } from "./spaces-page-client";
+import { deriveSpaceType } from "@/lib/supabase/types";
+import type { SpaceListItem } from "@/lib/supabase/types";
 
-import { useMemo, useState } from "react";
-import {
-  Plus,
-  MessageSquare,
-  Loader2,
-  Search,
-  X,
-  ChevronDown,
-} from "lucide-react";
+/**
+ * Server component wrapper that prefetches the space list so the client
+ * component renders instantly with data instead of a loading spinner.
+ * SWR revalidates in the background to pick up enrichment (last message,
+ * member count) and realtime updates.
+ */
+export default async function SpacesPage() {
+  const supabase = await createClient();
 
-import { labels } from "@/lib/labels";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Stack } from "@/components/ui/stack";
-import { Group } from "@/components/ui/group";
-import { EmptyState } from "@/components/ui/empty-state";
-import { useSpaceList } from "@/lib/hooks/use-space-list";
-import { SpaceList } from "@/components/spaces/space-list";
-import { FilterChips } from "@/components/spaces/filter-chips";
-import { NewSpaceDialog } from "@/components/spaces/new-space-dialog";
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-export type SpaceFilter =
-  | "all"
-  | "dms"
-  | "groups"
-  | "public"
-  | "pinned"
-  | "archived";
+  if (!user) {
+    // Middleware handles redirect; render empty fallback as safety net
+    return <SpacesPageClient />;
+  }
 
-export default function SpacesPage() {
-  const { spaces, archivedSpaces, userId, isLoading } = useSpaceList();
-  const [filter, setFilter] = useState<SpaceFilter>("all");
-  const [search, setSearch] = useState("");
-  const [showNewSpace, setShowNewSpace] = useState(false);
-  const [showArchived, setShowArchived] = useState(false);
+  const { data: spaces } = await supabase
+    .from("spaces")
+    .select(
+      `
+      *,
+      space_members!inner(user_id, unread_count, pinned, muted, role)
+    `,
+    )
+    .eq("space_members.user_id", user.id)
+    .order("updated_at", { ascending: false });
 
-  const filteredSpaces = useMemo(() => {
-    // "archived" filter shows only archived spaces
-    if (filter === "archived") {
-      let result = archivedSpaces;
-      if (search.trim()) {
-        const q = search.trim().toLowerCase();
-        result = result.filter((s) => s.name?.toLowerCase().includes(q));
-      }
-      return result;
-    }
+  const enriched = (spaces ?? []).map((space) => ({
+    ...space,
+    type: deriveSpaceType(space),
+    last_message: null,
+    member_count: 0,
+  })) as SpaceListItem[];
 
-    let result = spaces;
-
-    // Text search by name
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      result = result.filter((s) => s.name?.toLowerCase().includes(q));
-    }
-
-    // Category filter
-    if (filter !== "all") {
-      result = result.filter((space) => {
-        if (filter === "dms") return space.type === "dm";
-        if (filter === "groups")
-          return space.type === "small" || space.type === "large";
-        if (filter === "public")
-          return space.type === "large" || space.is_global;
-        if (filter === "pinned") return space.space_members?.[0]?.pinned;
-        return true;
-      });
-    }
-
-    return result;
-  }, [spaces, archivedSpaces, filter, search]);
+  const fallbackData = { spaces: enriched, userId: user.id };
 
   return (
-    <Stack gap="lg">
-      {/* Header */}
-      <Group justify="between">
-        <h1 className="text-2xl font-bold tracking-tight">
-          {labels.nav.spaces}
-        </h1>
-        <Button size="sm" onClick={() => setShowNewSpace(true)}>
-          <Plus className="size-4" />
-          <span className="hidden sm:inline">{labels.nav.newSpace}</span>
-        </Button>
-      </Group>
-
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-        <Input
-          placeholder={labels.spaces.searchSpaces}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9 pr-9"
-        />
-        {search && (
-          <button
-            type="button"
-            onClick={() => setSearch("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-          >
-            <X className="size-4" />
-          </button>
-        )}
-      </div>
-
-      {/* Filter chips */}
-      <FilterChips value={filter} onChange={setFilter} />
-
-      {/* Space list */}
-      {isLoading ? (
-        <div className="flex min-h-[200px] items-center justify-center">
-          <Loader2 className="size-8 animate-spin text-muted-foreground" />
-        </div>
-      ) : filteredSpaces.length === 0 ? (
-        <EmptyState
-          icon={<MessageSquare />}
-          title={labels.spaces.emptyTitle}
-          description={labels.spaces.emptyHint}
-        />
-      ) : (
-        <SpaceList spaces={filteredSpaces} currentUserId={userId} />
-      )}
-
-      {/* Archived section (only when not using archived filter) */}
-      {filter !== "archived" && archivedSpaces.length > 0 && (
-        <div>
-          <button
-            type="button"
-            onClick={() => setShowArchived((v) => !v)}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ChevronDown
-              className={`size-4 transition-transform ${showArchived ? "" : "-rotate-90"}`}
-            />
-            {labels.spaces.archivedSection} ({archivedSpaces.length})
-          </button>
-          {showArchived && (
-            <div className="mt-2 opacity-60">
-              <SpaceList spaces={archivedSpaces} currentUserId={userId} />
-            </div>
-          )}
-        </div>
-      )}
-
-      <NewSpaceDialog open={showNewSpace} onOpenChange={setShowNewSpace} />
-    </Stack>
+    <SWRFallback fallback={{ [cacheKeys.spaces()]: fallbackData }}>
+      <SpacesPageClient />
+    </SWRFallback>
   );
 }
