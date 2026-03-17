@@ -83,10 +83,15 @@ function suggestSchema(): ObjectSchema {
         description:
           "Brief explanation for the suggestion chip (e.g. 'Schedule a meeting')",
       },
+      thinking: {
+        type: SchemaType.STRING,
+        description:
+          "Your internal reasoning about scheduling constraints, calendar analysis, and slot selection. This field is NOT shown to users — dump all analysis here. ALWAYS populate this BEFORE title and slots.",
+      },
       title: {
         type: SchemaType.STRING,
         description:
-          "Card title (time_proposal, rsvp) or poll question. Keep concise.",
+          "Short, clean card title — e.g. 'Coffee tomorrow?' or 'Team sync'. ONLY the event name. NEVER include times, scheduling notes, reasoning, or parenthetical comments. Max ~6 words.",
       },
       options: {
         type: SchemaType.ARRAY,
@@ -175,7 +180,12 @@ If the message specifies an exact time (e.g. "at 2pm", "tomorrow at 3"):
 - If some members have conflicts: set is_specific_time=false, type=time_proposal, return the specific time PLUS 2-3 alternatives`
     : `
 TIME SLOTS:
-No calendar data available. Extract any times mentioned in messages as text-only options.
+No calendar data available. You MUST still generate 2-4 slots for time_proposal suggestions:
+- If the message mentions a specific day/time, use that as the first slot and add 2-3 alternatives nearby
+- If the message is vague ("tomorrow", "this week"), generate reasonable slots (afternoon/evening, next few days)
+- Infer duration from activity type (coffee → 30-45 min, dinner → 2h, call → 15-30 min, study → 2-3h)
+- Use the CURRENT TIME to generate future slots only
+- Round to 15-minute boundaries
 Set is_specific_time=true if an exact time is specified.`;
 
   return `You detect coordination intent in group chat messages and suggest structured cards with prefilled data.
@@ -199,7 +209,9 @@ GENERAL RULES:
 - Only suggest a card if the intent is CLEAR (confidence > 0.6)
 - If messages are just casual chat, return type "none"
 - Be conservative — false negatives are better than false positives
-- Keep titles concise and natural
+- Put ALL analysis and reasoning in the "thinking" field — it is not shown to users
+- Title must be ONLY the event name (e.g. "Coffee tomorrow?" not "Coffee tomorrow (13:00-15:00 requested...)")
+- For time_proposal and rsvp, you MUST populate the slots array with at least 2 slots
 - Pre-fill as much as possible from the conversation context`;
 }
 
@@ -244,6 +256,22 @@ function buildUserPrompt(
 // Helpers
 // ---------------------------------------------------------------------------
 
+/** Strip parenthetical reasoning the LLM may have leaked into the title */
+function sanitizeTitle(title: string): string {
+  // Remove trailing parenthetical blocks that contain scheduling keywords
+  const schedulingPatterns =
+    /\s*\((?:.*(?:requested|overlap|available|proposing|conflict|slot|buffer|commute|constraint|instead|no overlap|free window).*)\)\s*$/i;
+  let cleaned = title.replace(schedulingPatterns, "");
+
+  // Remove trailing time range annotations like "(13:00-15:00 ...)"
+  cleaned = cleaned.replace(
+    /\s*\(\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}[^)]*\)\s*$/,
+    "",
+  );
+
+  return cleaned.trim();
+}
+
 function parseMemberNotes(
   json: string | undefined,
 ): Record<string, string> | undefined {
@@ -278,6 +306,7 @@ export async function detectAndSuggest(
     suggested_type: string;
     confidence: number;
     reason: string;
+    thinking?: string;
     title?: string;
     options?: string[];
     description?: string;
@@ -303,13 +332,16 @@ export async function detectAndSuggest(
       ? null
       : (raw.suggested_type as SuggestedCardType);
 
+  // Sanitize title: strip any parenthetical reasoning the LLM may have leaked
+  const cleanTitle = raw.title ? sanitizeTitle(raw.title) : raw.title;
+
   return {
     suggested_type: suggestedType,
     confidence: raw.confidence,
     reason: raw.reason,
     prefill: {
-      title: raw.title,
-      question: raw.title, // polls use question, time/rsvp use title
+      title: cleanTitle,
+      question: cleanTitle, // polls use question, time/rsvp use title
       options: raw.options,
       description: raw.description,
       slots: raw.slots,
