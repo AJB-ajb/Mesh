@@ -146,7 +146,7 @@ function suggestSchema(): ObjectSchema {
           'JSON object of per-member scheduling notes keyed by user_id. E.g. {"abc123": "Your meeting ends at 18:30"}. Empty string if no notes.',
       },
     },
-    required: ["suggested_type", "confidence", "reason"],
+    required: ["suggested_type", "confidence", "reason", "thinking"],
   };
 }
 
@@ -256,11 +256,13 @@ function buildUserPrompt(
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Strip parenthetical reasoning the LLM may have leaked into the title */
-function sanitizeTitle(title: string): string {
-  // Remove trailing parenthetical blocks that contain scheduling keywords
+/** Strip parenthetical reasoning the LLM may have leaked into the title.
+ *  Exported for testing. */
+export function sanitizeTitle(title: string): string {
+  // Remove the LAST parenthetical block if it contains scheduling keywords.
+  // Uses [^()]* to avoid greedily matching across multiple parenthetical groups.
   const schedulingPatterns =
-    /\s*\((?:.*(?:requested|overlap|available|proposing|conflict|slot|buffer|commute|constraint|instead|no overlap|free window).*)\)\s*$/i;
+    /\s*\([^()]*(?:requested|overlap|available|proposing|conflict|slot|buffer|commute|constraint|instead|free window)[^()]*\)\s*$/i;
   let cleaned = title.replace(schedulingPatterns, "");
 
   // Remove trailing time range annotations like "(13:00-15:00 ...)"
@@ -334,6 +336,19 @@ export async function detectAndSuggest(
 
   // Sanitize title: strip any parenthetical reasoning the LLM may have leaked
   const cleanTitle = raw.title ? sanitizeTitle(raw.title) : raw.title;
+
+  // Guard: if time_proposal/rsvp has no slots, downgrade to null
+  const needsSlots =
+    suggestedType === "time_proposal" || suggestedType === "rsvp";
+  const hasSlots = raw.slots && raw.slots.length > 0;
+  if (needsSlots && !hasSlots) {
+    return {
+      suggested_type: null,
+      confidence: 0,
+      reason: "no_slots_generated",
+      prefill: {},
+    };
+  }
 
   return {
     suggested_type: suggestedType,

@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { sanitizeTitle } from "../card-suggest";
 
 /**
  * parseMemberNotes is a private helper in card-suggest.ts.
@@ -76,5 +77,50 @@ describe("parseMemberNotes", () => {
     const result = parseMemberNotes(input);
     expect(result).toBeDefined();
     expect(result!["user1"]).toEqual({ note: "complex" });
+  });
+});
+
+describe("sanitizeTitle", () => {
+  it("strips scheduling reasoning from the reported bug case", () => {
+    const input =
+      "Coffee tomorrow (Mar 17)? (13:00-15:00 requested, but no overlap available then - proposing next available slots instead.)";
+    expect(sanitizeTitle(input)).toBe("Coffee tomorrow (Mar 17)?");
+  });
+
+  it("strips a trailing parenthetical with scheduling keywords", () => {
+    expect(sanitizeTitle("Dinner (no overlap found)")).toBe("Dinner");
+    expect(sanitizeTitle("Call (proposing alternative slots)")).toBe("Call");
+    expect(sanitizeTitle("Study session (conflict detected)")).toBe(
+      "Study session",
+    );
+  });
+
+  it("strips trailing time range annotations", () => {
+    expect(sanitizeTitle("Coffee (14:00-15:30)")).toBe("Coffee");
+    expect(sanitizeTitle("Call (9:00-10:00 tomorrow)")).toBe("Call");
+    expect(sanitizeTitle("Dinner (18:00–20:00 suggested)")).toBe("Dinner");
+  });
+
+  it("preserves clean titles unchanged", () => {
+    expect(sanitizeTitle("Coffee tomorrow?")).toBe("Coffee tomorrow?");
+    expect(sanitizeTitle("Team sync")).toBe("Team sync");
+    expect(sanitizeTitle("Study session at the library")).toBe(
+      "Study session at the library",
+    );
+  });
+
+  it("preserves non-scheduling parentheticals", () => {
+    expect(sanitizeTitle("Coffee (with Alice)")).toBe("Coffee (with Alice)");
+    expect(sanitizeTitle("Meeting (Room 204)")).toBe("Meeting (Room 204)");
+  });
+
+  it("handles empty and whitespace-only strings", () => {
+    expect(sanitizeTitle("")).toBe("");
+    expect(sanitizeTitle("  ")).toBe("");
+  });
+
+  it("is case-insensitive for scheduling keywords", () => {
+    expect(sanitizeTitle("Call (OVERLAP not found)")).toBe("Call");
+    expect(sanitizeTitle("Call (Requested time unavailable)")).toBe("Call");
   });
 });
