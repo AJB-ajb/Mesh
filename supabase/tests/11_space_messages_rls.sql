@@ -71,7 +71,9 @@ VALUES (
 );
 
 -- Remove any existing global space (unique partial index enforces at most one)
+ALTER TABLE public.space_members DISABLE TRIGGER trg_prevent_last_admin_removal;
 DELETE FROM public.spaces WHERE is_global = true;
+ALTER TABLE public.space_members ENABLE TRIGGER trg_prevent_last_admin_removal;
 
 -- Global space with a message
 INSERT INTO public.spaces (id, name, created_by, is_global, settings)
