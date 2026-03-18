@@ -81,22 +81,28 @@ function suggestSchema(): ObjectSchema {
       reason: {
         type: SchemaType.STRING,
         description:
-          "Brief explanation for the suggestion chip (e.g. 'Schedule a meeting')",
+          "2-4 word label for the suggestion chip shown to users. Examples: 'Schedule a meeting', 'Create a poll', 'Claim tasks'. NEVER include analysis, member names, or scheduling details.",
+      },
+      thinking: {
+        type: SchemaType.STRING,
+        description:
+          "Your internal reasoning about scheduling constraints, calendar analysis, and slot selection. This field is NOT shown to users — dump all analysis here. ALWAYS populate this BEFORE title and slots.",
       },
       title: {
         type: SchemaType.STRING,
         description:
-          "Card title (time_proposal, rsvp) or poll question. Keep concise.",
+          "Short, clean card title — e.g. 'Coffee tomorrow?' or 'Team sync'. ONLY the event name. NEVER include times, scheduling notes, reasoning, or parenthetical comments. Max ~6 words.",
       },
       options: {
         type: SchemaType.ARRAY,
         items: { type: SchemaType.STRING },
         description:
-          "Poll options, task claim roles, or location name. NOT time slots (use slots instead).",
+          "Poll options or task claim roles. Each item is a short user-facing label (e.g. 'Italian', 'Sushi'). NOT time slots (use slots instead). NEVER include reasoning or analysis in options.",
       },
       description: {
         type: SchemaType.STRING,
-        description: "For task_claim: the task description",
+        description:
+          "For task_claim: a short, clean task description shown to users. NEVER include scheduling analysis or reasoning.",
       },
       slots: {
         type: SchemaType.ARRAY,
@@ -141,7 +147,7 @@ function suggestSchema(): ObjectSchema {
           'JSON object of per-member scheduling notes keyed by user_id. E.g. {"abc123": "Your meeting ends at 18:30"}. Empty string if no notes.',
       },
     },
-    required: ["suggested_type", "confidence", "reason"],
+    required: ["suggested_type", "confidence", "reason", "thinking"],
   };
 }
 
@@ -175,7 +181,12 @@ If the message specifies an exact time (e.g. "at 2pm", "tomorrow at 3"):
 - If some members have conflicts: set is_specific_time=false, type=time_proposal, return the specific time PLUS 2-3 alternatives`
     : `
 TIME SLOTS:
-No calendar data available. Extract any times mentioned in messages as text-only options.
+No calendar data available. You MUST still generate 2-4 slots for time_proposal suggestions:
+- If the message mentions a specific day/time, use that as the first slot and add 2-3 alternatives nearby
+- If the message is vague ("tomorrow", "this week"), generate reasonable slots (afternoon/evening, next few days)
+- Infer duration from activity type (coffee → 30-45 min, dinner → 2h, call → 15-30 min, study → 2-3h)
+- Use the CURRENT TIME to generate future slots only
+- Round to 15-minute boundaries
 Set is_specific_time=true if an exact time is specified.`;
 
   return `You detect coordination intent in group chat messages and suggest structured cards with prefilled data.
@@ -199,7 +210,11 @@ GENERAL RULES:
 - Only suggest a card if the intent is CLEAR (confidence > 0.6)
 - If messages are just casual chat, return type "none"
 - Be conservative — false negatives are better than false positives
-- Keep titles concise and natural
+- Put ALL analysis and reasoning in the "thinking" field — it is not shown to users
+- ALL other fields (title, reason, options, description, slot labels) are shown directly to users — keep them clean and concise
+- Title must be ONLY the event name (e.g. "Coffee tomorrow?" not "Coffee tomorrow (13:00-15:00 requested...)")
+- Reason must be 2-4 words (e.g. "Schedule a meeting", not a sentence with analysis)
+- For time_proposal and rsvp, you MUST populate the slots array with at least 2 slots
 - Pre-fill as much as possible from the conversation context`;
 }
 
@@ -244,6 +259,55 @@ function buildUserPrompt(
 // Helpers
 // ---------------------------------------------------------------------------
 
+/** Strip reasoning/analysis text that the LLM may have leaked into user-facing fields.
+ *  Catches common patterns: parenthetical scheduling notes, snake_case_debug_strings,
+ *  and overly long text that's clearly analysis rather than a label. */
+export function sanitizeLLMText(text: string, maxLength: number = 200): string {
+  let cleaned = text;
+
+  // Strip trailing parenthetical blocks with scheduling keywords
+  cleaned = cleaned.replace(
+    /\s*\([^()]*(?:requested|overlap|available|proposing|conflict|slot|buffer|commute|constraint|instead|free window|detected|analyzed|checking)[^()]*\)\s*$/i,
+    "",
+  );
+
+  // Strip trailing time range annotations like "(13:00-15:00 ...)"
+  cleaned = cleaned.replace(
+    /\s*\(\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}[^)]*\)\s*$/,
+    "",
+  );
+
+  // If the entire string looks like a snake_case debug token, replace with empty
+  if (/^[a-z_]+$/.test(cleaned) && cleaned.includes("_")) {
+    return "";
+  }
+
+  // Truncate overly long text (LLM dumping analysis)
+  if (cleaned.length > maxLength) {
+    cleaned = cleaned.slice(0, maxLength).replace(/\s\S*$/, "…");
+  }
+
+  return cleaned.trim();
+}
+
+/** Strip parenthetical reasoning the LLM may have leaked into the title.
+ *  Exported for testing. */
+export function sanitizeTitle(title: string): string {
+  // Remove the LAST parenthetical block if it contains scheduling keywords.
+  // Uses [^()]* to avoid greedily matching across multiple parenthetical groups.
+  const schedulingPatterns =
+    /\s*\([^()]*(?:requested|overlap|available|proposing|conflict|slot|buffer|commute|constraint|instead|free window)[^()]*\)\s*$/i;
+  let cleaned = title.replace(schedulingPatterns, "");
+
+  // Remove trailing time range annotations like "(13:00-15:00 ...)"
+  cleaned = cleaned.replace(
+    /\s*\(\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}[^)]*\)\s*$/,
+    "",
+  );
+
+  return cleaned.trim();
+}
+
 function parseMemberNotes(
   json: string | undefined,
 ): Record<string, string> | undefined {
@@ -278,6 +342,7 @@ export async function detectAndSuggest(
     suggested_type: string;
     confidence: number;
     reason: string;
+    thinking?: string;
     title?: string;
     options?: string[];
     description?: string;
@@ -303,16 +368,43 @@ export async function detectAndSuggest(
       ? null
       : (raw.suggested_type as SuggestedCardType);
 
+  // Sanitize title: strip any parenthetical reasoning the LLM may have leaked
+  const cleanTitle = raw.title ? sanitizeTitle(raw.title) : raw.title;
+
+  // Guard: if time_proposal/rsvp has no slots, downgrade to null
+  const needsSlots =
+    suggestedType === "time_proposal" || suggestedType === "rsvp";
+  const hasSlots = raw.slots && raw.slots.length > 0;
+  if (needsSlots && !hasSlots) {
+    return {
+      suggested_type: null,
+      confidence: 0,
+      reason: "no_slots_generated",
+      prefill: {},
+    };
+  }
+
+  // Sanitize all user-facing text fields
+  const cleanReason = sanitizeLLMText(raw.reason, 60) || raw.reason;
+  const cleanDescription = raw.description
+    ? sanitizeLLMText(raw.description)
+    : raw.description;
+  const cleanOptions = raw.options?.map((o) => sanitizeLLMText(o, 100));
+  const cleanSlots = raw.slots?.map((s) => ({
+    ...s,
+    label: sanitizeLLMText(s.label, 80) || s.label,
+  }));
+
   return {
     suggested_type: suggestedType,
     confidence: raw.confidence,
-    reason: raw.reason,
+    reason: cleanReason,
     prefill: {
-      title: raw.title,
-      question: raw.title, // polls use question, time/rsvp use title
-      options: raw.options,
-      description: raw.description,
-      slots: raw.slots,
+      title: cleanTitle,
+      question: cleanTitle, // polls use question, time/rsvp use title
+      options: cleanOptions,
+      description: cleanDescription,
+      slots: cleanSlots,
       duration_minutes: raw.duration_minutes,
       is_specific_time: raw.is_specific_time,
       suggested_threshold: raw.suggested_threshold,
