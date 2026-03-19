@@ -10,18 +10,11 @@
 import { test as base, type BrowserContext, type Page } from "@playwright/test";
 import { supabaseAdmin } from "../utils/supabase";
 import type { TestUser } from "../utils/factories/user-factory";
-import { ownerAuthFile, developerAuthFile } from "../utils/auth-files";
-
-/** Read saved storage state + embedded test user metadata. */
-async function loadAuthState(filePath: string): Promise<{
-  storageState: { cookies: Array<Record<string, unknown>>; origins: unknown[] };
-  testUser: TestUser & { id: string };
-}> {
-  const fs = await import("fs/promises");
-  const raw = JSON.parse(await fs.readFile(filePath, "utf-8"));
-  const { _testUser, ...storageState } = raw;
-  return { storageState, testUser: _testUser };
-}
+import {
+  ownerAuthFile,
+  developerAuthFile,
+  loadAuthState,
+} from "../utils/auth-files";
 
 /** Ensure a profile row exists so API routes don't fail with FK errors. */
 async function ensureProfile(userId: string, fullName: string) {

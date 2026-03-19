@@ -1,7 +1,25 @@
 import { test as setup } from "@playwright/test";
 import { supabaseAdmin } from "./utils/supabase";
 import { createUser } from "./utils/factories/user-factory";
-import { authFile, ownerAuthFile, developerAuthFile } from "./utils/auth-files";
+import {
+  authFile,
+  ownerAuthFile,
+  developerAuthFile,
+  loadAuthState,
+} from "./utils/auth-files";
+
+/** Clean up a previously-created test user from a saved auth file. */
+async function cleanupPreviousUser(filePath: string) {
+  if (!supabaseAdmin) return;
+  try {
+    const { testUser } = await loadAuthState(filePath);
+    if (testUser?.id) {
+      await supabaseAdmin.auth.admin.deleteUser(testUser.id);
+    }
+  } catch {
+    // File doesn't exist or is malformed — nothing to clean up
+  }
+}
 
 /**
  * Single login for the main test user (layout tests, etc.).
@@ -39,6 +57,11 @@ setup("create owner test user", async ({ page }) => {
     return;
   }
 
+  // Clean up user from previous run + ensure output directory exists
+  await cleanupPreviousUser(ownerAuthFile);
+  const fsp = await import("fs/promises");
+  await fsp.mkdir("tests/.auth", { recursive: true });
+
   const user = createUser();
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email: user.email,
@@ -58,8 +81,7 @@ setup("create owner test user", async ({ page }) => {
   });
 
   const state = await page.context().storageState();
-  const fs = await import("fs/promises");
-  await fs.writeFile(
+  await fsp.writeFile(
     ownerAuthFile,
     JSON.stringify(
       { ...state, _testUser: { ...user, id: data.user.id } },
@@ -76,6 +98,9 @@ setup("create developer test user", async ({ page }) => {
     setup.skip();
     return;
   }
+
+  // Clean up user from previous run
+  await cleanupPreviousUser(developerAuthFile);
 
   const user = createUser();
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
@@ -96,8 +121,8 @@ setup("create developer test user", async ({ page }) => {
   });
 
   const state = await page.context().storageState();
-  const fs = await import("fs/promises");
-  await fs.writeFile(
+  const fsd = await import("fs/promises");
+  await fsd.writeFile(
     developerAuthFile,
     JSON.stringify(
       { ...state, _testUser: { ...user, id: data.user.id } },
