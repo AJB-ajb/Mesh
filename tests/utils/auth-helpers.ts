@@ -6,7 +6,7 @@
  * so it works in Playwright's Node.js context.
  */
 
-import { Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 import { supabaseAdmin } from "./supabase";
 import { createUser, type TestUser } from "./factories/user-factory";
 
@@ -31,53 +31,6 @@ export async function loginAsUser(
   });
 
   return user;
-}
-
-/**
- * Create a user account via Supabase Admin API and log in via UI.
- * This is the reliable auth setup method — it goes through the real
- * login flow so cookies are properly set for server-side auth.
- */
-export async function setupAuthenticatedUser(
-  page: Page,
-  userData: Partial<TestUser> & { persona?: string } = {},
-): Promise<TestUser & { id: string }> {
-  const user = createUser(userData);
-  const persona = userData.persona ?? "developer";
-
-  if (!supabaseAdmin) {
-    throw new Error("SUPABASE_SECRET_KEY required for setupAuthenticatedUser");
-  }
-
-  // Create user via admin API (auto-confirms email)
-  const { data: authData, error: createError } =
-    await supabaseAdmin.auth.admin.createUser({
-      email: user.email,
-      password: user.password,
-      email_confirm: true,
-      user_metadata: {
-        full_name: user.full_name,
-        persona,
-      },
-    });
-
-  if (createError) {
-    throw new Error(`Failed to create test user: ${createError.message}`);
-  }
-
-  const userId = authData.user.id;
-
-  // Login via UI so cookies are properly set for SSR auth
-  await page.goto("/login");
-  await page.fill('input[type="email"]', user.email);
-  await page.fill('input[type="password"]', user.password);
-  await page.click('button[type="submit"]');
-  await page.waitForURL("**/spaces", {
-    timeout: 10000,
-    waitUntil: "domcontentloaded",
-  });
-
-  return { ...user, id: userId };
 }
 
 /**

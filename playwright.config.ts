@@ -49,11 +49,11 @@ export default defineConfig({
       dependencies: ["chromium"],
       testMatch: /e2e\/auth-feature\.spec\.ts/,
     },
-    // Self-authenticating tests — use the authenticated fixture which
-    // creates/cleans up its own users via Supabase Admin API.
+    // Multi-user tests — reuse sessions pre-created during setup.
     {
       name: "authenticated",
       use: { ...devices["Desktop Chrome"] },
+      dependencies: ["setup"],
       testMatch:
         /e2e\/(posting-creation|application-flow|discover-filtering|cross-user-visibility|card-lifecycle)\.spec\.ts/,
     },

@@ -17,6 +17,8 @@ import { supabaseAdmin } from "../utils/supabase";
 // ---------------------------------------------------------------------------
 
 test.describe("Cross-user profile visibility", () => {
+  // Tests mutate the shared owner's profile — run serially to avoid overwriting
+  test.describe.configure({ mode: "serial" });
   test("user can view another user's profile page", async ({
     ownerPage,
     ownerUser,
