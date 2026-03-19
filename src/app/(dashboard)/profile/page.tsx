@@ -365,3 +365,17 @@ export default function ProfilePage() {
     </Suspense>
   );
 }
+
+export default function ProfilePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <ProfilePageContent />
+    </Suspense>
+  );
+}
