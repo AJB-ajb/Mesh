@@ -1,12 +1,18 @@
 /**
  * Authenticated test fixture.
  * Provides pre-authenticated pages for developer and owner personas.
- * Handles user creation and cleanup automatically.
+ *
+ * Sessions are pre-created during the setup phase (auth.setup.ts) so tests
+ * never hit Supabase's auth rate limiter.
  */
 
 import { test as base, type Page } from "@playwright/test";
-import { setupAuthenticatedUser, cleanupTestUser } from "../utils/auth-helpers";
 import type { TestUser } from "../utils/factories/user-factory";
+import {
+  ownerAuthFile,
+  developerAuthFile,
+  loadAuthState,
+} from "../utils/auth-files";
 
 type AuthFixtures = {
   /** Page authenticated as a developer persona */
@@ -21,39 +27,39 @@ type AuthFixtures = {
 
 export const test = base.extend<AuthFixtures>({
   developerUser: [
-    async ({ page }, use) => {
-      const user = await setupAuthenticatedUser(page, {
-        persona: "developer",
-      });
-      await use(user);
-      await cleanupTestUser(user.id);
+    async ({}, use) => {
+      const { testUser } = await loadAuthState(developerAuthFile);
+      await use(testUser);
     },
     { scope: "test" },
   ],
 
   developerPage: [
-    async ({ page }, use) => {
-      // developerUser fixture already authenticated the page
+    async ({ browser }, use) => {
+      const { storageState } = await loadAuthState(developerAuthFile);
+      const context = await browser.newContext({ storageState });
+      const page = await context.newPage();
       await use(page);
+      await context.close();
     },
     { scope: "test" },
   ],
 
   ownerUser: [
-    async ({ page }, use) => {
-      const user = await setupAuthenticatedUser(page, {
-        persona: "project_owner",
-      });
-      await use(user);
-      await cleanupTestUser(user.id);
+    async ({}, use) => {
+      const { testUser } = await loadAuthState(ownerAuthFile);
+      await use(testUser);
     },
     { scope: "test" },
   ],
 
   ownerPage: [
-    async ({ page }, use) => {
-      // ownerUser fixture already authenticated the page
+    async ({ browser }, use) => {
+      const { storageState } = await loadAuthState(ownerAuthFile);
+      const context = await browser.newContext({ storageState });
+      const page = await context.newPage();
       await use(page);
+      await context.close();
     },
     { scope: "test" },
   ],

@@ -7,7 +7,8 @@ export const developerAuthFile = "tests/.auth/developer.json";
 
 /** Read saved storage state + embedded test user metadata. */
 export async function loadAuthState(filePath: string): Promise<{
-  storageState: { cookies: Array<Record<string, unknown>>; origins: unknown[] };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  storageState: any;
   testUser: TestUser & { id: string };
 }> {
   const fs = await import("fs/promises");
