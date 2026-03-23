@@ -229,12 +229,12 @@ Consolidates remaining items from v0.7–v0.8 that were deferred when those mile
 
 #### Spaces cleanup
 
-| Feature                            | Effort | Description                                                                                                                      |
-| ---------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| Inherited → independent transition | Small  | Auto-set `inherits_members = false` when outsider joins via matching/invite.                                                     |
-| Old table cleanup                  | Medium | Drop migration for old `postings`, `conversations`, `messages`, `group_messages`. Remove remaining code references.              |
-| Conversation summary in matching   | Small  | Pass last ~5 Space messages to deep-match LLM calls (already done for card suggestions, missing for matching).                   |
-| Space context in card suggestions  | Small  | Propagate parent Space `state_text` to card suggestion LLM calls (already done for deep matching, missing for card suggestions). |
+| Feature                            | Effort     | Description                                                                                                                                                                                    |
+| ---------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Inherited → independent transition | Small      | Auto-set `inherits_members = false` when outsider joins via matching/invite.                                                                                                                   |
+| ~~Old table cleanup~~              | ~~Medium~~ | ~~Partial~~ — `conversations`, `messages`, `group_messages`, `group_message_reads` dropped. Code migrated to `space_postings`/`space_members`. `postings` table drop deferred (FK dependents). |
+| Conversation summary in matching   | Small      | Pass last ~5 Space messages to deep-match LLM calls (already done for card suggestions, missing for matching).                                                                                 |
+| Space context in card suggestions  | Small      | Propagate parent Space `state_text` to card suggestion LLM calls (already done for deep matching, missing for card suggestions).                                                               |
 
 #### Card system completion
 
@@ -246,12 +246,12 @@ Consolidates remaining items from v0.7–v0.8 that were deferred when those mile
 
 #### UX & integration gaps
 
-| Feature                            | Effort | Description                                                                                                                                               |
-| ---------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `\|\|hidden\|\|` acceptance gating | Medium | Wire `revealHidden` to join request status end-to-end. `MarkdownRenderer` supports the prop; no component sets it based on acceptance. Core use case gap. |
-| Quick-send suggestion path         | Small  | Suggestion chips currently always open the edit dialog. Add 1-tap quick-send path that creates card directly with pre-filled defaults.                    |
-| Scheduling preferences onboarding  | Small  | Profile setup prompt: "Anything we should know when scheduling?" Auto-wraps in `\|\|...\|\|`. Skippable.                                                  |
-| Remove chips & nudges remnants     | Small  | Finish cleanup of deprecated quick chip / post-write nudge code (`chipMetadata` marked deprecated but not removed).                                       |
+| Feature                                | Effort     | Description                                                                                                                            |
+| -------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| ~~`\|\|hidden\|\|` acceptance gating~~ | ~~Medium~~ | ~~Done~~ — `revealHidden` wired via `useAcceptedPostingIds` hook. Owners + accepted see hidden content; others see placeholder.        |
+| Quick-send suggestion path             | Small      | Suggestion chips currently always open the edit dialog. Add 1-tap quick-send path that creates card directly with pre-filled defaults. |
+| Scheduling preferences onboarding      | Small      | Profile setup prompt: "Anything we should know when scheduling?" Auto-wraps in `\|\|...\|\|`. Skippable.                               |
+| Remove chips & nudges remnants         | Small      | Finish cleanup of deprecated quick chip / post-write nudge code (`chipMetadata` marked deprecated but not removed).                    |
 
 ### v1.0 — Mobile (Capacitor, Android)
 

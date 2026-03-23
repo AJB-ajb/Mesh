@@ -135,15 +135,15 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}${next}`);
       }
 
-      // Check if user has projects (existing user)
-      const { data: projects } = await supabase
-        .from("postings")
-        .select("id")
-        .eq("creator_id", user.id)
+      // Check if user has space memberships (existing user)
+      const { data: memberships } = await supabase
+        .from("space_members")
+        .select("space_id")
+        .eq("user_id", user.id)
         .limit(1);
 
-      if (projects && projects.length > 0) {
-        // Existing user with projects - ensure profile_completed is set
+      if (memberships && memberships.length > 0) {
+        // Existing user with space memberships - ensure profile_completed is set
         const profileCompleted = user.user_metadata?.profile_completed;
         if (!profileCompleted) {
           await supabase.auth.updateUser({

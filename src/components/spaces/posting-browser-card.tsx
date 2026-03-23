@@ -60,6 +60,7 @@ interface PostingBrowserCardProps {
   userId: string | null;
   spaceId?: string;
   isAdmin?: boolean;
+  revealHidden?: boolean;
 }
 
 export function PostingBrowserCard({
@@ -67,6 +68,7 @@ export function PostingBrowserCard({
   userId,
   spaceId,
   isAdmin,
+  revealHidden = false,
 }: PostingBrowserCardProps) {
   const { mutate } = useSWRConfig();
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
@@ -122,6 +124,7 @@ export function PostingBrowserCard({
           content={posting.text}
           className="text-sm"
           clamp={3}
+          revealHidden={revealHidden}
         />
 
         {/* Tags */}
