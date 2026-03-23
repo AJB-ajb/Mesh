@@ -424,6 +424,8 @@ test.describe("Layout > Content within viewport bounds", () => {
 const CLIPPED_ELEMENT_ALLOWLIST = [
   "[data-radix-popper-content-wrapper]",
   "[data-radix-scroll-area-viewport]",
+  // DM presence indicator dot — clipped by scroll container at list bottom, scrolls into view
+  "span.absolute.bottom-0.right-0",
 ] as const;
 
 test.describe("Layout > No clipped positioned elements", () => {
