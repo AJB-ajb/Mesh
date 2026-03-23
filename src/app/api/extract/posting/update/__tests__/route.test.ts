@@ -22,7 +22,11 @@ vi.mock("@/lib/ai/gemini", () => ({
 }));
 
 import { POST } from "../route";
-import { testRequiresAuth, testRequiresResource, testRequiresOwnership } from "tests/utils/route-test-helpers";
+import {
+  testRequiresAuth,
+  testRequiresResource,
+  testRequiresOwnership,
+} from "tests/utils/route-test-helpers";
 import { buildChain } from "tests/utils/supabase-mock";
 
 const MOCK_USER = { id: "user-1", email: "a@b.com" };
@@ -43,15 +47,12 @@ function makeReq(body: unknown) {
 function mockPostingOwned() {
   const mockSingle = vi.fn().mockResolvedValue({
     data: {
-      creator_id: MOCK_USER.id,
-      title: "My Posting",
-      description: "A posting",
+      created_by: MOCK_USER.id,
+      text: "My Posting\nA posting",
       category: "personal",
-      estimated_time: "2 weeks",
-      team_size_max: 5,
+      capacity: 5,
       tags: ["test"],
-      context_identifier: null,
-      mode: "open",
+      status: "open",
     },
     error: null,
   });
@@ -80,11 +81,17 @@ describe("POST /api/extract/posting/update", () => {
     expect(res.status).toBe(503);
   });
 
-  testRequiresAuth(POST, () => makeReq({
-    postingId: "p1",
-    sourceText: "some text",
-    updateInstruction: "add Python",
-  }), routeCtx, mockGetUser);
+  testRequiresAuth(
+    POST,
+    () =>
+      makeReq({
+        postingId: "p1",
+        sourceText: "some text",
+        updateInstruction: "add Python",
+      }),
+    routeCtx,
+    mockGetUser,
+  );
 
   it("returns 400 when postingId is missing", async () => {
     authedUser();
@@ -104,19 +111,38 @@ describe("POST /api/extract/posting/update", () => {
     expect(res.status).toBe(400);
   });
 
-  testRequiresResource(POST, () => makeReq({
-    postingId: "p-nonexistent",
-    sourceText: "some text",
-    updateInstruction: "add Python",
-  }), routeCtx, mockGetUser, mockFrom);
+  testRequiresResource(
+    POST,
+    () =>
+      makeReq({
+        postingId: "p-nonexistent",
+        sourceText: "some text",
+        updateInstruction: "add Python",
+      }),
+    routeCtx,
+    mockGetUser,
+    mockFrom,
+  );
 
-  testRequiresOwnership(POST, () => makeReq({
-    postingId: "p1",
-    sourceText: "some text",
-    updateInstruction: "add Python",
-  }), routeCtx, mockGetUser, () => {
-    mockFrom.mockReturnValue(buildChain({ data: { creator_id: "other-user", title: "T" }, error: null }));
-  });
+  testRequiresOwnership(
+    POST,
+    () =>
+      makeReq({
+        postingId: "p1",
+        sourceText: "some text",
+        updateInstruction: "add Python",
+      }),
+    routeCtx,
+    mockGetUser,
+    () => {
+      mockFrom.mockReturnValue(
+        buildChain({
+          data: { created_by: "other-user", text: "T" },
+          error: null,
+        }),
+      );
+    },
+  );
 
   it("updates and extracts posting successfully", async () => {
     authedUser();

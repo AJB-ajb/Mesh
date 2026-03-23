@@ -37,18 +37,6 @@ vi.mock("@/lib/ai/embeddings", () => ({
       parts.push(`Interests: ${interests.join(", ")}`);
     return parts.join("\n\n");
   },
-  composePostingText: (
-    title: string,
-    description: string,
-    skills: string[] | null,
-  ) => {
-    const parts: string[] = [];
-    parts.push(`Title: ${title}`);
-    parts.push(`Description: ${description}`);
-    if (skills && skills.length > 0)
-      parts.push(`Required Skills: ${skills.join(", ")}`);
-    return parts.join("\n\n");
-  },
 }));
 
 import { POST } from "../route";
@@ -117,20 +105,16 @@ describe("POST /api/embeddings/process", () => {
   });
 
   it("allows calls with valid EMBEDDINGS_API_KEY", async () => {
-    const emptyQuery = mockQuery({ data: [], error: null });
+    const profilesQuery = mockQuery({ data: [], error: null });
 
-    mockFrom.mockImplementation(() => emptyQuery);
+    mockFrom.mockImplementation(() => profilesQuery);
 
     const req = makeRequest({ authorization: "Bearer test-embeddings-key" });
     const response = await POST(req, routeContext);
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.processed).toEqual({
-      profiles: 0,
-      postings: 0,
-      spacePostings: 0,
-    });
+    expect(body.processed).toEqual({ profiles: 0 });
   });
 
   it("rejects calls with service role key (only EMBEDDINGS_API_KEY is accepted)", async () => {
@@ -145,24 +129,20 @@ describe("POST /api/embeddings/process", () => {
   });
 
   it("returns empty result when no pending items", async () => {
-    const emptyQuery = mockQuery({ data: [], error: null });
+    const profilesQuery = mockQuery({ data: [], error: null });
 
-    mockFrom.mockImplementation(() => emptyQuery);
+    mockFrom.mockImplementation(() => profilesQuery);
 
     const req = makeRequest({ authorization: "Bearer test-embeddings-key" });
     const response = await POST(req, routeContext);
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.processed).toEqual({
-      profiles: 0,
-      postings: 0,
-      spacePostings: 0,
-    });
+    expect(body.processed).toEqual({ profiles: 0 });
     expect(body.errors).toEqual([]);
   });
 
-  it("processes pending profiles and postings", async () => {
+  it("processes pending profiles", async () => {
     const pendingProfiles = [
       {
         user_id: "user-1",
@@ -173,18 +153,7 @@ describe("POST /api/embeddings/process", () => {
       },
     ];
 
-    const pendingPostings = [
-      {
-        id: "posting-1",
-        title: "Project",
-        description: "A cool project",
-        skills: ["React"],
-      },
-    ];
-
     const profilesQuery = mockQuery({ data: pendingProfiles, error: null });
-    const postingsQuery = mockQuery({ data: pendingPostings, error: null });
-    const spacePostingsQuery = mockQuery({ data: [], error: null });
 
     const calls: string[] = [];
     mockFrom.mockImplementation((table: string) => {
@@ -195,26 +164,11 @@ describe("POST /api/embeddings/process", () => {
       ) {
         return profilesQuery;
       }
-      if (
-        table === "postings" &&
-        calls.filter((c) => c === "postings").length === 1
-      ) {
-        return postingsQuery;
-      }
-      if (
-        table === "space_postings" &&
-        calls.filter((c) => c === "space_postings").length === 1
-      ) {
-        return spacePostingsQuery;
-      }
       // Update calls
       return mockUpdateQuery({ data: null, error: null });
     });
 
-    const mockEmbeddings = [
-      new Array(1536).fill(0.1),
-      new Array(1536).fill(0.2),
-    ];
+    const mockEmbeddings = [new Array(1536).fill(0.1)];
     mockGenerateEmbeddingsBatch.mockResolvedValueOnce(mockEmbeddings);
 
     const req = makeRequest({ authorization: "Bearer test-embeddings-key" });
@@ -223,10 +177,8 @@ describe("POST /api/embeddings/process", () => {
 
     expect(response.status).toBe(200);
     expect(body.processed.profiles).toBe(1);
-    expect(body.processed.postings).toBe(1);
     expect(mockGenerateEmbeddingsBatch).toHaveBeenCalledTimes(1);
-    // Should have been called with 2 texts (1 profile + 1 posting)
-    expect(mockGenerateEmbeddingsBatch.mock.calls[0][0]).toHaveLength(2);
+    expect(mockGenerateEmbeddingsBatch.mock.calls[0][0]).toHaveLength(1);
   });
 
   it("derives skills from join-table rows instead of old column", async () => {
@@ -244,19 +196,7 @@ describe("POST /api/embeddings/process", () => {
       },
     ];
 
-    const pendingPostings = [
-      {
-        id: "posting-1",
-        title: "Project",
-        description: "A cool project",
-        skills: ["OldPostingSkill"],
-        posting_skills: [{ skill_nodes: { name: "Go" } }],
-      },
-    ];
-
     const profilesQuery = mockQuery({ data: pendingProfiles, error: null });
-    const postingsQuery = mockQuery({ data: pendingPostings, error: null });
-    const spacePostingsQuery = mockQuery({ data: [], error: null });
 
     const calls: string[] = [];
     mockFrom.mockImplementation((table: string) => {
@@ -267,25 +207,10 @@ describe("POST /api/embeddings/process", () => {
       ) {
         return profilesQuery;
       }
-      if (
-        table === "postings" &&
-        calls.filter((c) => c === "postings").length === 1
-      ) {
-        return postingsQuery;
-      }
-      if (
-        table === "space_postings" &&
-        calls.filter((c) => c === "space_postings").length === 1
-      ) {
-        return spacePostingsQuery;
-      }
       return mockUpdateQuery({ data: null, error: null });
     });
 
-    const mockEmbeddings = [
-      new Array(1536).fill(0.1),
-      new Array(1536).fill(0.2),
-    ];
+    const mockEmbeddings = [new Array(1536).fill(0.1)];
     mockGenerateEmbeddingsBatch.mockResolvedValueOnce(mockEmbeddings);
 
     const req = makeRequest({ authorization: "Bearer test-embeddings-key" });
@@ -294,15 +219,12 @@ describe("POST /api/embeddings/process", () => {
 
     expect(response.status).toBe(200);
     expect(body.processed.profiles).toBe(1);
-    expect(body.processed.postings).toBe(1);
 
     // Verify join-table skills were used (not the old column fallback)
     const texts = mockGenerateEmbeddingsBatch.mock.calls[0][0] as string[];
     expect(texts[0]).toContain("TypeScript");
     expect(texts[0]).toContain("React");
     expect(texts[0]).not.toContain("OldSkill");
-    expect(texts[1]).toContain("Go");
-    expect(texts[1]).not.toContain("OldPostingSkill");
   });
 
   it("returns error when embedding generation fails", async () => {
@@ -317,19 +239,8 @@ describe("POST /api/embeddings/process", () => {
     ];
 
     const profilesQuery = mockQuery({ data: pendingProfiles, error: null });
-    const emptyQuery = mockQuery({ data: [], error: null });
 
-    const calls: string[] = [];
-    mockFrom.mockImplementation((table: string) => {
-      calls.push(table);
-      if (
-        table === "profiles" &&
-        calls.filter((c) => c === "profiles").length === 1
-      ) {
-        return profilesQuery;
-      }
-      return emptyQuery;
-    });
+    mockFrom.mockImplementation(() => profilesQuery);
 
     // Must reject on all retry attempts (initial + 2 retries)
     mockGenerateEmbeddingsBatch.mockRejectedValue(
@@ -356,7 +267,6 @@ describe("POST /api/embeddings/process", () => {
     ];
 
     const profilesQuery = mockQuery({ data: pendingProfiles, error: null });
-    const emptyQuery = mockQuery({ data: [], error: null });
 
     const calls: string[] = [];
     mockFrom.mockImplementation((table: string) => {
@@ -366,18 +276,6 @@ describe("POST /api/embeddings/process", () => {
         calls.filter((c) => c === "profiles").length === 1
       ) {
         return profilesQuery;
-      }
-      if (
-        table === "postings" &&
-        calls.filter((c) => c === "postings").length === 1
-      ) {
-        return emptyQuery;
-      }
-      if (
-        table === "space_postings" &&
-        calls.filter((c) => c === "space_postings").length === 1
-      ) {
-        return emptyQuery;
       }
       // Update call for skipped profile
       return mockUpdateQuery({ data: null, error: null });
@@ -405,7 +303,6 @@ describe("POST /api/embeddings/process", () => {
     ];
 
     const profilesQuery = mockQuery({ data: pendingProfiles, error: null });
-    const emptyQuery = mockQuery({ data: [], error: null });
 
     const calls: string[] = [];
     mockFrom.mockImplementation((table: string) => {
@@ -415,18 +312,6 @@ describe("POST /api/embeddings/process", () => {
         calls.filter((c) => c === "profiles").length === 1
       ) {
         return profilesQuery;
-      }
-      if (
-        table === "postings" &&
-        calls.filter((c) => c === "postings").length === 1
-      ) {
-        return emptyQuery;
-      }
-      if (
-        table === "space_postings" &&
-        calls.filter((c) => c === "space_postings").length === 1
-      ) {
-        return emptyQuery;
       }
       // Update call fails
       return mockUpdateQuery({

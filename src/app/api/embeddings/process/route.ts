@@ -4,7 +4,7 @@
  * Processes pending embedding generation in batches.
  * Protected by EMBEDDINGS_API_KEY via withAuth cron mode.
  *
- * 1. Queries profiles/postings WHERE needs_embedding = true (LIMIT 50 each)
+ * 1. Queries profiles WHERE needs_embedding = true (LIMIT 50)
  * 2. Generates embeddings in batch via OpenAI
  * 3. Updates records with embeddings and marks needs_embedding = false
  */
@@ -13,7 +13,6 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import {
   generateEmbeddingsBatch,
   composeProfileText,
-  composePostingText,
 } from "@/lib/ai/embeddings";
 import { withAuth } from "@/lib/api/with-auth";
 import { apiError, apiSuccess } from "@/lib/errors";
@@ -32,19 +31,6 @@ interface ProfileRow {
   interests: string[] | null;
   headline: string | null;
   profile_skills?: JoinSkillRow[] | null;
-}
-
-interface PostingRow {
-  id: string;
-  title: string;
-  description: string;
-  posting_skills?: JoinSkillRow[] | null;
-}
-
-interface SpacePostingRow {
-  id: string;
-  text: string;
-  space_id: string;
 }
 
 function createServiceClient() {
@@ -101,55 +87,18 @@ export const POST = withAuth(
       );
     }
 
-    // Fetch pending postings with join table skills
-    const { data: pendingPostings, error: postingsError } = await supabase
-      .from("postings")
-      .select("id, title, description, posting_skills(skill_nodes(name))")
-      .eq("needs_embedding", true)
-      .limit(BATCH_LIMIT);
-
-    if (postingsError) {
-      return apiError(
-        "INTERNAL",
-        `Failed to fetch postings: ${postingsError.message}`,
-      );
-    }
-
-    // Fetch pending space_postings
-    const { data: pendingSpacePostings, error: spError } = await supabase
-      .from("space_postings")
-      .select("id, text, space_id")
-      .eq("needs_embedding", true)
-      .limit(BATCH_LIMIT);
-
-    if (spError) {
-      return apiError(
-        "INTERNAL",
-        `Failed to fetch space_postings: ${spError.message}`,
-      );
-    }
-
     const profiles = (pendingProfiles ?? []) as ProfileRow[];
-    const postings = (pendingPostings ?? []) as PostingRow[];
-    const spacePostings = (pendingSpacePostings ?? []) as SpacePostingRow[];
 
-    if (
-      profiles.length === 0 &&
-      postings.length === 0 &&
-      spacePostings.length === 0
-    ) {
+    if (profiles.length === 0) {
       return apiSuccess({
-        processed: { profiles: 0, postings: 0, spacePostings: 0 },
+        processed: { profiles: 0 },
         errors: [],
       });
     }
 
     // Compose texts for all items
     const profileTexts: { index: number; userId: string; text: string }[] = [];
-    const postingTexts: { index: number; postingId: string; text: string }[] =
-      [];
     const skippedProfiles: string[] = [];
-    const skippedPostings: string[] = [];
 
     for (const profile of profiles) {
       const text = composeProfileText(
@@ -169,51 +118,7 @@ export const POST = withAuth(
       }
     }
 
-    for (const posting of postings) {
-      const text = composePostingText(
-        posting.title,
-        posting.description,
-        deriveSkillNames(posting.posting_skills),
-      );
-      if (text.trim()) {
-        postingTexts.push({
-          index: postingTexts.length,
-          postingId: posting.id,
-          text,
-        });
-      } else {
-        skippedPostings.push(posting.id);
-      }
-    }
-
-    const spacePostingTexts: {
-      index: number;
-      postingId: string;
-      spaceId: string;
-      text: string;
-    }[] = [];
-    const skippedSpacePostings: string[] = [];
-
-    for (const sp of spacePostings) {
-      const text = composePostingText("", sp.text, null);
-      if (text.trim()) {
-        spacePostingTexts.push({
-          index: spacePostingTexts.length,
-          postingId: sp.id,
-          spaceId: sp.space_id,
-          text,
-        });
-      } else {
-        skippedSpacePostings.push(sp.id);
-      }
-    }
-
-    // Combine all texts into a single batch call
-    const allTexts = [
-      ...profileTexts.map((p) => p.text),
-      ...postingTexts.map((p) => p.text),
-      ...spacePostingTexts.map((p) => p.text),
-    ];
+    const allTexts = profileTexts.map((p) => p.text);
 
     const errors: string[] = [];
     let allEmbeddings: number[][] = [];
@@ -229,24 +134,13 @@ export const POST = withAuth(
       }
     }
 
-    // Split embeddings back to profiles, postings, and space_postings
-    const profileEmbeddings = allEmbeddings.slice(0, profileTexts.length);
-    const postingEmbeddings = allEmbeddings.slice(
-      profileTexts.length,
-      profileTexts.length + postingTexts.length,
-    );
-    const spacePostingEmbeddings = allEmbeddings.slice(
-      profileTexts.length + postingTexts.length,
-    );
-
     const now = new Date().toISOString();
     let processedProfiles = 0;
-    let processedPostings = 0;
 
     // Update profiles
     for (let i = 0; i < profileTexts.length; i++) {
       const { userId } = profileTexts[i];
-      const embedding = profileEmbeddings[i];
+      const embedding = allEmbeddings[i];
 
       const { error: updateError } = await supabase
         .from("profiles")
@@ -264,92 +158,6 @@ export const POST = withAuth(
       }
     }
 
-    // Update postings
-    for (let i = 0; i < postingTexts.length; i++) {
-      const { postingId } = postingTexts[i];
-      const embedding = postingEmbeddings[i];
-
-      const { error: updateError } = await supabase
-        .from("postings")
-        .update({
-          embedding,
-          needs_embedding: false,
-          embedding_generated_at: now,
-        })
-        .eq("id", postingId);
-
-      if (updateError) {
-        errors.push(`Posting ${postingId}: ${updateError.message}`);
-      } else {
-        processedPostings++;
-      }
-    }
-
-    // Update space_postings and trigger matching
-    let processedSpacePostings = 0;
-    const newlyEmbeddedSpacePostings: {
-      postingId: string;
-      spaceId: string;
-    }[] = [];
-
-    for (let i = 0; i < spacePostingTexts.length; i++) {
-      const { postingId, spaceId } = spacePostingTexts[i];
-      const embedding = spacePostingEmbeddings[i];
-
-      const { error: updateError } = await supabase
-        .from("space_postings")
-        .update({
-          embedding,
-          needs_embedding: false,
-          embedding_generated_at: now,
-        })
-        .eq("id", postingId);
-
-      if (updateError) {
-        errors.push(`SpacePosting ${postingId}: ${updateError.message}`);
-      } else {
-        processedSpacePostings++;
-        newlyEmbeddedSpacePostings.push({ postingId, spaceId });
-      }
-    }
-
-    // Trigger matching for newly-embedded space_postings in matching-enabled spaces
-    for (const { postingId, spaceId } of newlyEmbeddedSpacePostings) {
-      try {
-        const { data: space } = await supabase
-          .from("spaces")
-          .select("settings")
-          .eq("id", spaceId)
-          .single();
-
-        const settings = (space?.settings ?? {}) as Record<string, unknown>;
-        if (!settings.matching_enabled) continue;
-
-        // Dynamic import to avoid circular deps in the cron context
-        const { matchPostingToProfiles, createMatchRecordsForPosting } =
-          await import("@/lib/matching/posting-to-profile");
-
-        const matches = await matchPostingToProfiles(
-          postingId,
-          10,
-          false,
-          supabase,
-        );
-        if (matches.length > 0) {
-          await createMatchRecordsForPosting(postingId, matches, supabase);
-        }
-
-        await supabase
-          .from("space_postings")
-          .update({ matched_at: now })
-          .eq("id", postingId);
-      } catch (matchError) {
-        errors.push(
-          `Matching for ${postingId}: ${matchError instanceof Error ? matchError.message : String(matchError)}`,
-        );
-      }
-    }
-
     // Mark skipped items as not needing embedding (no content to embed)
     for (const userId of skippedProfiles) {
       await supabase
@@ -357,29 +165,11 @@ export const POST = withAuth(
         .update({ needs_embedding: false })
         .eq("user_id", userId);
     }
-    for (const postingId of skippedPostings) {
-      await supabase
-        .from("postings")
-        .update({ needs_embedding: false })
-        .eq("id", postingId);
-    }
-    for (const postingId of skippedSpacePostings) {
-      await supabase
-        .from("space_postings")
-        .update({ needs_embedding: false })
-        .eq("id", postingId);
-    }
 
     return apiSuccess({
-      processed: {
-        profiles: processedProfiles,
-        postings: processedPostings,
-        spacePostings: processedSpacePostings,
-      },
+      processed: { profiles: processedProfiles },
       skipped: {
         profiles: skippedProfiles.length,
-        postings: skippedPostings.length,
-        spacePostings: skippedSpacePostings.length,
       },
       errors,
     });

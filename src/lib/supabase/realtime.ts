@@ -1,6 +1,6 @@
 /**
  * Real-time utilities for Supabase
- * Handles messages, notifications, typing indicators, and presence
+ * Handles notifications, typing indicators, and presence
  */
 
 import { RealtimeChannel, RealtimePresenceState } from "@supabase/supabase-js";
@@ -17,23 +17,6 @@ export type TypingUser = {
   conversation_id: string;
 };
 
-export type Message = {
-  id: string;
-  conversation_id: string;
-  sender_id: string;
-  content: string;
-  read: boolean;
-  created_at: string;
-};
-
-export type GroupMessage = {
-  id: string;
-  posting_id: string;
-  sender_id: string;
-  content: string;
-  created_at: string;
-};
-
 export type Notification = {
   id: string;
   user_id: string;
@@ -47,30 +30,9 @@ export type Notification = {
   created_at: string;
 };
 
-export type Conversation = {
-  id: string;
-  participant_1: string;
-  participant_2: string;
-  last_message_at: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
 // ---------------------------------------------------------------------------
 // Type guards
 // ---------------------------------------------------------------------------
-
-function isMessage(value: unknown): value is Message {
-  if (typeof value !== "object" || value === null) return false;
-  const v = value as Record<string, unknown>;
-  return (
-    typeof v.id === "string" &&
-    typeof v.conversation_id === "string" &&
-    typeof v.sender_id === "string" &&
-    typeof v.content === "string" &&
-    typeof v.created_at === "string"
-  );
-}
 
 function isNotification(value: unknown): value is Notification {
   if (typeof value !== "object" || value === null) return false;
@@ -80,17 +42,6 @@ function isNotification(value: unknown): value is Notification {
     typeof v.user_id === "string" &&
     typeof v.type === "string" &&
     typeof v.title === "string" &&
-    typeof v.created_at === "string"
-  );
-}
-
-function isConversation(value: unknown): value is Conversation {
-  if (typeof value !== "object" || value === null) return false;
-  const v = value as Record<string, unknown>;
-  return (
-    typeof v.id === "string" &&
-    typeof v.participant_1 === "string" &&
-    typeof v.participant_2 === "string" &&
     typeof v.created_at === "string"
   );
 }
@@ -107,100 +58,11 @@ function isPresenceStateArray(value: unknown): value is PresenceState[] {
   );
 }
 
-function isGroupMessage(value: unknown): value is GroupMessage {
-  if (typeof value !== "object" || value === null) return false;
-  const v = value as Record<string, unknown>;
-  return (
-    typeof v.id === "string" &&
-    typeof v.posting_id === "string" &&
-    typeof v.sender_id === "string" &&
-    typeof v.content === "string" &&
-    typeof v.created_at === "string"
-  );
-}
-
-function isPostingLike(
-  value: unknown,
-): value is { id: string; status: string; creator_id: string } {
-  if (typeof value !== "object" || value === null) return false;
-  const v = value as Record<string, unknown>;
-  return typeof v.id === "string" && typeof v.status === "string";
-}
-
 // Exported for testing
 export const _typeGuards = {
-  isMessage,
   isNotification,
-  isConversation,
   isPresenceStateArray,
-  isGroupMessage,
-  isPostingLike,
 };
-
-/**
- * Subscribe to real-time messages for a conversation
- */
-export function subscribeToMessages(
-  conversationId: string,
-  onNewMessage: (message: Message) => void,
-  onMessageUpdate?: (message: Message) => void,
-): RealtimeChannel {
-  const supabase = createClient();
-
-  const channel = supabase
-    .channel(`messages:${conversationId}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "INSERT",
-        schema: "public",
-        table: "messages",
-        filter: `conversation_id=eq.${conversationId}`,
-      },
-      (payload) => {
-        if (isMessage(payload.new)) {
-          onNewMessage(payload.new);
-        } else {
-          console.warn(
-            "[Realtime] Unexpected message payload shape:",
-            payload.new,
-          );
-        }
-      },
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "UPDATE",
-        schema: "public",
-        table: "messages",
-        filter: `conversation_id=eq.${conversationId}`,
-      },
-      (payload) => {
-        if (isMessage(payload.new)) {
-          onMessageUpdate?.(payload.new);
-        } else {
-          console.warn(
-            "[Realtime] Unexpected message update payload shape:",
-            payload.new,
-          );
-        }
-      },
-    )
-    .subscribe((status) => {
-      if (status === "SUBSCRIBED") {
-        console.log(
-          `[Realtime] Subscribed to messages for conversation ${conversationId}`,
-        );
-      } else if (status === "CHANNEL_ERROR") {
-        console.error(
-          `[Realtime] Error subscribing to messages for conversation ${conversationId}`,
-        );
-      }
-    });
-
-  return channel;
-}
 
 /**
  * Subscribe to real-time notifications for a user
@@ -280,56 +142,6 @@ export function subscribeToNotifications(
       } else if (status === "CHANNEL_ERROR") {
         console.error(
           `[Realtime] Error subscribing to notifications for user ${userId}`,
-        );
-      }
-    });
-
-  return channel;
-}
-
-/**
- * Subscribe to conversation updates (for last message, etc.)
- */
-export function subscribeToConversations(
-  userId: string,
-  onConversationUpdate: (conversation: Conversation) => void,
-): RealtimeChannel {
-  const supabase = createClient();
-
-  const channel = supabase
-    .channel(`conversations:${userId}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "conversations",
-      },
-      (payload) => {
-        if (!isConversation(payload.new)) {
-          console.warn(
-            "[Realtime] Unexpected conversation payload shape:",
-            payload.new,
-          );
-          return;
-        }
-        // Only process if user is a participant
-        if (
-          payload.new.participant_1 === userId ||
-          payload.new.participant_2 === userId
-        ) {
-          onConversationUpdate(payload.new);
-        }
-      },
-    )
-    .subscribe((status) => {
-      if (status === "SUBSCRIBED") {
-        console.log(
-          `[Realtime] Subscribed to conversations for user ${userId}`,
-        );
-      } else if (status === "CHANNEL_ERROR") {
-        console.error(
-          `[Realtime] Error subscribing to conversations for user ${userId}`,
         );
       }
     });
@@ -465,100 +277,6 @@ export function showBrowserNotification(
 
   // Auto-close after 5 seconds
   setTimeout(() => notification.close(), 5000);
-}
-
-/**
- * Subscribe to real-time group messages for a posting
- */
-export function subscribeToGroupMessages(
-  postingId: string,
-  onNewMessage: (message: GroupMessage) => void,
-): RealtimeChannel {
-  const supabase = createClient();
-
-  const channel = supabase
-    .channel(`group-messages:${postingId}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "INSERT",
-        schema: "public",
-        table: "group_messages",
-        filter: `posting_id=eq.${postingId}`,
-      },
-      (payload) => {
-        if (isGroupMessage(payload.new)) {
-          onNewMessage(payload.new);
-        } else {
-          console.warn(
-            "[Realtime] Unexpected group message payload shape:",
-            payload.new,
-          );
-        }
-      },
-    )
-    .subscribe((status) => {
-      if (status === "SUBSCRIBED") {
-        console.log(
-          `[Realtime] Subscribed to group messages for posting ${postingId}`,
-        );
-      } else if (status === "CHANNEL_ERROR") {
-        console.error(
-          `[Realtime] Error subscribing to group messages for posting ${postingId}`,
-        );
-      }
-    });
-
-  return channel;
-}
-
-// ---------------------------------------------------------------------------
-// Posting changes (for SWR cache invalidation)
-// ---------------------------------------------------------------------------
-
-export type PostingEvent = {
-  eventType: "INSERT" | "UPDATE" | "DELETE";
-  posting: { id: string; status: string; creator_id: string };
-};
-
-/**
- * Subscribe to real-time posting changes (inserts, updates, deletes).
- * Used to invalidate SWR caches in the discover and active feeds.
- */
-export function subscribeToPostings(
-  onEvent: (event: PostingEvent) => void,
-): RealtimeChannel {
-  const supabase = createClient();
-
-  const channel = supabase
-    .channel("postings:global")
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "postings",
-      },
-      (payload) => {
-        const record =
-          payload.eventType === "DELETE" ? payload.old : payload.new;
-        if (isPostingLike(record)) {
-          onEvent({
-            eventType: payload.eventType as PostingEvent["eventType"],
-            posting: record,
-          });
-        }
-      },
-    )
-    .subscribe((status) => {
-      if (status === "SUBSCRIBED") {
-        console.log("[Realtime] Subscribed to postings changes");
-      } else if (status === "CHANNEL_ERROR") {
-        console.error("[Realtime] Error subscribing to postings changes");
-      }
-    });
-
-  return channel;
 }
 
 // ---------------------------------------------------------------------------
