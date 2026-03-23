@@ -19,7 +19,7 @@ import { test, expect, type Page } from "../../tests/fixtures/multi-context";
 import { supabaseAdmin } from "../../tests/utils/supabase";
 
 // Rate-limit absorption — each test creates 2 users via fixture
-test.describe.configure({ mode: "serial", retries: 1 });
+test.describe.configure({ mode: "parallel", retries: 1 });
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -237,7 +237,7 @@ test.describe("Space creation and messaging", () => {
     expect(allMessages.ok()).toBe(true);
     const msgJson = await allMessages.json();
     const messages = msgJson.data?.messages ?? msgJson.messages ?? [];
-    expect(messages.length).toBeGreaterThanOrEqual(4);
+    expect(messages.length).toBe(4);
     // Newest first
     expect(messages[0].content).toBe("Reply from developer");
 
@@ -484,16 +484,16 @@ test.describe("Space membership and access control", () => {
     developerPage,
     developerUser,
   }) => {
+    if (!supabaseAdmin) {
+      test.skip(true, "Admin client required");
+      return;
+    }
+
     spaceId = await seedSpaceWithMembers(
       ownerUser.id,
       developerUser.id,
       `E2E Admin Only ${Date.now()}`,
     );
-
-    if (!supabaseAdmin) {
-      test.skip(true, "Admin client required");
-      return;
-    }
 
     // Create a third user
     const thirdEmail = `e2e-third-${Date.now()}@test.local`;
