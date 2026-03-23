@@ -40,15 +40,18 @@ async function fetchSearchResults(key: string): Promise<SearchResult[]> {
       .limit(5),
   ]);
 
-  const postingResults: SearchResult[] = (postings || []).map((p) => ({
-    id: p.id,
-    type: "posting" as const,
-    title: deriveTitleFromText(p.text),
-    subtitle:
-      (p.text?.slice(0, 80) ?? "") + ((p.text?.length ?? 0) > 80 ? "..." : ""),
-    skills: (p.tags as string[]) || [],
-    status: p.status,
-  }));
+  const postingResults: SearchResult[] = (postings || []).map((p) => {
+    const lines = (p.text ?? "").split("\n");
+    const rest = lines.slice(1).join(" ").trim();
+    return {
+      id: p.id,
+      type: "posting" as const,
+      title: deriveTitleFromText(p.text),
+      subtitle: rest ? rest.slice(0, 80) + (rest.length > 80 ? "..." : "") : "",
+      skills: (p.tags as string[]) || [],
+      status: p.status,
+    };
+  });
 
   const profileResults: SearchResult[] = (profiles || []).map((p) => ({
     id: p.user_id,

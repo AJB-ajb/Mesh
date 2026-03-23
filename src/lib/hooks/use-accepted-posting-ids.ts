@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { cacheKeys } from "@/lib/swr/keys";
@@ -41,8 +42,10 @@ export function useAcceptedPostingIds(spaceId: string | null) {
     keepPreviousData: true,
   });
 
+  const acceptedPostingIds = useMemo(() => new Set(data ?? []), [data]);
+
   return {
-    acceptedPostingIds: new Set(data ?? []),
+    acceptedPostingIds,
     error,
     isLoading,
   };
