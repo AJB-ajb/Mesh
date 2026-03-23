@@ -1,7 +1,6 @@
 "use client";
 
 import { use } from "react";
-import { Loader2 } from "lucide-react";
 
 import { useSpace } from "@/lib/hooks/use-space";
 import { SpaceView } from "@/components/spaces/space-view";
@@ -12,15 +11,7 @@ export function SpacePageClient({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const { space, currentMember, isLoading } = useSpace(id);
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+  const { space, currentMember } = useSpace(id);
 
   if (!space) {
     return (

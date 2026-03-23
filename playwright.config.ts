@@ -33,7 +33,7 @@ export default defineConfig({
           : {}),
       },
       dependencies: ["setup"],
-      testMatch: /e2e\/layout\.spec\.ts/,
+      testMatch: /e2e\/(layout|hydration)\.spec\.ts/,
     },
     // Auth-flow tests (login/logout UI) — must run after layout tests
     // because the logout test invalidates the Supabase session server-side.

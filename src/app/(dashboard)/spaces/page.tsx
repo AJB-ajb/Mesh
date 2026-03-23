@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { cacheKeys } from "@/lib/swr/keys";
 import { SWRFallback } from "@/lib/swr/fallback";
@@ -19,8 +20,12 @@ export default async function SpacesPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    // Middleware handles redirect; render empty fallback as safety net
-    return <SpacesPageClient />;
+    // Middleware handles redirect; Suspense contains the client loading state
+    return (
+      <Suspense>
+        <SpacesPageClient />
+      </Suspense>
+    );
   }
 
   const { data: spaces } = await supabase

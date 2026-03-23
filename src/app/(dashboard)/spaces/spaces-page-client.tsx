@@ -1,14 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  Plus,
-  MessageSquare,
-  Loader2,
-  Search,
-  X,
-  ChevronDown,
-} from "lucide-react";
+import { Plus, MessageSquare, Search, X, ChevronDown } from "lucide-react";
 
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
@@ -30,7 +23,7 @@ export type SpaceFilter =
   | "archived";
 
 export function SpacesPageClient() {
-  const { spaces, archivedSpaces, userId, isLoading } = useSpaceList();
+  const { spaces, archivedSpaces, userId } = useSpaceList();
   const [filter, setFilter] = useState<SpaceFilter>("all");
   const [search, setSearch] = useState("");
   const [showNewSpace, setShowNewSpace] = useState(false);
@@ -107,12 +100,8 @@ export function SpacesPageClient() {
       {/* Filter chips */}
       <FilterChips value={filter} onChange={setFilter} />
 
-      {/* Space list */}
-      {isLoading ? (
-        <div className="flex min-h-[200px] items-center justify-center">
-          <Loader2 className="size-8 animate-spin text-muted-foreground" />
-        </div>
-      ) : filteredSpaces.length === 0 ? (
+      {/* Space list — no isLoading branch: SWRFallback guarantees data on first render */}
+      {filteredSpaces.length === 0 ? (
         <EmptyState
           icon={<MessageSquare />}
           title={labels.spaces.emptyTitle}

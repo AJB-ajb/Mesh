@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { cacheKeys } from "@/lib/swr/keys";
 import { SWRFallback } from "@/lib/swr/fallback";
@@ -21,7 +22,11 @@ export default async function SpacePage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return <SpacePageClient params={params} />;
+    return (
+      <Suspense>
+        <SpacePageClient params={params} />
+      </Suspense>
+    );
   }
 
   const [spaceResult, membersResult] = await Promise.all([
@@ -35,7 +40,11 @@ export default async function SpacePage({
 
   if (spaceResult.error || !spaceResult.data) {
     // Let the client component handle the error/not-found state
-    return <SpacePageClient params={params} />;
+    return (
+      <Suspense>
+        <SpacePageClient params={params} />
+      </Suspense>
+    );
   }
 
   const members = membersResult.data ?? [];

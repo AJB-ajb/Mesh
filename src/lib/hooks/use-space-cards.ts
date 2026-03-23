@@ -14,7 +14,8 @@ const fetcher = async (url: string) => {
   const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to fetch cards");
   const json = await res.json();
-  return json.cards as SpaceCard[];
+  const cards: SpaceCard[] = Array.isArray(json?.cards) ? json.cards : [];
+  return cards;
 };
 
 /** Apply a vote optimistically to a card's options (pure function). */
@@ -109,7 +110,8 @@ export function useSpaceCards(spaceId: string | null, userId?: string | null) {
       const json = await res.json();
       // Revalidate to pick up server-side effects (auto-resolve, etc.)
       mutate();
-      return (json.follow_up_suggestion as CardSuggestion) ?? null;
+      const suggestion: CardSuggestion | undefined = json?.follow_up_suggestion;
+      return suggestion ?? null;
     },
     [spaceId, userId, mutate],
   );
@@ -135,7 +137,8 @@ export function useSpaceCards(spaceId: string | null, userId?: string | null) {
       }
       const json = await res.json();
       mutate();
-      return (json.follow_up_suggestion as CardSuggestion) ?? null;
+      const suggestion: CardSuggestion | undefined = json?.follow_up_suggestion;
+      return suggestion ?? null;
     },
     [spaceId, mutate],
   );
@@ -170,7 +173,8 @@ export function useSpaceCards(spaceId: string | null, userId?: string | null) {
       }
       const json = await res.json();
       mutate();
-      return json.card as SpaceCard;
+      const card: SpaceCard | undefined = json?.card;
+      return card ?? null;
     },
     [spaceId, mutate],
   );
