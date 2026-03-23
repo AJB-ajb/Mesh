@@ -1260,6 +1260,7 @@ export const labels = {
     locationLabelPlaceholder: "e.g. Pasta Bar near Marienplatz",
     createLocationSubmit: "Suggest Location",
     suggestionChipCreate: (type: string) => `Create ${type}?`,
+    selectCardType: "Create card",
     suggestionChipDismiss: "Dismiss suggestion",
     calendarStripLabel: "Your schedule for this day",
     calendarStripLoading: "Loading schedule…",

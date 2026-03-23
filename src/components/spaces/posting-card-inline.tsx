@@ -41,6 +41,7 @@ interface PostingCardInlineProps {
   spaceId?: string;
   isAdmin?: boolean;
   replyCount?: number;
+  revealHidden?: boolean;
   onJoin?: () => void;
 }
 
@@ -63,6 +64,7 @@ export function PostingCardInline({
   spaceId,
   isAdmin,
   replyCount,
+  revealHidden = false,
 }: PostingCardInlineProps) {
   const router = useRouter();
   const { mutate } = useSWRConfig();
@@ -131,6 +133,7 @@ export function PostingCardInline({
                 content={posting.text}
                 className="text-sm"
                 clamp={3}
+                revealHidden={revealHidden}
               />
 
               {/* Meta row: tags, capacity, deadline */}

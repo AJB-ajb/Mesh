@@ -19,22 +19,28 @@ See [1-spaces.md](1-spaces.md) §7 "Card Principles" for the named principles re
 **Space**: 4-person friend group (Alex, Priya, Lena, Marcus).
 
 ```
-Alex:  "dinner friday? :)"
+Alex:  types "dinner friday? :)"
 
-       ← System (Intelligent Pre-fill):
-         1. Card detection: scheduling intent → type = time_proposal
-         2. Pulls 4 calendars, computes overlap
-         3. Reads profiles:
+       ← Cheap detector (client-side, while typing):
+         Detects: question + time word ("friday") + activity word ("dinner")
+         Shows type chips: [📅 Time proposal] [📊 Poll]
+
+Alex:  taps [📅 Time proposal]
+
+       ← System (LLM generation, on tap):
+         1. Pulls 4 calendars, computes overlap
+         2. Reads profiles:
             - Lena ||hidden||: "I need 30 min after work to decompress"
             - Marcus ||hidden||: "don't schedule past 21:00 on weekdays"
             - Priya ||hidden||: "commute from Garching ~40 min"
-         4. Infers "dinner" → ~2h, not before 18:00
-         5. Generates 3 slots: 19:00, 19:30, 20:00
+         3. Infers "dinner" → ~2h, not before 18:00
+         4. Generates 3 slots: 19:00, 19:30, 20:00
 
-       → Suggestion chip: "📅 Time proposal? Fri 19:00 · 19:30 · 20:00"
+       → Pre-filled dialog opens with slots + "dinner friday? :)" as description
 
-Alex:  taps chip → pre-filled dialog → taps "Create"
+Alex:  taps "Create"
        → Time proposal card appears in conversation
+       → Card description: "dinner friday? :)"
        → Deadline shown: "Closes in 12h"
 
 Priya: sees card (Private Constraints):
@@ -52,10 +58,20 @@ Marcus: sees card:
 Alex:  taps 19:00
        → 2 votes for 19:00, 1 for 19:30, 1 for 20:00
        → Resolves to 19:00 (plurality at deadline, or auto if threshold met)
-       → Google Calendar event created for all 4
+
+       ← Post-resolution commitment (Principle 6):
+         Card keeps poll results visible, winning slot highlighted.
+         Action strip appears at bottom:
+
+Alex:  voted for 19:00 → auto-added to calendar. Banner: "Added to your calendar. [Undo]"
+Marcus: voted for 19:00 → auto-added to calendar. Same banner.
+Lena:  voted for 19:30 → prompted: "Dinner Friday 19:00 — Add to calendar / Maybe / Can't make it"
+       taps "Add to calendar" → calendar event created, marked attending
+Priya: voted for 20:00 → same prompt
+       taps "Maybe" → calendar event created as tentative
 ```
 
-**Principles active**: Intelligent Pre-fill (slots from calendars + profiles), Private Constraints (each member sees their own situation), Deadline Resolution (12h auto-resolve).
+**Principles active**: Intelligent Pre-fill (slots from calendars + profiles), Private Constraints (each member sees their own situation), Deadline Resolution (12h auto-resolve), Post-Resolution Commitment (vote = availability, commitment at resolution).
 
 **Chained Card Flow variant**: After time resolves, if no location is set:
 
@@ -69,16 +85,20 @@ Alex:  taps → location confirm card with last-used or suggested place
 **Space**: 2-person DM (Sarah, Tom).
 
 ```
-Sarah: "can we call tomorrow at 2?"
+Sarah: types "can we call tomorrow at 2?"
 
-       ← System (Intelligent Pre-fill):
-         1. Detects: specific time, not open scheduling
-         2. Checks Tom's calendar: free at 14:00
-         3. Card type = RSVP (not time proposal — time is already decided)
+       ← Cheap detector (while typing):
+         Detects: question + specific time ("tomorrow at 2")
+         Shows type chips: [✋ RSVP] [📅 Time proposal]
 
-       → Suggestion chip: "📅 Confirm call? Tomorrow 14:00"
+Sarah: taps [✋ RSVP] (she knows the time, just needs confirmation)
 
-Sarah: taps → RSVP card: "Call tomorrow 14:00" (threshold: 1 Yes)
+       ← System (LLM generation):
+         1. Checks Tom's calendar: free at 14:00
+         2. Confirms specific time works
+
+       → Pre-filled dialog: "Call tomorrow 14:00", threshold: 1 Yes
+       → Sarah taps "Create" → RSVP card sent with "can we call tomorrow at 2?" as description
 
 Tom:   taps "No"
        → Card resolves as declined
@@ -111,16 +131,19 @@ Tom:   taps "Wed 14:00" → time proposal card created, pre-filled
 **Space**: 5-person hackathon team (Kai, Mia, Jin, Leo, Sara).
 
 ```
-Kai:  "ok we need to split up the work — who wants frontend, backend, or design?"
+Kai:  types "ok we need to split up the work — who wants frontend, backend, or design?"
 
-      ← System (Intelligent Pre-fill):
-        1. Detects: task assignment, NOT opinion poll
-           Signal: "who wants" = volunteering, not voting
-        2. Extracts 3 roles: frontend, backend, design
+      ← Cheap detector (while typing):
+        Detects: "who wants" + comma-separated options
+        Shows type chips: [🙋 Task claim] [📊 Poll]
 
-      → Suggestion chip: "✋ Task claim? Frontend · Backend · Design"
+Kai:  taps [🙋 Task claim]
 
-Kai:  taps → task claim card with 3 claimable roles
+      ← System (LLM generation):
+        Extracts 3 roles from text: frontend, backend, design
+
+      → Pre-filled dialog with 3 claimable roles + Kai's text as description
+      → Kai taps "Create" → task claim card sent
 
 Mia:  claims "Design"
 Jin:  claims "Frontend"
@@ -132,16 +155,18 @@ Leo:  claims "Backend"
 **Chained Card Flow** — next coordination need:
 
 ```
-Mia:  "when should we do standups?"
+Mia:  types "when should we do standups?"
 
-      ← System:
-        1. Detects: scheduling intent for recurring event
-        2. Pulls 5 calendars
-        3. Finds morning overlaps: Mon/Wed/Fri 9:30, Tue/Thu 10:00
+      ← Cheap detector: question + "when" → [📅 Time proposal]
 
-      → Suggestion chip: "📅 Time proposal? Mon/Wed/Fri 9:30 or Tue/Thu 10:00"
+Mia:  taps [📅 Time proposal]
 
-Mia:  taps → time proposal card
+      ← System (LLM generation):
+        1. Pulls 5 calendars
+        2. Finds morning overlaps: Mon/Wed/Fri 9:30, Tue/Thu 10:00
+
+      → Pre-filled dialog with slots + "when should we do standups?" as description
+      → Mia taps "Create" → time proposal card
       ... members vote ... resolves to Mon/Wed/Fri 9:30
       → Calendar events created for all 5
 ```
@@ -149,16 +174,17 @@ Mia:  taps → time proposal card
 **Declarative coordination** — specific time, no negotiation:
 
 ```
-Kai:  "let's all meet at the library tomorrow at 2 to kick things off"
+Kai:  types "let's all meet at the library tomorrow at 2 to kick things off"
 
-      ← System:
-        1. Detects: specific time + location, declarative (not a question)
-        2. Card type = RSVP (confirm attendance, time is decided)
-        3. Pre-fills: "Library meetup, tomorrow 14:00"
+      ← Cheap detector: specific time + location → [✋ RSVP] [📅 Time proposal]
 
-      → Suggestion chip: "📅 RSVP? Library tomorrow 14:00"
+Kai:  taps [✋ RSVP] (declarative — time is decided, just needs confirmation)
 
-Kai:  taps → RSVP card (threshold: 3 of 5)
+      ← System (LLM generation):
+        Pre-fills: "Library meetup, tomorrow 14:00", threshold: 3 of 5
+
+      → Pre-filled dialog + Kai's text as description
+      → Kai taps "Create" → RSVP card
       → Members confirm → calendar event
 ```
 

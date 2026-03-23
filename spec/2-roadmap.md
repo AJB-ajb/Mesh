@@ -4,13 +4,13 @@
 
 ## Version & Status
 
-- **Current version**: 0.8.0
-- **Last updated**: 2026-03-18
+- **Current version**: 0.9.0
+- **Last updated**: 2026-03-23
 - **Versioning**: Milestone-based semver (`MAJOR.MINOR.PATCH`). See [Update Protocol](#update-protocol).
 
 ---
 
-## Implemented (v0.1 → v0.4)
+## Implemented (v0.1 → v0.9)
 
 ### Core Platform (v0.1)
 
@@ -137,158 +137,128 @@
 - [x] Text tools direct edit — auto-format/clean applies directly with inline undo
 - [x] PWA auto-update — safe runtime caching, automatic SW update + reload, iOS visibilitychange fix
 
+### Text-First Syntax (v0.6)
+
+Shipped alongside v0.7–v0.8 Spaces work. See [1-text-first.md](1-text-first.md) §3a, §3b, §6.
+
+- [x] `mesh:` link syntax (editor) — CodeMirror decorations for `[📍 text](mesh:location?...)`, render as styled tappable chips, hide URL in edit mode
+- [x] `mesh:` link syntax (view) — MarkdownRenderer strips `mesh:` URLs, renders display text with emoji
+- [x] Slash commands emit `mesh:` — `/time`, `/location`, `/skills` overlays emit `mesh:` link syntax instead of emoji+text
+- [x] `||hidden||` syntax — editor: dimmed + lock icon. View: placeholder for non-accepted, revealed for accepted. Parser for inline and block forms
+- [x] `/hidden` command — inserts `||...||` block with cursor inside. Added to slash command registry
+- [x] Profile calendar promotion — calendar connect UX moved from Settings into Profile's availability section
+- [x] Settings page slimming — calendar removed from Settings. Danger zone = delete account only
+- [x] Mobile command bottom sheet — "/" button near editor opens bottom sheet with command list on mobile
+- [x] `/update` command — NL instruction command for profile/posting context. LLM applies changes to text + re-extracts structured fields
+
+### Spaces Phase 1: Structural Rewrite (v0.7)
+
+The core model change — messenger with Spaces, posting-messages, and matching/invite machinery. See [1-spaces.md](1-spaces.md) and [designs/spaces-rewrite.md](designs/spaces-rewrite.md) §16.
+
+- [x] New DB tables — `spaces`, `space_members`, `space_messages`, `space_postings`, `space_join_requests`, `space_invites`, `activity_cards`. RLS, triggers, FTS indexes
+- [x] 3-tab navigation — Spaces / Activity / Profile bottom bar (mobile) + sidebar (desktop)
+- [x] Space list UI — filters (All/DMs/Groups/Public/Pinned), search, pins, unread badges, last-message previews, realtime updates
+- [x] Space view — conversation timeline with posting-cards inline, auto-scroll, load-more
+- [x] Compose area — message/posting toggle, inline posting fields (category, capacity, deadline, tags, visibility, auto-accept)
+- [x] Posting-messages — create postings within Spaces, auto sub-Space generation, posting browser for large Spaces
+- [x] Join requests — submit, accept, reject, waitlist. Auto-accept. Activity card on request
+- [x] Invite batches — sequential/parallel modes, ordered list, pending/declined tracking. Activity cards for invitees
+- [x] Activity tab — personal cards (match, invite, join_request, scheduling, rsvp, connection_request) with realtime subscription
+- [x] State text — collapsible banner, admin-editable
+- [x] Read tracking — DB trigger increments `unread_count`. Auto mark-as-read on fetch
+- [x] Realtime messaging — Supabase Realtime per-Space channels. Optimistic updates
+- [x] Presence & typing indicators — typing indicators hook (`use-space-presence`) wired to compose area
+- [x] Activity card side-effects — `actOnCard` dispatches real actions: accept/reject join requests, accept/decline invites, navigate to matches
+- [x] Invite response API — endpoint for invitees to accept/decline invites. Advances sequential invites on decline
+- [x] Global Space + DM seeding — migration creates Global Space row and DM Spaces for existing connections
+- [x] Posting-only mode enforcement — compose area checks `settings.posting_only` and locks toggle to posting mode
+- [x] Member management UI — admin controls in space-info-sheet: remove members, change roles. Last-admin guard
+- [x] Posting lifecycle UI — status transitions (close/fill), edit dialog, delete with confirmation
+- [x] Realtime postings — realtime subscription in `use-space-postings` via `subscribeToSpacePostings`
+- [x] Sub-Space thread rendering — reply counts via RPC, "View Thread" link on posting cards, back navigation to parent
+- [x] DM Space creation flow — auto-create 2-person Space on connection accept. Idempotent with duplicate detection
+- [x] `visible_from` enforcement — RLS policy `space_messages_select` filters messages by member `visible_from` timestamp
+- [x] Matching → Spaces integration — embedding pipeline wired for `space_postings`. Matching triggered after embedding. Activity cards include space navigation
+- [x] Space search (FTS) — `search_space_messages` RPC with security invoker, API endpoint, search UI in space header
+- [x] Space context in deep matching — parent Space `state_text` propagated to deep-match and profile-to-posting LLM calls
+- [x] Conversation summary in card suggestions — last ~5 messages passed to card suggestion LLM calls for conversational context
+
+### Spaces Phase 2: Rich Interactive Cards (v0.8)
+
+The card system replacing back-and-forth coordination. See [designs/spaces-rewrite.md](designs/spaces-rewrite.md) §16.
+
+- [x] `space_cards` table — card state tracking (active, resolved, cancelled). `vote_on_card` RPC for atomic voting
+- [x] Card types — time proposal, RSVP, poll, task claim, location. All 5 types with creation dialogs and rendering
+- [x] Card rendering — interactive cards in conversation timeline with live vote updates via Supabase Realtime
+- [x] Card actions — vote, change vote, cancel, resolve. Per-card controls for creator/admin
+- [x] Card creation dialogs — RSVP (title + threshold), Task Claim (description), Location (place name). Fixed options per spec
+- [x] Auto-resolve on consensus — time proposals: all members voted + clear winner. RSVP: Yes votes >= threshold. Task claim: first claimer
+- [x] Calendar event creation — resolved time proposals create Google Calendar events for connected participants (fire-and-forget, best-effort)
+- [x] Space archiving UI — archive/unarchive in space-info-sheet (admin). Archived section in space list with filter chip
+- [x] Cross-Space promotion UI — "Promote to Explore" button on posting controls. Creates linked posting-message in Global Space
+
+### Intelligent Prefill & Scheduling Intelligence (v0.8)
+
+Calendar-aware card suggestions, smart prefill, chained flows. Implements the Card Principles ([1-spaces.md](1-spaces.md) §7) and Intelligent Coordination Flows ([0-use-cases.md](0-use-cases.md) §"Intelligent Coordination Flows"). Full design: [designs/intelligent-prefill.md](designs/intelligent-prefill.md).
+
+- [x] Fused detect-and-suggest LLM — single Flash Lite call. Receives messages + calendar overlap + `||hidden||` profiles. Returns card type + prefilled data + member notes
+- [x] Suggest API calendar enrichment — fetch member profiles (availability, timezone, source_text), calendar busy blocks, compute N-way overlap, extract `||hidden||` text via `parseHiddenBlocks()`
+- [x] Structured slot format — time proposal slots store `{label, start, end}` (not just string labels). Calendar integration reads structured dates
+- [x] Duration inference — LLM infers activity duration from message context (coffee → 30 min, dinner → 2h). Stored in card data. Calendar events use actual duration
+- [x] RSVP threshold intelligence — default threshold = `ceil(memberCount × 0.6)` instead of hardcoded 2
+- [x] Specific-time detection — "Let's meet at 2" + all members free → RSVP (not time proposal). Conflicts → time proposal with alternatives
+- [x] Card suggestion UX — cheap client-side detector flags coordination intent while typing; user picks card type from chips; LLM generates prefill on tap. Auto-fills manual "+" menu from context
+- [x] Calendar context strip — compact horizontal day view on time proposal cards showing surrounding events. Per-user rendering from `calendar_busy_blocks`
+- [x] Card deadlines — `deadline timestamptz` on `space_cards`. Defaults: time_proposal 12h, RSVP 24h, poll 24h. Display: "Closes in 8h". Auto-resolve on-read when deadline passed
+- [x] Detection prompt improvements — disambiguate task_claim vs. poll, declarative RSVP vs. negotiation
+- [x] Decline-and-suggest — RSVP "No" vote triggers alternative time suggestions to voter and card creator via Realtime
+- [x] Chained card flow — card resolution triggers follow-up: time resolved → suggest location, poll resolved → suggest time proposal. Pushed via Realtime
+- [x] Private constraint notes — per-member notes on time proposal cards. Generated by fused LLM, stored in card `data.member_notes`. Only own notes visible
+- [x] Profile `||hidden||` rendering — CodeMirror decoration: dimmed style + lock icon for `||...||` blocks in profile editor
+- [x] `/hidden` slash command in profile — wraps selected text in `||...||` or inserts empty block. Available in profile context
+
 ---
 
 ## Milestones
 
-> **Direction**: [1-text-first.md](1-text-first.md) defines the text-first philosophy; [1-spaces.md](1-spaces.md) defines the Spaces model that replaces the posting-centric architecture. Milestones v0.7+ are organized around the Spaces rewrite. Where this roadmap and the behavior specs conflict, the specs take precedence.
+> **Direction**: [1-text-first.md](1-text-first.md) defines the text-first philosophy; [1-spaces.md](1-spaces.md) defines the Spaces model. Where this roadmap and the behavior specs conflict, the specs take precedence.
 
-### v0.6 — Text-First Rendering & Syntax
+### v0.9 — Polish & Completion
 
-The editor and rendering system adopt the new markdown syntax (`mesh:` links, `||hidden||`, `||?||`) and the text-first card rendering philosophy. See [1-text-first.md](1-text-first.md) §3a, §3b, §6. Some items (e.g., `mesh:` syntax, `||hidden||`) may be folded into v0.7 Spaces Phase 1.
+Consolidates remaining items from v0.7–v0.8 that were deferred when those milestones shipped, plus small gaps.
 
-| Feature                        | Issue | Effort | Description                                                                                                                                                                                                                                     |
-| ------------------------------ | ----- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unified PostingCard            | —     | Medium | Consolidate PostingCard, PostingDiscoverCard, PostsCard into one component with `full`/`compact` variants. Text is the hero element.                                                                                                            |
-| Title as first line            | —     | Small  | Remove separate title field. First line/sentence renders as heading. Auto-extracted title becomes display-only.                                                                                                                                 |
-| Match score: Discover only     | —     | Small  | Hide match score badges outside of Discover feed. Score still drives ranking.                                                                                                                                                                   |
-| `mesh:` link syntax (editor)   | —     | Medium | CodeMirror decorations for `[📍 text](mesh:location?...)` — render as styled tappable chips, hide URL in edit mode.                                                                                                                             |
-| `mesh:` link syntax (view)     | —     | Small  | MarkdownRenderer strips `mesh:` URLs, renders display text with emoji. Location links may show map widget.                                                                                                                                      |
-| Slash commands emit `mesh:`    | —     | Small  | `/time`, `/location`, `/skills` overlays emit `mesh:` link syntax instead of emoji+text. Remove `chipMetadata` sidecar.                                                                                                                         |
-| `\|\|hidden\|\|` syntax        | —     | Medium | Editor: dimmed + lock icon. View: placeholder for non-accepted, revealed for accepted. Parser for inline and block forms.                                                                                                                       |
-| `/hidden` command              | —     | Small  | Inserts `\|\|...\|\|` block with cursor inside. Added to slash command registry.                                                                                                                                                                |
-| Discover filter by connections | —     | Small  | Toggle in Discover feed to show only postings from connections. Simple query filter + UI toggle.                                                                                                                                                |
-| Remove chips & nudges remnants | —     | Small  | Clean up any remaining quick chip / post-write nudge code (deliberately removed, now spec-deferred).                                                                                                                                            |
-| Text-first profile redesign    | —     | Large  | Replace form-based profile with unified MeshEditor. Skills/location/interests extracted from text. Slash commands for profile context (`/skills`, `/location`, `/availability`, `/calendar`, `/update`). No view/edit toggle — always editable. |
-| Profile calendar promotion     | —     | Medium | Move calendar connect UX from Settings into Profile's availability section. Busy blocks overlay inline. Calendar visibility settings accessible from profile.                                                                                   |
-| Settings page slimming         | —     | Small  | Remove calendar from Settings. Move sign out to regular action (not danger zone). Danger zone = delete account only.                                                                                                                            |
-| Mobile command bottom sheet    | —     | Medium | "/" button near editor opens bottom sheet with command list on mobile. Replace cursor-position dropdown. Fix touch handling (`onPointerDown`).                                                                                                  |
-| `/update` command              | —     | Medium | NL instruction command for profile context. Takes inline argument or opens inline text input. LLM applies changes to profile text + re-extracts structured fields.                                                                              |
+#### Spaces cleanup
 
-### v0.7 — Spaces Phase 1: Structural Rewrite
+| Feature                            | Effort     | Description                                                                                                                                                                                    |
+| ---------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Inherited → independent transition | Small      | Auto-set `inherits_members = false` when outsider joins via matching/invite.                                                                                                                   |
+| ~~Old table cleanup~~              | ~~Medium~~ | ~~Partial~~ — `conversations`, `messages`, `group_messages`, `group_message_reads` dropped. Code migrated to `space_postings`/`space_members`. `postings` table drop deferred (FK dependents). |
+| Conversation summary in matching   | Small      | Pass last ~5 Space messages to deep-match LLM calls (already done for card suggestions, missing for matching).                                                                                 |
+| Space context in card suggestions  | Small      | Propagate parent Space `state_text` to card suggestion LLM calls (already done for deep matching, missing for card suggestions).                                                               |
 
-The core model change. After Phase 1, the app is a messenger with Spaces, posting-messages, and the existing matching/invite machinery. Subsumes the old v0.7 (Command Palette) — useful items folded in or deferred to backlog. See [1-spaces.md](1-spaces.md) and [designs/spaces-rewrite.md](designs/spaces-rewrite.md) §16.
+#### Card system completion
 
-#### Done
+| Feature                    | Effort | Description                                                                                                                                                                       |
+| -------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Post-resolution commitment | Medium | Time proposal resolution → commitment prompt built into card (Principle 6). Auto-add voters for winning slot to calendar; prompt others with Add/Maybe/Can't. See 1-spaces.md §7. |
+| Opt-out voting menu        | Small  | Universal "Can't make any of these" / "Pass" menu on all card types. Distinguishes non-response from active opt-out. "Pass" excludes from quorum.                                 |
+| Deadline input field       | Small  | Creator can set custom deadline at card creation (currently hardcoded defaults). Pre-filled with type defaults (12h/24h).                                                         |
+| Quorum (minimum attendees) | Small  | Optional number field on card creation. If set, auto-resolve requires quorum met. No quorum at deadline → card cancelled.                                                         |
+| Tie-break rule             | Small  | First-listed option wins ties at deadline. No votes at deadline → card cancelled. Deterministic, predictable.                                                                     |
+| Trade-off card type        | Medium | "No perfect option — pick one" card with creator selection.                                                                                                                       |
+| Card invalidation Phase 2a | Medium | Explicit actions only — buttons on cards (supersede, update).                                                                                                                     |
+| Auto-archive (30-day)      | Small  | Cron-based auto-archive after 30 days of no messages. Infrastructure exists (manual archive shipped in v0.8).                                                                     |
 
-| Feature                       | Description                                                                                                                                          |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| New DB tables                 | `spaces`, `space_members`, `space_messages`, `space_postings`, `space_join_requests`, `space_invites`, `activity_cards`. RLS, triggers, FTS indexes. |
-| 3-tab navigation              | Spaces / Activity / Profile bottom bar (mobile) + sidebar (desktop).                                                                                 |
-| Space list UI                 | Filters (All/DMs/Groups/Public/Pinned), search, pins, unread badges, last-message previews, realtime updates.                                        |
-| Space view                    | Conversation timeline with posting-cards inline, auto-scroll, load-more.                                                                             |
-| Compose area                  | Message/Posting toggle, inline posting fields (category, capacity, deadline, tags, visibility, auto-accept).                                         |
-| Posting-messages              | Create postings within Spaces, auto sub-Space generation, posting browser for large Spaces.                                                          |
-| Join requests                 | Submit, accept, reject, waitlist. Auto-accept. Activity card on request.                                                                             |
-| Invite batches                | Sequential/parallel modes, ordered list, pending/declined tracking. Activity cards for invitees.                                                     |
-| Activity tab                  | Personal cards (match, invite, join_request, scheduling, rsvp, connection_request) with realtime subscription.                                       |
-| State text                    | Collapsible banner, admin-editable. `/summarize` not yet wired.                                                                                      |
-| Read tracking                 | DB trigger increments `unread_count`. Auto mark-as-read on fetch.                                                                                    |
-| Realtime messaging            | Supabase Realtime per-Space channels. Optimistic updates.                                                                                            |
-| Presence & typing indicators  | Typing indicators hook (`use-space-presence`) wired to compose area.                                                                                 |
-| Activity card side-effects    | `actOnCard` dispatches real actions: accept/reject join requests, accept/decline invites, navigate to matches.                                       |
-| Invite response API           | Endpoint for invitees to accept/decline invites. Advances sequential invites on decline.                                                             |
-| Global Space + DM seeding     | Migration creates Global Space row and DM Spaces for existing connections.                                                                           |
-| Posting-only mode enforcement | Compose area checks `settings.posting_only` and locks toggle to posting mode.                                                                        |
-| Member management UI          | Admin controls in space-info-sheet: remove members, change roles. Last-admin guard.                                                                  |
-| Posting lifecycle UI          | Status transitions (close/fill), edit dialog, delete with confirmation.                                                                              |
-| Realtime postings             | Realtime subscription in `use-space-postings` via `subscribeToSpacePostings`.                                                                        |
-| Sub-Space thread rendering    | Reply counts via RPC, "View Thread" link on posting cards, back navigation to parent.                                                                |
-| DM Space creation flow        | Auto-create 2-person Space on connection accept. Idempotent with duplicate detection.                                                                |
-| `visible_from` enforcement    | RLS policy `space_messages_select` filters messages by member `visible_from` timestamp.                                                              |
-| Matching → Spaces integration | Embedding pipeline wired for `space_postings`. Matching triggered after embedding. Activity cards include space navigation.                          |
-| Space search (FTS)            | `search_space_messages` RPC with security invoker, API endpoint, search UI in space header.                                                          |
+#### UX & integration gaps
 
-#### Remaining
+| Feature                                | Effort     | Description                                                                                                                            |
+| -------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| ~~`\|\|hidden\|\|` acceptance gating~~ | ~~Medium~~ | ~~Done~~ — `revealHidden` wired via `useAcceptedPostingIds` hook. Owners + accepted see hidden content; others see placeholder.        |
+| Quick-send suggestion path             | Small      | Suggestion chips currently always open the edit dialog. Add 1-tap quick-send path that creates card directly with pre-filled defaults. |
+| Scheduling preferences onboarding      | Small      | Profile setup prompt: "Anything we should know when scheduling?" Auto-wraps in `\|\|...\|\|`. Skippable.                               |
+| Remove chips & nudges remnants         | Small      | Finish cleanup of deprecated quick chip / post-write nudge code (`chipMetadata` marked deprecated but not removed).                    |
 
-| Feature                             | Effort | Description                                                                                                                                                                    |
-| ----------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Inherited → independent transition  | Small  | Auto-set `inherits_members = false` when outsider joins via matching/invite.                                                                                                   |
-| Old table cleanup                   | Medium | Drop migration for old `postings`, `conversations`, `messages`, `group_messages`.                                                                                              |
-| Conversation summary as LLM context | Small  | Pass last ~5 messages from the Space conversation to extraction and deep-match LLM calls so the LLM understands conversational context (e.g. "same as last week but Tuesday"). |
-| Space context in explanations/cards | Small  | Propagate parent Space `state_text` to match explanation generation and acceptance card LLM calls (currently only deep match receives it).                                     |
-
-### v0.8 — Spaces Phase 2: Rich Interactive Cards
-
-Built on Phase 1. The card system that replaces back-and-forth coordination. Subsumes the old v0.8 (Smart Acceptance & Calendar) — acceptance flow is now a card type. See [designs/spaces-rewrite.md](designs/spaces-rewrite.md) §16.
-
-#### Done
-
-| Feature                   | Description                                                                                                                    |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `space_cards` table       | Card state tracking (active, resolved, cancelled). `vote_on_card` RPC for atomic voting.                                       |
-| Card types                | Time proposal, RSVP, poll, task claim, location. All 5 types with creation dialogs and rendering.                              |
-| Card rendering            | Interactive cards in conversation timeline with live vote updates via Supabase Realtime.                                       |
-| Card actions              | Vote, change vote, cancel, resolve. Per-card controls for creator/admin.                                                       |
-| Card creation dialogs     | RSVP (title + threshold), Task Claim (description), Location (place name). Fixed options per spec.                             |
-| Auto-resolve on consensus | Time proposals: all members voted + clear winner. RSVP: Yes votes >= threshold. Task claim: first claimer.                     |
-| Calendar event creation   | Resolved time proposals create Google Calendar events for connected participants (fire-and-forget, best-effort).               |
-| LLM card suggestion       | After sending a message, LLM detects coordination intent and offers suggestion chip. Accept prefills the right dialog.         |
-| Space archiving UI        | Archive/unarchive in space-info-sheet (admin). Archived section in space list with filter chip. Manual only (no auto-archive). |
-| Cross-Space promotion UI  | "Promote to Explore" button on posting controls. Creates linked posting-message in Global Space.                               |
-
-#### Remaining
-
-| Feature                    | Effort | Description                                                                     |
-| -------------------------- | ------ | ------------------------------------------------------------------------------- |
-| Trade-off card type        | Medium | "No perfect option — pick one" card with creator selection                      |
-| Card invalidation Phase 2a | Medium | Explicit actions only — buttons on cards (supersede, update)                    |
-| Card invalidation Phase 2b | Large  | Free-text detection — LLM reads messages against active cards, suggests updates |
-| Auto-archive (30-day)      | Small  | Cron-based auto-archive after 30 days of no messages                            |
-
-### v0.8.5 — Intelligent Prefill & Scheduling Intelligence
-
-Calendar-aware card suggestions, smart prefill, chained flows, and coordination norms. Implements the Card Principles ([1-spaces.md](1-spaces.md) §7) and Intelligent Coordination Flows ([0-use-cases.md](0-use-cases.md) §"Intelligent Coordination Flows"). Full design: [designs/intelligent-prefill.md](designs/intelligent-prefill.md).
-
-#### Phase A: Calendar-Aware Time Proposals
-
-The core differentiator — "dinner friday?" → pre-filled time slots from N-way calendar overlap + scheduling preferences.
-
-| Feature                         | Effort | Description                                                                                                                                                                                                                                             |
-| ------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fused detect-and-suggest LLM    | Medium | Replace separate detect + suggest with single Flash Lite call. Receives messages + calendar overlap + `\|\|hidden\|\|` profiles. Returns card type + prefilled data + member notes in one response. New `card-suggest.ts` replaces `card-detection.ts`. |
-| Suggest API calendar enrichment | Medium | Before LLM call: fetch member profiles (availability, timezone, source_text), calendar busy blocks, compute N-way overlap via `windowsToConcreteDates()`, extract `\|\|hidden\|\|` text via `parseHiddenBlocks()`.                                      |
-| Structured slot format          | Small  | Time proposal slots store `{label, start, end}` (not just string labels). Calendar integration reads structured dates instead of parsing label text. Backward-compatible.                                                                               |
-| Duration inference              | Small  | LLM infers activity duration from message context (coffee → 30 min, dinner → 2h). Stored in card data. Calendar events use actual duration instead of hardcoded 1h.                                                                                     |
-| RSVP threshold intelligence     | Small  | Default threshold = `ceil(memberCount × 0.6)` instead of hardcoded 2.                                                                                                                                                                                   |
-| Specific-time detection         | Small  | "Let's meet at 2" + all members free → RSVP (not time proposal). Conflicts → time proposal with specific time + alternatives. See Flow 2 in [0-use-cases.md](0-use-cases.md).                                                                           |
-
-#### Phase B: Suggestion UX
-
-One-tap quick-send, calendar context, deadlines on all cards.
-
-| Feature                       | Effort | Description                                                                                                                                                                                                                                      |
-| ----------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Two-path suggestion chip      | Medium | Primary: quick-send (1 tap, creates card with prefill). Secondary: edit (opens dialog). Chip shows preview: "📅 Fri 19:00 · 19:30 · 20:00". See Intelligent Pre-fill principle in [1-spaces.md](1-spaces.md) §7.                                 |
-| Calendar context strip        | Medium | Compact horizontal day view on time proposal cards showing surrounding events for the current user. Per-user rendering from cached `calendar_busy_blocks`. See Flow 2 in [0-use-cases.md](0-use-cases.md).                                       |
-| Card deadlines                | Medium | Migration: add `deadline timestamptz` to `space_cards`. Defaults: time_proposal 12h, RSVP 24h, poll 24h. Display: "Closes in 8h". Auto-resolve on-read when deadline passed. See Deadline Resolution principle in [1-spaces.md](1-spaces.md) §7. |
-| Detection prompt improvements | Small  | Disambiguate task_claim vs. poll ("who wants X?" vs. "what should we X?"), declarative RSVP vs. negotiation. Part of fused LLM prompt. See Flow 3 in [0-use-cases.md](0-use-cases.md).                                                           |
-
-#### Phase C: Chained & Reactive Flows
-
-Card events trigger follow-up suggestions; declines offer alternatives to both parties.
-
-| Feature                  | Effort | Description                                                                                                                                                                                                                           |
-| ------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Decline-and-suggest      | Medium | RSVP "No" vote triggers alternative time suggestions to BOTH the voter and card creator via Realtime. See Decline-and-Suggest principle in [1-spaces.md](1-spaces.md) §7 and Flow 2 in [0-use-cases.md](0-use-cases.md).              |
-| Chained card flow        | Medium | Card resolution triggers follow-up: time resolved → suggest location, poll resolved → suggest time proposal. Pushed via Realtime `card_suggestion` event. See Chained Card Flow principle in [1-spaces.md](1-spaces.md) §7.           |
-| Private constraint notes | Small  | Per-member notes on time proposal cards ("Your meeting ends at 18:30, ~30 min buffer"). Generated by fused LLM, stored in card `data.member_notes`. See Private Constraints principle and Flow 1 in [0-use-cases.md](0-use-cases.md). |
-
-#### Phase D: Hidden Profile Integration
-
-`||hidden||` in profile text for scheduling preferences — the data source for Phases A–C.
-
-| Feature                            | Effort | Description                                                                                              |
-| ---------------------------------- | ------ | -------------------------------------------------------------------------------------------------------- |
-| Profile `\|\|hidden\|\|` rendering | Medium | CodeMirror decoration: dimmed style + lock icon for `\|\|...\|\|` blocks in profile editor.              |
-| `/hidden` slash command            | Small  | Wraps selected text in `\|\|...\|\|` or inserts empty block. Added to profile slash command registry.    |
-| Scheduling preferences onboarding  | Small  | Profile setup prompt: "Anything we should know when scheduling?" Auto-wraps in `\|\|...\|\|`. Skippable. |
-
-#### Phase ordering
-
-Phase A first (highest impact, most infra exists). Phase B in parallel where possible. Phase D can start early (independent). Phase C last (needs A+B working). See [designs/intelligent-prefill.md](designs/intelligent-prefill.md) §3 for dependency diagram.
-
-### v0.9 — Mobile (Capacitor, Android)
+### v1.0 — Mobile (Capacitor, Android)
 
 Minimal native Android shell wrapping the hosted web app. iOS deferred — PWA covers iOS users.
 
@@ -303,7 +273,7 @@ Minimal native Android shell wrapping the hosted web app. iOS deferred — PWA c
 | Platform detection utility       | —     | Small  | `Capacitor.isNativePlatform()` helper — suppress PWA install prompt in native shell               |
 | Android push notifications (FCM) | —     | Medium | Firebase Cloud Messaging via `@capacitor/push-notifications`. Replaces web push in native context |
 
-### v1.0 — Launch
+### v1.1 — Launch
 
 | Feature               | Issue | Effort | Description                                                                          |
 | --------------------- | ----- | ------ | ------------------------------------------------------------------------------------ |
@@ -312,7 +282,7 @@ Minimal native Android shell wrapping the hosted web app. iOS deferred — PWA c
 | LLM cost tiering      | —     | Medium | Tier models by feature: cheap for format, mid for extraction, high for deep matching |
 | Production hardening  | —     | Large  | Performance audit, error monitoring, rate limiting, security review                  |
 
-### v1.1 — Post-Launch
+### v1.2 — Post-Launch
 
 | Feature                      | Issue | Effort       | Description                                                                                                             |
 | ---------------------------- | ----- | ------------ | ----------------------------------------------------------------------------------------------------------------------- |
@@ -328,7 +298,6 @@ Minimal native Android shell wrapping the hosted web app. iOS deferred — PWA c
 
 Design areas that need deeper thinking before they become milestones. See `designs/` for detailed notes.
 
-- **Spaces rewrite** — replaces the posting-centric model with a messenger-like interface where the fundamental unit is the Space. Full design in `designs/spaces-rewrite.md`. Phases 1 and 2 are now milestones v0.7 and v0.8.
 - **Continuous profile building & failure-driven context capture** — profiles grow from usage (postings, acceptances, rejections) rather than upfront forms. Coordination failures (no matches, cancelled invites, exhausted sequences) become prompts for adding constraints or profile context. See `designs/continuous-profile-and-failure-recovery.md`.
 
 ---
@@ -337,6 +306,13 @@ Design areas that need deeper thinking before they become milestones. See `desig
 
 These are ideas without a target milestone. They'll be prioritized as the product evolves:
 
+- `||?||` interactive prompts (Medium) — parsing and schema prepared (`parseQuestionBlocks()`, `AcceptanceQuestion` type). No UI renders `||?` blocks as interactive form elements on acceptance. LLM form generation needed
+- Card invalidation Phase 2b (Large) — free-text detection: LLM reads messages against active cards, suggests updates. Deferred from v0.8; depends on Phase 2a
+- Multi-role matching pipeline (Medium) — LLM identifies roles and returns `matched_role` per candidate, but matching evaluates once per candidate. Per-role pipeline with separate scores not yet implemented
+- Text-first profile redesign (Large) — replace form-based profile view with unified MeshEditor, always-editable. Partially started (MeshEditor component exists, profile still shows form-based `ProfileView`). Originally v0.6; needs re-scoping for Spaces architecture
+- Unified posting card (Medium) — consolidate posting card variants (`PostingBrowserCard`, `PostingCardInline`) into one component with `full`/`compact` variants. Originally v0.6; needs re-scoping for Space-based card architecture
+- Mobile FAB (Small) — spec calls for floating "+" button fixed above bottom bar on mobile. Current implementation has "New Space" button in header instead
+- Title as first line (Small) — remove separate title field, first line renders as heading. Originally v0.6; needs re-scoping for posting-messages within Spaces
 - Auto-location detection (#16) — detect user location from IP for matching defaults
 - Real-time voice upgrade — streaming voice input (OpenAI Realtime, Gemini Live)
 - Auto-generated thumbnails — generate posting thumbnails from text via Gemini
@@ -345,10 +321,10 @@ These are ideas without a target milestone. They'll be prioritized as the produc
 - Standardize date formatting across the app (#44)
 - Add skeleton/spinner loading states for slow connections (#48)
 - Configurable matching weights — weight sliders per posting (revisit after deep matching)
-- Quick chips (deferred) — context-sensitive suggestion chips below text field. Revisit when core flow is polished.
-- Post-write nudges (deferred) — LLM suggests missing dimensions. Revisit when core flow is polished.
+- Quick chips (deferred) — context-sensitive suggestion chips below text field. Revisit when core flow is polished
+- Post-write nudges (deferred) — LLM suggests missing dimensions. Revisit when core flow is polished
 - Email auth fix (SMTP) (#37) — configure Supabase SMTP for confirmation emails
-- Centralize API endpoint paths — ~21 files still use raw `fetch("/api/...")` strings instead of going through a shared constants module (like SWR cache keys). Consolidate to prevent drift when API routes are renamed.
+- Centralize API endpoint paths — ~21 files still use raw `fetch("/api/...")` strings instead of going through a shared constants module
 
 ---
 

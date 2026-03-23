@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import {
   Send,
   Plus,
@@ -34,6 +34,7 @@ import { CreateRsvpDialog } from "./cards/create-rsvp-dialog";
 import { CreateTaskClaimDialog } from "./cards/create-task-claim-dialog";
 import { CreateLocationDialog } from "./cards/create-location-dialog";
 import { CardSuggestionChip } from "./card-suggestion-chip";
+import { CardTypeChips } from "./card-type-chips";
 import { useSpaceCards } from "@/lib/hooks/use-space-cards";
 import type {
   PollData,
@@ -41,14 +42,26 @@ import type {
   RsvpData,
   TaskClaimData,
   LocationData,
+  SpaceCardType,
 } from "@/lib/supabase/types";
 import type { CardSuggestion } from "@/lib/ai/card-suggest";
+import {
+  detectCardIntent,
+  type CardIntentDetection,
+} from "@/lib/cards/card-intent-detector";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+/** Minimal message shape for trigger C (latest incoming message) */
+export interface LatestMessage {
+  sender_id: string | null;
+  content: string | null;
+  type: string;
+}
 
 interface ComposeAreaProps {
   spaceId: string;
@@ -61,7 +74,38 @@ interface ComposeAreaProps {
   followUpSuggestion?: CardSuggestion | null;
   /** Called when the follow-up suggestion is consumed or dismissed */
   onClearFollowUp?: () => void;
+  /** Latest message in the conversation — used for trigger C (detect intent on incoming messages) */
+  latestMessage?: LatestMessage | null;
 }
+
+// ---------------------------------------------------------------------------
+// Helper: call suggest API to get prefill for a chosen card type
+// ---------------------------------------------------------------------------
+
+async function fetchPrefill(
+  spaceId: string,
+  cardType: SpaceCardType,
+  composeText?: string,
+  signal?: AbortSignal,
+): Promise<CardSuggestion["prefill"] | null> {
+  try {
+    const res = await fetch(`/api/spaces/${spaceId}/cards/suggest`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cardType, composeText }),
+      signal,
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.suggestion?.prefill ?? null;
+  } catch {
+    return null; // best-effort
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 export function ComposeArea({
   spaceId,
@@ -72,6 +116,7 @@ export function ComposeArea({
   onStopTyping,
   followUpSuggestion,
   onClearFollowUp,
+  latestMessage,
 }: ComposeAreaProps) {
   const [text, setText] = useState("");
   const [mode, setMode] = useState<"M" | "P">(postingOnly ? "P" : "M");
@@ -84,14 +129,26 @@ export function ComposeArea({
   const [showTaskClaimDialog, setShowTaskClaimDialog] = useState(false);
   const [showLocationDialog, setShowLocationDialog] = useState(false);
   const [dialogKey, setDialogKey] = useState(0);
+
+  // Legacy follow-up suggestion (decline-and-suggest, chained flow)
   const [localSuggestion, setLocalSuggestion] = useState<CardSuggestion | null>(
     null,
   );
-  // Store prefilled data separately so it survives suggestion dismissal
+
+  // Debounced text for trigger A (set inside setTimeout callback — not synchronous in effect)
+  const [debouncedText, setDebouncedText] = useState("");
+  const [loadingCardType, setLoadingCardType] = useState<SpaceCardType | null>(
+    null,
+  );
+
+  // Store prefilled data separately so it survives suggestion/chip dismissal
   const [prefill, setPrefill] = useState<CardSuggestion["prefill"] | null>(
     null,
   );
   const editorRef = useRef<ComposeEditorHandle>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  // Track dismissed trigger C messages to avoid reappearing chips
+  const [dismissedMsg, setDismissedMsg] = useState<string | null>(null);
 
   // Displayed suggestion: follow-up prop takes precedence over local
   const suggestion = followUpSuggestion?.suggested_type
@@ -113,8 +170,76 @@ export function ComposeArea({
     senderName,
   });
 
+  // Abort in-flight prefill requests on unmount
+  useEffect(() => {
+    return () => abortRef.current?.abort();
+  }, []);
+
   const effectiveMode = postingOnly ? "P" : mode;
 
+  // ---------------------------------------------------------------------------
+  // Trigger A: Debounce compose text (500ms). setState in setTimeout callback
+  // is fine — the lint rule only flags synchronous setState in effect body.
+  // When text is cleared (e.g. after send), update debouncedText immediately
+  // so chips disappear — unless trigger B just set it to the sent text.
+  // ---------------------------------------------------------------------------
+  const sentTextRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (effectiveMode !== "M") return;
+    const trimmed = text.trim();
+
+    // Text cleared — clear quickly unless trigger B is active
+    if (!trimmed) {
+      if (sentTextRef.current) {
+        // Trigger B just set debouncedText to sent text; don't clear it
+        sentTextRef.current = null;
+        return;
+      }
+      // Use minimal timeout so lint doesn't flag synchronous setState in effect
+      const timer = setTimeout(() => {
+        setDebouncedText("");
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+
+    const timer = setTimeout(() => {
+      setDebouncedText(text);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [text, effectiveMode]);
+
+  // ---------------------------------------------------------------------------
+  // Derive detected intent from debounced text (trigger A) or incoming
+  // message (trigger C). Pure computation — no setState in effect.
+  // ---------------------------------------------------------------------------
+  const detectedIntent = useMemo<CardIntentDetection | null>(() => {
+    const trimmed = debouncedText.trim();
+
+    // Trigger A: detect from debounced compose text
+    if (effectiveMode === "M" && trimmed) {
+      const result = detectCardIntent(trimmed);
+      if (result.hasIntent) return result;
+    }
+
+    // Trigger C: detect from latest incoming message (only when compose is empty)
+    if (
+      !trimmed &&
+      latestMessage &&
+      latestMessage.sender_id !== senderId &&
+      latestMessage.type === "message" &&
+      latestMessage.content &&
+      dismissedMsg !== latestMessage.content
+    ) {
+      const result = detectCardIntent(latestMessage.content);
+      if (result.hasIntent) return result;
+    }
+
+    return null;
+  }, [debouncedText, effectiveMode, latestMessage, senderId, dismissedMsg]);
+
+  // ---------------------------------------------------------------------------
+  // Handle send
+  // ---------------------------------------------------------------------------
   const handleSend = useCallback(async () => {
     const trimmed = text.trim();
     if (!trimmed || isSending) return;
@@ -144,22 +269,12 @@ export function ComposeArea({
       if (!postingOnly) setMode("M");
       editorRef.current?.focus();
 
-      // After sending a message, check for card suggestions
+      // Trigger B: set debounced text to sent message so useMemo picks up intent.
+      // Mark sentTextRef so the debounce effect doesn't immediately clear it
+      // when it sees text changed to "".
       if (effectiveMode === "M") {
-        fetch(`/api/spaces/${spaceId}/cards/suggest`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: trimmed }),
-        })
-          .then((res) => (res.ok ? res.json() : null))
-          .then((data) => {
-            if (data?.suggestion?.suggested_type) {
-              setSuggestion(data.suggestion);
-            }
-          })
-          .catch(() => {
-            // Suggestions are best-effort
-          });
+        sentTextRef.current = trimmed;
+        setDebouncedText(trimmed);
       }
     }
   }, [
@@ -170,10 +285,11 @@ export function ComposeArea({
     isSending,
     postingOnly,
     onStopTyping,
-    spaceId,
-    setSuggestion,
   ]);
 
+  // ---------------------------------------------------------------------------
+  // Card creation callbacks
+  // ---------------------------------------------------------------------------
   const handleCreatePoll = useCallback(
     async (pollData: PollData) => {
       await createCard("poll", pollData);
@@ -219,6 +335,9 @@ export function ComposeArea({
     [createCard, setSuggestion],
   );
 
+  // ---------------------------------------------------------------------------
+  // Handle legacy follow-up suggestion accept (decline-and-suggest, chained)
+  // ---------------------------------------------------------------------------
   const handleAcceptSuggestion = useCallback(
     (s: CardSuggestion) => {
       // Store prefilled data before clearing suggestion so dialogs can use it
@@ -246,16 +365,111 @@ export function ComposeArea({
     [setSuggestion],
   );
 
+  // ---------------------------------------------------------------------------
+  // Handle type chip selection: call suggest API → open prefilled dialog
+  // ---------------------------------------------------------------------------
+  const openDialogForType = useCallback((cardType: SpaceCardType) => {
+    setDialogKey((k) => k + 1);
+    switch (cardType) {
+      case "poll":
+        setShowPollDialog(true);
+        break;
+      case "time_proposal":
+        setShowTimeProposalDialog(true);
+        break;
+      case "rsvp":
+        setShowRsvpDialog(true);
+        break;
+      case "task_claim":
+        setShowTaskClaimDialog(true);
+        break;
+      case "location":
+        setShowLocationDialog(true);
+        break;
+    }
+  }, []);
+
+  const fetchPrefillInBackground = useCallback(
+    (cardType: SpaceCardType, composeText?: string) => {
+      // Cancel any in-flight request
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      setLoadingCardType(cardType);
+
+      // Fetch in background — dialog is already open
+      fetchPrefill(spaceId, cardType, composeText, controller.signal).then(
+        (prefillData) => {
+          if (controller.signal.aborted) return;
+          setPrefill(prefillData ?? {});
+          setLoadingCardType(null);
+        },
+      );
+    },
+    [spaceId],
+  );
+
+  const handleSelectCardType = useCallback(
+    (cardType: SpaceCardType) => {
+      const composeText = text.trim() || undefined;
+      // Open dialog immediately, fetch prefill in background
+      setPrefill(null);
+      setDebouncedText(""); // Clear chips after selection
+      openDialogForType(cardType);
+      fetchPrefillInBackground(cardType, composeText);
+    },
+    [text, openDialogForType, fetchPrefillInBackground],
+  );
+
+  // ---------------------------------------------------------------------------
+  // Handle manual "+" menu: open dialog immediately, auto-fill in background
+  // ---------------------------------------------------------------------------
+  const handleManualCreate = useCallback(
+    (cardType: SpaceCardType) => {
+      // Open dialog immediately so user can start filling manually
+      setPrefill(null);
+      openDialogForType(cardType);
+      fetchPrefillInBackground(cardType);
+    },
+    [openDialogForType, fetchPrefillInBackground],
+  );
+
   const editorContext = effectiveMode === "M" ? "message" : "posting";
+
+  // Determine what to show above compose: follow-up suggestion > type chips
+  const showFollowUpChip = !!suggestion;
+  const showTypeChips =
+    !showFollowUpChip &&
+    detectedIntent?.hasIntent &&
+    detectedIntent.plausibleTypes.length > 0;
 
   return (
     <div className="border-t border-border bg-background px-4 py-2 shrink-0">
-      {/* Card suggestion chip */}
-      {suggestion && (
+      {/* Legacy follow-up suggestion chip (decline-and-suggest, chained flow) */}
+      {showFollowUpChip && (
         <CardSuggestionChip
           suggestion={suggestion}
           onAccept={handleAcceptSuggestion}
           onDismiss={() => setSuggestion(null)}
+        />
+      )}
+
+      {/* Type selector chips from cheap detector (triggers A, B, C) */}
+      {showTypeChips && (
+        <CardTypeChips
+          plausibleTypes={detectedIntent.plausibleTypes}
+          loadingType={loadingCardType}
+          onSelectType={handleSelectCardType}
+          onDismiss={() => {
+            // Track dismissed trigger C content to prevent reappearing
+            // Track dismissed trigger C message
+            if (latestMessage?.content && !text.trim()) {
+              setDismissedMsg(latestMessage.content);
+            }
+            // Clear debouncedText to dismiss trigger A/B chips
+            setDebouncedText("");
+          }}
         />
       )}
 
@@ -314,47 +528,28 @@ export function ComposeArea({
                   <FileText className="size-4 mr-2" />
                   {labels.cards.createPosting}
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    setDialogKey((k) => k + 1);
-                    setShowPollDialog(true);
-                  }}
-                >
+                <DropdownMenuItem onClick={() => handleManualCreate("poll")}>
                   <BarChart3 className="size-4 mr-2" />
                   {labels.cards.createPoll}
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => {
-                    setDialogKey((k) => k + 1);
-                    setShowTimeProposalDialog(true);
-                  }}
+                  onClick={() => handleManualCreate("time_proposal")}
                 >
                   <Clock className="size-4 mr-2" />
                   {labels.cards.createTimeProposal}
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    setDialogKey((k) => k + 1);
-                    setShowRsvpDialog(true);
-                  }}
-                >
+                <DropdownMenuItem onClick={() => handleManualCreate("rsvp")}>
                   <UserCheck className="size-4 mr-2" />
                   {labels.cards.createRsvp}
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => {
-                    setDialogKey((k) => k + 1);
-                    setShowTaskClaimDialog(true);
-                  }}
+                  onClick={() => handleManualCreate("task_claim")}
                 >
                   <ListTodo className="size-4 mr-2" />
                   {labels.cards.createTaskClaim}
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => {
-                    setDialogKey((k) => k + 1);
-                    setShowLocationDialog(true);
-                  }}
+                  onClick={() => handleManualCreate("location")}
                 >
                   <MapPin className="size-4 mr-2" />
                   {labels.cards.createLocation}
@@ -392,6 +587,7 @@ export function ComposeArea({
         onSubmit={handleCreatePoll}
         suggestedQuestion={prefill?.question}
         suggestedOptions={prefill?.options}
+        isLoadingPrefill={loadingCardType !== null}
       />
       <CreateTimeProposalDialog
         key={`time-${dialogKey}`}
@@ -403,6 +599,7 @@ export function ComposeArea({
         structuredSlots={prefill?.slots}
         durationMinutes={prefill?.duration_minutes}
         memberNotes={prefill?.member_notes}
+        isLoadingPrefill={loadingCardType !== null}
       />
       <CreateRsvpDialog
         key={`rsvp-${dialogKey}`}
@@ -411,6 +608,7 @@ export function ComposeArea({
         onSubmit={handleCreateRsvp}
         suggestedTitle={prefill?.title}
         suggestedThreshold={prefill?.suggested_threshold}
+        isLoadingPrefill={loadingCardType !== null}
       />
       <CreateTaskClaimDialog
         key={`task-${dialogKey}`}
@@ -418,6 +616,7 @@ export function ComposeArea({
         onOpenChange={setShowTaskClaimDialog}
         onSubmit={handleCreateTaskClaim}
         suggestedDescription={prefill?.description}
+        isLoadingPrefill={loadingCardType !== null}
       />
       <CreateLocationDialog
         key={`location-${dialogKey}`}

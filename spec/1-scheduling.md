@@ -427,9 +427,6 @@ If a participant's calendar changes after accepting (new meeting added):
 
 ## 8. Current Deviations
 
-- **`||hidden||` profile syntax**: Profile editor does not render `||hidden||` blocks visually. No `/hidden` slash command. Parsing works but editing UI missing. → v0.8.5 Phase D
-- **Slot generation**: No LLM-powered slot generation. Time proposal slots are user-entered, not computed from calendar overlap. → v0.8.5 Phase A
-- **Group scheduling UI**: No N-way overlap computation in suggest flow. No pre-fill recommendation. No per-person private constraint notes. → v0.8.5 Phases A + C
-- **Scheduling preferences**: Not yet functional — no users have `||hidden||` text in profiles, no LLM reads it. → v0.8.5 Phases A + D
+- **Scheduling preferences onboarding**: No dedicated profile setup prompt for scheduling preferences ("Anything we should know when scheduling?"). Users can add `||hidden||` text manually but aren't guided to do so. → v0.9
 - **Travel time estimation**: Not implemented. → backlog
 - **Conflict detection**: No post-acceptance calendar change notifications. → backlog

@@ -184,14 +184,14 @@ Coordination happens through **rich interactive cards** -- structured messages e
 
 ### Card types
 
-| Type             | Content                           | Interaction                             | Resolution                              |
-| ---------------- | --------------------------------- | --------------------------------------- | --------------------------------------- |
-| Time proposal    | 3--4 slots from calendar overlap  | Tap preferred slot(s), votes shown live | Auto-confirms when enough members align |
-| RSVP             | Event description + time          | Yes / No / Maybe                        | Threshold triggers confirmation         |
-| Poll             | Multiple-choice question          | Tap to vote                             | Results visible to all                  |
-| Task claim       | "Who handles X?" with member list | "I'll do it"                            | Claimed -> assigned                     |
-| Location confirm | Map pin + address                 | Confirm / Suggest different             | Confirmed when agreed                   |
-| Trade-off        | "No perfect option -- pick one"   | Creator/admin picks                     | Selected option confirmed               |
+| Type             | Content                           | Interaction                                                            | Resolution                                                    |
+| ---------------- | --------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Time proposal    | 3--4 slots from calendar overlap  | Tap slots you can make (multi-select); menu: "Can't make any" / "Pass" | Auto-resolves at deadline → post-resolution commitment prompt |
+| RSVP             | Event description + time          | Yes / No / Maybe                                                       | Threshold triggers confirmation                               |
+| Poll             | Multiple-choice question          | Tap to vote                                                            | Results visible to all                                        |
+| Task claim       | "Who handles X?" with member list | "I'll do it"                                                           | Claimed -> assigned                                           |
+| Location confirm | Map pin + address                 | Confirm / Suggest different                                            | Confirmed when agreed                                         |
+| Trade-off        | "No perfect option -- pick one"   | Creator/admin picks                                                    | Selected option confirmed                                     |
 
 ### Where cards live
 
@@ -223,16 +223,31 @@ Five named principles govern how cards behave. These names are canonical — use
 
 #### Principle 1: Intelligent Pre-fill
 
-Suggestion chips come with data already computed from calendars, profiles, and conversation context. The user confirms pre-filled cards with one tap — they don't fill out forms.
+Cards are pre-filled from context — calendars, profiles, conversation, and the user's own compose text. The user's main effort is typing their intent; the system drafts the structured card from it.
 
-| Input                           | What the system reads                                     |
-| ------------------------------- | --------------------------------------------------------- |
-| Calendars                       | N-way free/busy overlap for all Space members             |
-| Profile `\|\|hidden\|\|` fields | Scheduling preferences, commute info, buffer needs        |
-| Conversation history            | Last ~5 messages for intent + context                     |
-| Activity type                   | Duration inference ("dinner" → 2h, "quick call" → 15 min) |
+| Input                           | What the system reads                                                                          |
+| ------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Compose text                    | The message the user is writing — used as card description and to extract options, times, etc. |
+| Conversation history            | Last ~5 messages for intent + context                                                          |
+| Calendars                       | N-way free/busy overlap for all Space members                                                  |
+| Profile `\|\|hidden\|\|` fields | Scheduling preferences, commute info, buffer needs                                             |
+| Activity type                   | Duration inference ("dinner" → 2h, "quick call" → 15 min)                                      |
 
-The suggestion chip displays a summary of what will be created: "📅 Time proposal? Fri 19:00 · 19:30 · 20:00".
+**Three suggestion triggers:**
+
+| Trigger                | When                                             | What appears                                                                                                                                                         |
+| ---------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A. While composing** | User types text with coordination intent         | 1–3 card type chips appear near compose area (e.g. `[📅 Time proposal] [📊 Poll]`). User taps a type → dialog opens pre-filled from their text.                      |
+| **B. After sending**   | User sends a message with coordination intent    | Same chips appear as fallback, in case the user sent before acting on trigger A.                                                                                     |
+| **C. After reading**   | Another member's message has coordination intent | Chips appear in the reader's compose area, suggesting they can act on the intent (e.g. "Priya asked about this weekend — `[📅 Time proposal]`"). Any member can act. |
+
+**Cheap detector, expensive generator**: A lightweight heuristic (regex/keyword patterns — question marks, time words, comma-separated options, "who can/wants" phrases) detects coordination intent and determines 1–3 plausible card types. This runs client-side or as a fast check, with no LLM call. The expensive LLM call (calendar reading, slot generation, option extraction, member notes) only runs when the user taps a card type chip.
+
+**Type selector, not type guesser**: The system often cannot determine whether the user wants an RSVP vs. a time proposal, or a poll vs. a task claim. Instead of guessing one type, it presents plausible types and the user chooses. The system fills the content; the user picks the shape.
+
+**Message as card description**: When a card is created via a suggestion chip, the user's compose text becomes the card's description field — preserving conversational warmth while adding structure. The text message is not sent separately.
+
+**Manual creation is also smart**: The "+" card creation menu always auto-fills from conversation context. Whether the user arrives via a suggestion chip or the manual menu, the dialog opens pre-filled. This is the default behavior, not a special mode. Users can always clear or edit what the AI pre-filled.
 
 **Two-path interaction**: when context is complete, the user can **quick-send** with one tap (the card is created with pre-filled defaults). When the user wants to adjust, they tap to **edit** — opening a pre-filled dialog where they can modify options before creating. Both paths start from the same suggestion chip. Quick-send is the default; edit is always available.
 
@@ -242,12 +257,12 @@ The suggestion chip displays a summary of what will be created: "📅 Time propo
 
 Card resolution can trigger a follow-up suggestion. The system notices that one coordination decision naturally leads to another.
 
-| Trigger                                       | Follow-up                                                                                    |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| RSVP declined (specific time)                 | Suggest time proposal with calendar-computed alternatives — offered to the decliner directly |
-| Poll resolves ("mornings" wins)               | Suggest time proposal filtered to morning slots                                              |
-| Time proposal resolves                        | Suggest location confirm if no location set                                                  |
-| Task claim leaves items unclaimed at deadline | Surface unclaimed tasks to creator                                                           |
+| Trigger                                       | Follow-up                                                                                         |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| RSVP declined (specific time)                 | Suggest time proposal with calendar-computed alternatives — offered to the decliner directly      |
+| Poll resolves ("mornings" wins)               | Suggest time proposal filtered to morning slots                                                   |
+| Time proposal resolves                        | Post-resolution commitment prompt (Principle 6); then suggest location confirm if no location set |
+| Task claim leaves items unclaimed at deadline | Surface unclaimed tasks to creator                                                                |
 
 Chained suggestions use the same suggestion chip pattern — they are not autonomous. The user always taps to create.
 
@@ -255,19 +270,27 @@ Chained suggestions use the same suggestion chip pattern — they are not autono
 
 Every card has a deadline and transparent auto-resolve rules, shown on the card itself.
 
-**Defaults by card type** (customizable by creator):
+**Defaults by card type** (customizable by creator at creation time via deadline input field):
 
-| Type             | Default deadline | Auto-resolve behavior                                   |
-| ---------------- | ---------------- | ------------------------------------------------------- |
-| Time proposal    | 12 hours         | Resolves to highest-voted slot                          |
-| RSVP             | 24 hours         | Resolves with current Yes voters (even below threshold) |
-| Poll             | 24 hours         | Winner at deadline wins                                 |
-| Task claim       | None             | Stays open until claimed or manually closed             |
-| Location confirm | 24 hours         | Majority-confirmed location wins                        |
+| Type             | Default deadline | Auto-resolve behavior                                                            |
+| ---------------- | ---------------- | -------------------------------------------------------------------------------- |
+| Time proposal    | 12 hours         | Highest-voted slot wins. Ties: first-listed option wins. Requires quorum if set. |
+| RSVP             | 24 hours         | Resolves with current Yes voters (even below threshold)                          |
+| Poll             | 24 hours         | Winner at deadline wins                                                          |
+| Task claim       | None             | Stays open until claimed or manually closed                                      |
+| Location confirm | 24 hours         | Majority-confirmed location wins                                                 |
 
-**Display**: cards show "Closes in 8h" or "Closes Friday 18:00" — always visible, never hidden. When a card resolves by deadline, the resolution is logged as a system message in the conversation.
+**Deadline input**: the creator sets the deadline when creating any card. The default is pre-filled per the table above but can be adjusted to any time. Display: "Closes in 8h" or "Closes Friday 18:00" — always visible, never hidden.
+
+**Quorum** (optional): the creator can set a minimum number of attendees needed. If set, the card only auto-resolves when an option meets both the vote threshold _and_ the quorum. If deadline passes without quorum on any option, the card is cancelled and the creator is notified.
+
+**Tie-breaking**: when multiple options are tied at deadline, the first-listed option wins. The creator implicitly controls tie-breaking by ordering their slots.
+
+**No votes at deadline**: if no option has any votes when the deadline passes, the card is cancelled (not resolved to a phantom winner).
 
 **Non-response**: if a member doesn't respond before deadline, the card proceeds without them. This is expected behavior, not a failure. See Communication Norms below.
+
+When a card resolves (by deadline or manually), the resolution is logged as a system message in the conversation.
 
 #### Principle 4: Private Constraints
 
@@ -297,6 +320,38 @@ When a member declines or votes "No" on a coordination card, the system immediat
 
 Both parties are empowered to move forward — the system doesn't create a bottleneck on either side. This replaces the pattern where a decline dead-ends and the creator has to restart the negotiation manually.
 
+#### Principle 6: Post-Resolution Commitment
+
+Voting on a time proposal means "I can make this" — not "I'm committed." Commitment happens _after_ resolution, through a natural RSVP moment built into the card.
+
+**Post-resolution card state**: the card keeps full poll results visible (who voted for what, vote counts). The winning slot is prominently highlighted, and an action strip appears at the bottom for commitment.
+
+**Commitment flow**:
+
+| Situation                        | What happens                                                                              |
+| -------------------------------- | ----------------------------------------------------------------------------------------- |
+| You voted for the winning slot   | Auto-added to calendar event. Dismissable banner: "Added to your calendar. [Undo]"        |
+| You didn't vote for winning slot | Prompted: **Add to calendar** (= attending) · **Maybe** (= tentative) · **Can't make it** |
+| You didn't vote at all           | Same prompt as above                                                                      |
+| You selected "Pass"              | No prompt — you opted out                                                                 |
+
+- **Add to calendar** creates the Google Calendar event _and_ marks the member as attending. One action, two outcomes.
+- **Maybe** adds the event to the calendar as tentative — the member wants it on their calendar but isn't confirmed.
+- **Can't make it** records the decline. No calendar event.
+
+This replaces the need for a separate chained RSVP card after time resolution. The commitment step is built into the resolved card itself.
+
+#### Opt-out Voting Options
+
+All card types with voting support a small menu (one tap to open) with universal opt-out options:
+
+| Option                      | Meaning                                             | Effect on resolution                  |
+| --------------------------- | --------------------------------------------------- | ------------------------------------- |
+| **Can't make any of these** | "I would participate, but none of the options work" | Visible on card; counted as responded |
+| **Pass**                    | "Not relevant to me / don't wait for me"            | Visible on card; excluded from quorum |
+
+These are hardcoded and universal — they appear on every card type. They solve the ambiguity between "hasn't seen the card yet" and "actively opted out." Members who select an opt-out option are shown by name on the card so the creator knows who's out vs. who hasn't responded.
+
 ---
 
 ### Communication Norms
@@ -307,7 +362,7 @@ Every card type and system behavior implicitly teaches users how coordination wo
 Cards have deadlines. If you don't respond, the card resolves without you — and that's okay. Nobody is obligated to respond. The system handles non-response gracefully (auto-close, proceed with responders). No chasing, no guilt.
 
 **Norm 2: One tap is a real answer.**
-When you tap "Yes" on an RSVP or vote on a time proposal, that's a commitment. It goes on your calendar. The system treats it as binding. This is what makes 1-tap coordination trustworthy.
+When you tap "Yes" on an RSVP, that's a commitment — it goes on your calendar. For time proposals, voting means "I can make this" (availability); commitment happens at resolution, when voters for the winning slot are auto-added to the calendar event and others are prompted. Either way, each tap carries real meaning. This is what makes 1-tap coordination trustworthy.
 
 **Norm 3: The system handles the awkwardness.**
 Nobody has to chase non-responders. Nobody has to say "actually that doesn't work for me, sorry." Cards with deadlines and decline-and-suggest flows handle the social friction. "No" is a button, not a conversation.
@@ -389,7 +444,7 @@ A posting in a small Space can be promoted to Explore as a new posting-message t
 - Still readable, not prominent (rendered with reduced opacity)
 - Admin can unarchive via space-info-sheet
 - Posting lifecycle (status) is independent of Space archiving
-- Auto-archive after 30 days of no messages planned but not yet implemented
+- Auto-archive after 30 days of no messages planned (→ v0.9)
 
 ---
 
@@ -425,15 +480,13 @@ Numbered for cross-reference. Full rationale in [designs/spaces-rewrite.md](desi
 
 ## 12. Current Deviations
 
-- **Inherited → independent transition**: `inherits_members` flag exists but no auto-transition when outsiders join via matching/invite. → v0.7
-- **Old table cleanup**: Old `postings`, `conversations`, `messages`, `group_messages` tables still exist. → v0.7
-- **Trade-off card type**: Not yet implemented. → v0.8 remaining
-- **Card invalidation**: No automatic card invalidation from messages yet (Phase 2a/2b). Cards are manually resolved/cancelled. → v0.8 remaining
-- **Auto-archive**: No 30-day auto-archive cron. Manual archive/unarchive by admin only. → v0.8 remaining
-- **Intelligent Pre-fill**: Card suggestions are text-only detection; no calendar awareness, no `||hidden||` profile reading, no structured slot generation. → v0.8.5 Phase A
-- **Two-path suggestion chip**: Single "Accept" button opens dialog. No quick-send, no preview. → v0.8.5 Phase B
-- **Card deadlines**: No deadline field on cards. No auto-resolve at deadline. → v0.8.5 Phase B
-- **Chained Card Flow**: No follow-up suggestions after card resolution or decline. → v0.8.5 Phase C
-- **Decline-and-Suggest**: Declining an RSVP is a dead-end; no alternative suggestions. → v0.8.5 Phase C
-- **Private Constraints**: No per-member notes on shared cards. → v0.8.5 Phase C
-- **`||hidden||` in profile editor**: No visual rendering or `/hidden` command. Hidden syntax works in parsing but not in editing UI. → v0.8.5 Phase D
+- **Inherited → independent transition**: `inherits_members` flag exists but no auto-transition when outsiders join via matching/invite. → v0.9
+- **Old table cleanup**: Legacy `conversations`, `messages`, `group_messages`, `group_message_reads` dropped. Old `postings` table still exists (FK dependents need separate analysis). Active code migrated off old tables to `space_postings`/`space_members`. → partial, `postings` drop deferred
+- **Trade-off card type**: Not yet implemented. → v0.9
+- **Card invalidation**: No automatic card invalidation from messages yet (Phase 2a/2b). Cards are manually resolved/cancelled. → v0.9
+- **Auto-archive**: No 30-day auto-archive cron. Manual archive/unarchive by admin only. → v0.9
+- **Quick-send suggestion path**: Suggestion chips open the edit dialog (pre-filled). The 1-tap quick-send path (create card directly with defaults) is not yet implemented. → v0.9
+- **Post-resolution commitment** (Principle 6): Time proposals resolve but no commitment prompt or auto-calendar-add for winners. Currently creates calendar event for all participants at resolution. → v0.9
+- **Opt-out voting menu**: No "Can't make any" / "Pass" options on cards. Non-voters are ambiguous (unseen vs. opted out). → v0.9
+- **Deadline input field**: Deadlines are hardcoded defaults (12h/24h). Creator cannot set a custom deadline at creation time. → v0.9
+- **Quorum**: No minimum attendee concept. Cards auto-resolve regardless of participation count. → v0.9

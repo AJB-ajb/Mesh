@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Plus, X, Clock, Loader2 } from "lucide-react";
 
 import { labels } from "@/lib/labels";
@@ -26,6 +26,7 @@ interface CreateTimeProposalDialogProps {
   durationMinutes?: number;
   memberNotes?: Record<string, string>;
   isLoadingSlots?: boolean;
+  isLoadingPrefill?: boolean;
 }
 
 const MIN_OPTIONS = 2;
@@ -41,6 +42,7 @@ export function CreateTimeProposalDialog({
   durationMinutes,
   memberNotes,
   isLoadingSlots,
+  isLoadingPrefill,
 }: CreateTimeProposalDialogProps) {
   const [title, setTitle] = useState(suggestedTitle ?? "");
   const deriveOptions = (): string[] => {
@@ -55,6 +57,28 @@ export function CreateTimeProposalDialog({
     return ["", ""];
   };
   const [options, setOptions] = useState<string[]>(deriveOptions);
+  const [userTouched, setUserTouched] = useState(false);
+
+  // Sync suggested props when they arrive after dialog is already open
+  const [prevSuggestedTitle, setPrevSuggestedTitle] = useState(suggestedTitle);
+  if (suggestedTitle !== prevSuggestedTitle) {
+    setPrevSuggestedTitle(suggestedTitle);
+    if (suggestedTitle && !userTouched) setTitle(suggestedTitle);
+  }
+  const [prevSuggestedSlots, setPrevSuggestedSlots] = useState(suggestedSlots);
+  if (suggestedSlots !== prevSuggestedSlots) {
+    setPrevSuggestedSlots(suggestedSlots);
+    if (suggestedSlots && suggestedSlots.length > 0 && !userTouched) {
+      setOptions(
+        suggestedSlots.length >= MIN_OPTIONS
+          ? [...suggestedSlots]
+          : [
+              ...suggestedSlots,
+              ...Array(MIN_OPTIONS - suggestedSlots.length).fill(""),
+            ],
+      );
+    }
+  }
 
   const handleAddOption = useCallback(() => {
     if (options.length < MAX_OPTIONS) {
@@ -144,6 +168,10 @@ export function CreateTimeProposalDialog({
             </label>
             <Input
               id="proposal-title"
+              className={
+                isLoadingPrefill && !userTouched ? "shimmer-input" : ""
+              }
+              onFocus={() => setUserTouched(true)}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={labels.cards.timeProposalTitlePlaceholder}
@@ -168,6 +196,10 @@ export function CreateTimeProposalDialog({
               {options.map((option, idx) => (
                 <div key={idx} className="flex items-center gap-2">
                   <Input
+                    className={
+                      isLoadingPrefill && !userTouched ? "shimmer-input" : ""
+                    }
+                    onFocus={() => setUserTouched(true)}
                     value={option}
                     onChange={(e) => handleOptionChange(idx, e.target.value)}
                     placeholder={labels.cards.timeSlotPlaceholder}

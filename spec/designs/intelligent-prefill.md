@@ -6,27 +6,62 @@
 
 ## 1. Overview
 
-The current card suggestion flow: message → LLM detects intent → suggestion chip → user opens dialog → fills fields → creates card. Intelligence is limited to text-based intent detection.
+The current card suggestion flow: message → LLM detects intent → single suggestion chip → user opens dialog → fills fields → creates card. Intelligence is limited to text-based intent detection, and suggestions only appear after the user sends a message.
 
-The target flow: message → LLM detects intent AND generates prefilled options from calendars, profiles, and conversation context → suggestion chip with preview → user taps to send (or edits) → card appears with smart defaults, deadlines, and per-member context.
+The target flow: user types text → cheap detector flags coordination intent while composing → card type chips appear (1–3 plausible types) → user taps a type → LLM generates prefilled card from calendars, profiles, and conversation context → pre-filled dialog → user confirms or edits → card appears. The user's compose text becomes the card description.
 
-**Key architectural change**: fuse detection and suggestion into a single LLM call. The LLM receives full context (messages + calendar overlap + `||hidden||` profile text) and returns both the card type decision and prefilled data in one response. This reduces latency (one round trip instead of two) and improves detection quality (calendar context informs type decisions).
+**Key architectural changes**:
+
+1. **Cheap detect, expensive generate**: Split the old fused LLM call into two stages. A lightweight heuristic (client-side regex/keyword patterns) detects coordination intent and suggests card types — no LLM cost. The full LLM call (calendar overlap, member notes, slot generation) only fires when the user commits to a card type by tapping a chip.
+
+2. **Type selector, not type guesser**: Instead of the system picking one card type, present 1–3 plausible types and let the user choose. This eliminates the RSVP-vs-time-proposal ambiguity problem.
+
+3. **Three triggers**: Suggestions appear while composing (A), after sending (B, fallback), and when reading others' messages with coordination intent (C). Currently only B exists.
+
+4. **Manual creation is also smart**: The "+" card creation menu auto-fills every card type from conversation context by default. The suggestion chips and the manual menu converge on the same pre-filled dialog.
 
 ---
 
-## 2. Fused Detect-and-Suggest LLM Call
+## 2. Two-Stage Detection and Generation
 
-### Why fuse
+### Stage 1: Cheap Detector (client-side, no LLM)
 
-| Aspect            | Separate calls                            | Fused call                                                                                             |
-| ----------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Latency           | ~400ms detect + ~400ms suggest            | ~500ms total                                                                                           |
-| Detection quality | Text-only context                         | Calendar + profiles inform type choice                                                                 |
-| Example           | "let's meet at 2" → detects time_proposal | Same message + calendar shows both free at 14:00 → detects RSVP (specific time, no negotiation needed) |
-| Token cost        | Detect: ~200 tokens. Suggest: ~800 tokens | Fused: ~900 tokens (shared context)                                                                    |
-| Model             | Flash-lite handles both                   | Flash-lite handles both                                                                                |
+A lightweight heuristic that runs on the client as the user types or when new messages arrive. Its job is narrow: detect whether coordination intent exists and which 1–3 card types are plausible. It does NOT generate card content.
 
-### Input context (assembled by suggest API)
+**Heuristic rules** (regex/keyword patterns):
+
+| Pattern                                                        | Suggested types     |
+| -------------------------------------------------------------- | ------------------- |
+| Question mark + time/day words ("friday", "next week", "when") | Time proposal, RSVP |
+| Question mark + multiple options (comma/or-separated items)    | Poll                |
+| "who can", "who wants to", "volunteers"                        | Task claim          |
+| "where should", "what place"                                   | Location, Poll      |
+| Specific time stated ("at 2pm", "tomorrow 14:00")              | RSVP, Time proposal |
+| General decision question ("should we", "what do you think")   | Poll                |
+
+**Output**: `{ hasIntent: boolean, plausibleTypes: CardType[], confidence: number }`. Threshold for showing chips: confidence > 0.5.
+
+**Trigger A (composing)**: runs on debounced text change (~500ms after typing pauses). Shows card type chips near compose area.
+
+**Trigger B (after send)**: runs on the sent message text. Same chips appear if user didn't act on trigger A.
+
+**Trigger C (reading)**: runs on the latest message from another member. Shows chips contextualized to that message.
+
+### Stage 2: LLM Generation (on user tap, server-side)
+
+Only fires when the user taps a card type chip or opens a card creation dialog. The LLM receives the chosen card type plus full context and generates prefilled data. This is the expensive call — calendar overlap, member notes, slot generation.
+
+The user's compose text (or the triggering message for trigger C) is passed as context and used as the card description.
+
+| Aspect           | Old (fused detect+suggest) | New (cheap detect → LLM generate on tap)      |
+| ---------------- | -------------------------- | --------------------------------------------- |
+| Latency to chips | ~600ms (after send only)   | <50ms (client-side heuristic)                 |
+| LLM calls        | Every message sent         | Only when user taps a type                    |
+| Cost             | ~$0.001 per message        | ~$0.001 per card created (not per message)    |
+| Type accuracy    | System guesses one type    | User chooses from 1–3 options                 |
+| Trigger moments  | After send only            | While composing + after send + reading others |
+
+### Input context (assembled by suggest API, stage 2 only)
 
 ```
 RECENT MESSAGES (last 5):
@@ -50,23 +85,21 @@ CURRENT TIME: {ISO timestamp}
 ### Output schema (structured JSON)
 
 ```typescript
-interface DetectAndSuggestResult {
-  // Detection
-  suggested_type:
-    | "poll"
-    | "time_proposal"
-    | "rsvp"
-    | "task_claim"
-    | "location"
-    | null;
-  confidence: number; // 0-1, threshold 0.6
-  reason: string; // Brief explanation for chip display
+// Stage 1: Cheap detector output (client-side)
+interface CardIntentDetection {
+  hasIntent: boolean;
+  plausibleTypes: CardType[]; // 1-3 types, ordered by likelihood
+  confidence: number; // 0-1, threshold 0.5
+  triggerMessage?: string; // The message that triggered detection (for trigger C)
+}
 
-  // Prefill (populated when suggested_type is not null)
+// Stage 2: LLM generation output (server-side, after user taps a type)
+interface CardGenerationResult {
+  card_type: CardType; // The type the user chose
   prefill: {
+    description?: string; // From user's compose text — preserves conversational warmth
     title?: string; // Card title
     question?: string; // Poll question
-    description?: string; // Task claim description
     options?: string[]; // Poll options, task roles, or location name
 
     // Time-specific (time_proposal or rsvp)
@@ -87,18 +120,15 @@ interface DetectAndSuggestResult {
 }
 ```
 
-### LLM system prompt (key additions)
+### LLM system prompt (stage 2 — generation only)
+
+The user has already chosen the card type. The LLM's job is to generate the best prefill data for that type.
 
 ```
-You are a coordination assistant analyzing a group conversation.
+You are a coordination assistant generating a pre-filled {{CARD_TYPE}} card.
 
-CARD TYPE RULES:
-- "who wants X?" / "who can X?" → task_claim (volunteering, not voting)
-- "what should we X?" / "which option?" → poll (group decides one answer)
-- "when should we X?" / scheduling question → time_proposal (generate slots from calendar overlap)
-- "let's do X at Y" / specific time stated → rsvp (confirmation, not negotiation)
-  BUT: only if calendar shows participants are free. If conflicts exist, suggest time_proposal instead.
-- location questions → location
+The user wrote: "{{COMPOSE_TEXT}}"
+Use this as the card description. Extract structured data from it for the card fields below.
 
 TIME SLOT GENERATION:
 When suggesting time_proposal, generate 2-5 slots from the CALENDAR OVERLAP provided.
@@ -153,9 +183,10 @@ Gemini Flash Lite. The fused call adds ~400 tokens of calendar context but the m
    - Format overlap for LLM prompt via `formatSlotsForPrompt()`
    - Call the fused detect-and-suggest LLM (replaces current `detectCardIntent()`)
 
-2. **Fused LLM function** (new: `src/lib/ai/card-suggest.ts`, replaces `card-detection.ts`)
-   - Single function: `detectAndSuggest(messages, calendarContext, memberProfiles)`
-   - Returns `DetectAndSuggestResult` (see schema above)
+2. **LLM generation function** (refactor: `src/lib/ai/card-suggest.ts`)
+   - Refactor `detectAndSuggest()` → `generateCardPrefill(cardType, messages, calendarContext, memberProfiles, composeText)`
+   - Takes the user-chosen card type as input (no longer guesses type)
+   - Returns `CardGenerationResult` (see schema above)
    - Uses Flash Lite with structured JSON output
 
 3. **Structured slot format** in card data
@@ -182,27 +213,43 @@ Gemini Flash Lite. The fused call adds ~400 tokens of calendar context but the m
 
 **Depends on:** existing calendar sync infrastructure (already working).
 
-### Phase B: Suggestion UX Upgrades
+### Phase B: Suggestion UX Overhaul
 
-**Goal**: one-tap quick-send, calendar context strip, deadlines on cards, better detection.
+**Goal**: Cheap detector with type selector chips, three triggers (compose/send/read), auto-fill in manual menu, calendar context strip, deadlines on cards.
 
 **Changes:**
 
-1. **Two-path suggestion chip** (`card-suggestion-chip.tsx`)
-   - Primary button: quick-send (creates card directly with prefill data)
-   - Secondary button: edit (opens dialog as today)
-   - Chip shows preview: "📅 Fri 19:00 · 19:30 · 20:00" or "📊 Frontend · Backend · Design"
-   - `onAccept(suggestion, quickSend: boolean)` in compose-area.tsx
-   - Quick-send: POST `/api/spaces/[id]/cards` directly with prefill data as card data
+1. **Cheap client-side detector** (new: `src/lib/cards/card-intent-detector.ts`)
+   - Pure function: `detectCardIntent(text: string): CardIntentDetection`
+   - Regex/keyword heuristics (see §2 Stage 1 above)
+   - No network call, runs on debounced text change (~500ms)
+   - Returns 1–3 plausible card types
 
-2. **Calendar context strip** (new component: `src/components/spaces/cards/calendar-context-strip.tsx`)
+2. **Type selector chips** (redesign: `card-suggestion-chip.tsx` → `card-type-chips.tsx`)
+   - Replaces single suggestion chip with 1–3 card type buttons
+   - Each chip: icon + type name (e.g. `[📅 Time proposal] [📊 Poll]`)
+   - Tapping a chip: calls suggest API with `{ cardType, composeText }` → opens pre-filled dialog
+   - Chips appear in compose area (triggers A+B) or below a message (trigger C)
+
+3. **Three trigger integration** (`compose-area.tsx`)
+   - Trigger A: run `detectCardIntent()` on debounced `text` changes → show chips
+   - Trigger B: run `detectCardIntent()` on sent message text → show chips (fallback)
+   - Trigger C: run `detectCardIntent()` on latest incoming message → show chips contextualized
+   - Chips auto-dismiss when user starts typing a new message or sends
+
+4. **Auto-fill in manual "+" menu**
+   - When user opens a card creation dialog from the "+" menu, call suggest API with `{ cardType, recentMessages }` to pre-fill the form
+   - Every card type defaults to auto-filled from conversation context
+   - Users can clear/edit pre-filled fields
+
+5. **Calendar context strip** (new component: `src/components/spaces/cards/calendar-context-strip.tsx`)
    - Compact horizontal day view for the current user
    - Shows events surrounding the proposed time slot
    - Data: fetch user's `calendar_busy_blocks` for the relevant day (client-side, cached)
    - Rendered below each time slot option on time proposal cards
    - Also shown in suggestion chip preview for time proposals
 
-3. **Deadline field on cards**
+6. **Deadline field on cards**
    - Migration: add `deadline timestamptz` to `space_cards`
    - Card creation API accepts `deadline` parameter
    - Defaults: time_proposal 12h, RSVP 24h, poll 24h, task_claim null, location 24h
@@ -210,7 +257,7 @@ Gemini Flash Lite. The fused call adds ~400 tokens of calendar context but the m
    - Auto-resolve at deadline: check in the GET handler (on-read) OR lightweight cron
      Recommendation: on-read check is simpler — when fetching cards, if `deadline < now` and status is `active`, auto-resolve inline. No cron needed for MVP.
 
-4. **Detection prompt improvements** (in new `card-suggest.ts`)
+7. **Detection prompt improvements** (in new `card-suggest.ts`)
    - Already covered by fused LLM prompt (§2 above)
    - Key distinctions: task_claim vs. poll, specific-time RSVP vs. open time_proposal
 
@@ -308,11 +355,33 @@ alter table space_cards add column deadline timestamptz;
 ## 4. Data Flow Diagram
 
 ```
-User sends message in Space
-         │
-         ▼
+STAGE 1: CHEAP DETECTION (client-side, no LLM)
+═══════════════════════════════════════════════
+
+Trigger A: User typing          Trigger B: User sent msg     Trigger C: Incoming message
+"dinner friday or saturday?"    "dinner friday?"             Priya: "should we do something?"
+         │                               │                            │
+         └───────────────┬───────────────┘────────────────────────────┘
+                         ▼
+              ┌─────────────────────┐
+              │  detectCardIntent() │  (regex/keyword heuristics)
+              │  ~0ms, no network   │
+              └─────────┬───────────┘
+                        ▼
+              ┌─────────────────────────────────┐
+              │  Type selector chips             │
+              │  [📅 Time proposal] [📊 Poll]   │
+              │  (1–3 plausible types)           │
+              └─────────┬───────────────────────┘
+                        │ user taps a type
+                        ▼
+
+STAGE 2: LLM GENERATION (server-side, on user tap)
+═══════════════════════════════════════════════════
+
 ┌─────────────────────────────────┐
 │  Suggest API                     │
+│  Input: cardType + composeText   │
 │  ┌──────────────────────────┐   │
 │  │ 1. Fetch last 5 messages │   │
 │  │ 2. Fetch member profiles │   │
@@ -326,33 +395,35 @@ User sends message in Space
 │  └──────────┬───────────────┘   │
 │             ▼                    │
 │  ┌──────────────────────────┐   │
-│  │ Fused LLM (Flash Lite)   │   │
-│  │ - Detect card type       │   │
-│  │ - Generate prefill       │   │
-│  │ - Compute member notes   │   │
-│  │ - Infer duration         │   │
-│  │ - Suggest deadline       │   │
+│  │ LLM Generation (Flash    │   │
+│  │ Lite)                     │   │
+│  │ - Generate prefill        │   │
+│  │ - Compute member notes    │   │
+│  │ - Infer duration          │   │
+│  │ - Suggest deadline        │   │
 │  └──────────┬───────────────┘   │
 │             ▼                    │
-│  Return DetectAndSuggestResult  │
+│  Return CardGenerationResult    │
 └─────────────┬───────────────────┘
               │
               ▼
 ┌─────────────────────────────────┐
-│  Client: Suggestion Chip        │
-│  "📅 Fri 19:00 · 19:30 · 20:00"│
-│  [Send] [Edit] [✕]             │
+│  Pre-filled dialog               │
+│  Description: user's text        │
+│  Fields: from LLM generation     │
+│  [Send] [Edit fields] [✕]       │
 └─────────────┬───────────────────┘
               │
      ┌────────┴────────┐
      ▼                  ▼
-  Quick-send        Edit dialog
-  (1 tap)           (review + create)
+  Quick-send        Edit + create
+  (1 tap)           (review fields)
      │                  │
      └────────┬─────────┘
               ▼
 ┌─────────────────────────────────┐
 │  Card created in conversation    │
+│  - User's text as description    │
 │  - Deadline set                  │
 │  - Member notes stored           │
 │  - Realtime broadcast            │
@@ -378,13 +449,22 @@ User sends message in Space
 
 ## 5. Latency Budget
 
+### Stage 1: Detection → chips visible
+
+| Step               | Target   | Notes                                   |
+| ------------------ | -------- | --------------------------------------- |
+| Cheap detector     | <5ms     | Client-side regex/keyword, no network   |
+| **Total to chips** | **<5ms** | Chips appear while user is still typing |
+
+### Stage 2: User taps chip → dialog opens pre-filled
+
 | Step                     | Target     | Notes                                       |
 | ------------------------ | ---------- | ------------------------------------------- |
 | Member + calendar fetch  | <100ms     | Parallel queries, admin client              |
 | Overlap computation      | <20ms      | In-memory, small arrays                     |
 | Hidden text extraction   | <5ms       | String parsing                              |
-| Fused LLM call           | <500ms     | Flash Lite, structured output               |
-| **Total suggest**        | **<600ms** | User sees chip within 1s of sending message |
+| LLM generation call      | <500ms     | Flash Lite, structured output               |
+| **Total to dialog**      | **<600ms** | Dialog opens pre-filled within ~0.6s of tap |
 | Quick-send card creation | <200ms     | Direct API call                             |
 | Calendar strip render    | <50ms      | Client-side from cached busy blocks         |
 
@@ -394,7 +474,8 @@ User sends message in Space
 
 These flows from [0-use-cases.md](../0-use-cases.md) define the exact behavior this implementation must support:
 
-- **Flow 1: Friday Dinner** — N-way calendar overlap, `||hidden||` preferences (commute, buffer), 3 pre-filled slots, private constraint notes per member, chained location suggestion after time resolves
-- **Flow 2: Quick Call** — specific time detection → RSVP (not time proposal), decline-and-suggest to both parties, calendar context strip, two-path chip (quick-send vs. edit)
-- **Flow 3: Hackathon Team** — task_claim vs. poll detection, chained time proposal after task assignment, declarative "let's meet at X" → RSVP
+- **Flow 1: Friday Dinner** — Alex types "dinner friday?" → cheap detector shows `[📅 Time proposal] [📊 Poll]` → Alex taps Time proposal → LLM reads N-way calendars + `||hidden||` preferences → pre-filled dialog with 3 slots + member notes → Alex confirms → card sent with "dinner friday?" as description
+- **Flow 2: Quick Call** — specific time stated → cheap detector shows `[✋ RSVP] [📅 Time proposal]` → user chooses RSVP (or Time proposal if they want negotiation) → decline-and-suggest to both parties, calendar context strip
+- **Flow 3: Hackathon Team** — "who wants to do frontend?" → detector shows `[🙋 Task claim] [📊 Poll]` → user picks the right type. Chained time proposal after task assignment
 - **Flow 4: Recurring Practice** — RSVP with deadline, non-response as expected behavior, threshold-based resolution
+- **Flow 5: Trigger C** — Priya sends "should we do something this weekend?" → Alex sees chips `[📅 Time proposal] [📊 Poll]` in compose area → Alex taps Time proposal without typing anything → card created from Priya's message context
