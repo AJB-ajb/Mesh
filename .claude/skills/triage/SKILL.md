@@ -1,6 +1,6 @@
 ---
 name: triage
-description: Pull open issues from the dev database (user feedback with screenshots) and Sentry, review them, and mark resolved ones as fixed. Use when the user says 'triage', 'check feedback', 'review issues', 'what bugs are open', 'check Sentry', or 'pull issues'.
+description: Pull open issues from the dev and production databases (user feedback with screenshots) and Sentry, review them, and mark resolved ones as fixed. Use when the user says 'triage', 'check feedback', 'review issues', 'what bugs are open', 'check Sentry', or 'pull issues'.
 argument-hint: "[source] (feedback | sentry | all — defaults to all)"
 ---
 
@@ -14,7 +14,9 @@ If `$ARGUMENTS` contains "feedback", "sentry", or "all", use that. Default to **
 
 ## 2. Pull User Feedback
 
-Query the `feedback` table via the Supabase REST API using the service-role key from `.env`:
+Query the `feedback` table from **both** the dev and production databases. Use credentials from `.env` (dev) and `.env.prod` (production).
+
+For each environment:
 
 ```
 GET /rest/v1/feedback?select=*&order=created_at.desc&resolved_at=is.null
@@ -22,17 +24,19 @@ Authorization: Bearer $SUPABASE_SECRET_KEY
 apikey: $SUPABASE_SECRET_KEY
 ```
 
-URL base: `$NEXT_PUBLIC_SUPABASE_URL`
+- **Dev** — URL base and secret key from `.env`
+- **Production** — URL base and secret key from `.env.prod`
 
 For each entry, display:
 
+- **Source** (dev or prod)
 - **Date** and **page URL**
 - **Message** (the user's feedback text)
 - **Mood** (if set)
 - **Screenshot** — if `screenshot_url` or `screenshot_urls` is present, download each image to `/tmp/` and use Read to display it inline
 - **Device context** from `metadata` (screen size, platform, dark mode, connection)
 
-Group and number the entries for easy reference.
+Group and number the entries for easy reference. Present dev and prod feedback together in a single list, labelled by source.
 
 ## 3. Pull Sentry Issues
 
@@ -57,7 +61,7 @@ For each issue, display:
 
 Before presenting the summary, check if any issues were recently resolved:
 
-- **Feedback**: Query with `resolved_at=not.is.null&order=resolved_at.desc&limit=5` to show recently resolved items. Display them in a separate "Recently Resolved" section so the user can see what's been handled.
+- **Feedback**: Query both dev and prod databases with `resolved_at=not.is.null&order=resolved_at.desc&limit=5` to show recently resolved items. Display them in a separate "Recently Resolved" section, labelled by source.
 - **Sentry**: The unresolved query (§3) already filters these out, but note the total count vs unresolved count if available.
 
 ## 5. Root Cause Analysis
@@ -86,7 +90,7 @@ When the user chooses to **Fix** an issue, create a task list (via `TaskCreate`)
 
 ## 8. Mark Feedback as Resolved
 
-When the user marks a feedback item as resolved, PATCH it via the REST API:
+When the user marks a feedback item as resolved, PATCH it via the REST API using the credentials for the database the item came from (dev via `.env`, production via `.env.prod`):
 
 ```
 PATCH /rest/v1/feedback?id=eq.<id>
