@@ -570,6 +570,19 @@
     animation: shimmer 2s infinite;
   }
 
+  /* Shimmer animation for loading inputs */
+  .shimmer-input {
+    background: linear-gradient(
+      90deg,
+      transparent 25%,
+      hsl(var(--muted)) 50%,
+      transparent 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-color: transparent;
+  }
+
   /* Text gradient utility */
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r;

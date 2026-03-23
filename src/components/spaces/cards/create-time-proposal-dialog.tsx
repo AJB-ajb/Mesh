@@ -26,6 +26,7 @@ interface CreateTimeProposalDialogProps {
   durationMinutes?: number;
   memberNotes?: Record<string, string>;
   isLoadingSlots?: boolean;
+  isLoadingPrefill?: boolean;
 }
 
 const MIN_OPTIONS = 2;
@@ -41,6 +42,7 @@ export function CreateTimeProposalDialog({
   durationMinutes,
   memberNotes,
   isLoadingSlots,
+  isLoadingPrefill,
 }: CreateTimeProposalDialogProps) {
   const [title, setTitle] = useState(suggestedTitle ?? "");
   const deriveOptions = (): string[] => {
@@ -55,17 +57,18 @@ export function CreateTimeProposalDialog({
     return ["", ""];
   };
   const [options, setOptions] = useState<string[]>(deriveOptions);
+  const [userTouched, setUserTouched] = useState(false);
 
   // Sync suggested props when they arrive after dialog is already open
   const [prevSuggestedTitle, setPrevSuggestedTitle] = useState(suggestedTitle);
   if (suggestedTitle !== prevSuggestedTitle) {
     setPrevSuggestedTitle(suggestedTitle);
-    if (suggestedTitle && !title) setTitle(suggestedTitle);
+    if (suggestedTitle && !userTouched) setTitle(suggestedTitle);
   }
   const [prevSuggestedSlots, setPrevSuggestedSlots] = useState(suggestedSlots);
   if (suggestedSlots !== prevSuggestedSlots) {
     setPrevSuggestedSlots(suggestedSlots);
-    if (suggestedSlots && suggestedSlots.length > 0) {
+    if (suggestedSlots && suggestedSlots.length > 0 && !userTouched) {
       setOptions(
         suggestedSlots.length >= MIN_OPTIONS
           ? [...suggestedSlots]
@@ -165,6 +168,10 @@ export function CreateTimeProposalDialog({
             </label>
             <Input
               id="proposal-title"
+              className={
+                isLoadingPrefill && !userTouched ? "shimmer-input" : ""
+              }
+              onFocus={() => setUserTouched(true)}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={labels.cards.timeProposalTitlePlaceholder}
@@ -189,6 +196,10 @@ export function CreateTimeProposalDialog({
               {options.map((option, idx) => (
                 <div key={idx} className="flex items-center gap-2">
                   <Input
+                    className={
+                      isLoadingPrefill && !userTouched ? "shimmer-input" : ""
+                    }
+                    onFocus={() => setUserTouched(true)}
                     value={option}
                     onChange={(e) => handleOptionChange(idx, e.target.value)}
                     placeholder={labels.cards.timeSlotPlaceholder}

@@ -20,6 +20,7 @@ interface CreateTaskClaimDialogProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: TaskClaimData) => void;
   suggestedDescription?: string;
+  isLoadingPrefill?: boolean;
 }
 
 export function CreateTaskClaimDialog({
@@ -27,14 +28,16 @@ export function CreateTaskClaimDialog({
   onOpenChange,
   onSubmit,
   suggestedDescription,
+  isLoadingPrefill,
 }: CreateTaskClaimDialogProps) {
   const [description, setDescription] = useState(suggestedDescription ?? "");
+  const [userTouched, setUserTouched] = useState(false);
 
   // Sync suggested props when they arrive after dialog is already open
   const [prevDesc, setPrevDesc] = useState(suggestedDescription);
   if (suggestedDescription !== prevDesc) {
     setPrevDesc(suggestedDescription);
-    if (suggestedDescription && !description)
+    if (suggestedDescription && !userTouched)
       setDescription(suggestedDescription);
   }
 
@@ -72,6 +75,10 @@ export function CreateTaskClaimDialog({
             </label>
             <Input
               id="task-description"
+              className={
+                isLoadingPrefill && !userTouched ? "shimmer-input" : ""
+              }
+              onFocus={() => setUserTouched(true)}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={labels.cards.taskDescriptionPlaceholder}

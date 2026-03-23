@@ -21,6 +21,7 @@ interface CreatePollDialogProps {
   onSubmit: (data: PollData) => void;
   suggestedQuestion?: string;
   suggestedOptions?: string[];
+  isLoadingPrefill?: boolean;
 }
 
 const MIN_OPTIONS = 2;
@@ -32,6 +33,7 @@ export function CreatePollDialog({
   onSubmit,
   suggestedQuestion,
   suggestedOptions,
+  isLoadingPrefill,
 }: CreatePollDialogProps) {
   const [question, setQuestion] = useState(suggestedQuestion ?? "");
   const [options, setOptions] = useState(
@@ -39,17 +41,22 @@ export function CreatePollDialog({
       ? suggestedOptions
       : ["", ""],
   );
+  const [userTouched, setUserTouched] = useState(false);
 
   // Sync suggested props when they arrive after dialog is already open
   const [prevQuestion, setPrevQuestion] = useState(suggestedQuestion);
   if (suggestedQuestion !== prevQuestion) {
     setPrevQuestion(suggestedQuestion);
-    if (suggestedQuestion && !question) setQuestion(suggestedQuestion);
+    if (suggestedQuestion && !userTouched) setQuestion(suggestedQuestion);
   }
   const [prevOptions, setPrevOptions] = useState(suggestedOptions);
   if (suggestedOptions !== prevOptions) {
     setPrevOptions(suggestedOptions);
-    if (suggestedOptions && suggestedOptions.length >= MIN_OPTIONS) {
+    if (
+      suggestedOptions &&
+      suggestedOptions.length >= MIN_OPTIONS &&
+      !userTouched
+    ) {
       setOptions(suggestedOptions);
     }
   }
@@ -113,6 +120,10 @@ export function CreatePollDialog({
             </label>
             <Input
               id="poll-question"
+              className={
+                isLoadingPrefill && !userTouched ? "shimmer-input" : ""
+              }
+              onFocus={() => setUserTouched(true)}
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder={labels.cards.pollQuestionPlaceholder}
@@ -129,6 +140,10 @@ export function CreatePollDialog({
               {options.map((option, idx) => (
                 <div key={idx} className="flex items-center gap-2">
                   <Input
+                    className={
+                      isLoadingPrefill && !userTouched ? "shimmer-input" : ""
+                    }
+                    onFocus={() => setUserTouched(true)}
                     value={option}
                     onChange={(e) => handleOptionChange(idx, e.target.value)}
                     placeholder={labels.cards.pollOptionPlaceholder(idx + 1)}

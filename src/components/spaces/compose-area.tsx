@@ -587,6 +587,7 @@ export function ComposeArea({
         onSubmit={handleCreatePoll}
         suggestedQuestion={prefill?.question}
         suggestedOptions={prefill?.options}
+        isLoadingPrefill={loadingCardType !== null}
       />
       <CreateTimeProposalDialog
         key={`time-${dialogKey}`}
@@ -598,6 +599,7 @@ export function ComposeArea({
         structuredSlots={prefill?.slots}
         durationMinutes={prefill?.duration_minutes}
         memberNotes={prefill?.member_notes}
+        isLoadingPrefill={loadingCardType !== null}
       />
       <CreateRsvpDialog
         key={`rsvp-${dialogKey}`}
@@ -606,6 +608,7 @@ export function ComposeArea({
         onSubmit={handleCreateRsvp}
         suggestedTitle={prefill?.title}
         suggestedThreshold={prefill?.suggested_threshold}
+        isLoadingPrefill={loadingCardType !== null}
       />
       <CreateTaskClaimDialog
         key={`task-${dialogKey}`}
@@ -613,6 +616,7 @@ export function ComposeArea({
         onOpenChange={setShowTaskClaimDialog}
         onSubmit={handleCreateTaskClaim}
         suggestedDescription={prefill?.description}
+        isLoadingPrefill={loadingCardType !== null}
       />
       <CreateLocationDialog
         key={`location-${dialogKey}`}

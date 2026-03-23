@@ -21,6 +21,7 @@ interface CreateRsvpDialogProps {
   onSubmit: (data: RsvpData) => void;
   suggestedTitle?: string;
   suggestedThreshold?: number;
+  isLoadingPrefill?: boolean;
 }
 
 export function CreateRsvpDialog({
@@ -29,20 +30,22 @@ export function CreateRsvpDialog({
   onSubmit,
   suggestedTitle,
   suggestedThreshold,
+  isLoadingPrefill,
 }: CreateRsvpDialogProps) {
   const [title, setTitle] = useState(suggestedTitle ?? "");
   const [threshold, setThreshold] = useState(suggestedThreshold ?? 2);
+  const [userTouched, setUserTouched] = useState(false);
 
   // Sync suggested props when they arrive after dialog is already open
   const [prevTitle, setPrevTitle] = useState(suggestedTitle);
   if (suggestedTitle !== prevTitle) {
     setPrevTitle(suggestedTitle);
-    if (suggestedTitle && !title) setTitle(suggestedTitle);
+    if (suggestedTitle && !userTouched) setTitle(suggestedTitle);
   }
   const [prevThreshold, setPrevThreshold] = useState(suggestedThreshold);
   if (suggestedThreshold !== prevThreshold) {
     setPrevThreshold(suggestedThreshold);
-    if (suggestedThreshold) setThreshold(suggestedThreshold);
+    if (suggestedThreshold && !userTouched) setThreshold(suggestedThreshold);
   }
 
   const canSubmit = title.trim().length > 0;
@@ -84,6 +87,10 @@ export function CreateRsvpDialog({
             </label>
             <Input
               id="rsvp-title"
+              className={
+                isLoadingPrefill && !userTouched ? "shimmer-input" : ""
+              }
+              onFocus={() => setUserTouched(true)}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={labels.cards.rsvpTitlePlaceholder}
@@ -106,7 +113,8 @@ export function CreateRsvpDialog({
               onChange={(e) =>
                 setThreshold(Math.max(1, parseInt(e.target.value) || 1))
               }
-              className="w-24"
+              className={`w-24 ${isLoadingPrefill && !userTouched ? "shimmer-input" : ""}`}
+              onFocus={() => setUserTouched(true)}
             />
           </div>
         </div>
