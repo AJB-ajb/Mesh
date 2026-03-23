@@ -11,6 +11,15 @@ type SearchResult = {
   status?: string;
 };
 
+/** Derive a display title from the first line of a space_postings.text field */
+function deriveTitleFromText(text: string | null): string {
+  if (!text) return "Untitled";
+  const firstLine = text.split("\n")[0].trim();
+  return firstLine.length > 60
+    ? firstLine.slice(0, 60) + "..."
+    : firstLine || "Untitled";
+}
+
 async function fetchSearchResults(key: string): Promise<SearchResult[]> {
   const query = key.replace("search/", "");
   if (!query.trim()) return [];
@@ -20,11 +29,9 @@ async function fetchSearchResults(key: string): Promise<SearchResult[]> {
 
   const [{ data: postings }, { data: profiles }] = await Promise.all([
     supabase
-      .from("postings")
-      .select(
-        "id, title, description, status, posting_skills(skill_nodes(name))",
-      )
-      .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
+      .from("space_postings")
+      .select("id, text, status, tags")
+      .ilike("text", searchTerm)
       .limit(5),
     supabase
       .from("profiles")
@@ -35,18 +42,17 @@ async function fetchSearchResults(key: string): Promise<SearchResult[]> {
 
   const postingResults: SearchResult[] = (postings || []).map((p) => ({
     id: p.id,
-    type: "posting",
-    title: p.title,
+    type: "posting" as const,
+    title: deriveTitleFromText(p.text),
     subtitle:
-      p.description?.slice(0, 80) + (p.description?.length > 80 ? "..." : "") ||
-      "",
-    skills: deriveSkillNames(p.posting_skills),
+      (p.text?.slice(0, 80) ?? "") + ((p.text?.length ?? 0) > 80 ? "..." : ""),
+    skills: (p.tags as string[]) || [],
     status: p.status,
   }));
 
   const profileResults: SearchResult[] = (profiles || []).map((p) => ({
     id: p.user_id,
-    type: "profile",
+    type: "profile" as const,
     title: p.full_name || "Unknown",
     subtitle: p.headline || "",
     skills: deriveSkillNames(p.profile_skills),

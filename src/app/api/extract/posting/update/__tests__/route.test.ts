@@ -47,15 +47,11 @@ function makeReq(body: unknown) {
 function mockPostingOwned() {
   const mockSingle = vi.fn().mockResolvedValue({
     data: {
-      creator_id: MOCK_USER.id,
-      title: "My Posting",
-      description: "A posting",
+      created_by: MOCK_USER.id,
+      text: "A posting",
       category: "personal",
-      estimated_time: "2 weeks",
-      team_size_max: 5,
+      capacity: 5,
       tags: ["test"],
-      context_identifier: null,
-      mode: "open",
     },
     error: null,
   });
@@ -140,7 +136,7 @@ describe("POST /api/extract/posting/update", () => {
     () => {
       mockFrom.mockReturnValue(
         buildChain({
-          data: { creator_id: "other-user", title: "T" },
+          data: { created_by: "other-user", text: "T" },
           error: null,
         }),
       );
