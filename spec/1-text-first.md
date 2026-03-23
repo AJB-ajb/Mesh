@@ -277,7 +277,7 @@ The text-first design changes the _input paradigm and matching approach_. The co
 
 ## Current Deviations
 
-- **`||hidden||` acceptance gating**: Parsing, editor rendering, and `MarkdownRenderer` `revealHidden` prop all work. But no component wires `revealHidden` to join request status — hidden content always shows as placeholder regardless of acceptance. End-to-end gating needed. → v0.9
+- **`||hidden||` acceptance gating**: ~~Implemented~~ `revealHidden` wired to join request status via `useAcceptedPostingIds` hook. Posting owners and accepted members see hidden content; others see placeholder. State text and messages revealed for all space members. Profile text never revealed.
 - **`||?||` interactive prompts**: Parsing (`parseQuestionBlocks()`) and schema (`AcceptanceQuestion` type) prepared. No UI renders `||?` blocks as interactive form elements on acceptance. → backlog
 - **Multi-role matching**: LLM identifies distinct roles and returns `matched_role` per candidate. But candidates are matched once against the posting as a whole — no separate per-role matching pipeline or per-role scores. → backlog
 - **Unified PostingCard**: Multiple card components (`PostingBrowserCard`, `PostingCardInline`) exist; not yet consolidated into a single `full`/`compact` variant component. → backlog

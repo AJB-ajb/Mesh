@@ -441,7 +441,7 @@ Numbered for cross-reference. Full rationale in [designs/spaces-rewrite.md](desi
 ## 12. Current Deviations
 
 - **Inherited → independent transition**: `inherits_members` flag exists but no auto-transition when outsiders join via matching/invite. → v0.9
-- **Old table cleanup**: Old `postings`, `conversations`, `messages`, `group_messages` tables still exist. → v0.9
+- **Old table cleanup**: Legacy `conversations`, `messages`, `group_messages`, `group_message_reads` dropped. Old `postings` table still exists (FK dependents need separate analysis). Active code migrated off old tables to `space_postings`/`space_members`. → partial, `postings` drop deferred
 - **Trade-off card type**: Not yet implemented. → v0.9
 - **Card invalidation**: No automatic card invalidation from messages yet (Phase 2a/2b). Cards are manually resolved/cancelled. → v0.9
 - **Auto-archive**: No 30-day auto-archive cron. Manual archive/unarchive by admin only. → v0.9
