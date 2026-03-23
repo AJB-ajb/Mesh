@@ -4,7 +4,10 @@
  * Creates auth users, profiles, availability slots, fake calendar busy blocks,
  * and shared Spaces with the human user. Idempotent — safe to re-run.
  *
- * Usage: pnpm tsx scripts/bots/seed.ts
+ * Usage: pnpm tsx scripts/bots/seed.ts [--user=email ...]
+ *
+ * Specify --user=email for each human user to add to bot spaces.
+ * Can be repeated: --user=a@example.com --user=b@example.com
  *
  * Requires .env with:
  *   NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SECRET_KEY,
@@ -238,8 +241,9 @@ const SPACES_TO_SEED: SpaceSeed[] = [
   },
 ];
 
-async function seedSpaces(bots: SeededBot[], humanUserId: string) {
+async function seedSpaces(bots: SeededBot[], humanUserIds: string[]) {
   const botByEmail = new Map(bots.map((b) => [b.email, b]));
+  const primaryHuman = humanUserIds[0];
 
   for (const spaceSeed of SPACES_TO_SEED) {
     console.log(`  Creating space "${spaceSeed.name}"...`);
@@ -260,7 +264,7 @@ async function seedSpaces(bots: SeededBot[], humanUserId: string) {
         .from("spaces")
         .insert({
           name: spaceSeed.name,
-          created_by: humanUserId,
+          created_by: primaryHuman,
           settings: {
             posting_only: false,
           },
@@ -282,8 +286,8 @@ async function seedSpaces(bots: SeededBot[], humanUserId: string) {
       .update({ state_text: spaceSeed.description })
       .eq("id", spaceId);
 
-    // Add members (human + bots)
-    const memberIds = [humanUserId];
+    // Add members (all human users + bots)
+    const memberIds = [...humanUserIds];
     for (const email of spaceSeed.botEmails) {
       const bot = botByEmail.get(email);
       if (bot) memberIds.push(bot.userId);
@@ -294,7 +298,7 @@ async function seedSpaces(bots: SeededBot[], humanUserId: string) {
         {
           space_id: spaceId,
           user_id: userId,
-          role: userId === humanUserId ? "admin" : "member",
+          role: humanUserIds.includes(userId) ? "admin" : "member",
         },
         { onConflict: "space_id,user_id" },
       );
@@ -309,7 +313,10 @@ async function seedSpaces(bots: SeededBot[], humanUserId: string) {
     const botNames = spaceSeed.botEmails
       .map((e) => botByEmail.get(e)?.name)
       .filter(Boolean);
-    console.log(`    Members: you + ${botNames.join(", ")}`);
+    const humanCount = humanUserIds.length;
+    console.log(
+      `    Members: ${humanCount} human${humanCount > 1 ? "s" : ""} + ${botNames.join(", ")}`,
+    );
 
     // Seed a welcome message from the first bot
     const firstBot = botByEmail.get(spaceSeed.botEmails[0]);
@@ -343,48 +350,51 @@ async function main() {
   console.log("Bot Persona Seeder");
   console.log("==================\n");
 
-  // Find the human user via auth.users (profiles table has no email column)
-  const botEmailPattern = /^bot-.*@mesh\.dev$/;
-  const testEmailPattern = /@meshit\.test$/;
-  let humanUser: { id: string; email?: string } | null = null;
+  // Parse --user=email flags (can be specified multiple times)
+  const args = process.argv.slice(2);
+  const userEmails = args
+    .filter((a) => a.startsWith("--user="))
+    .map((a) => a.split("=")[1]);
 
-  let page = 1;
-  outer: while (true) {
-    const { data } = await admin.auth.admin.listUsers({ perPage: 100, page });
-    if (!data?.users?.length) break;
-    for (const u of data.users) {
-      if (!u.email) continue;
-      if (botEmailPattern.test(u.email)) continue;
-      if (testEmailPattern.test(u.email)) continue;
-      humanUser = { id: u.id, email: u.email };
-      break outer;
-    }
-    if (data.users.length < 100) break;
-    page++;
-  }
+  // Resolve human users
+  const humanUsers: { id: string; email: string }[] = [];
 
-  if (!humanUser) {
-    console.error("No human user found. Log in to the app first.");
+  if (userEmails.length === 0) {
+    console.error(
+      "Usage: pnpm tsx scripts/bots/seed.ts --user=you@example.com [--user=other@example.com ...]",
+    );
     process.exit(1);
   }
 
-  const humanUserId = humanUser.id;
-  const { data: humanProfile } = await admin
-    .from("profiles")
-    .select("full_name")
-    .eq("user_id", humanUserId)
-    .maybeSingle();
+  for (const email of userEmails) {
+    const found = await findUserByEmail(email);
+    if (!found) {
+      console.error(`User not found: ${email}`);
+      process.exit(1);
+    }
+    humanUsers.push({ id: found.id, email: email });
+  }
 
-  console.log(
-    `Human user: ${humanProfile?.full_name ?? humanUser.email} (${humanUserId})\n`,
-  );
+  for (const hu of humanUsers) {
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", hu.id)
+      .maybeSingle();
+
+    console.log(`Human user: ${profile?.full_name ?? hu.email} (${hu.id})`);
+  }
+  console.log();
 
   console.log("1. Seeding bot users & profiles...\n");
   const bots = await seedBotUsers();
   console.log(`\n   ${bots.length} bots ready.\n`);
 
   console.log("2. Seeding spaces...\n");
-  await seedSpaces(bots, humanUserId);
+  await seedSpaces(
+    bots,
+    humanUsers.map((u) => u.id),
+  );
 
   console.log("\nDone! Bot users can sign in with TEST_USER_PASSWORD.");
   console.log("Run `pnpm tsx scripts/bots/index.ts` to start the bots.\n");
