@@ -683,6 +683,10 @@ export interface TimeProposalData {
   duration_minutes?: number | null;
   /** Per-member private scheduling notes, keyed by userId */
   member_notes?: Record<string, string> | null;
+  /** Optional minimum number of attendees required for resolution */
+  quorum?: number | null;
+  /** Post-resolution commitments keyed by userId */
+  commitments?: Record<string, "attending" | "maybe" | "cant_make_it"> | null;
 }
 
 export interface RsvpData {
@@ -722,6 +726,7 @@ export interface SpaceCard {
   created_at: string;
   updated_at: string;
   deadline?: string | null;
+  opt_outs?: Array<{ user_id: string; reason: "cant_make_any" | "pass" }>;
 }
 
 export interface SpaceCardInsert {

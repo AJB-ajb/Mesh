@@ -43,6 +43,9 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
     vote: voteOnCard,
     resolve: resolveCard,
     cancel: cancelCard,
+    optOut,
+    undoOptOut,
+    commit,
   } = useSpaceCards(space.id, currentMember?.user_id);
 
   // Build a Map<postingId, SpacePosting> for quick lookup in timeline
@@ -170,6 +173,9 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
               onCardVote={handleCardVote}
               onCardResolve={handleCardResolve}
               onCardCancel={cancelCard}
+              onCardOptOut={optOut}
+              onCardUndoOptOut={undoOptOut}
+              onCardCommit={commit}
             />
 
             {currentMember && userId && (

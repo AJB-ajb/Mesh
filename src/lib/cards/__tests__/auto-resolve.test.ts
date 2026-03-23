@@ -6,6 +6,7 @@ function makeCard(
   type: SpaceCard["type"],
   data: Record<string, unknown>,
   status: SpaceCard["status"] = "active",
+  optOuts?: Array<{ user_id: string; reason: "cant_make_any" | "pass" }>,
 ): SpaceCard {
   return {
     id: "card-1",
@@ -17,6 +18,7 @@ function makeCard(
     data: data as unknown as SpaceCard["data"],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    opt_outs: optOuts ?? [],
   };
 }
 
@@ -47,13 +49,15 @@ describe("checkAutoResolve", () => {
       expect(checkAutoResolve(card, 3).shouldResolve).toBe(false);
     });
 
-    it("does NOT resolve on a tie", () => {
+    it("resolves ties to first-listed option", () => {
       const card = makeCard("time_proposal", {
         title: "Meeting",
         options: [opt("Mon 5pm", ["u1", "u2"]), opt("Tue 5pm", ["u1", "u2"])],
         resolved_slot: null,
       });
-      expect(checkAutoResolve(card, 2).shouldResolve).toBe(false);
+      const result = checkAutoResolve(card, 2);
+      expect(result.shouldResolve).toBe(true);
+      expect(result.resolvedData).toEqual({ resolved_slot: "Mon 5pm" });
     });
 
     it("does NOT resolve if already resolved", () => {
@@ -76,6 +80,77 @@ describe("checkAutoResolve", () => {
         resolved_slot: null,
       });
       const result = checkAutoResolve(card, 1);
+      expect(result.shouldResolve).toBe(true);
+      expect(result.resolvedData).toEqual({ resolved_slot: "Mon 5pm" });
+    });
+
+    it("pass opt-outs reduce effective member count", () => {
+      // 3 members, u3 passed → effective count = 2, u1 + u2 voted
+      const card = makeCard(
+        "time_proposal",
+        {
+          title: "Dinner",
+          options: [opt("Fri 7pm", ["u1", "u2"]), opt("Sat 7pm", ["u1"])],
+          resolved_slot: null,
+        },
+        "active",
+        [{ user_id: "u3", reason: "pass" }],
+      );
+      const result = checkAutoResolve(card, 3);
+      expect(result.shouldResolve).toBe(true);
+      expect(result.resolvedData).toEqual({ resolved_slot: "Fri 7pm" });
+    });
+
+    it("cant_make_any counts as having responded", () => {
+      // 3 members, u2 can't make any, u1 voted → only 2 responded out of 3
+      const card = makeCard(
+        "time_proposal",
+        {
+          title: "Dinner",
+          options: [opt("Fri 7pm", ["u1"]), opt("Sat 7pm", [])],
+          resolved_slot: null,
+        },
+        "active",
+        [{ user_id: "u2", reason: "cant_make_any" }],
+      );
+      // u1 voted + u2 opted out = 2 responded, need 3 → not enough
+      expect(checkAutoResolve(card, 3).shouldResolve).toBe(false);
+
+      // With u3 also voting, all 3 have responded
+      const card2 = makeCard(
+        "time_proposal",
+        {
+          title: "Dinner",
+          options: [opt("Fri 7pm", ["u1", "u3"]), opt("Sat 7pm", [])],
+          resolved_slot: null,
+        },
+        "active",
+        [{ user_id: "u2", reason: "cant_make_any" }],
+      );
+      const result = checkAutoResolve(card2, 3);
+      expect(result.shouldResolve).toBe(true);
+      expect(result.resolvedData).toEqual({ resolved_slot: "Fri 7pm" });
+    });
+
+    it("quorum prevents resolve when not met", () => {
+      // All voted, but winner has only 1 vote — quorum requires 2
+      const card = makeCard("time_proposal", {
+        title: "Meeting",
+        options: [opt("Mon 5pm", ["u1"]), opt("Tue 5pm", ["u2"])],
+        resolved_slot: null,
+        quorum: 2,
+      });
+      expect(checkAutoResolve(card, 2).shouldResolve).toBe(false);
+    });
+
+    it("quorum allows resolve when met", () => {
+      const card = makeCard("time_proposal", {
+        title: "Meeting",
+        options: [opt("Mon 5pm", ["u1", "u2"]), opt("Tue 5pm", ["u3"])],
+        resolved_slot: null,
+        quorum: 2,
+      });
+      const result = checkAutoResolve(card, 3);
       expect(result.shouldResolve).toBe(true);
       expect(result.resolvedData).toEqual({ resolved_slot: "Mon 5pm" });
     });

@@ -29,6 +29,12 @@ interface ConversationTimelineProps {
   onCardVote?: (cardId: string, optionIndex: number) => void;
   onCardResolve?: (cardId: string) => void;
   onCardCancel?: (cardId: string) => void;
+  onCardOptOut?: (cardId: string, reason: "cant_make_any" | "pass") => void;
+  onCardUndoOptOut?: (cardId: string) => void;
+  onCardCommit?: (
+    cardId: string,
+    commitment: "attending" | "maybe" | "cant_make_it",
+  ) => void;
 }
 
 export function ConversationTimeline({
@@ -47,6 +53,9 @@ export function ConversationTimeline({
   onCardVote,
   onCardResolve,
   onCardCancel,
+  onCardOptOut,
+  onCardUndoOptOut,
+  onCardCommit,
 }: ConversationTimelineProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -104,6 +113,9 @@ export function ConversationTimeline({
                 onVote={onCardVote ?? (() => {})}
                 onResolve={onCardResolve ?? (() => {})}
                 onCancel={onCardCancel ?? (() => {})}
+                onOptOut={onCardOptOut}
+                onUndoOptOut={onCardUndoOptOut}
+                onCommit={onCardCommit}
               />
             );
           }

@@ -5,6 +5,7 @@ import type {
   SpaceCardType,
   SpaceCardData,
   SpaceCard,
+  CardOption,
 } from "@/lib/supabase/types";
 import { checkAutoResolve } from "@/lib/cards/auto-resolve";
 
@@ -52,24 +53,41 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
   const resolvedCards: typeof cards = [];
   for (const card of cards ?? []) {
     if (expiredCards.some((e) => e.id === card.id)) {
-      const result = checkAutoResolve(card as SpaceCard, memberCount);
-      const resolvedData = result.resolvedData
-        ? { ...card.data, ...result.resolvedData }
-        : card.data;
+      const cardData = card.data as Record<string, unknown>;
+      const options = (cardData.options ?? []) as CardOption[];
+      const maxVotes = Math.max(...options.map((o) => o.votes.length), 0);
+      const quorum = (cardData.quorum as number) ?? null;
 
-      const { data: updated } = await supabase
-        .from("space_cards")
-        .update({
-          status: "resolved",
-          data: resolvedData,
-        })
-        .eq("id", card.id)
-        .select("*")
-        .single();
+      const hasVotes = maxVotes > 0;
+      const quorumMet = quorum == null || maxVotes >= quorum;
 
-      resolvedCards.push(
-        updated ?? { ...card, status: "resolved", data: resolvedData },
-      );
+      if (!hasVotes || !quorumMet) {
+        // No votes or quorum not met → cancel
+        const { data: updated } = await supabase
+          .from("space_cards")
+          .update({ status: "cancelled" })
+          .eq("id", card.id)
+          .select("*")
+          .single();
+        resolvedCards.push(updated ?? { ...card, status: "cancelled" });
+      } else {
+        // Resolve normally
+        const result = checkAutoResolve(card as SpaceCard, memberCount);
+        const resolvedData = result.resolvedData
+          ? { ...card.data, ...result.resolvedData }
+          : card.data;
+
+        const { data: updated } = await supabase
+          .from("space_cards")
+          .update({ status: "resolved", data: resolvedData })
+          .eq("id", card.id)
+          .select("*")
+          .single();
+
+        resolvedCards.push(
+          updated ?? { ...card, status: "resolved", data: resolvedData },
+        );
+      }
     } else {
       resolvedCards.push(card);
     }

@@ -300,8 +300,8 @@ export function ComposeArea({
   );
 
   const handleCreateTimeProposal = useCallback(
-    async (proposalData: TimeProposalData) => {
-      await createCard("time_proposal", proposalData);
+    async (proposalData: TimeProposalData, deadline?: string) => {
+      await createCard("time_proposal", proposalData, deadline);
       setSuggestion(null);
       setPrefill(null);
     },

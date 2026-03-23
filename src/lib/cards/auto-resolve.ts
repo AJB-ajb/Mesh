@@ -11,7 +11,7 @@ import type {
   CardOption,
 } from "@/lib/supabase/types";
 
-interface AutoResolveResult {
+export interface AutoResolveResult {
   shouldResolve: boolean;
   resolvedData?: Record<string, unknown>;
 }
@@ -20,8 +20,9 @@ interface AutoResolveResult {
  * Check if a card should auto-resolve based on voting state.
  *
  * Rules:
- * - **Time Proposal**: resolves when ALL members have voted (appear in at
- *   least one option) AND there's a clear winner (no tie for max votes).
+ * - **Time Proposal**: resolves when ALL effective members have responded
+ *   (voted or opted out). "Pass" opt-outs reduce effective member count.
+ *   Ties go to first-listed option. Quorum required if set.
  * - **RSVP**: resolves when "Yes" votes >= threshold.
  * - **Task Claim**: resolves when someone claims (option 0 has >= 1 vote).
  * - **Poll / Location**: never auto-resolve (informational / creator decides).
@@ -38,8 +39,14 @@ export function checkAutoResolve(
   const options = (data.options ?? []) as CardOption[];
 
   switch (card.type as SpaceCardType) {
-    case "time_proposal":
-      return checkTimeProposal(options, memberCount);
+    case "time_proposal": {
+      const optOuts = (card.opt_outs ?? []) as Array<{
+        user_id: string;
+        reason: string;
+      }>;
+      const quorum = (data.quorum as number) ?? null;
+      return checkTimeProposal(options, memberCount, optOuts, quorum);
+    }
     case "rsvp":
       return checkRsvp(options, (data.threshold as number) ?? 1);
     case "task_claim":
@@ -54,10 +61,16 @@ export function checkAutoResolve(
 function checkTimeProposal(
   options: CardOption[],
   memberCount: number,
+  optOuts: Array<{ user_id: string; reason: string }> = [],
+  quorum: number | null = null,
 ): AutoResolveResult {
   if (options.length === 0 || memberCount === 0) {
     return { shouldResolve: false };
   }
+
+  // "Pass" opt-outs don't count toward required voters
+  const passCount = optOuts.filter((o) => o.reason === "pass").length;
+  const effectiveMemberCount = memberCount - passCount;
 
   // Collect all unique voters across all options
   const allVoters = new Set<string>();
@@ -65,25 +78,32 @@ function checkTimeProposal(
     for (const v of opt.votes) allVoters.add(v);
   }
 
-  // All members must have voted
-  if (allVoters.size < memberCount) {
+  // "Can't make any" opt-outs count as having responded
+  const cantMakeCount = optOuts.filter(
+    (o) => o.reason === "cant_make_any",
+  ).length;
+  const totalResponded = allVoters.size + cantMakeCount;
+
+  // All effective members must have responded
+  if (totalResponded < effectiveMemberCount) {
     return { shouldResolve: false };
   }
 
-  // Find max vote count and check for ties
-  const sorted = [...options].sort((a, b) => b.votes.length - a.votes.length);
-  const maxVotes = sorted[0].votes.length;
-
+  // Find max vote count — ties go to first-listed option
+  const maxVotes = Math.max(...options.map((o) => o.votes.length), 0);
   if (maxVotes === 0) return { shouldResolve: false };
 
-  const tiedOptions = sorted.filter((o) => o.votes.length === maxVotes);
-  if (tiedOptions.length > 1) {
-    return { shouldResolve: false }; // Tie — don't auto-resolve
+  // Quorum check: winning option must have enough votes
+  if (quorum != null && maxVotes < quorum) {
+    return { shouldResolve: false };
   }
+
+  // First option with max votes wins (tie-break: first-listed)
+  const winner = options.find((o) => o.votes.length === maxVotes)!;
 
   return {
     shouldResolve: true,
-    resolvedData: { resolved_slot: sorted[0].label },
+    resolvedData: { resolved_slot: winner.label },
   };
 }
 

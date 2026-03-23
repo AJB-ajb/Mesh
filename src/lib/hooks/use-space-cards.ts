@@ -157,12 +157,16 @@ export function useSpaceCards(spaceId: string | null, userId?: string | null) {
   );
 
   const createCard = useCallback(
-    async (type: SpaceCard["type"], data: SpaceCard["data"]) => {
+    async (
+      type: SpaceCard["type"],
+      data: SpaceCard["data"],
+      deadline?: string,
+    ) => {
       if (!spaceId) return null;
       const res = await fetch(`/api/spaces/${spaceId}/cards`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, data }),
+        body: JSON.stringify({ type, data, deadline }),
       });
       if (!res.ok) {
         console.error("[useSpaceCards] Create error:", await res.text());
@@ -175,5 +179,69 @@ export function useSpaceCards(spaceId: string | null, userId?: string | null) {
     [spaceId, mutate],
   );
 
-  return { cards, isLoading, vote, resolve, cancel, createCard, mutate };
+  const optOut = useCallback(
+    async (cardId: string, reason: "cant_make_any" | "pass") => {
+      if (!spaceId) return;
+      const res = await fetch(
+        `/api/spaces/${spaceId}/cards/${cardId}/opt-out`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reason }),
+        },
+      );
+      if (!res.ok) {
+        console.error("[useSpaceCards] Opt-out error:", await res.text());
+      }
+      mutate();
+    },
+    [spaceId, mutate],
+  );
+
+  const undoOptOut = useCallback(
+    async (cardId: string) => {
+      if (!spaceId) return;
+      const res = await fetch(
+        `/api/spaces/${spaceId}/cards/${cardId}/opt-out`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) {
+        console.error("[useSpaceCards] Undo opt-out error:", await res.text());
+      }
+      mutate();
+    },
+    [spaceId, mutate],
+  );
+
+  const commit = useCallback(
+    async (
+      cardId: string,
+      commitment: "attending" | "maybe" | "cant_make_it",
+    ) => {
+      if (!spaceId) return;
+      const res = await fetch(`/api/spaces/${spaceId}/cards/${cardId}/commit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ commitment }),
+      });
+      if (!res.ok) {
+        console.error("[useSpaceCards] Commit error:", await res.text());
+      }
+      mutate();
+    },
+    [spaceId, mutate],
+  );
+
+  return {
+    cards,
+    isLoading,
+    vote,
+    resolve,
+    cancel,
+    createCard,
+    optOut,
+    undoOptOut,
+    commit,
+    mutate,
+  };
 }

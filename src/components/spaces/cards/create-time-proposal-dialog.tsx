@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Plus, X, Clock, Loader2 } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,7 @@ import type { SuggestedSlot } from "@/lib/ai/card-suggest";
 interface CreateTimeProposalDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: TimeProposalData) => void;
+  onSubmit: (data: TimeProposalData, deadline?: string) => void;
   suggestedSlots?: string[];
   suggestedTitle?: string;
   structuredSlots?: SuggestedSlot[];
@@ -31,6 +32,14 @@ interface CreateTimeProposalDialogProps {
 
 const MIN_OPTIONS = 2;
 const MAX_OPTIONS = 8;
+
+const DEADLINE_HOURS_MAP: Record<string, number> = {
+  "2h": 2,
+  "6h": 6,
+  "12h": 12,
+  "24h": 24,
+  "48h": 48,
+};
 
 export function CreateTimeProposalDialog({
   open,
@@ -58,6 +67,8 @@ export function CreateTimeProposalDialog({
   };
   const [options, setOptions] = useState<string[]>(deriveOptions);
   const [userTouched, setUserTouched] = useState(false);
+  const [deadlineKey, setDeadlineKey] = useState<string>("12h");
+  const [quorum, setQuorum] = useState<string>("");
 
   // Sync suggested props when they arrive after dialog is already open
   const [prevSuggestedTitle, setPrevSuggestedTitle] = useState(suggestedTitle);
@@ -106,6 +117,12 @@ export function CreateTimeProposalDialog({
   const handleSubmit = useCallback(() => {
     if (!canSubmit) return;
 
+    // Compute deadline ISO string
+    const hours = DEADLINE_HOURS_MAP[deadlineKey] ?? 12;
+    const deadlineISO = new Date(
+      Date.now() + hours * 60 * 60 * 1000,
+    ).toISOString();
+
     // Build slot_times from structuredSlots if available (parallel to options by index)
     const slotTimes = structuredSlots
       ? validOptions
@@ -131,10 +148,13 @@ export function CreateTimeProposalDialog({
           : null,
       duration_minutes: durationMinutes ?? null,
       member_notes: memberNotes ?? null,
+      quorum: quorum ? parseInt(quorum, 10) : null,
     };
-    onSubmit(proposalData);
+    onSubmit(proposalData, deadlineISO);
     setTitle("");
     setOptions(["", ""]);
+    setDeadlineKey("12h");
+    setQuorum("");
     onOpenChange(false);
   }, [
     canSubmit,
@@ -145,6 +165,8 @@ export function CreateTimeProposalDialog({
     memberNotes,
     onSubmit,
     onOpenChange,
+    deadlineKey,
+    quorum,
   ]);
 
   return (
@@ -229,6 +251,52 @@ export function CreateTimeProposalDialog({
                 {labels.cards.addOption}
               </Button>
             )}
+          </div>
+
+          {/* Deadline selector */}
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">
+              {labels.cards.deadlineLabel}
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(labels.cards.deadlineOptions).map(
+                ([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setDeadlineKey(key)}
+                    className={cn(
+                      "rounded-full px-3 py-1 text-xs font-medium border transition-colors",
+                      deadlineKey === key
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:border-primary/50",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ),
+              )}
+            </div>
+          </div>
+
+          {/* Quorum */}
+          <div>
+            <label
+              htmlFor="quorum"
+              className="text-sm font-medium mb-1.5 block"
+            >
+              {labels.cards.quorumLabel}
+            </label>
+            <Input
+              id="quorum"
+              type="number"
+              min={1}
+              max={99}
+              value={quorum}
+              onChange={(e) => setQuorum(e.target.value)}
+              placeholder={labels.cards.quorumPlaceholder}
+              className="w-32"
+            />
           </div>
         </div>
 

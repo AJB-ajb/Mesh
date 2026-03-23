@@ -1,9 +1,23 @@
 "use client";
 
-import { Check, X, Clock, Users, Lock } from "lucide-react";
+import {
+  Check,
+  X,
+  Clock,
+  Users,
+  Lock,
+  MoreHorizontal,
+  Calendar,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { SpaceCard, TimeProposalData } from "@/lib/supabase/types";
 import { CardDeadlineBadge } from "./card-deadline-badge";
 import { CalendarContextStrip } from "./calendar-context-strip";
@@ -16,6 +30,12 @@ interface TimeProposalCardProps {
   onVote: (cardId: string, optionIndex: number) => void;
   onResolve: (cardId: string) => void;
   onCancel: (cardId: string) => void;
+  onOptOut?: (cardId: string, reason: "cant_make_any" | "pass") => void;
+  onUndoOptOut?: (cardId: string) => void;
+  onCommit?: (
+    cardId: string,
+    commitment: "attending" | "maybe" | "cant_make_it",
+  ) => void;
 }
 
 export function TimeProposalCard({
@@ -25,6 +45,9 @@ export function TimeProposalCard({
   onVote,
   onResolve,
   onCancel,
+  onOptOut,
+  onUndoOptOut,
+  onCommit,
 }: TimeProposalCardProps) {
   const data = card.data as TimeProposalData;
   const isActive = card.status === "active";
@@ -33,6 +56,16 @@ export function TimeProposalCard({
 
   // Find the option with the most votes (consensus indicator)
   const maxVotes = Math.max(...data.options.map((opt) => opt.votes.length), 0);
+
+  // Opt-out state
+  const optOuts = card.opt_outs ?? [];
+  const userOptOut = userId
+    ? optOuts.find((o) => o.user_id === userId)
+    : undefined;
+  const otherOptOuts = optOuts.filter((o) => o.user_id !== userId);
+
+  // Quorum
+  const quorum = data.quorum;
 
   return (
     <div className="mx-auto w-full max-w-md rounded-lg border border-border bg-card p-4 shadow-sm">
@@ -65,9 +98,16 @@ export function TimeProposalCard({
 
       {/* Title */}
       <p className="font-medium text-sm mb-1">{data.title}</p>
-      <p className="text-xs text-muted-foreground mb-3">
+      <p className="text-xs text-muted-foreground mb-1">
         {labels.cards.timeProposalHint}
       </p>
+
+      {/* Quorum display */}
+      {quorum && (
+        <p className="text-xs text-muted-foreground mb-2">
+          {labels.cards.quorumLabel}: {quorum}
+        </p>
+      )}
 
       {/* Resolved slot */}
       {card.status === "resolved" && data.resolved_slot && (
@@ -76,6 +116,17 @@ export function TimeProposalCard({
             {data.resolved_slot}
           </p>
         </div>
+      )}
+
+      {/* Post-resolution commitment strip */}
+      {card.status === "resolved" && data.resolved_slot && userId && (
+        <CommitmentStrip
+          card={card}
+          data={data}
+          userId={userId}
+          members={members}
+          onCommit={onCommit}
+        />
       )}
 
       {/* Time slot options */}
@@ -95,15 +146,16 @@ export function TimeProposalCard({
             <div key={idx} className="space-y-1">
               <button
                 type="button"
-                disabled={!isActive || !userId}
+                disabled={!isActive || !userId || !!userOptOut}
                 onClick={() => onVote(card.id, idx)}
                 className={cn(
                   "relative w-full text-left rounded-md border px-3 py-2 text-sm transition-colors",
-                  isActive && userId
+                  isActive && userId && !userOptOut
                     ? "hover:border-primary cursor-pointer"
                     : "cursor-default",
                   isSelected ? "border-primary bg-primary/5" : "border-border",
                   isConsensus && isActive && "ring-1 ring-green-500/50",
+                  userOptOut && "opacity-50",
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
@@ -133,7 +185,7 @@ export function TimeProposalCard({
               </button>
 
               {/* Calendar context strip — shows busy blocks for this day */}
-              {isActive && slotTime && userId && (
+              {isActive && slotTime && userId && !userOptOut && (
                 <CalendarContextStrip
                   date={slotTime.start.split("T")[0]}
                   highlightStart={slotTime.start}
@@ -145,6 +197,70 @@ export function TimeProposalCard({
           );
         })}
       </div>
+
+      {/* Opt-out section */}
+      {isActive && userId && !userOptOut && onOptOut && (
+        <div className="mt-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <MoreHorizontal className="size-3.5" />
+                <span>{labels.cards.optOutMenu}</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem
+                onClick={() => onOptOut(card.id, "cant_make_any")}
+              >
+                {labels.cards.cantMakeAny}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onOptOut(card.id, "pass")}>
+                {labels.cards.pass}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+
+      {/* User's opt-out status with undo */}
+      {isActive && userId && userOptOut && (
+        <div className="mt-2 flex items-center gap-2 text-xs">
+          <span className="text-muted-foreground">
+            {userOptOut.reason === "cant_make_any"
+              ? labels.cards.cantMakeAny
+              : labels.cards.pass}
+          </span>
+          {onUndoOptOut && (
+            <button
+              type="button"
+              onClick={() => onUndoOptOut(card.id)}
+              className="text-primary hover:underline"
+            >
+              {labels.cards.optOutUndo}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Other members who opted out */}
+      {otherOptOuts.length > 0 && members && (
+        <div className="mt-1 text-xs text-muted-foreground">
+          {otherOptOuts
+            .map((o) => {
+              const member = members.find((m) => m.user_id === o.user_id);
+              const name = member?.profiles?.full_name ?? "Someone";
+              const reason =
+                o.reason === "pass"
+                  ? labels.cards.pass
+                  : labels.cards.cantMakeAny;
+              return `${name}: ${reason}`;
+            })
+            .join(" · ")}
+        </div>
+      )}
 
       {/* Private constraint note for current user */}
       {isActive && userId && data.member_notes?.[userId] && (
@@ -183,6 +299,136 @@ export function TimeProposalCard({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Post-resolution commitment strip — shown below the winning slot on resolved cards. */
+function CommitmentStrip({
+  card,
+  data,
+  userId,
+  members,
+  onCommit,
+}: {
+  card: SpaceCard;
+  data: TimeProposalData;
+  userId: string;
+  members?: SpaceMemberWithProfile[];
+  onCommit?: (
+    cardId: string,
+    commitment: "attending" | "maybe" | "cant_make_it",
+  ) => void;
+}) {
+  const commitments = data.commitments ?? {};
+  const userCommitment = commitments[userId];
+
+  // Check if user voted for the winning slot (auto-committed)
+  const winningOption = data.options.find(
+    (o) => o.label === data.resolved_slot,
+  );
+  const votedForWinner = winningOption?.votes.includes(userId) ?? false;
+
+  // If user voted for winner and hasn't explicitly changed, they're auto-attending
+  const effectiveCommitment =
+    userCommitment ?? (votedForWinner ? "attending" : null);
+
+  // Users who opted out with "pass" don't get a commitment prompt
+  const optOuts = card.opt_outs ?? [];
+  const userPassed = optOuts.some(
+    (o) => o.user_id === userId && o.reason === "pass",
+  );
+  if (userPassed) return null;
+
+  const otherCommitments = Object.entries(commitments).filter(
+    ([uid]) => uid !== userId,
+  );
+
+  return (
+    <div className="mb-3 space-y-2">
+      {/* User committed as attending */}
+      {effectiveCommitment === "attending" && (
+        <div className="flex items-center justify-between text-xs p-2 rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+          <span className="flex items-center gap-1.5 text-green-700 dark:text-green-400">
+            <Calendar className="size-3" />
+            {labels.cards.addedToCalendar}
+          </span>
+          {!userCommitment && votedForWinner && onCommit && (
+            <button
+              type="button"
+              onClick={() => onCommit(card.id, "cant_make_it")}
+              className="text-green-600 dark:text-green-400 hover:underline"
+            >
+              {labels.cards.undoCalendarAdd}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* User committed as maybe */}
+      {effectiveCommitment === "maybe" && (
+        <div className="flex items-center gap-1.5 text-xs p-2 rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400">
+          <Calendar className="size-3" />
+          {labels.cards.maybeTentative}
+        </div>
+      )}
+
+      {/* User committed as can't make it */}
+      {effectiveCommitment === "cant_make_it" && (
+        <div className="flex items-center gap-1.5 text-xs p-2 rounded-md bg-muted text-muted-foreground">
+          {labels.cards.cantMakeIt}
+        </div>
+      )}
+
+      {/* Prompt for users without a commitment */}
+      {!effectiveCommitment && onCommit && (
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs flex-1"
+            onClick={() => onCommit(card.id, "attending")}
+          >
+            <Calendar className="size-3 mr-1" />
+            {labels.cards.addToCalendar}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => onCommit(card.id, "maybe")}
+          >
+            {labels.cards.maybe}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => onCommit(card.id, "cant_make_it")}
+          >
+            {labels.cards.cantMakeIt}
+          </Button>
+        </div>
+      )}
+
+      {/* Show other members' commitments */}
+      {members && otherCommitments.length > 0 && (
+        <div className="text-xs text-muted-foreground">
+          {otherCommitments
+            .map(([uid, status]) => {
+              const member = members.find((m) => m.user_id === uid);
+              const name = member?.profiles?.full_name ?? "Someone";
+              const statusLabel =
+                status === "attending"
+                  ? "attending"
+                  : status === "maybe"
+                    ? "maybe"
+                    : "can\u2019t make it";
+              return `${name}: ${statusLabel}`;
+            })
+            .join(" \u00B7 ")}
+        </div>
+      )}
     </div>
   );
 }
