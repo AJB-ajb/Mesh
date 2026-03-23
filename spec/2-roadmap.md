@@ -4,13 +4,13 @@
 
 ## Version & Status
 
-- **Current version**: 0.8.0
-- **Last updated**: 2026-03-23 (spec audit: deviations reconciled, roadmap renumbered)
+- **Current version**: 0.9.0
+- **Last updated**: 2026-03-23
 - **Versioning**: Milestone-based semver (`MAJOR.MINOR.PATCH`). See [Update Protocol](#update-protocol).
 
 ---
 
-## Implemented (v0.1 → v0.8)
+## Implemented (v0.1 → v0.9)
 
 ### Core Platform (v0.1)
 
