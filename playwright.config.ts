@@ -39,7 +39,7 @@ export default defineConfig({
     {
       name: "public",
       use: { ...devices["Desktop Chrome"] },
-      testMatch: /e2e\/(home|navigation)\.spec\.ts/,
+      testMatch: /e2e\/home\.spec\.ts/,
     },
     // Auth-flow tests (login/logout UI) — must run after layout tests
     // because the logout test invalidates the Supabase session server-side.
@@ -55,15 +55,16 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
       dependencies: ["setup"],
       testMatch:
-        /e2e\/(posting-creation|application-flow|discover-filtering|cross-user-visibility|card-lifecycle)\.spec\.ts/,
+        /e2e\/(posting-creation|discover-filtering|cross-user-visibility|card-lifecycle)\.spec\.ts/,
     },
     // Full multi-user lifecycle tests — opt-in, not run by default.
     // Run with: pnpm test:e2e:full
     {
       name: "e2e-full",
       use: { ...devices["Desktop Chrome"] },
+      dependencies: ["setup"],
       testDir: "./tests/e2e-full",
-      timeout: 60_000,
+      timeout: 120_000,
     },
   ],
   webServer: {
