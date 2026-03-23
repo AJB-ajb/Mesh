@@ -238,11 +238,16 @@ Consolidates remaining items from v0.7–v0.8 that were deferred when those mile
 
 #### Card system completion
 
-| Feature                    | Effort | Description                                                                                                   |
-| -------------------------- | ------ | ------------------------------------------------------------------------------------------------------------- |
-| Trade-off card type        | Medium | "No perfect option — pick one" card with creator selection.                                                   |
-| Card invalidation Phase 2a | Medium | Explicit actions only — buttons on cards (supersede, update).                                                 |
-| Auto-archive (30-day)      | Small  | Cron-based auto-archive after 30 days of no messages. Infrastructure exists (manual archive shipped in v0.8). |
+| Feature                    | Effort | Description                                                                                                                                                                       |
+| -------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Post-resolution commitment | Medium | Time proposal resolution → commitment prompt built into card (Principle 6). Auto-add voters for winning slot to calendar; prompt others with Add/Maybe/Can't. See 1-spaces.md §7. |
+| Opt-out voting menu        | Small  | Universal "Can't make any of these" / "Pass" menu on all card types. Distinguishes non-response from active opt-out. "Pass" excludes from quorum.                                 |
+| Deadline input field       | Small  | Creator can set custom deadline at card creation (currently hardcoded defaults). Pre-filled with type defaults (12h/24h).                                                         |
+| Quorum (minimum attendees) | Small  | Optional number field on card creation. If set, auto-resolve requires quorum met. No quorum at deadline → card cancelled.                                                         |
+| Tie-break rule             | Small  | First-listed option wins ties at deadline. No votes at deadline → card cancelled. Deterministic, predictable.                                                                     |
+| Trade-off card type        | Medium | "No perfect option — pick one" card with creator selection.                                                                                                                       |
+| Card invalidation Phase 2a | Medium | Explicit actions only — buttons on cards (supersede, update).                                                                                                                     |
+| Auto-archive (30-day)      | Small  | Cron-based auto-archive after 30 days of no messages. Infrastructure exists (manual archive shipped in v0.8).                                                                     |
 
 #### UX & integration gaps
 

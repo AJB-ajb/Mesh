@@ -58,10 +58,20 @@ Marcus: sees card:
 Alex:  taps 19:00
        → 2 votes for 19:00, 1 for 19:30, 1 for 20:00
        → Resolves to 19:00 (plurality at deadline, or auto if threshold met)
-       → Google Calendar event created for all 4
+
+       ← Post-resolution commitment (Principle 6):
+         Card keeps poll results visible, winning slot highlighted.
+         Action strip appears at bottom:
+
+Alex:  voted for 19:00 → auto-added to calendar. Banner: "Added to your calendar. [Undo]"
+Marcus: voted for 19:00 → auto-added to calendar. Same banner.
+Lena:  voted for 19:30 → prompted: "Dinner Friday 19:00 — Add to calendar / Maybe / Can't make it"
+       taps "Add to calendar" → calendar event created, marked attending
+Priya: voted for 20:00 → same prompt
+       taps "Maybe" → calendar event created as tentative
 ```
 
-**Principles active**: Intelligent Pre-fill (slots from calendars + profiles), Private Constraints (each member sees their own situation), Deadline Resolution (12h auto-resolve).
+**Principles active**: Intelligent Pre-fill (slots from calendars + profiles), Private Constraints (each member sees their own situation), Deadline Resolution (12h auto-resolve), Post-Resolution Commitment (vote = availability, commitment at resolution).
 
 **Chained Card Flow variant**: After time resolves, if no location is set:
 
