@@ -29,61 +29,37 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
     );
   }
 
-  // Fetch the card
-  const { data: card, error: fetchError } = await supabase
-    .from("space_cards")
-    .select("*")
-    .eq("id", cardId)
-    .eq("space_id", spaceId)
-    .single();
+  // Use atomic RPC to avoid read-modify-write races
+  const { data, error } = await supabase.rpc("commit_to_card", {
+    p_card_id: cardId,
+    p_user_id: user.id,
+    p_commitment: body.commitment,
+  });
 
-  if (fetchError || !card) {
-    throw new AppError("NOT_FOUND", "Card not found", 404);
-  }
-
-  if (card.status !== "resolved") {
-    throw new AppError("VALIDATION", "Card is not resolved", 400);
-  }
-
-  if (card.type !== "time_proposal") {
-    throw new AppError(
-      "VALIDATION",
-      "Commitments only apply to time proposals",
-      400,
-    );
-  }
-
-  // Update commitments in card data
-  const currentData = card.data as Record<string, unknown>;
-  const commitments = (currentData.commitments as Record<string, string>) ?? {};
-  commitments[user.id] = body.commitment;
-
-  const { error: updateError } = await supabase
-    .from("space_cards")
-    .update({
-      data: { ...currentData, commitments },
-    })
-    .eq("id", cardId);
-
-  if (updateError) {
-    throw new AppError(
-      "INTERNAL",
-      `Failed to update commitment: ${updateError.message}`,
-      500,
-    );
+  if (error) {
+    throw new AppError("INTERNAL", `Failed to commit: ${error.message}`, 500);
   }
 
   // Fire-and-forget: create calendar event for attending/maybe
   if (body.commitment === "attending" || body.commitment === "maybe") {
-    createEventForUser(
-      card as SpaceCard,
-      spaceId,
-      user.id,
-      body.commitment === "maybe",
-    ).catch((err) =>
-      console.error("[commit] Calendar event creation failed:", err),
-    );
+    // Re-fetch the card for calendar integration (needs full data)
+    const { data: card } = await supabase
+      .from("space_cards")
+      .select("*")
+      .eq("id", cardId)
+      .single();
+
+    if (card) {
+      createEventForUser(
+        card as SpaceCard,
+        spaceId,
+        user.id,
+        body.commitment === "maybe",
+      ).catch((err) =>
+        console.error("[commit] Calendar event creation failed:", err),
+      );
+    }
   }
 
-  return apiSuccess({ commitment: body.commitment });
+  return apiSuccess({ commitment: body.commitment, data });
 });
