@@ -3,9 +3,11 @@ import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import { verifySpaceMembership } from "@/lib/api/space-guards";
 import {
   detectAndSuggest,
+  generateCardPrefill,
   type MemberContext,
   type OverlapWindow,
 } from "@/lib/ai/card-suggest";
+import type { SpaceCardType } from "@/lib/supabase/types";
 import { parseHiddenBlocks } from "@/lib/hidden-syntax";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { windowsToConcreteDates } from "@/lib/calendar/overlap-to-slots";
@@ -29,7 +31,23 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
   const body = await parseBody<{
     messages?: { sender_name: string; content: string }[];
     message?: string;
+    cardType?: SpaceCardType;
+    composeText?: string;
   }>(req);
+
+  // -------------------------------------------------------------------------
+  // 0. Validate cardType if provided
+  // -------------------------------------------------------------------------
+  const VALID_CARD_TYPES: SpaceCardType[] = [
+    "poll",
+    "time_proposal",
+    "rsvp",
+    "task_claim",
+    "location",
+  ];
+  if (body.cardType && !VALID_CARD_TYPES.includes(body.cardType)) {
+    throw new AppError("VALIDATION", "Invalid card type", 400);
+  }
 
   // -------------------------------------------------------------------------
   // 1. Build message context
@@ -37,7 +55,9 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
   let recentMessages: { sender_name: string; content: string }[];
   if (body.messages && body.messages.length > 0) {
     recentMessages = body.messages.slice(-10);
-  } else if (body.message) {
+  } else if (body.message || body.cardType) {
+    // Fetch recent messages from DB — needed for both legacy (body.message)
+    // and new cardType flow (where message/messages may be omitted)
     const { data: dbMessages } = await supabase
       .from("space_messages")
       .select("content, sender_id")
@@ -72,8 +92,11 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       }))
       .filter((m) => m.content);
 
-    const senderName = nameMap.get(user.id) ?? "User";
-    recentMessages.push({ sender_name: senderName, content: body.message });
+    // Append the user's message if provided (legacy path)
+    if (body.message) {
+      const senderName = nameMap.get(user.id) ?? "User";
+      recentMessages.push({ sender_name: senderName, content: body.message });
+    }
   } else {
     throw new AppError(
       "VALIDATION",
@@ -220,8 +243,36 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
   }
 
   // -------------------------------------------------------------------------
-  // 5. Call fused detect-and-suggest LLM
+  // 5. Call LLM — branch based on whether user chose the card type
   // -------------------------------------------------------------------------
+  if (body.cardType) {
+    // User already chose the card type via the cheap client-side detector.
+    // Append composeText as the last message so the LLM sees it in context.
+    if (body.composeText) {
+      recentMessages.push({
+        sender_name: "User",
+        content: body.composeText,
+      });
+    }
+
+    const result = await generateCardPrefill(
+      body.cardType,
+      recentMessages,
+      members,
+      overlap,
+      body.composeText,
+    );
+
+    // No confidence check — user chose the type, confidence is always 1.0
+    if (!result.suggested_type) {
+      // Only null if slots failed to generate for time types
+      return apiSuccess({ suggestion: null, reason: "no_slots_generated" });
+    }
+
+    return apiSuccess({ suggestion: result });
+  }
+
+  // Existing flow: detect type + generate prefill in one LLM call
   const result = await detectAndSuggest(recentMessages, members, overlap);
 
   if (!result.suggested_type || result.confidence < 0.6) {
