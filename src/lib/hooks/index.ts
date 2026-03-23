@@ -22,4 +22,3 @@ export { useSendSpaceMessage } from "./use-send-space-message";
 export { useActivityFeed } from "./use-activity-feed";
 export { useSpacePresence } from "./use-space-presence";
 export { useSpaceJoinRequest } from "./use-space-join-request";
-export { useAcceptedPostingIds } from "./use-accepted-posting-ids";

@@ -24,6 +24,11 @@ export interface Database {
         Insert: ProfileInsert;
         Update: ProfileUpdate;
       };
+      postings: {
+        Row: Posting;
+        Insert: PostingInsert;
+        Update: PostingUpdate;
+      };
       matches: {
         Row: Match;
         Insert: MatchInsert;
@@ -177,6 +182,76 @@ export interface Posting {
   updated_at: string;
   expires_at: string;
   identified_roles: string[] | null;
+}
+
+export interface PostingInsert {
+  id?: string;
+  creator_id: string;
+  title: string;
+  description: string;
+  category?:
+    | "study"
+    | "hackathon"
+    | "personal"
+    | "professional"
+    | "social"
+    | null;
+  context_identifier?: string | null;
+  tags?: string[];
+  team_size_min?: number;
+  team_size_max?: number;
+  mode?: "open" | "friend_ask";
+  visibility?: "public" | "private";
+  location_preference?: number | null;
+  natural_language_criteria?: string | null;
+  estimated_time?: string | null;
+  auto_accept?: boolean;
+  availability_mode?: "flexible" | "recurring" | "specific_dates";
+  timezone?: string | null;
+  embedding?: number[] | null;
+  status?: "open" | "closed" | "filled" | "expired" | "paused";
+  parent_posting_id?: string | null;
+  in_discover?: boolean;
+  link_token?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  expires_at: string;
+  identified_roles?: string[] | null;
+}
+
+export interface PostingUpdate {
+  id?: string;
+  creator_id?: string;
+  title?: string;
+  description?: string;
+  category?:
+    | "study"
+    | "hackathon"
+    | "personal"
+    | "professional"
+    | "social"
+    | null;
+  context_identifier?: string | null;
+  tags?: string[];
+  team_size_min?: number;
+  team_size_max?: number;
+  mode?: "open" | "friend_ask";
+  visibility?: "public" | "private";
+  location_preference?: number | null;
+  natural_language_criteria?: string | null;
+  estimated_time?: string | null;
+  auto_accept?: boolean;
+  availability_mode?: "flexible" | "recurring" | "specific_dates";
+  timezone?: string | null;
+  embedding?: number[] | null;
+  status?: "open" | "closed" | "filled" | "expired" | "paused";
+  parent_posting_id?: string | null;
+  in_discover?: boolean;
+  link_token?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  expires_at?: string;
+  identified_roles?: string[] | null;
 }
 
 // ============================================

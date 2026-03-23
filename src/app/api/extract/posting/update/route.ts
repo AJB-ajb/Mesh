@@ -32,8 +32,10 @@ export const POST = withAiExtraction(async (req, { user, supabase }) => {
 
   // Verify ownership
   const { data: posting, error: postingError } = await supabase
-    .from("space_postings")
-    .select("created_by, text, category, capacity, tags, status")
+    .from("postings")
+    .select(
+      "creator_id, title, description, category, estimated_time, team_size_max, tags, context_identifier, mode",
+    )
     .eq("id", postingId)
     .single();
 
@@ -41,7 +43,7 @@ export const POST = withAiExtraction(async (req, { user, supabase }) => {
     return apiError("NOT_FOUND", "Posting not found", 404);
   }
 
-  if (posting.created_by !== user.id) {
+  if (posting.creator_id !== user.id) {
     return apiError("FORBIDDEN", "Forbidden", 403);
   }
 
@@ -55,11 +57,17 @@ export const POST = withAiExtraction(async (req, { user, supabase }) => {
     effectiveSourceText = sourceText.trim();
   } else {
     const parts: string[] = [];
-    if (posting.text) parts.push(`Text: ${posting.text}`);
+    if (posting.title) parts.push(`Title: ${posting.title}`);
+    if (posting.description) parts.push(`Description: ${posting.description}`);
     if (posting.category) parts.push(`Category: ${posting.category}`);
-    if (posting.capacity) parts.push(`Capacity: ${posting.capacity}`);
+    if (posting.estimated_time)
+      parts.push(`Estimated time: ${posting.estimated_time}`);
+    if (posting.team_size_max)
+      parts.push(`Team size: ${posting.team_size_max}`);
     if (posting.tags?.length) parts.push(`Tags: ${posting.tags.join(", ")}`);
-    if (posting.status) parts.push(`Status: ${posting.status}`);
+    if (posting.context_identifier)
+      parts.push(`Context: ${posting.context_identifier}`);
+    if (posting.mode) parts.push(`Mode: ${posting.mode}`);
     effectiveSourceText = parts.join("\n");
 
     if (!effectiveSourceText) {

@@ -19,8 +19,15 @@ interface ConversationTimelineProps {
   hasMore: boolean;
   isLoading: boolean;
   onLoadMore: () => void;
-  postings?: Map<string, SpacePosting>;
-  acceptedPostingIds?: Set<string>;
+  postings?: Map<string, SpacePostingWithCreator>;
+  cards?: Map<string, SpaceCard>;
+  spaceId?: string;
+  isAdmin?: boolean;
+  typingUsers?: string[];
+  members?: SpaceMemberWithProfile[];
+  onCardVote?: (cardId: string, optionIndex: number) => void;
+  onCardResolve?: (cardId: string) => void;
+  onCardCancel?: (cardId: string) => void;
 }
 
 export function ConversationTimeline({
@@ -30,7 +37,14 @@ export function ConversationTimeline({
   isLoading,
   onLoadMore,
   postings,
-  acceptedPostingIds,
+  cards,
+  spaceId,
+  isAdmin,
+  typingUsers,
+  members,
+  onCardVote,
+  onCardResolve,
+  onCardCancel,
 }: ConversationTimelineProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -110,9 +124,9 @@ export function ConversationTimeline({
               creatorName={senderName}
               createdAt={msg.created_at}
               isOwn={isOwn}
-              revealHidden={
-                isOwn || acceptedPostingIds?.has(posting.id) === true
-              }
+              spaceId={spaceId}
+              isAdmin={isAdmin}
+              replyCount={posting.replyCount}
             />
           );
         }
@@ -132,7 +146,6 @@ export function ConversationTimeline({
             content={msg.content ?? ""}
             createdAt={msg.created_at}
             isOwn={isOwn}
-            revealHidden={true}
           />
         );
       })}

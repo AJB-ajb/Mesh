@@ -9,13 +9,30 @@
 
 export const cacheKeys = {
   profile: () => "profile" as const,
+  posting: (id: string) => `posting-detail/${id}` as const,
+  postings: (params?: string) =>
+    params ? (`/api/postings?${params}` as const) : ("/api/postings" as const),
   notifications: () => "header-notifications" as const,
+  inbox: () => "/api/inbox" as const,
+  inboxData: () => "inbox" as const,
+  conversationMessages: (conversationId: string, userId: string) =>
+    `messages/${conversationId}/${userId}` as const,
+  activePostings: () => "active-postings" as const,
+  bookmarks: () => "/api/bookmarks" as const,
+  matches: () => "/api/matches/for-me" as const,
   connections: () => "/api/friendships" as const,
+  interests: () => "/api/matches/interests" as const,
   settings: () => "settings" as const,
   notificationPreferences: () => "notification-preferences" as const,
   calendarConnections: () => "/api/calendar/connections" as const,
   calendarBusyBlocks: (profileId: string) =>
     `busy-blocks:${profileId}` as const,
+  availability: (type: string, id: string) =>
+    `/api/availability/${type}/${id}` as const,
+  meetingProposals: (postingId: string) =>
+    `api/postings/${postingId}/proposals` as const,
+  commonAvailability: (postingId: string) =>
+    `api/postings/${postingId}/common-availability` as const,
   profileSearch: (query: string) => `profile-search/${query}` as const,
   githubSync: () => "/api/github/sync" as const,
 
@@ -29,8 +46,11 @@ export const cacheKeys = {
     `/api/spaces/${spaceId}/postings` as const,
   spaceJoinRequests: (postingId: string) =>
     `space-join-requests/${postingId}` as const,
-  acceptedPostingIds: (spaceId: string) =>
-    `accepted-posting-ids/${spaceId}` as const,
+  spaceSearch: (spaceId: string, query: string) =>
+    `/api/spaces/${spaceId}/search?q=${encodeURIComponent(query)}` as const,
+
+  // Space cards
+  spaceCards: (spaceId: string) => `/api/spaces/${spaceId}/cards` as const,
 
   // Activity
   activityCards: () => "/api/activity" as const,

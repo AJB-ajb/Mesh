@@ -44,14 +44,14 @@ function OnboardingContent() {
         return;
       }
 
-      // Check if user is a member of any space (existing user)
-      const { data: memberships } = await supabase
-        .from("space_members")
-        .select("space_id")
-        .eq("user_id", user.id)
+      // Check if user has postings
+      const { data: postings } = await supabase
+        .from("postings")
+        .select("id")
+        .eq("creator_id", user.id)
         .limit(1);
 
-      if (memberships && memberships.length > 0) {
+      if (postings && postings.length > 0) {
         router.replace(next || ROUTES.home);
         return;
       }

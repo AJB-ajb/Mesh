@@ -12,7 +12,6 @@ interface MessageBubbleProps {
   content: string;
   createdAt: string;
   isOwn: boolean;
-  revealHidden?: boolean;
 }
 
 export function MessageBubble({
@@ -21,7 +20,6 @@ export function MessageBubble({
   content,
   createdAt,
   isOwn,
-  revealHidden,
 }: MessageBubbleProps) {
   return (
     <div className={cn("flex gap-2", isOwn ? "justify-end" : "justify-start")}>
@@ -44,11 +42,7 @@ export function MessageBubble({
               : "bg-muted rounded-bl-md",
           )}
         >
-          <MarkdownRenderer
-            content={content}
-            className="text-sm"
-            revealHidden={revealHidden}
-          />
+          <MarkdownRenderer content={content} className="text-sm" />
           <RelativeTime
             date={createdAt}
             formatter={formatTimeAgoShort}
