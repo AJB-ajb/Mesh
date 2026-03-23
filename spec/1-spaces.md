@@ -223,16 +223,31 @@ Five named principles govern how cards behave. These names are canonical — use
 
 #### Principle 1: Intelligent Pre-fill
 
-Suggestion chips come with data already computed from calendars, profiles, and conversation context. The user confirms pre-filled cards with one tap — they don't fill out forms.
+Cards are pre-filled from context — calendars, profiles, conversation, and the user's own compose text. The user's main effort is typing their intent; the system drafts the structured card from it.
 
-| Input                           | What the system reads                                     |
-| ------------------------------- | --------------------------------------------------------- |
-| Calendars                       | N-way free/busy overlap for all Space members             |
-| Profile `\|\|hidden\|\|` fields | Scheduling preferences, commute info, buffer needs        |
-| Conversation history            | Last ~5 messages for intent + context                     |
-| Activity type                   | Duration inference ("dinner" → 2h, "quick call" → 15 min) |
+| Input                           | What the system reads                                                                          |
+| ------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Compose text                    | The message the user is writing — used as card description and to extract options, times, etc. |
+| Conversation history            | Last ~5 messages for intent + context                                                          |
+| Calendars                       | N-way free/busy overlap for all Space members                                                  |
+| Profile `\|\|hidden\|\|` fields | Scheduling preferences, commute info, buffer needs                                             |
+| Activity type                   | Duration inference ("dinner" → 2h, "quick call" → 15 min)                                      |
 
-The suggestion chip displays a summary of what will be created: "📅 Time proposal? Fri 19:00 · 19:30 · 20:00".
+**Three suggestion triggers:**
+
+| Trigger                | When                                             | What appears                                                                                                                                                         |
+| ---------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A. While composing** | User types text with coordination intent         | 1–3 card type chips appear near compose area (e.g. `[📅 Time proposal] [📊 Poll]`). User taps a type → dialog opens pre-filled from their text.                      |
+| **B. After sending**   | User sends a message with coordination intent    | Same chips appear as fallback, in case the user sent before acting on trigger A.                                                                                     |
+| **C. After reading**   | Another member's message has coordination intent | Chips appear in the reader's compose area, suggesting they can act on the intent (e.g. "Priya asked about this weekend — `[📅 Time proposal]`"). Any member can act. |
+
+**Cheap detector, expensive generator**: A lightweight heuristic (regex/keyword patterns — question marks, time words, comma-separated options, "who can/wants" phrases) detects coordination intent and determines 1–3 plausible card types. This runs client-side or as a fast check, with no LLM call. The expensive LLM call (calendar reading, slot generation, option extraction, member notes) only runs when the user taps a card type chip.
+
+**Type selector, not type guesser**: The system often cannot determine whether the user wants an RSVP vs. a time proposal, or a poll vs. a task claim. Instead of guessing one type, it presents plausible types and the user chooses. The system fills the content; the user picks the shape.
+
+**Message as card description**: When a card is created via a suggestion chip, the user's compose text becomes the card's description field — preserving conversational warmth while adding structure. The text message is not sent separately.
+
+**Manual creation is also smart**: The "+" card creation menu always auto-fills from conversation context. Whether the user arrives via a suggestion chip or the manual menu, the dialog opens pre-filled. This is the default behavior, not a special mode. Users can always clear or edit what the AI pre-filled.
 
 **Two-path interaction**: when context is complete, the user can **quick-send** with one tap (the card is created with pre-filled defaults). When the user wants to adjust, they tap to **edit** — opening a pre-filled dialog where they can modify options before creating. Both paths start from the same suggestion chip. Quick-send is the default; edit is always available.
 
@@ -389,7 +404,7 @@ A posting in a small Space can be promoted to Explore as a new posting-message t
 - Still readable, not prominent (rendered with reduced opacity)
 - Admin can unarchive via space-info-sheet
 - Posting lifecycle (status) is independent of Space archiving
-- Auto-archive after 30 days of no messages planned but not yet implemented
+- Auto-archive after 30 days of no messages planned (→ v0.9)
 
 ---
 
@@ -425,15 +440,9 @@ Numbered for cross-reference. Full rationale in [designs/spaces-rewrite.md](desi
 
 ## 12. Current Deviations
 
-- **Inherited → independent transition**: `inherits_members` flag exists but no auto-transition when outsiders join via matching/invite. → v0.7
-- **Old table cleanup**: Old `postings`, `conversations`, `messages`, `group_messages` tables still exist. → v0.7
-- **Trade-off card type**: Not yet implemented. → v0.8 remaining
-- **Card invalidation**: No automatic card invalidation from messages yet (Phase 2a/2b). Cards are manually resolved/cancelled. → v0.8 remaining
-- **Auto-archive**: No 30-day auto-archive cron. Manual archive/unarchive by admin only. → v0.8 remaining
-- **Intelligent Pre-fill**: Card suggestions are text-only detection; no calendar awareness, no `||hidden||` profile reading, no structured slot generation. → v0.8.5 Phase A
-- **Two-path suggestion chip**: Single "Accept" button opens dialog. No quick-send, no preview. → v0.8.5 Phase B
-- **Card deadlines**: No deadline field on cards. No auto-resolve at deadline. → v0.8.5 Phase B
-- **Chained Card Flow**: No follow-up suggestions after card resolution or decline. → v0.8.5 Phase C
-- **Decline-and-Suggest**: Declining an RSVP is a dead-end; no alternative suggestions. → v0.8.5 Phase C
-- **Private Constraints**: No per-member notes on shared cards. → v0.8.5 Phase C
-- **`||hidden||` in profile editor**: No visual rendering or `/hidden` command. Hidden syntax works in parsing but not in editing UI. → v0.8.5 Phase D
+- **Inherited → independent transition**: `inherits_members` flag exists but no auto-transition when outsiders join via matching/invite. → v0.9
+- **Old table cleanup**: Old `postings`, `conversations`, `messages`, `group_messages` tables still exist. → v0.9
+- **Trade-off card type**: Not yet implemented. → v0.9
+- **Card invalidation**: No automatic card invalidation from messages yet (Phase 2a/2b). Cards are manually resolved/cancelled. → v0.9
+- **Auto-archive**: No 30-day auto-archive cron. Manual archive/unarchive by admin only. → v0.9
+- **Quick-send suggestion path**: Suggestion chips open the edit dialog (pre-filled). The 1-tap quick-send path (create card directly with defaults) is not yet implemented. → v0.9

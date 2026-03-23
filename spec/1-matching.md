@@ -229,4 +229,4 @@ With the text-first rewrite, matching inputs are now primarily **derived from us
 
 ## Current Deviations
 
-- **Multi-role matching**: LLM deep match evaluates candidates against the posting as a whole. Per-role identification and separate per-role matching is not yet implemented. → v0.8.5
+- **Multi-role matching**: LLM identifies distinct roles and returns `matched_role` per candidate. But matching evaluates the candidate once against the posting as a whole — no separate per-role pipeline or per-role scores. → backlog

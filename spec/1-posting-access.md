@@ -397,5 +397,5 @@ These use cases test the access model from the user's perspective. Each describe
 
 ## Current Deviations
 
-- **Composable access model**: Not yet implemented. Code still uses `visibility: "public" | "private"` enum on postings. The four independent access paths (Context, Invite, Link, Discover), context bar, `in_discover` flag, and link tokens described here are target state. → v0.9+
+- **Composable access model**: In expand phase — `in_discover` and `link_token` columns added (migration `20260306100000`), but old `visibility` enum still active in RLS policies. The four independent access paths (Context, Invite, Link, Discover) and context bar are target state. → v0.9+
 - **Qualitative match display**: Match scores are shown as numeric percentages in the UI, not as coarse confidence levels (`strong`/`good`/`possible`) with text explanations. → v0.9+
