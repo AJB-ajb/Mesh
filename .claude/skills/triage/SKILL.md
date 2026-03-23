@@ -60,19 +60,31 @@ Before presenting the summary, check if any issues were recently resolved:
 - **Feedback**: Query with `resolved_at=not.is.null&order=resolved_at.desc&limit=5` to show recently resolved items. Display them in a separate "Recently Resolved" section so the user can see what's been handled.
 - **Sentry**: The unresolved query (§3) already filters these out, but note the total count vs unresolved count if available.
 
-## 5. Present Summary
+## 5. Root Cause Analysis
 
-Show a combined numbered list of all open items across both sources. Ask the user what they'd like to do:
+Before presenting the summary, look across all open issues for patterns. This is the most valuable part of triage — individual bugs are cheap to fix, but recurring classes of bugs are expensive to ignore.
+
+For each cluster of related issues (or for notable individual ones), ask:
+
+- **Is this an architectural issue?** Does the bug point to a design gap — a missing validation layer, an API that's too easy to misuse, a component doing too many things? Name it if so.
+- **Does this point to deeper issues?** If multiple feedback items or Sentry errors share a root cause (same component, same data flow, same user journey), call that out. Three "small" bugs from the same source are one medium-sized design problem.
+- **Would an AI agent repeat this mistake?** If the bug was likely introduced by an AI agent working in an independent session (e.g., it missed a convention, duplicated logic, or didn't check for an existing utility), flag it. The fix might include updating `.AGENTS.md` or `CLAUDE.md` to prevent the same class of mistake in future sessions.
+
+Include this analysis in the summary. It's fine to say "no patterns found" if there genuinely aren't any.
+
+## 6. Present Summary
+
+Show a combined numbered list of all open items across both sources, followed by the root cause analysis from §5. Ask the user what they'd like to do:
 
 - **Fix** — start working on a specific issue
 - **Mark resolved** — mark feedback or Sentry issues as fixed
 - **Skip** — move on
 
-## 6. Working on Issues
+## 7. Working on Issues
 
 When the user chooses to **Fix** an issue, create a task list (via `TaskCreate`) that includes as the final item: **"Mark as resolved"** — referencing the specific feedback ID or Sentry issue ID. This ensures resolution tracking doesn't get forgotten during implementation.
 
-## 7. Mark Feedback as Resolved
+## 8. Mark Feedback as Resolved
 
 When the user marks a feedback item as resolved, PATCH it via the REST API:
 
@@ -89,7 +101,7 @@ ALTER TABLE feedback ADD COLUMN IF NOT EXISTS resolved_at timestamptz;
 
 Save it to `supabase/migrations/` with the standard timestamp naming convention and apply it with `supabase db push` if on the dev database.
 
-## 8. Mark Sentry Issues as Resolved
+## 9. Mark Sentry Issues as Resolved
 
 Use the Sentry API to update the issue status:
 
@@ -98,7 +110,7 @@ PUT https://sentry.io/api/0/projects/{org}/{project}/issues/{issue_id}/
 { "status": "resolved" }
 ```
 
-## 9. Mark Fixed Items as Resolved
+## 10. Mark Fixed Items as Resolved
 
 After code fixes are committed for specific feedback or Sentry items, **immediately mark them as resolved** — do not wait for the user to ask:
 
