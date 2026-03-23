@@ -15,6 +15,12 @@ interface SpaceCardInlineProps {
   onVote: (cardId: string, optionIndex: number) => void;
   onResolve: (cardId: string) => void;
   onCancel: (cardId: string) => void;
+  onOptOut?: (cardId: string, reason: "cant_make_any" | "pass") => void;
+  onUndoOptOut?: (cardId: string) => void;
+  onCommit?: (
+    cardId: string,
+    commitment: "attending" | "maybe" | "cant_make_it",
+  ) => void;
 }
 
 export function SpaceCardInline({
@@ -24,6 +30,9 @@ export function SpaceCardInline({
   onVote,
   onResolve,
   onCancel,
+  onOptOut,
+  onUndoOptOut,
+  onCommit,
 }: SpaceCardInlineProps) {
   switch (card.type) {
     case "poll":
@@ -45,6 +54,9 @@ export function SpaceCardInline({
           onVote={onVote}
           onResolve={onResolve}
           onCancel={onCancel}
+          onOptOut={onOptOut}
+          onUndoOptOut={onUndoOptOut}
+          onCommit={onCommit}
         />
       );
     case "rsvp":

@@ -5,6 +5,7 @@ import type {
   SpaceCardType,
   SpaceCardData,
   SpaceCard,
+  CardOption,
 } from "@/lib/supabase/types";
 import { checkAutoResolve } from "@/lib/cards/auto-resolve";
 
@@ -52,6 +53,28 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
   const resolvedCards: typeof cards = [];
   for (const card of cards ?? []) {
     if (expiredCards.some((e) => e.id === card.id)) {
+      // Time proposals: cancel if no votes or quorum not met
+      if (card.type === "time_proposal") {
+        const cardData = card.data as Record<string, unknown>;
+        const options = (cardData.options ?? []) as CardOption[];
+        const maxVotes = Math.max(...options.map((o) => o.votes.length), 0);
+        const quorum = (cardData.quorum as number) ?? null;
+        const hasVotes = maxVotes > 0;
+        const quorumMet = quorum == null || maxVotes >= quorum;
+
+        if (!hasVotes || !quorumMet) {
+          const { data: updated } = await supabase
+            .from("space_cards")
+            .update({ status: "cancelled" })
+            .eq("id", card.id)
+            .select("*")
+            .single();
+          resolvedCards.push(updated ?? { ...card, status: "cancelled" });
+          continue;
+        }
+      }
+
+      // All types: resolve via auto-resolve logic
       const result = checkAutoResolve(card as SpaceCard, memberCount);
       const resolvedData = result.resolvedData
         ? { ...card.data, ...result.resolvedData }
@@ -59,10 +82,7 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
 
       const { data: updated } = await supabase
         .from("space_cards")
-        .update({
-          status: "resolved",
-          data: resolvedData,
-        })
+        .update({ status: "resolved", data: resolvedData })
         .eq("id", card.id)
         .select("*")
         .single();

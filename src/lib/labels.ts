@@ -1264,6 +1264,29 @@ export const labels = {
     suggestionChipDismiss: "Dismiss suggestion",
     calendarStripLabel: "Your schedule for this day",
     calendarStripLoading: "Loading schedule…",
+    // Deadline & quorum
+    deadlineLabel: "Closes after",
+    deadlineOptions: {
+      "2h": "2 hours",
+      "6h": "6 hours",
+      "12h": "12 hours",
+      "24h": "24 hours",
+      "48h": "48 hours",
+    } as const,
+    quorumLabel: "Minimum attendees",
+    quorumPlaceholder: "Optional",
+    // Opt-out menu
+    cantMakeAny: "Can\u2019t make any of these",
+    pass: "Pass",
+    optOutMenu: "More options",
+    optOutUndo: "Back to voting",
+    // Post-resolution commitment
+    addToCalendar: "Add to calendar",
+    maybe: "Maybe",
+    cantMakeIt: "Can\u2019t make it",
+    addedToCalendar: "Added to your calendar.",
+    undoCalendarAdd: "Undo",
+    maybeTentative: "Maybe — added as tentative",
   },
 
   // ---------------------------------------------------------------------------
