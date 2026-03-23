@@ -20,6 +20,7 @@ interface ConversationTimelineProps {
   isLoading: boolean;
   onLoadMore: () => void;
   postings?: Map<string, SpacePostingWithCreator>;
+  acceptedPostingIds?: Set<string>;
   cards?: Map<string, SpaceCard>;
   spaceId?: string;
   isAdmin?: boolean;
@@ -37,6 +38,7 @@ export function ConversationTimeline({
   isLoading,
   onLoadMore,
   postings,
+  acceptedPostingIds,
   cards,
   spaceId,
   isAdmin,
@@ -127,6 +129,9 @@ export function ConversationTimeline({
               spaceId={spaceId}
               isAdmin={isAdmin}
               replyCount={posting.replyCount}
+              revealHidden={
+                isOwn || acceptedPostingIds?.has(posting.id) === true
+              }
             />
           );
         }
@@ -146,6 +151,7 @@ export function ConversationTimeline({
             content={msg.content ?? ""}
             createdAt={msg.created_at}
             isOwn={isOwn}
+            revealHidden={true}
           />
         );
       })}

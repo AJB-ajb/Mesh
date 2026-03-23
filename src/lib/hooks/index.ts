@@ -14,6 +14,7 @@ export { useNlFilter } from "./use-nl-filter";
 export { useRovingIndex } from "./use-roving-index";
 
 // Spaces
+export { useAcceptedPostingIds } from "./use-accepted-posting-ids";
 export { useSpaceList } from "./use-space-list";
 export { useSpace } from "./use-space";
 export { useSpaceMessages } from "./use-space-messages";

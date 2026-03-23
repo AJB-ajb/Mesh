@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SpaceMember } from "@/lib/supabase/types";
 import type { SpaceDetail } from "@/lib/hooks/use-space";
 import type { CardSuggestion } from "@/lib/ai/card-suggest";
+import { useAcceptedPostingIds } from "@/lib/hooks/use-accepted-posting-ids";
 import { useSpaceMessages } from "@/lib/hooks/use-space-messages";
 import { useSpacePostings } from "@/lib/hooks/use-space-postings";
 import { useSpacePresence } from "@/lib/hooks/use-space-presence";
@@ -34,6 +35,8 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
 
   const { postings: postingsList, isLoading: postingsLoading } =
     useSpacePostings(space.id);
+
+  const { acceptedPostingIds } = useAcceptedPostingIds(space.id);
 
   const {
     cards,
@@ -117,7 +120,11 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
           currentMember={currentMember}
         />
 
-        <StateTextBanner stateText={space.state_text} canEdit={canEdit} />
+        <StateTextBanner
+          stateText={space.state_text}
+          canEdit={canEdit}
+          revealHidden={true}
+        />
 
         {isPostingOnly ? (
           <>
@@ -128,6 +135,7 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
               matchingEnabled={space.settings?.matching_enabled ?? false}
               userId={userId}
               isAdmin={isAdmin}
+              acceptedPostingIds={acceptedPostingIds}
               className="flex-1"
             />
             {currentMember && userId && (
@@ -153,6 +161,7 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
               isLoading={messagesLoading}
               onLoadMore={loadMore}
               postings={postingsMap}
+              acceptedPostingIds={acceptedPostingIds}
               cards={cardsMap}
               spaceId={space.id}
               isAdmin={isAdmin}
