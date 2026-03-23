@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { MessageSquarePlus, Check, ImagePlus, X, Bug } from "lucide-react";
+import { Check, ImagePlus, X, Bug } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,7 +11,6 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet";
 import { labels } from "@/lib/labels";
 import { useFeedbackSheet } from "./use-feedback-sheet";
@@ -47,7 +46,9 @@ function collectMetadata(): FeedbackMetadata {
     connection_type: nav.connection?.effectiveType,
     app_version: "0.5.0",
     platform: navigator.platform,
-    dark_mode: document.documentElement.classList.contains("dark"),
+    dark_mode:
+      document.documentElement.classList.contains("overcast") ||
+      document.documentElement.classList.contains("dusk"),
   };
 }
 
@@ -247,18 +248,6 @@ export function FeedbackWidget() {
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      {/* Desktop-only trigger — mobile uses the FAB speed-dial */}
-      <SheetTrigger asChild>
-        <Button
-          variant="default"
-          size="icon"
-          className="fixed left-4 md:left-auto md:right-4 bottom-20 md:bottom-4 z-50 size-12 rounded-full shadow-lg hidden md:inline-flex"
-          aria-label={labels.feedback.buttonAriaLabel}
-        >
-          <MessageSquarePlus className="size-5" />
-        </Button>
-      </SheetTrigger>
-
       <SheetContent side="right">
         <SheetHeader>
           <SheetTitle>{labels.feedback.sheetTitle}</SheetTitle>

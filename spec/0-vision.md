@@ -45,6 +45,23 @@ Many apps optimize for engagement — time spent in app. Mesh optimizes for effe
 
 This belief shapes design decisions: no infinite feeds, no engagement-maximizing notifications, no dark patterns that keep people scrolling.
 
+## AI-Generated Text is Fine
+
+Mesh is a coordination tool, not a personal expression platform. The goal is to get people coordinated and into the real world — not to craft artisanal messages.
+
+**The principle**: AI-generated text is encouraged when it is concise, accurate, and gets coordination done. This is a deliberate norm shift from personal messaging, where authenticity of voice matters. In Mesh, what matters is: did the right people end up at the right place at the right time?
+
+**What this means in practice**:
+
+- Suggestion chips pre-fill card titles, descriptions, and options from conversation context. These are LLM-generated. Users can edit, but often the default is good enough — and that's fine.
+- System-generated summaries after card resolution ("Dinner confirmed: Friday 19:00, 4 attending") are efficient and welcome.
+- The tone is friendly, direct, and concise — not chatty, not formal. Slight variations from what a user would have written are expected and acceptable.
+- The system never pretends to be the user. AI-generated content is either clearly from the system (suggestion chips, card summaries, moderator messages) or pre-filled for the user to review and send.
+
+**Why this is different from other messengers**: In WhatsApp or iMessage, people value personal voice — a message "sounds like" the sender. In Mesh, coordination messages are functional: "Friday 19:00 works for me" communicates the same thing whether a human typed it or a system pre-filled it. We optimize for the coordination outcome (everyone shows up Friday at 19:00), not the expressiveness of the messages that got them there.
+
+**The boundary**: AI-generated text handles logistics. Personal conversation — the actual human connection — happens in the Space's regular messages and, more importantly, in the real-world activity that Mesh helped coordinate.
+
 ## Core Insight: Small Groups
 
 Most useful activities have an optimal number of participants — typically 2 to 5.

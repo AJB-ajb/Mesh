@@ -25,6 +25,7 @@ Look at every change. Consider:
 - **Spec compliance** — does the implementation match what the specs describe? (see `spec/README.md`)
 - **Test coverage** — are the right failure modes tested? Are tests actually assertive?
 - **Security** — injection, auth bypass, data leaks
+- **AI-agentic codebase hygiene** — did this change introduce near-duplication of existing code? Does it follow the same patterns used elsewhere (error handling, data fetching, validation)? Or did it reinvent something that already exists? Check the `/simplify` anti-pattern catalog if unsure.
 - **Anything else that looks wrong**
 
 Don't nitpick style. Focus on things that would cause real problems.

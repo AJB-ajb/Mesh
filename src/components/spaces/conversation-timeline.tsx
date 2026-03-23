@@ -4,11 +4,14 @@ import { useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { labels } from "@/lib/labels";
 import type { SpaceMessageWithSender } from "@/lib/hooks/use-space-messages";
-import type { SpacePosting } from "@/lib/supabase/types";
+import type { SpacePostingWithCreator, SpaceCard } from "@/lib/supabase/types";
+import type { SpaceMemberWithProfile } from "@/lib/hooks/use-space";
 import { MessageBubble } from "./message-bubble";
 import { PostingCardInline } from "./posting-card-inline";
 import { SystemMessage } from "./system-message";
+import { SpaceCardInline } from "./cards/space-card-inline";
 
 interface ConversationTimelineProps {
   messages: SpaceMessageWithSender[];
@@ -16,7 +19,15 @@ interface ConversationTimelineProps {
   hasMore: boolean;
   isLoading: boolean;
   onLoadMore: () => void;
-  postings?: Map<string, SpacePosting>;
+  postings?: Map<string, SpacePostingWithCreator>;
+  cards?: Map<string, SpaceCard>;
+  spaceId?: string;
+  isAdmin?: boolean;
+  typingUsers?: string[];
+  members?: SpaceMemberWithProfile[];
+  onCardVote?: (cardId: string, optionIndex: number) => void;
+  onCardResolve?: (cardId: string) => void;
+  onCardCancel?: (cardId: string) => void;
 }
 
 export function ConversationTimeline({
@@ -26,26 +37,29 @@ export function ConversationTimeline({
   isLoading,
   onLoadMore,
   postings,
+  cards,
+  spaceId,
+  isAdmin,
+  typingUsers,
+  members,
+  onCardVote,
+  onCardResolve,
+  onCardCancel,
 }: ConversationTimelineProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const prevMessageCount = useRef(messages.length);
 
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    if (messages.length > prevMessageCount.current) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-    prevMessageCount.current = messages.length;
-  }, [messages.length]);
-
-  // Scroll to bottom on initial load or when message count changes
-  const messageCount = messages.length;
+  // Auto-scroll: instant on initial load, smooth on new messages
   useEffect(() => {
     if (!isLoading && bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+      const isInitial = prevMessageCount.current === 0;
+      bottomRef.current.scrollIntoView({
+        behavior: isInitial ? "instant" : "smooth",
+      });
     }
-  }, [isLoading, messageCount]);
+    prevMessageCount.current = messages.length;
+  }, [isLoading, messages.length]);
 
   if (isLoading) {
     return (
@@ -75,6 +89,24 @@ export function ConversationTimeline({
           return <SystemMessage key={msg.id} content={msg.content ?? ""} />;
         }
 
+        // Render card messages
+        if (msg.type === "card" && msg.card_id) {
+          const card = cards?.get(msg.card_id);
+          if (card) {
+            return (
+              <SpaceCardInline
+                key={msg.id}
+                card={card}
+                userId={userId}
+                members={members}
+                onVote={onCardVote ?? (() => {})}
+                onResolve={onCardResolve ?? (() => {})}
+                onCancel={onCardCancel ?? (() => {})}
+              />
+            );
+          }
+        }
+
         const isOwn = msg.sender_id === userId;
         const senderName = msg.profiles?.full_name ?? "Unknown";
 
@@ -82,7 +114,9 @@ export function ConversationTimeline({
         const posting = msg.posting_id
           ? postings?.get(msg.posting_id)
           : undefined;
-        if (msg.type === "posting" && posting) {
+        if (msg.type === "posting") {
+          // Skip orphaned posting messages (posting was deleted but message remains)
+          if (!posting) return null;
           return (
             <PostingCardInline
               key={msg.id}
@@ -90,6 +124,9 @@ export function ConversationTimeline({
               creatorName={senderName}
               createdAt={msg.created_at}
               isOwn={isOwn}
+              spaceId={spaceId}
+              isAdmin={isAdmin}
+              replyCount={posting.replyCount}
             />
           );
         }
@@ -112,6 +149,18 @@ export function ConversationTimeline({
           />
         );
       })}
+
+      {/* Typing indicator */}
+      {typingUsers && typingUsers.length > 0 && (
+        <p className="text-xs text-muted-foreground px-1 animate-pulse">
+          {labels.spaces.typingIndicator(
+            typingUsers.map((uid) => {
+              const member = members?.find((m) => m.user_id === uid);
+              return member?.profiles?.full_name ?? "Someone";
+            }),
+          )}
+        </p>
+      )}
 
       <div ref={bottomRef} />
     </div>

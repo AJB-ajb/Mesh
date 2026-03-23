@@ -9,7 +9,11 @@ const PAGE_SIZE = 50;
 
 /**
  * Fetch paginated messages for a space, newest first.
- * Respects visible_from for the current user.
+ *
+ * `visible_from` enforcement: the `space_messages_select` RLS policy filters
+ * messages to only those created at or after the member's `visible_from`
+ * timestamp. All client queries go through Supabase with RLS, so no
+ * additional application-level filtering is needed.
  */
 export async function getMessages(
   supabase: SupabaseClient,

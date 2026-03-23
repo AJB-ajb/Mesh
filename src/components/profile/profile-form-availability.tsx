@@ -62,7 +62,7 @@ export function ProfileFormAvailability({
                     ? "full"
                     : "none");
                 return (
-                  <td key={slot} className="p-1 text-center">
+                  <td key={slot} className="p-1.5 sm:p-2 text-center">
                     <button
                       type="button"
                       onClick={() => onToggleSlot(day, slot)}

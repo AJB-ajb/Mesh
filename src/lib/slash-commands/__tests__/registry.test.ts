@@ -22,6 +22,7 @@ describe("slash-commands registry", () => {
       // Should include profile commands
       expect(names).toContain("availability");
       expect(names).toContain("calendar");
+      expect(names).toContain("hidden");
 
       // Should NOT include posting-only commands
       expect(names).not.toContain("visibility");
@@ -42,15 +43,18 @@ describe("slash-commands registry", () => {
       expect(names).not.toContain("calendar");
     });
 
-    it("returns only universal commands for message context", () => {
+    it("returns only message-relevant commands for message context", () => {
       const messageCmds = filterCommandsByContext("message");
       const names = messageCmds.map((c) => c.name);
 
-      // Universal (no context) commands
+      // Message-scoped commands
       expect(names).toContain("time");
       expect(names).toContain("location");
-      expect(names).toContain("format");
-      expect(names).toContain("clean");
+
+      // Not useful in messages
+      expect(names).not.toContain("format");
+      expect(names).not.toContain("clean");
+      expect(names).not.toContain("skills");
 
       // No context-specific commands
       expect(names).not.toContain("visibility");
@@ -59,11 +63,13 @@ describe("slash-commands registry", () => {
       expect(names).not.toContain("template");
     });
 
-    it("returns only universal commands for state-text context", () => {
+    it("returns state-text commands including time/location", () => {
       const stCmds = filterCommandsByContext("state-text");
       const names = stCmds.map((c) => c.name);
 
       expect(names).toContain("format");
+      expect(names).toContain("time");
+      expect(names).toContain("location");
       expect(names).not.toContain("invite");
       expect(names).not.toContain("calendar");
     });

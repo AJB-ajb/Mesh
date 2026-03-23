@@ -1,11 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import {
-  MessageSquare,
-  Bell,
-  User,
-  Settings,
-  Palette,
-} from "lucide-react";
+import { MessageSquare, Bell, User, Settings, Palette } from "lucide-react";
 import { labels } from "@/lib/labels";
 import { ROUTES } from "@/lib/routes";
 
@@ -30,7 +24,15 @@ export function createActions(ctx: ActionContext): PaletteAction[] {
       label: labels.commandPalette.goToSpaces,
       description: labels.commandPalette.goToSpacesDesc,
       icon: MessageSquare,
-      keywords: ["browse", "explore", "find", "search", "discover", "postings", "projects"],
+      keywords: [
+        "browse",
+        "explore",
+        "find",
+        "search",
+        "discover",
+        "postings",
+        "projects",
+      ],
       execute: () => ctx.router.push(ROUTES.spaces),
     },
     {
@@ -62,7 +64,7 @@ export function createActions(ctx: ActionContext): PaletteAction[] {
       label: labels.commandPalette.toggleTheme,
       description: labels.commandPalette.toggleThemeDesc,
       icon: Palette,
-      keywords: ["dark", "light", "dusk", "mode", "appearance"],
+      keywords: ["overcast", "light", "dusk", "mode", "appearance", "dark"],
       execute: () => ctx.cycleTheme(),
     },
   ];

@@ -27,6 +27,7 @@ Two worktree approaches coexist — use the right one for the context:
 git worktree add ../Mesh-<branch-name> -b <branch-name> dev
 ln -s /home/ajb/repos/Mesh/.env ../Mesh-<branch-name>/.env
 cd ../Mesh-<branch-name>
+pnpm install
 ```
 
 ## Supabase Gotchas

@@ -1,5 +1,5 @@
 import { withAuth, type OptionalAuthContext } from "@/lib/api/with-auth";
-import { apiError, apiSuccess, parseBody } from "@/lib/errors";
+import { apiError, apiSuccess, AppError, parseBody } from "@/lib/errors";
 import type { FeedbackMood, FeedbackMetadata } from "@/lib/supabase/types";
 
 const VALID_MOODS: FeedbackMood[] = ["frustrated", "neutral", "happy"];
@@ -98,7 +98,11 @@ export const POST = withAuth(
       .single();
 
     if (error) {
-      throw error;
+      throw new AppError(
+        "INTERNAL",
+        `Failed to submit feedback: ${error.message}`,
+        500,
+      );
     }
 
     return apiSuccess({ id: data.id, created_at: data.created_at }, 201);

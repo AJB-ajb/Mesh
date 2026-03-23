@@ -75,7 +75,10 @@ const sources = {
 
 const getCurrentTheme = (): "light" | "dark" => {
   if (typeof window !== "undefined") {
-    if (document.documentElement.classList.contains("dark")) {
+    if (
+      document.documentElement.classList.contains("overcast") ||
+      document.documentElement.classList.contains("dusk")
+    ) {
       return "dark";
     }
     if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) {

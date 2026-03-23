@@ -29,7 +29,7 @@ For each entry, display:
 - **Date** and **page URL**
 - **Message** (the user's feedback text)
 - **Mood** (if set)
-- **Screenshot** — if `screenshot_url` is present, download the image to `/tmp/` and use Read to display it inline
+- **Screenshot** — if `screenshot_url` or `screenshot_urls` is present, download each image to `/tmp/` and use Read to display it inline
 - **Device context** from `metadata` (screen size, platform, dark mode, connection)
 
 Group and number the entries for easy reference.
@@ -53,7 +53,14 @@ For each issue, display:
 - **Level** (error, warning, etc.)
 - **Short link**
 
-## 4. Present Summary
+## 4. Check Recently Resolved
+
+Before presenting the summary, check if any issues were recently resolved:
+
+- **Feedback**: Query with `resolved_at=not.is.null&order=resolved_at.desc&limit=5` to show recently resolved items. Display them in a separate "Recently Resolved" section so the user can see what's been handled.
+- **Sentry**: The unresolved query (§3) already filters these out, but note the total count vs unresolved count if available.
+
+## 5. Present Summary
 
 Show a combined numbered list of all open items across both sources. Ask the user what they'd like to do:
 
@@ -61,7 +68,11 @@ Show a combined numbered list of all open items across both sources. Ask the use
 - **Mark resolved** — mark feedback or Sentry issues as fixed
 - **Skip** — move on
 
-## 5. Mark Feedback as Resolved
+## 6. Working on Issues
+
+When the user chooses to **Fix** an issue, create a task list (via `TaskCreate`) that includes as the final item: **"Mark as resolved"** — referencing the specific feedback ID or Sentry issue ID. This ensures resolution tracking doesn't get forgotten during implementation.
+
+## 7. Mark Feedback as Resolved
 
 When the user marks a feedback item as resolved, PATCH it via the REST API:
 
@@ -78,7 +89,7 @@ ALTER TABLE feedback ADD COLUMN IF NOT EXISTS resolved_at timestamptz;
 
 Save it to `supabase/migrations/` with the standard timestamp naming convention and apply it with `supabase db push` if on the dev database.
 
-## 6. Mark Sentry Issues as Resolved
+## 8. Mark Sentry Issues as Resolved
 
 Use the Sentry API to update the issue status:
 
@@ -87,7 +98,7 @@ PUT https://sentry.io/api/0/projects/{org}/{project}/issues/{issue_id}/
 { "status": "resolved" }
 ```
 
-## 7. Mark Fixed Items as Resolved
+## 9. Mark Fixed Items as Resolved
 
 After code fixes are committed for specific feedback or Sentry items, **immediately mark them as resolved** — do not wait for the user to ask:
 

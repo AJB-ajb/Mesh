@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Stack } from "@/components/ui/stack";
 import {
   Card,
   CardContent,
@@ -12,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { labels } from "@/lib/labels";
+import { ClientDate } from "@/components/ui/client-date";
 import type { GithubSyncStatus } from "@/lib/hooks/use-settings";
 
 type GithubSyncCardProps = {
@@ -61,39 +63,45 @@ export function GithubSyncCard({
           {labels.settings.githubSyncDescription}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {githubSyncStatus?.synced && (
-          <div className="text-sm">
-            <p className="text-muted-foreground">
-              {labels.settings.lastSyncedLabel}{" "}
-              {githubSyncStatus.lastSyncedAt
-                ? new Date(githubSyncStatus.lastSyncedAt).toLocaleString()
-                : "Never"}
-            </p>
-            <p className="text-muted-foreground">
-              {labels.settings.statusLabel}{" "}
-              <span className="capitalize">{githubSyncStatus.syncStatus}</span>
-            </p>
-          </div>
-        )}
-
-        <Button
-          variant="outline"
-          onClick={handleGithubSync}
-          disabled={isGithubSyncing}
-        >
-          {isGithubSyncing ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {labels.github.syncingButton}
-            </>
-          ) : (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              {labels.settings.syncGithubButton}
-            </>
+      <CardContent>
+        <Stack gap="lg">
+          {githubSyncStatus?.synced && (
+            <div className="text-sm">
+              <p className="text-muted-foreground">
+                {labels.settings.lastSyncedLabel}{" "}
+                {githubSyncStatus.lastSyncedAt ? (
+                  <ClientDate date={githubSyncStatus.lastSyncedAt} showTime />
+                ) : (
+                  "Never"
+                )}
+              </p>
+              <p className="text-muted-foreground">
+                {labels.settings.statusLabel}{" "}
+                <span className="capitalize">
+                  {githubSyncStatus.syncStatus}
+                </span>
+              </p>
+            </div>
           )}
-        </Button>
+
+          <Button
+            variant="outline"
+            onClick={handleGithubSync}
+            disabled={isGithubSyncing}
+          >
+            {isGithubSyncing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {labels.github.syncingButton}
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                {labels.settings.syncGithubButton}
+              </>
+            )}
+          </Button>
+        </Stack>
       </CardContent>
     </Card>
   );

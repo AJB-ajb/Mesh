@@ -11,9 +11,25 @@ import {
   Decoration,
   type DecorationSet,
   EditorView,
+  WidgetType,
 } from "@codemirror/view";
 import type { Range } from "@codemirror/state";
 import type { Extension } from "@codemirror/state";
+
+/** Inline widget that renders a small lock icon before hidden block content. */
+class HiddenLockWidget extends WidgetType {
+  toDOM(): HTMLElement {
+    const span = document.createElement("span");
+    span.className = "cm-hidden-lock";
+    span.textContent = "\u{1F512}";
+    span.setAttribute("aria-hidden", "true");
+    return span;
+  }
+
+  eq(): boolean {
+    return true;
+  }
+}
 
 /** Matches ||...|| but NOT ||?...|| (negative lookahead for ?) or ||| (negative lookahead for |) */
 const HIDDEN_RE = /\|\|(?!\?|\|)([\s\S]*?)\|\|/g;
@@ -34,11 +50,24 @@ function buildDecorations(view: EditorView): DecorationSet {
       const start = from + match.index;
       const end = start + match[0].length;
 
+      // Wrap the entire ||...|| region
+      decorations.push(
+        Decoration.mark({ class: "cm-hidden-block" }).range(start, end),
+      );
+
       decorations.push(
         Decoration.mark({ class: "cm-hidden-delimiter" }).range(
           start,
           start + 2,
         ),
+      );
+
+      // Lock icon widget right after the opening ||
+      decorations.push(
+        Decoration.widget({
+          widget: new HiddenLockWidget(),
+          side: 1,
+        }).range(start + 2),
       );
 
       if (match[1].length > 0) {
@@ -111,10 +140,19 @@ const hiddenSyntaxPlugin = ViewPlugin.fromClass(
 );
 
 const hiddenSyntaxTheme = EditorView.baseTheme({
-  ".cm-hidden-content": {
-    opacity: "0.6",
-    backgroundColor: "var(--color-muted, #f1f5f9)",
+  ".cm-hidden-block": {
+    opacity: "0.5",
+    backgroundColor:
+      "color-mix(in srgb, var(--color-muted, #f1f5f9) 10%, transparent)",
     borderRadius: "2px",
+  },
+  ".cm-hidden-content": {
+    /* Inherits opacity/background from .cm-hidden-block */
+  },
+  ".cm-hidden-lock": {
+    fontSize: "0.75rem",
+    marginRight: "0.125rem",
+    verticalAlign: "baseline",
   },
   ".cm-hidden-delimiter": {
     color: "var(--color-muted-foreground, #94a3b8)",

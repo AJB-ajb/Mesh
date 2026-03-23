@@ -3,14 +3,14 @@
  * Finds profiles that match a posting using pgvector cosine similarity
  */
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, ScoreBreakdown } from "@/lib/supabase/types";
 import { MATCHING, DEEP_MATCH } from "@/lib/constants";
 import { MATCH_SCORE_THRESHOLD } from "@/lib/matching/scoring";
 import {
-  deepMatchCandidates,
   isDeepMatchAvailable,
-  blendScores,
+  applyDeepMatchResults,
   type DeepMatchResult,
 } from "@/lib/matching/deep-match";
 
@@ -34,13 +34,16 @@ export async function matchPostingToProfiles(
   postingId: string,
   limit: number = MATCHING.DEFAULT_RESULT_LIMIT,
   deepMatch: boolean = false,
+  externalClient?: SupabaseClient,
 ): Promise<PostingToProfileMatch[]> {
-  const supabase = await createClient();
+  const supabase = externalClient ?? (await createClient());
 
   // First, get the space_posting and its embedding
   const { data: posting, error: postingError } = await supabase
     .from("space_postings")
-    .select("embedding, created_by, text, category, space_id")
+    .select(
+      "embedding, created_by, text, category, space_id, extracted_metadata",
+    )
     .eq("id", postingId)
     .single();
 
@@ -52,7 +55,9 @@ export async function matchPostingToProfiles(
   // asynchronously via the batch processor after posting save
   const embedding = posting.embedding;
   if (!embedding || !Array.isArray(embedding)) {
-    console.warn(`[matching] Space posting embedding not ready for ${postingId}, returning empty matches`);
+    console.warn(
+      `[matching] Space posting embedding not ready for ${postingId}, returning empty matches`,
+    );
     return [];
   }
 
@@ -85,9 +90,7 @@ export async function matchPostingToProfiles(
     )
     .in("user_id", userIds);
 
-  const profileMap = new Map(
-    profileRows?.map((p) => [p.user_id, p]) || [],
-  );
+  const profileMap = new Map(profileRows?.map((p) => [p.user_id, p]) || []);
 
   // Check for existing activity_cards (type: 'match') for this posting
   const { data: existingCards } = await supabase
@@ -97,9 +100,7 @@ export async function matchPostingToProfiles(
     .eq("posting_id", postingId)
     .in("user_id", userIds);
 
-  const cardMap = new Map(
-    existingCards?.map((c) => [c.user_id, c]) || [],
-  );
+  const cardMap = new Map(existingCards?.map((c) => [c.user_id, c]) || []);
 
   // Transform results into match objects
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -148,9 +149,10 @@ export async function matchPostingToProfiles(
   if (deepMatch && isDeepMatchAvailable()) {
     const topN = matches.slice(0, DEEP_MATCH.DEFAULT_TOP_N);
 
-    // Fetch posting text from space_postings
-    const postingTitle = posting.category || "Space Posting";
-    let postingText = posting.text || "";
+    // Use extracted title from metadata when available, fall back to category
+    const meta = posting.extracted_metadata as { title?: string } | null;
+    const postingTitle = meta?.title || posting.category || "Space Posting";
+    const postingText = posting.text || "";
 
     // Fetch parent space state_text for additional context
     const { data: parentSpace } = await supabase
@@ -160,11 +162,6 @@ export async function matchPostingToProfiles(
       .single();
 
     const parentStateText = parentSpace?.state_text || "";
-
-    // Prepend parent space context when available
-    if (parentStateText) {
-      postingText = `[Space context: ${parentStateText}]\n\n${postingText}`;
-    }
 
     if (postingText) {
       // Fetch profile source texts
@@ -178,47 +175,55 @@ export async function matchPostingToProfiles(
         profileSources?.map((p) => [p.user_id, p]) ?? [],
       );
 
-      const candidates = topN
-        .map((m) => {
-          const ps = profileSourceMap.get(m.profile.user_id);
+      // Fetch shared skills: posting's skills and each candidate's skills
+      const { data: postingSkills } = await supabase
+        .from("posting_skills")
+        .select("skill_id, skill_nodes(name)")
+        .eq("space_posting_id", postingId);
+      const postingSkillIds = new Set(
+        postingSkills?.map((s) => s.skill_id) ?? [],
+      );
+
+      const { data: candidateSkillRows } = await supabase
+        .from("profile_skills")
+        .select("profile_id, skill_id, skill_nodes(name)")
+        .in("profile_id", deepUserIds);
+
+      const candidateSharedSkillMap = new Map<string, string[]>();
+      for (const row of candidateSkillRows ?? []) {
+        if (postingSkillIds.has(row.skill_id)) {
+          const shared = candidateSharedSkillMap.get(row.profile_id) ?? [];
+          const nodes = row.skill_nodes as
+            | { name: string }
+            | { name: string }[]
+            | null;
+          const name = Array.isArray(nodes) ? nodes[0]?.name : nodes?.name;
+          if (name) shared.push(name);
+          candidateSharedSkillMap.set(row.profile_id, shared);
+        }
+      }
+
+      await applyDeepMatchResults({
+        topN,
+        allMatches: matches,
+        postingTitle,
+        postingText,
+        buildCandidate: (entry) => {
+          const ps = profileSourceMap.get(entry.profile.user_id);
           const profileText = ps?.source_text || ps?.bio || ps?.headline || "";
+          if (!profileText) return null;
           return {
             profileText,
             parentStateText,
-            fastFilterScore: m.score,
-            sharedSkills: [] as string[],
-            availabilityOverlap: m.scoreBreakdown?.availability ?? null,
-            distanceKm: null as number | null,
-            semanticScore: m.scoreBreakdown?.semantic ?? null,
+            fastFilterScore: entry.score,
+            sharedSkills:
+              candidateSharedSkillMap.get(entry.profile.user_id) ?? [],
+            availabilityOverlap: entry.scoreBreakdown?.availability ?? null,
+            distanceKm: null,
+            semanticScore: entry.scoreBreakdown?.semantic ?? null,
           };
-        })
-        .filter((c) => c.profileText);
-
-      if (candidates.length > 0) {
-        const deepResults = await deepMatchCandidates(
-          postingTitle,
-          postingText,
-          candidates,
-        );
-
-        // Attach deep match results and blend scores
-        let resultIdx = 0;
-        topN.forEach((m) => {
-          if (resultIdx < deepResults.length) {
-            const ps = profileSourceMap.get(m.profile.user_id);
-            const profileText =
-              ps?.source_text || ps?.bio || ps?.headline || "";
-            if (profileText) {
-              m.deepMatchResult = deepResults[resultIdx];
-              m.score = blendScores(m.score, deepResults[resultIdx].score);
-              resultIdx++;
-            }
-          }
-        });
-
-        // Re-sort by blended score
-        matches.sort((a, b) => b.score - a.score);
-      }
+        },
+      });
     }
   }
 
@@ -232,8 +237,16 @@ export async function matchPostingToProfiles(
 export async function createMatchRecordsForPosting(
   postingId: string,
   matches: PostingToProfileMatch[],
+  externalClient?: SupabaseClient,
 ): Promise<void> {
-  const supabase = await createClient();
+  const supabase = externalClient ?? (await createClient());
+
+  // Fetch posting to get space_id and sub_space_id for card data
+  const { data: postingRow } = await supabase
+    .from("space_postings")
+    .select("space_id, sub_space_id")
+    .eq("id", postingId)
+    .single();
 
   const cardInserts = matches
     .filter((m) => !m.matchId && m.score > MATCH_SCORE_THRESHOLD)
@@ -242,10 +255,13 @@ export async function createMatchRecordsForPosting(
       type: "match" as const,
       title: "You matched with a posting",
       posting_id: postingId,
+      space_id: postingRow?.space_id ?? null,
       score: m.score,
       data: {
         score_breakdown: m.scoreBreakdown,
         deep_match: m.deepMatchResult ?? null,
+        space_id: postingRow?.space_id ?? null,
+        sub_space_id: postingRow?.sub_space_id ?? null,
       },
       status: "pending" as const,
     }));
@@ -254,7 +270,9 @@ export async function createMatchRecordsForPosting(
     const { error } = await supabase.from("activity_cards").insert(cardInserts);
 
     if (error) {
-      throw new Error(`Failed to create match activity cards: ${error.message}`);
+      throw new Error(
+        `Failed to create match activity cards: ${error.message}`,
+      );
     }
   }
 

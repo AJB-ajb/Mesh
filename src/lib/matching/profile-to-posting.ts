@@ -8,9 +8,8 @@ import type { Posting, ScoreBreakdown } from "@/lib/supabase/types";
 import { MATCH_SCORE_THRESHOLD } from "@/lib/matching/scoring";
 import { MATCHING, DEEP_MATCH } from "@/lib/constants";
 import {
-  deepMatchCandidates,
   isDeepMatchAvailable,
-  blendScores,
+  applyDeepMatchResults,
   type DeepMatchResult,
 } from "@/lib/matching/deep-match";
 
@@ -159,7 +158,7 @@ export async function matchProfileToPostings(
     const deepPostingIds = topN.map((m) => m.posting.id);
     const { data: postingSources } = await supabase
       .from("space_postings")
-      .select("id, text")
+      .select("id, text, space_id, extracted_metadata")
       .in("id", deepPostingIds);
     const { data: profileSource } = await supabase
       .from("profiles")
@@ -177,53 +176,81 @@ export async function matchProfileToPostings(
       "";
 
     if (profileText) {
-      const candidatesWithIds = topN
-        .map((m) => {
-          const ps = postingSourceMap.get(m.posting.id);
-          const postingText = ps?.text || m.posting.description || "";
-          if (!postingText) return null;
-          return {
-            postingId: m.posting.id,
-            postingTitle:
-              m.posting.title || m.posting.category || "Space Posting",
-            postingText,
-            profileText,
-            fastFilterScore: m.score,
-            sharedSkills: [] as string[],
-            availabilityOverlap: m.scoreBreakdown?.availability ?? null,
-            distanceKm: null as number | null,
-            semanticScore: m.scoreBreakdown?.semantic ?? null,
-          };
-        })
-        .filter((c): c is NonNullable<typeof c> => c !== null);
+      // Fetch shared skills: user's skills and each posting's skills
+      const { data: userSkills } = await supabase
+        .from("profile_skills")
+        .select("skill_id, skill_nodes(name)")
+        .eq("profile_id", userId);
+      const { data: postingSkillRows } = await supabase
+        .from("posting_skills")
+        .select("space_posting_id, skill_id, skill_nodes(name)")
+        .in("space_posting_id", deepPostingIds);
 
-      if (candidatesWithIds.length > 0) {
-        const deepResults = await deepMatchCandidates(
-          candidatesWithIds[0].postingTitle,
-          candidatesWithIds[0].postingText,
-          candidatesWithIds,
-        );
-
-        // Map results back by index (candidatesWithIds and deepResults are 1:1)
-        const resultMap = new Map<string, DeepMatchResult>();
-        candidatesWithIds.forEach((c, i) => {
-          if (i < deepResults.length) {
-            resultMap.set(c.postingId, deepResults[i]);
-          }
-        });
-
-        // Apply deep match results to the matching topN entries
-        topN.forEach((m) => {
-          const dr = resultMap.get(m.posting.id);
-          if (dr) {
-            m.deepMatchResult = dr;
-            m.score = blendScores(m.score, dr.score);
-          }
-        });
-
-        // Re-sort by blended score
-        matches.sort((a, b) => b.score - a.score);
+      const userSkillIds = new Set(userSkills?.map((s) => s.skill_id) ?? []);
+      const postingSkillMap = new Map<string, string[]>();
+      for (const row of postingSkillRows ?? []) {
+        if (!row.space_posting_id) continue;
+        const shared = postingSkillMap.get(row.space_posting_id) ?? [];
+        if (userSkillIds.has(row.skill_id)) {
+          const nodes = row.skill_nodes as
+            | { name: string }
+            | { name: string }[]
+            | null;
+          const name = Array.isArray(nodes) ? nodes[0]?.name : nodes?.name;
+          if (name) shared.push(name);
+        }
+        postingSkillMap.set(row.space_posting_id, shared);
       }
+
+      // Fetch parent space state_text for context
+      const spaceIds = [
+        ...new Set(
+          postingSources
+            ?.map((p) => p.space_id)
+            .filter((id): id is string => !!id) ?? [],
+        ),
+      ];
+      const { data: spaceRows } =
+        spaceIds.length > 0
+          ? await supabase
+              .from("spaces")
+              .select("id, state_text")
+              .in("id", spaceIds)
+          : { data: [] };
+      const spaceMap = new Map(
+        spaceRows?.map((s) => [s.id, s.state_text]) ?? [],
+      );
+
+      await applyDeepMatchResults({
+        topN,
+        allMatches: matches,
+        // Defaults — overridden per-candidate below
+        postingTitle: "Space Posting",
+        postingText: "",
+        buildCandidate: (entry) => {
+          const ps = postingSourceMap.get(entry.posting.id);
+          const pText = ps?.text || entry.posting.description || "";
+          if (!pText) return null;
+          return {
+            profileText,
+            // Per-candidate posting text — fixes the bug where all candidates
+            // were evaluated against the first posting's text
+            postingTitle:
+              (ps?.extracted_metadata as { title?: string } | null)?.title ||
+              entry.posting.category ||
+              "Space Posting",
+            postingText: pText,
+            parentStateText: ps?.space_id
+              ? (spaceMap.get(ps.space_id) ?? undefined)
+              : undefined,
+            fastFilterScore: entry.score,
+            sharedSkills: postingSkillMap.get(entry.posting.id) ?? [],
+            availabilityOverlap: entry.scoreBreakdown?.availability ?? null,
+            distanceKm: null,
+            semanticScore: entry.scoreBreakdown?.semantic ?? null,
+          };
+        },
+      });
     }
   }
 

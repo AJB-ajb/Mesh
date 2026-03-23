@@ -31,12 +31,12 @@ export function CalendarWeekViewBusyBlock({
 
   return (
     <div
-      className="absolute left-0.5 right-0.5 rounded-sm border border-blue-500/40 bg-blue-500/10 text-xs select-none pointer-events-none"
+      className="absolute left-0.5 right-0.5 rounded-sm border border-info/40 bg-info/10 text-xs select-none pointer-events-none"
       style={{ top: `${top}px`, height: `${Math.max(height, 12)}px` }}
       title={labels.calendar.busyBlockLabel}
     >
       <div className="flex items-start px-1 pt-0.5 overflow-hidden">
-        <span className="truncate text-[10px] font-medium text-blue-600/70 dark:text-blue-400/70">
+        <span className="truncate text-[10px] font-medium text-info/70">
           {formatTime(w.start_minutes)}-{formatTime(w.end_minutes)}
         </span>
       </div>

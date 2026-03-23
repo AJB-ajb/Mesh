@@ -27,6 +27,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     label: labels.slashCommands.time.label,
     description: labels.slashCommands.time.description,
     type: "action",
+    context: ["message", "posting", "profile", "state-text"],
   },
   {
     name: "location",
@@ -34,6 +35,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     label: labels.slashCommands.location.label,
     description: labels.slashCommands.location.description,
     type: "action",
+    context: ["message", "posting", "profile", "state-text"],
   },
   {
     name: "skills",
@@ -41,6 +43,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     label: labels.slashCommands.skills.label,
     description: labels.slashCommands.skills.description,
     type: "action",
+    context: ["posting", "profile"],
   },
   {
     name: "template",
@@ -56,7 +59,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     label: labels.slashCommands.hidden.label,
     description: labels.slashCommands.hidden.description,
     type: "content",
-    context: "posting",
+    context: ["posting", "profile"],
   },
   {
     name: "question",
@@ -112,6 +115,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     label: labels.slashCommands.format.label,
     description: labels.slashCommands.format.description,
     type: "immediate",
+    context: ["posting", "profile", "state-text"],
   },
   {
     name: "clean",
@@ -119,6 +123,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     label: labels.slashCommands.clean.label,
     description: labels.slashCommands.clean.description,
     type: "immediate",
+    context: ["posting", "profile", "state-text"],
   },
   // Profile-context commands
   {

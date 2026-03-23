@@ -277,10 +277,7 @@ The text-first design changes the _input paradigm and matching approach_. The co
 
 ## Current Deviations
 
-Features specified above but not yet implemented:
-
-- **`mesh:` link syntax**: Editor and renderer do not yet support `mesh:type?params` links or chip rendering. Skills, locations, and times are still extracted purely via LLM.
-- **`||hidden||` syntax**: Acceptance-gated content is not yet implemented. Post-accept details are shared manually via messaging.
-- **`||?||` interactive prompts**: LLM-generated acceptance forms are not yet implemented.
-- **Deep match (Stage 2)**: LLM-based deep matching on full text is implemented but multi-role matching is not.
-- **Unified PostingCard**: Multiple card components exist; not yet consolidated into a single `full`/`compact` variant component.
+- **`||hidden||` acceptance gating**: Parsing (`hidden-syntax.ts`) and editor rendering (`hidden-syntax-plugin.ts`) work. End-to-end acceptance-gated reveal (show to accepted members only, placeholder for others) needs verification. → v0.8.5
+- **`||?||` interactive prompts**: LLM-generated acceptance forms are not yet implemented. → v0.8.5
+- **Multi-role matching**: LLM-based deep matching on full text is implemented but multi-role matching (identifying distinct roles and matching candidates per-role) is not. → v0.8.5
+- **Unified PostingCard**: Multiple card components exist; not yet consolidated into a single `full`/`compact` variant component. → v0.6

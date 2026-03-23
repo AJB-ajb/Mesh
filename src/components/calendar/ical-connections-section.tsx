@@ -5,6 +5,7 @@ import { ChevronDown, Loader2, Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { labels } from "@/lib/labels";
+import { ClientDate } from "@/components/ui/client-date";
 import {
   AppleIcon,
   OutlookIcon,
@@ -78,9 +79,7 @@ export function ICalConnectionsSection({
             </div>
             {conn.lastSyncedAt && (
               <p className="text-sm text-muted-foreground">
-                {labels.calendar.lastSynced(
-                  new Date(conn.lastSyncedAt).toLocaleString(),
-                )}
+                Last synced: <ClientDate date={conn.lastSyncedAt} showTime />
               </p>
             )}
           </div>

@@ -1,6 +1,6 @@
 export { AppShell } from "./app-shell";
 export { BottomBar } from "./bottom-bar";
-export { Container } from "./container";
+export { PageContent } from "./page-content";
 export { GlobalSearch } from "./global-search";
 export { Header } from "./header";
 export { Logo } from "./logo";

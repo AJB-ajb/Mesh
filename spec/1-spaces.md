@@ -217,6 +217,110 @@ Only **active** cards are candidates for invalidation. The system maintains a sm
 - **Large Spaces**: only admin/organizer messages
 - **2-person Spaces**: both equally
 
+### Card Principles
+
+Five named principles govern how cards behave. These names are canonical — use them in specs, code comments, and documentation.
+
+#### Principle 1: Intelligent Pre-fill
+
+Suggestion chips come with data already computed from calendars, profiles, and conversation context. The user confirms pre-filled cards with one tap — they don't fill out forms.
+
+| Input                           | What the system reads                                     |
+| ------------------------------- | --------------------------------------------------------- |
+| Calendars                       | N-way free/busy overlap for all Space members             |
+| Profile `\|\|hidden\|\|` fields | Scheduling preferences, commute info, buffer needs        |
+| Conversation history            | Last ~5 messages for intent + context                     |
+| Activity type                   | Duration inference ("dinner" → 2h, "quick call" → 15 min) |
+
+The suggestion chip displays a summary of what will be created: "📅 Time proposal? Fri 19:00 · 19:30 · 20:00".
+
+**Two-path interaction**: when context is complete, the user can **quick-send** with one tap (the card is created with pre-filled defaults). When the user wants to adjust, they tap to **edit** — opening a pre-filled dialog where they can modify options before creating. Both paths start from the same suggestion chip. Quick-send is the default; edit is always available.
+
+**Calendar context**: time-related suggestions show a compact calendar strip alongside each slot — surrounding events for that day, so the user sees how the proposed time fits into their schedule. This avoids switching to a calendar app to check. The strip is per-user (Private Constraints).
+
+#### Principle 2: Chained Card Flow
+
+Card resolution can trigger a follow-up suggestion. The system notices that one coordination decision naturally leads to another.
+
+| Trigger                                       | Follow-up                                                                                    |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| RSVP declined (specific time)                 | Suggest time proposal with calendar-computed alternatives — offered to the decliner directly |
+| Poll resolves ("mornings" wins)               | Suggest time proposal filtered to morning slots                                              |
+| Time proposal resolves                        | Suggest location confirm if no location set                                                  |
+| Task claim leaves items unclaimed at deadline | Surface unclaimed tasks to creator                                                           |
+
+Chained suggestions use the same suggestion chip pattern — they are not autonomous. The user always taps to create.
+
+#### Principle 3: Deadline Resolution
+
+Every card has a deadline and transparent auto-resolve rules, shown on the card itself.
+
+**Defaults by card type** (customizable by creator):
+
+| Type             | Default deadline | Auto-resolve behavior                                   |
+| ---------------- | ---------------- | ------------------------------------------------------- |
+| Time proposal    | 12 hours         | Resolves to highest-voted slot                          |
+| RSVP             | 24 hours         | Resolves with current Yes voters (even below threshold) |
+| Poll             | 24 hours         | Winner at deadline wins                                 |
+| Task claim       | None             | Stays open until claimed or manually closed             |
+| Location confirm | 24 hours         | Majority-confirmed location wins                        |
+
+**Display**: cards show "Closes in 8h" or "Closes Friday 18:00" — always visible, never hidden. When a card resolves by deadline, the resolution is logged as a system message in the conversation.
+
+**Non-response**: if a member doesn't respond before deadline, the card proceeds without them. This is expected behavior, not a failure. See Communication Norms below.
+
+#### Principle 4: Private Constraints
+
+Each member sees personalized context on shared cards. Constraints are shown only to the person they belong to — never broadcast to the group.
+
+Examples of per-member rendering on a time proposal card:
+
+| Member | What they see (privately)                                              |
+| ------ | ---------------------------------------------------------------------- |
+| Lena   | "Your workday ends at 18:30, ~30 min buffer → ready by 19:00"          |
+| Marcus | "You're free until 21:30 ✓"                                            |
+| Priya  | "Your Garching meeting ends at 19:00. ~40 min commute → arrive ~19:40" |
+
+**Source**: the LLM reads each member's calendar + profile `||hidden||` fields and generates a one-line contextual note per slot. These notes are computed at card creation time and stored in the card's `data` jsonb keyed by user ID (small groups only — membership is known at creation time).
+
+#### Principle 5: Decline-and-Suggest
+
+When a member declines or votes "No" on a coordination card, the system immediately offers alternatives — to both the decliner and the creator. Either party can act; whoever creates the follow-up card first resolves the suggestion for both.
+
+**Example (RSVP for specific time)**:
+
+1. Sarah creates RSVP: "Call tomorrow 14:00"
+2. Tom taps "No"
+3. System shows both Tom and Sarah: "📅 Suggest a different time? Tue 15:30 · Wed 14:00 · Thu 10:00" (computed from both calendars)
+4. Tom taps "Wed 14:00" → time proposal card created
+5. Sarah sees the card, confirms → resolved → calendar event created
+
+Both parties are empowered to move forward — the system doesn't create a bottleneck on either side. This replaces the pattern where a decline dead-ends and the creator has to restart the negotiation manually.
+
+---
+
+### Communication Norms
+
+Every card type and system behavior implicitly teaches users how coordination works in Mesh. These norms are explicit — they should be reflected in UI copy, onboarding, and documentation.
+
+**Norm 1: Silence is not commitment.**
+Cards have deadlines. If you don't respond, the card resolves without you — and that's okay. Nobody is obligated to respond. The system handles non-response gracefully (auto-close, proceed with responders). No chasing, no guilt.
+
+**Norm 2: One tap is a real answer.**
+When you tap "Yes" on an RSVP or vote on a time proposal, that's a commitment. It goes on your calendar. The system treats it as binding. This is what makes 1-tap coordination trustworthy.
+
+**Norm 3: The system handles the awkwardness.**
+Nobody has to chase non-responders. Nobody has to say "actually that doesn't work for me, sorry." Cards with deadlines and decline-and-suggest flows handle the social friction. "No" is a button, not a conversation.
+
+**Norm 4: Cards are transparent decisions.**
+Every card shows its rules: "Resolves when 3 people say Yes," "Closes Friday at 18:00," "First to claim gets it." No hidden mechanics. You always know what your tap does and when the decision will be made.
+
+**Norm 5: You can change your mind (while active).**
+Change your vote, withdraw your claim, switch your RSVP — until the card resolves or the deadline passes. After resolution, it's final (but someone can create a new card to renegotiate).
+
+**Norm 6: AI-generated text is fine.**
+Mesh is a coordination tool — the goal is getting people to the right place at the right time, not crafting artisanal messages. Pre-filled card titles, system summaries, and suggested text are LLM-generated and that's encouraged. What matters is that coordination content is concise, accurate, and actionable. See [0-vision.md](0-vision.md) "AI-Generated Text is Fine" for the full principle.
+
 ---
 
 ## 8. Membership
@@ -280,11 +384,12 @@ A posting in a small Space can be promoted to Explore as a new posting-message t
 
 ### Space archiving
 
-- Auto-archive after 30 days of no messages
-- Archived Spaces move to a collapsed "Archived" section in the Space list
-- Still readable, not prominent
-- Admin can reactivate by sending a message
+- Admin can archive a Space via space-info-sheet (manual)
+- Archived Spaces move to a collapsed "Archived" section in the Space list, filterable via chip
+- Still readable, not prominent (rendered with reduced opacity)
+- Admin can unarchive via space-info-sheet
 - Posting lifecycle (status) is independent of Space archiving
+- Auto-archive after 30 days of no messages planned but not yet implemented
 
 ---
 
@@ -320,27 +425,15 @@ Numbered for cross-reference. Full rationale in [designs/spaces-rewrite.md](desi
 
 ## 12. Current Deviations
 
-Everything below is not yet implemented. This spec describes the target state for the Spaces rewrite.
-
-| Feature                                          | Status          | Notes                                                                     |
-| ------------------------------------------------ | --------------- | ------------------------------------------------------------------------- |
-| `spaces` table and core data model               | Not implemented | Currently using `postings`, `conversations`, `messages`, `group_messages` |
-| Space list (messenger-like main screen)          | Not implemented | Currently using posting feed / Discover page                              |
-| Three-tab navigation (Spaces, Activity, Profile) | Not implemented | Currently sidebar-based with Discover, Posts, Connections                 |
-| Global Space (Explore)                           | Not implemented | Currently a standalone Discover feed page                                 |
-| 2-person Spaces (DMs)                            | Not implemented | DMs currently separate from posting model                                 |
-| Unified conversation timeline                    | Not implemented | Chat and coordination currently in separate tabs                          |
-| Posting-messages (postings within Spaces)        | Not implemented | Postings are standalone entities                                          |
-| Message/Posting compose toggle                   | Not implemented | Separate posting creation flow                                            |
-| State text (living markdown document)            | Not implemented | Posting text exists but is not a living document with `/summarize`        |
-| Sub-Spaces and thread rendering                  | Not implemented | `parent_posting_id` exists but not as Space threading                     |
-| Inherited vs. independent membership             | Not implemented | No `inherits_members` concept                                             |
-| `visible_from` (pre-invite conversation hiding)  | Not implemented | No drafting workflow                                                      |
-| Rich interactive cards (Phase 2)                 | Not implemented | Time proposals, RSVPs, polls, task claims are future work                 |
-| Card invalidation from messages                  | Not implemented | Phase 2 feature                                                           |
-| Activity tab with personal cards                 | Not implemented | Currently using notifications bell                                        |
-| `activity_cards` table (replaces `matches`)      | Not implemented | Currently using `matches` table                                           |
-| Per-member read tracking (`last_read_at`)        | Not implemented | Currently using `group_message_reads`                                     |
-| Space archiving (30-day auto-archive)            | Not implemented | No archiving mechanism                                                    |
-| Cross-Space posting promotion                    | Not implemented | No cross-context posting                                                  |
-| Posting-only mode for large Spaces               | Not implemented | No mode toggle                                                            |
+- **Inherited → independent transition**: `inherits_members` flag exists but no auto-transition when outsiders join via matching/invite. → v0.7
+- **Old table cleanup**: Old `postings`, `conversations`, `messages`, `group_messages` tables still exist. → v0.7
+- **Trade-off card type**: Not yet implemented. → v0.8 remaining
+- **Card invalidation**: No automatic card invalidation from messages yet (Phase 2a/2b). Cards are manually resolved/cancelled. → v0.8 remaining
+- **Auto-archive**: No 30-day auto-archive cron. Manual archive/unarchive by admin only. → v0.8 remaining
+- **Intelligent Pre-fill**: Card suggestions are text-only detection; no calendar awareness, no `||hidden||` profile reading, no structured slot generation. → v0.8.5 Phase A
+- **Two-path suggestion chip**: Single "Accept" button opens dialog. No quick-send, no preview. → v0.8.5 Phase B
+- **Card deadlines**: No deadline field on cards. No auto-resolve at deadline. → v0.8.5 Phase B
+- **Chained Card Flow**: No follow-up suggestions after card resolution or decline. → v0.8.5 Phase C
+- **Decline-and-Suggest**: Declining an RSVP is a dead-end; no alternative suggestions. → v0.8.5 Phase C
+- **Private Constraints**: No per-member notes on shared cards. → v0.8.5 Phase C
+- **`||hidden||` in profile editor**: No visual rendering or `/hidden` command. Hidden syntax works in parsing but not in editing UI. → v0.8.5 Phase D

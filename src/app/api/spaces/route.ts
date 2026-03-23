@@ -1,6 +1,8 @@
 import { withAuth } from "@/lib/api/with-auth";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import { verifySpaceMembership } from "@/lib/api/space-guards";
+import { PG_FOREIGN_KEY_VIOLATION } from "@/lib/api/pg-error-codes";
+import { parsePaginationParams } from "@/lib/api/pagination";
 import type { SpaceInsert, SpaceListItem } from "@/lib/supabase/types";
 
 /**
@@ -10,11 +12,14 @@ import type { SpaceInsert, SpaceListItem } from "@/lib/supabase/types";
  */
 export const GET = withAuth(async (req, { user, supabase }) => {
   const { searchParams } = new URL(req.url);
-  const limit = Math.min(Number(searchParams.get("limit") || 50), 100);
-  const offset = Number(searchParams.get("offset") || 0);
+  const { limit, offset } = parsePaginationParams(searchParams, {
+    limit: 50,
+    max: 100,
+  });
+  const archived = searchParams.get("archived");
 
   // Fetch spaces where the user is a member, with membership details
-  const { data: spaces, error } = await supabase
+  let query = supabase
     .from("spaces")
     .select(
       `
@@ -31,6 +36,16 @@ export const GET = withAuth(async (req, { user, supabase }) => {
     .eq("space_members.user_id", user.id)
     .order("updated_at", { ascending: false })
     .range(offset, offset + limit - 1);
+
+  // Filter by archive status
+  if (archived === "true") {
+    query = query.not("archived_at", "is", null);
+  } else if (archived !== "all") {
+    // Default: show only active (non-archived) spaces
+    query = query.is("archived_at", null);
+  }
+
+  const { data: spaces, error } = await query;
 
   if (error) {
     throw new AppError(
@@ -72,7 +87,7 @@ export const POST = withAuth(async (req, { user, supabase }) => {
     .single();
 
   if (insertError) {
-    if (insertError.code === "23503") {
+    if (insertError.code === PG_FOREIGN_KEY_VIOLATION) {
       throw new AppError("VALIDATION", "Parent space not found", 400);
     }
     throw new AppError(

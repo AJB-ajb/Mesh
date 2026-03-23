@@ -1,34 +1,55 @@
-"use client";
+import { createClient } from "@/lib/supabase/server";
+import { cacheKeys } from "@/lib/swr/keys";
+import { SWRFallback } from "@/lib/swr/fallback";
+import { SpacePageClient } from "./space-page-client";
+import type { SpaceDetail } from "@/lib/hooks/use-space";
 
-import { use } from "react";
-import { Loader2 } from "lucide-react";
-
-import { useSpace } from "@/lib/hooks/use-space";
-import { SpaceView } from "@/components/spaces/space-view";
-
-export default function SpacePage({
+/**
+ * Server component wrapper that prefetches space details so the client
+ * renders instantly. SWR revalidates in the background for realtime updates.
+ */
+export default async function SpacePage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = use(params);
-  const { space, currentMember, isLoading } = useSpace(id);
+  const { id } = await params;
+  const supabase = await createClient();
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return <SpacePageClient params={params} />;
   }
 
-  if (!space) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-muted-foreground">Space not found</p>
-      </div>
-    );
+  const [spaceResult, membersResult] = await Promise.all([
+    supabase.from("spaces").select("*").eq("id", id).single(),
+    supabase
+      .from("space_members")
+      .select("*, profiles:user_id(full_name, headline, user_id)")
+      .eq("space_id", id)
+      .order("joined_at", { ascending: true }),
+  ]);
+
+  if (spaceResult.error || !spaceResult.data) {
+    // Let the client component handle the error/not-found state
+    return <SpacePageClient params={params} />;
   }
 
-  return <SpaceView space={space} currentMember={currentMember} />;
+  const members = membersResult.data ?? [];
+  const currentMember = members.find((m) => m.user_id === user.id) ?? null;
+
+  const fallbackData: SpaceDetail = {
+    ...spaceResult.data,
+    members,
+    currentMember,
+  };
+
+  return (
+    <SWRFallback fallback={{ [cacheKeys.space(id)]: fallbackData }}>
+      <SpacePageClient params={params} />
+    </SWRFallback>
+  );
 }

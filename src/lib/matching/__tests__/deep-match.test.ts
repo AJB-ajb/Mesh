@@ -149,8 +149,11 @@ describe("deepMatchCandidates", () => {
       },
     ]);
 
-    // One failed, two succeeded
-    expect(results).toHaveLength(2);
+    // All three positions preserved; failed one is null
+    expect(results).toHaveLength(3);
+    expect(results[0]).not.toBeNull();
+    expect(results[1]).toBeNull();
+    expect(results[2]).not.toBeNull();
   });
 });
 

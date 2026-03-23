@@ -135,5 +135,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
         env:
+          NODE_OPTIONS: --max-old-space-size=4096
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-key

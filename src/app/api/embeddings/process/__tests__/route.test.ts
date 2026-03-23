@@ -117,21 +117,20 @@ describe("POST /api/embeddings/process", () => {
   });
 
   it("allows calls with valid EMBEDDINGS_API_KEY", async () => {
-    const profilesQuery = mockQuery({ data: [], error: null });
-    const postingsQuery = mockQuery({ data: [], error: null });
+    const emptyQuery = mockQuery({ data: [], error: null });
 
-    let callCount = 0;
-    mockFrom.mockImplementation(() => {
-      callCount++;
-      return callCount === 1 ? profilesQuery : postingsQuery;
-    });
+    mockFrom.mockImplementation(() => emptyQuery);
 
     const req = makeRequest({ authorization: "Bearer test-embeddings-key" });
     const response = await POST(req, routeContext);
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.processed).toEqual({ profiles: 0, postings: 0 });
+    expect(body.processed).toEqual({
+      profiles: 0,
+      postings: 0,
+      spacePostings: 0,
+    });
   });
 
   it("rejects calls with service role key (only EMBEDDINGS_API_KEY is accepted)", async () => {
@@ -146,21 +145,20 @@ describe("POST /api/embeddings/process", () => {
   });
 
   it("returns empty result when no pending items", async () => {
-    const profilesQuery = mockQuery({ data: [], error: null });
-    const postingsQuery = mockQuery({ data: [], error: null });
+    const emptyQuery = mockQuery({ data: [], error: null });
 
-    let callCount = 0;
-    mockFrom.mockImplementation(() => {
-      callCount++;
-      return callCount === 1 ? profilesQuery : postingsQuery;
-    });
+    mockFrom.mockImplementation(() => emptyQuery);
 
     const req = makeRequest({ authorization: "Bearer test-embeddings-key" });
     const response = await POST(req, routeContext);
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.processed).toEqual({ profiles: 0, postings: 0 });
+    expect(body.processed).toEqual({
+      profiles: 0,
+      postings: 0,
+      spacePostings: 0,
+    });
     expect(body.errors).toEqual([]);
   });
 
@@ -186,6 +184,7 @@ describe("POST /api/embeddings/process", () => {
 
     const profilesQuery = mockQuery({ data: pendingProfiles, error: null });
     const postingsQuery = mockQuery({ data: pendingPostings, error: null });
+    const spacePostingsQuery = mockQuery({ data: [], error: null });
 
     const calls: string[] = [];
     mockFrom.mockImplementation((table: string) => {
@@ -201,6 +200,12 @@ describe("POST /api/embeddings/process", () => {
         calls.filter((c) => c === "postings").length === 1
       ) {
         return postingsQuery;
+      }
+      if (
+        table === "space_postings" &&
+        calls.filter((c) => c === "space_postings").length === 1
+      ) {
+        return spacePostingsQuery;
       }
       // Update calls
       return mockUpdateQuery({ data: null, error: null });
@@ -251,6 +256,7 @@ describe("POST /api/embeddings/process", () => {
 
     const profilesQuery = mockQuery({ data: pendingProfiles, error: null });
     const postingsQuery = mockQuery({ data: pendingPostings, error: null });
+    const spacePostingsQuery = mockQuery({ data: [], error: null });
 
     const calls: string[] = [];
     mockFrom.mockImplementation((table: string) => {
@@ -266,6 +272,12 @@ describe("POST /api/embeddings/process", () => {
         calls.filter((c) => c === "postings").length === 1
       ) {
         return postingsQuery;
+      }
+      if (
+        table === "space_postings" &&
+        calls.filter((c) => c === "space_postings").length === 1
+      ) {
+        return spacePostingsQuery;
       }
       return mockUpdateQuery({ data: null, error: null });
     });
@@ -305,12 +317,18 @@ describe("POST /api/embeddings/process", () => {
     ];
 
     const profilesQuery = mockQuery({ data: pendingProfiles, error: null });
-    const postingsQuery = mockQuery({ data: [], error: null });
+    const emptyQuery = mockQuery({ data: [], error: null });
 
-    let callCount = 0;
-    mockFrom.mockImplementation(() => {
-      callCount++;
-      return callCount === 1 ? profilesQuery : postingsQuery;
+    const calls: string[] = [];
+    mockFrom.mockImplementation((table: string) => {
+      calls.push(table);
+      if (
+        table === "profiles" &&
+        calls.filter((c) => c === "profiles").length === 1
+      ) {
+        return profilesQuery;
+      }
+      return emptyQuery;
     });
 
     // Must reject on all retry attempts (initial + 2 retries)
@@ -338,7 +356,7 @@ describe("POST /api/embeddings/process", () => {
     ];
 
     const profilesQuery = mockQuery({ data: pendingProfiles, error: null });
-    const postingsQuery = mockQuery({ data: [], error: null });
+    const emptyQuery = mockQuery({ data: [], error: null });
 
     const calls: string[] = [];
     mockFrom.mockImplementation((table: string) => {
@@ -353,7 +371,13 @@ describe("POST /api/embeddings/process", () => {
         table === "postings" &&
         calls.filter((c) => c === "postings").length === 1
       ) {
-        return postingsQuery;
+        return emptyQuery;
+      }
+      if (
+        table === "space_postings" &&
+        calls.filter((c) => c === "space_postings").length === 1
+      ) {
+        return emptyQuery;
       }
       // Update call for skipped profile
       return mockUpdateQuery({ data: null, error: null });
@@ -381,7 +405,7 @@ describe("POST /api/embeddings/process", () => {
     ];
 
     const profilesQuery = mockQuery({ data: pendingProfiles, error: null });
-    const postingsQuery = mockQuery({ data: [], error: null });
+    const emptyQuery = mockQuery({ data: [], error: null });
 
     const calls: string[] = [];
     mockFrom.mockImplementation((table: string) => {
@@ -396,7 +420,13 @@ describe("POST /api/embeddings/process", () => {
         table === "postings" &&
         calls.filter((c) => c === "postings").length === 1
       ) {
-        return postingsQuery;
+        return emptyQuery;
+      }
+      if (
+        table === "space_postings" &&
+        calls.filter((c) => c === "space_postings").length === 1
+      ) {
+        return emptyQuery;
       }
       // Update call fails
       return mockUpdateQuery({

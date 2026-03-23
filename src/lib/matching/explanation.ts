@@ -8,7 +8,7 @@ import {
   isGeminiConfigured,
 } from "@/lib/ai/gemini";
 import type { Profile } from "@/lib/supabase/types";
-import { AI } from "@/lib/constants";
+import { AI, DEEP_MATCH } from "@/lib/constants";
 
 export type MatchExplanationProfile = Pick<
   Profile,
@@ -77,8 +77,8 @@ Explanation:`;
 }
 
 /**
- * Generates explanations for multiple matches in batch
- * Uses Promise.all for parallel processing
+ * Generates explanations for multiple matches in batch.
+ * Uses the same concurrency limit as deep matching to avoid rate limits.
  */
 export async function generateMatchExplanations(
   matches: Array<{
@@ -87,15 +87,27 @@ export async function generateMatchExplanations(
     score: number;
   }>,
 ): Promise<string[]> {
-  const promises = matches.map((match) =>
-    generateMatchExplanation(match.profile, match.posting, match.score).catch(
-      (error) => {
-        console.error("Failed to generate explanation:", error);
-        return null; // Return null on error, caller can handle
-      },
-    ),
-  );
+  const concurrency = DEEP_MATCH.DEFAULT_CONCURRENCY;
+  const results: (string | null)[] = [];
 
-  const results = await Promise.all(promises);
+  let i = 0;
+  while (i < matches.length) {
+    const batch = matches.slice(i, i + concurrency);
+    const batchResults = await Promise.all(
+      batch.map((match) =>
+        generateMatchExplanation(
+          match.profile,
+          match.posting,
+          match.score,
+        ).catch((error) => {
+          console.error("Failed to generate explanation:", error);
+          return null;
+        }),
+      ),
+    );
+    results.push(...batchResults);
+    i += concurrency;
+  }
+
   return results.filter((r): r is string => r !== null);
 }

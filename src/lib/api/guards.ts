@@ -9,6 +9,7 @@
 
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { AppError } from "@/lib/errors";
+import { verifyOwnership } from "./ownership";
 
 // ---------------------------------------------------------------------------
 // Re-export existing ownership guard for backward compat
@@ -30,21 +31,11 @@ export async function verifyApplicationOwnership(
   applicationId: string,
   userId: string,
 ) {
-  const { data: application, error } = await supabase
-    .from("applications")
-    .select("*")
-    .eq("id", applicationId)
-    .single();
-
-  if (error || !application) {
-    throw new AppError("NOT_FOUND", "Application not found", 404);
-  }
-
-  if (application.applicant_id !== userId) {
-    throw new AppError("FORBIDDEN", "Not your application", 403);
-  }
-
-  return application;
+  return verifyOwnership(supabase, applicationId, userId, {
+    table: "applications",
+    ownerColumn: "applicant_id",
+    entityLabel: "Application",
+  });
 }
 
 // ---------------------------------------------------------------------------

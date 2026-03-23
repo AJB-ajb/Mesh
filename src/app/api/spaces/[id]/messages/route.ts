@@ -1,6 +1,7 @@
 import { withAuth } from "@/lib/api/with-auth";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import { verifySpaceMembership } from "@/lib/api/space-guards";
+import { parsePaginationParams } from "@/lib/api/pagination";
 import type { SpaceMessageInsert } from "@/lib/supabase/types";
 
 /**
@@ -14,7 +15,10 @@ export const GET = withAuth(async (req, { user, supabase, params }) => {
   await verifySpaceMembership(supabase, spaceId, user.id);
 
   const { searchParams } = new URL(req.url);
-  const limit = Math.min(Number(searchParams.get("limit") || 50), 100);
+  const { limit } = parsePaginationParams(searchParams, {
+    limit: 50,
+    max: 100,
+  });
   const before = searchParams.get("before"); // cursor: message ID
 
   let query = supabase

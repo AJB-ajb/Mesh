@@ -8,6 +8,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/lib/errors";
+import { verifyOwnership } from "./ownership";
 
 /**
  * Verify the current user is a member of the given space.
@@ -66,19 +67,9 @@ export async function verifySpacePostingOwnership(
   postingId: string,
   userId: string,
 ) {
-  const { data: posting, error } = await supabase
-    .from("space_postings")
-    .select("*")
-    .eq("id", postingId)
-    .single();
-
-  if (error || !posting) {
-    throw new AppError("NOT_FOUND", "Posting not found", 404);
-  }
-
-  if (posting.created_by !== userId) {
-    throw new AppError("FORBIDDEN", "Not your posting", 403);
-  }
-
-  return posting;
+  return verifyOwnership(supabase, postingId, userId, {
+    table: "space_postings",
+    ownerColumn: "created_by",
+    entityLabel: "Posting",
+  });
 }

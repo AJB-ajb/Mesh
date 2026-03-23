@@ -65,6 +65,10 @@ const components: Components = {
         </span>
       );
     }
+    // Block non-http(s) protocols to prevent javascript: XSS
+    if (href && !/^(https?:\/\/|mailto:|\/)/i.test(href)) {
+      return <span>{children}</span>;
+    }
     return (
       <a
         href={href}

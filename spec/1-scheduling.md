@@ -20,28 +20,41 @@ Three layers:
 
 ### What they are
 
-A private, free-form text field on each user's profile where they describe how they like to schedule their day. Never shown to other users. Read by the LLM when generating time slot suggestions.
+Private scheduling constraints written as `||hidden||` content within the user's profile text. Because the profile is text-first (see [1-text-first.md](1-text-first.md)), scheduling preferences live in the same editor as the rest of the profile — wrapped in `||...||` markers so they are never shown to other users. The LLM reads them when generating time slot suggestions, rendering personalized card constraints, and computing intelligent pre-fill data.
 
 ### Data model
 
-```
-profiles:
-  scheduling_preferences: text  -- nullable, free-form, private
+No separate field. Scheduling preferences are part of `profiles.text`, enclosed in `||hidden||` markers. The LLM extracts them at query time alongside calendar data.
+
+```markdown
+## Profile text example
+
+Hi! I'm a product designer in Munich, 3 years at a design agency, now freelancing.
+I do UI/UX, user research, and prototyping (Figma, mostly).
+
+||I need about 30 minutes after work to decompress before meeting anyone.
+My commute from Schwabing is ~20 min to city center.
+Don't schedule before 9am — I'm not a morning person.
+Prefer video calls over phone.||
 ```
 
-No schema changes to calendars, availability, or postings. The LLM receives this as additional context.
+The `||hidden||` block can appear anywhere in the profile text — inline, at the end, or split across multiple blocks. Users choose where it feels natural. The system concatenates all hidden blocks when reading preferences.
 
 ### Privacy
 
-- **Never visible** to other users, not even team members
-- **Never used** for matching or ranking — this is purely for scheduling quality
-- **Never stored** in any public-facing data — only fed to the LLM at slot generation time
-- **Deletable** — user can clear it at any time
+- **Never visible** to other users — the `||hidden||` syntax guarantees this (see [1-text-first.md](1-text-first.md))
+- **Never used** for matching or ranking — purely for scheduling quality and personalized card rendering
+- **Read by the LLM** at slot generation time and when computing private constraint notes for cards (see [1-spaces.md](1-spaces.md) §7, Principle 4: Private Constraints)
+- **User-controlled** — editable anytime in the profile editor; users can add, modify, or remove hidden blocks freely
+
+### Onboarding
+
+During profile setup, prompt users with: "Anything the system should know when scheduling for you? This stays private — only used to suggest better times." With examples. The profile editor supports a `/hidden` slash command that wraps selected text in `||...||` markers.
 
 ### Examples
 
-```
-I prefer mornings for deep work, don't schedule anything before 10am
+```markdown
+||I prefer mornings for deep work, don't schedule anything before 10am
 unless it's urgent.
 
 I need at least 30 min between activities to decompress.
@@ -51,19 +64,19 @@ After lunch (12-13:30) I'm usually sluggish — nothing requiring energy.
 I commute from Pasing — add 30 min travel time for anything in the
 city center.
 
-Fridays are my creative day, I don't like structured activities.
+Fridays are my creative day, I don't like structured activities.||
 ```
 
-```
-I'm a night owl. Anything before 11am is painful.
+```markdown
+||I'm a night owl. Anything before 11am is painful.
 I'm based in Garching — add 40 min for central Munich.
-I like to batch social things — if I'm already out, stack events.
+I like to batch social things — if I'm already out, stack events.||
 ```
 
-```
-I work shifts: Mon/Wed/Fri 6-14, Tue/Thu 14-22.
+```markdown
+||I work shifts: Mon/Wed/Fri 6-14, Tue/Thu 14-22.
 I need 1 hour transition time after work before social activities.
-My partner and I share a car — I can only drive on days I have it.
+My partner and I share a car — I can only drive on days I have it.||
 ```
 
 ### What the LLM does with preferences
@@ -73,6 +86,7 @@ The LLM reads scheduling preferences as soft constraints, not hard rules. It use
 - **Adjust slot start times** for travel (commute from Garching → add 40 min)
 - **Add buffers** between activities (30 min decompression → don't suggest tennis ending 5 min before a dinner)
 - **Filter inappropriate times** (no 9am social events for someone who says "nothing before 10am")
+- **Generate private constraint notes** on cards ("Your workday ends at 18:30, ~30 min buffer → ready by 19:00") — shown only to that member
 - **Explain its reasoning** ("Accounts for your travel from Schwabing")
 
 Preferences interact with calendar data:
@@ -91,8 +105,8 @@ Preferences interact with calendar data:
 ┌──────────────────────────────────────────────────────┐
 │  Input                                                │
 │  ├── Posting text + extracted metadata                │
-│  ├── Poster's calendar + scheduling preferences       │
-│  ├── Candidate's calendar + scheduling preferences    │
+│  ├── Poster's calendar + ||hidden|| profile text      │
+│  ├── Candidate's calendar + ||hidden|| profile text   │
 │  ├── Current time, date, season                       │
 │  └── Candidate's next calendar event (if relevant)    │
 │                                                       │
@@ -145,7 +159,7 @@ The LLM receives:
 - Posting text (full)
 - Mutual overlap windows (from Step 1)
 - Inferred duration (from Step 2)
-- Both parties' scheduling preferences
+- Both parties' `||hidden||` profile text (scheduling preferences)
 - Current time and date
 - Context: season (for daylight), weather (if outdoor), activity type
 
@@ -313,11 +327,11 @@ Inferred duration: {duration_minutes} minutes
 MUTUAL AVAILABILITY:
 {overlap_windows}
 
-POSTER'S SCHEDULING PREFERENCES:
-{poster_prefs or "None specified"}
+POSTER'S SCHEDULING PREFERENCES (from ||hidden|| profile text):
+{poster_hidden_text or "None specified"}
 
-CANDIDATE'S SCHEDULING PREFERENCES:
-{candidate_prefs or "None specified"}
+CANDIDATE'S SCHEDULING PREFERENCES (from ||hidden|| profile text):
+{candidate_hidden_text or "None specified"}
 
 CANDIDATE'S NEXT EVENT:
 {next_event or "None within 4 hours of overlap"}
@@ -358,9 +372,9 @@ Slot generation is a lightweight LLM call — short context, structured output. 
 
 Treat as fully available within the posting's time window. Show evenly-distributed slots. The LLM still applies context-aware filtering (no 5am tennis).
 
-### Scheduling preferences but no calendar
+### `||hidden||` preferences but no calendar
 
-The LLM applies preferences as soft constraints on the posting's time window. "Nothing before 10am" + posting says "morning" → suggest 10:00 start instead of earlier.
+The LLM applies preferences from `||hidden||` profile text as soft constraints on the posting's time window. "Nothing before 10am" + posting says "morning" → suggest 10:00 start instead of earlier.
 
 ### Timezone differences
 
@@ -392,19 +406,30 @@ If a participant's calendar changes after accepting (new meeting added):
 
 ## 6. Implementation Phases
 
-| Phase | Scope                                                                                   | Depends on                                    |
-| ----- | --------------------------------------------------------------------------------------- | --------------------------------------------- |
-| 1     | `scheduling_preferences` field on profiles. Settings UI for editing.                    | —                                             |
-| 2     | 1-on-1 slot generation: overlap computation + LLM slot suggestion for acceptance cards. | Calendar sync (availability-calendar Phase 3) |
-| 3     | Group scheduling: N-way overlap, poster recommendation screen, per-person cards.        | Phase 2                                       |
-| 4     | Travel time estimation from profile/posting locations (deterministic, no transit API).  | Phase 2                                       |
-| 5     | Conflict detection: post-acceptance calendar change notifications.                      | Phase 2, calendar webhooks                    |
+| Phase | Scope                                                                                           | Depends on                                                      |
+| ----- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| 1     | `\|\|hidden\|\|` profile syntax + `/hidden` slash command. LLM reads hidden text at query time. | `\|\|hidden\|\|` rendering ([1-text-first.md](1-text-first.md)) |
+| 2     | 1-on-1 slot generation: overlap computation + LLM slot suggestion with intelligent pre-fill.    | Calendar sync (availability-calendar Phase 3)                   |
+| 3     | Group scheduling: N-way overlap, pre-fill recommendation, per-person private constraint notes.  | Phase 2                                                         |
+| 4     | Travel time estimation from profile/posting locations (deterministic, no transit API).          | Phase 2                                                         |
+| 5     | Conflict detection: post-acceptance calendar change notifications.                              | Phase 2, calendar webhooks                                      |
 
 ---
 
 ## 7. Integration Points
 
 - **`spec/availability-calendar.md`**: Provides the calendar data (sync, free/busy, overlap scoring). This spec adds the intelligence layer on top.
-- **[1-text-first.md](1-text-first.md)**: The acceptance card is part of the text-first flow. This spec defines how time slots are generated for that card.
-- **Matching ([1-matching.md](1-matching.md))**: Scheduling preferences text is readable by the deep match LLM, so "nothing before 10am" naturally influences match scores for early-morning postings. This is emergent, not a separate mechanism.
-- **Spaces ([1-spaces.md](1-spaces.md))**: Scheduling intelligence works the same within Spaces. A posting-message "meet Thursday?" within a Space auto-scopes to the Space's members for calendar overlap. Rich interactive cards (time proposal cards, RSVP cards) embed scheduling intelligence directly into the conversation timeline.
+- **[1-text-first.md](1-text-first.md)**: `||hidden||` syntax in profile text is the data source for scheduling preferences. The acceptance card is part of the text-first flow. This spec defines how time slots are generated for that card.
+- **Matching ([1-matching.md](1-matching.md))**: `||hidden||` profile text is readable by the deep match LLM, so "nothing before 10am" naturally influences match scores for early-morning postings. This is emergent, not a separate mechanism.
+- **Spaces ([1-spaces.md](1-spaces.md))**: Scheduling intelligence works the same within Spaces. A posting-message "meet Thursday?" within a Space auto-scopes to the Space's members for calendar overlap. Rich interactive cards (time proposal cards, RSVP cards) embed scheduling intelligence directly into the conversation timeline. Card Principles (§7) define how scheduling intelligence surfaces through Intelligent Pre-fill and Private Constraints.
+
+---
+
+## 8. Current Deviations
+
+- **`||hidden||` profile syntax**: Profile editor does not render `||hidden||` blocks visually. No `/hidden` slash command. Parsing works but editing UI missing. → v0.8.5 Phase D
+- **Slot generation**: No LLM-powered slot generation. Time proposal slots are user-entered, not computed from calendar overlap. → v0.8.5 Phase A
+- **Group scheduling UI**: No N-way overlap computation in suggest flow. No pre-fill recommendation. No per-person private constraint notes. → v0.8.5 Phases A + C
+- **Scheduling preferences**: Not yet functional — no users have `||hidden||` text in profiles, no LLM reads it. → v0.8.5 Phases A + D
+- **Travel time estimation**: Not implemented. → backlog
+- **Conflict detection**: No post-acceptance calendar change notifications. → backlog

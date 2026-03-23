@@ -21,6 +21,8 @@ Consider:
 - Communication style and collaboration preferences
 - Domain knowledge and relevant background
 
+Form your own assessment from the posting and profile texts first. A "Reference Data" section may provide supplementary signals — use them to inform but not anchor your score.
+
 Be honest but fair. A 0.7+ score means strong fit. Below 0.3 means poor fit.`;
 
 export function deepMatchResponseSchema(): ObjectSchema {
@@ -76,8 +78,8 @@ ${input.postingText}
 ## Candidate Profile
 ${input.profileText}
 
-## Fast Filter Summary
-${input.fastFilterSummary}
+Evaluate this candidate's fit for the posting.
 
-Evaluate this candidate's fit for the posting.`;
+## Reference Data
+${input.fastFilterSummary}`;
 }

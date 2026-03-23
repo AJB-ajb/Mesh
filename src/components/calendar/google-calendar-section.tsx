@@ -4,6 +4,7 @@ import { Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GoogleIcon } from "@/components/icons/auth-icons";
 import { labels } from "@/lib/labels";
+import { ClientDate } from "@/components/ui/client-date";
 import type { CalendarConnection } from "@/lib/calendar/types";
 import { SyncStatusBadge } from "./sync-status-badge";
 
@@ -45,9 +46,8 @@ export function GoogleCalendarSection({
         </div>
         {googleConnection.lastSyncedAt && (
           <p className="text-sm text-muted-foreground">
-            {labels.calendar.lastSynced(
-              new Date(googleConnection.lastSyncedAt).toLocaleString(),
-            )}
+            Last synced:{" "}
+            <ClientDate date={googleConnection.lastSyncedAt} showTime />
           </p>
         )}
         {googleConnection.syncStatus === "error" &&

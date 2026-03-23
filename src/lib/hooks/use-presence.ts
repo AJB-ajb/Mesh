@@ -69,7 +69,7 @@ export function usePresence(currentUserId: string | null): UsePresenceReturn {
           online_at: new Date().toISOString(),
         } as PresenceState);
       }
-    }, 30000); // Every 30 seconds
+    }, 60000); // Every 60 seconds
 
     return () => {
       clearInterval(interval);

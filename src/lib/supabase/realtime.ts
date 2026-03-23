@@ -562,6 +562,78 @@ export function subscribeToPostings(
 }
 
 // ---------------------------------------------------------------------------
+// Space posting types & subscription
+// ---------------------------------------------------------------------------
+
+export type SpacePostingPayload = {
+  id: string;
+  space_id: string;
+  created_by: string;
+  status: string;
+  created_at: string;
+};
+
+function isSpacePosting(value: unknown): value is SpacePostingPayload {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.id === "string" &&
+    typeof v.space_id === "string" &&
+    typeof v.created_at === "string"
+  );
+}
+
+export type SpacePostingEvent = {
+  eventType: "INSERT" | "UPDATE" | "DELETE";
+  posting: SpacePostingPayload;
+};
+
+/**
+ * Subscribe to real-time space posting changes for a given space.
+ */
+export function subscribeToSpacePostings(
+  spaceId: string,
+  onEvent: (event: SpacePostingEvent) => void,
+): RealtimeChannel {
+  const supabase = createClient();
+
+  const channel = supabase
+    .channel(`space-postings:${spaceId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "space_postings",
+        filter: `space_id=eq.${spaceId}`,
+      },
+      (payload) => {
+        const record =
+          payload.eventType === "DELETE" ? payload.old : payload.new;
+        if (isSpacePosting(record)) {
+          onEvent({
+            eventType: payload.eventType as SpacePostingEvent["eventType"],
+            posting: record,
+          });
+        }
+      },
+    )
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        console.log(
+          `[Realtime] Subscribed to space postings for space ${spaceId}`,
+        );
+      } else if (status === "CHANNEL_ERROR") {
+        console.error(
+          `[Realtime] Error subscribing to space postings for space ${spaceId}`,
+        );
+      }
+    });
+
+  return channel;
+}
+
+// ---------------------------------------------------------------------------
 // Space message types & subscription
 // ---------------------------------------------------------------------------
 
@@ -625,6 +697,51 @@ export function subscribeToSpaceMessages(
         console.error(
           `[Realtime] Error subscribing to space messages for space ${spaceId}`,
         );
+      }
+    });
+
+  return channel;
+}
+
+/**
+ * Subscribe to real-time space messages (INSERT) for multiple spaces
+ * using a single channel with an `in` filter. More efficient than
+ * one channel per space.
+ */
+export function subscribeToSpaceMessagesBatch(
+  spaceIds: string[],
+  onNewMessage: (message: SpaceMessagePayload) => void,
+): RealtimeChannel {
+  const supabase = createClient();
+
+  const channel = supabase
+    .channel(`space-messages:batch`)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "space_messages",
+        filter: `space_id=in.(${spaceIds.join(",")})`,
+      },
+      (payload) => {
+        if (isSpaceMessage(payload.new)) {
+          onNewMessage(payload.new);
+        } else {
+          console.warn(
+            "[Realtime] Unexpected space message payload shape:",
+            payload.new,
+          );
+        }
+      },
+    )
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        console.log(
+          `[Realtime] Subscribed to space messages for ${spaceIds.length} spaces`,
+        );
+      } else if (status === "CHANNEL_ERROR") {
+        console.error(`[Realtime] Error subscribing to batch space messages`);
       }
     });
 
@@ -701,6 +818,75 @@ export function subscribeToActivityCards(
 }
 
 // ---------------------------------------------------------------------------
+// Space card types & subscription
+// ---------------------------------------------------------------------------
+
+export type SpaceCardPayload = {
+  id: string;
+  space_id: string;
+  type: string;
+  status: string;
+  data: Record<string, unknown>;
+  updated_at: string;
+};
+
+function isSpaceCard(value: unknown): value is SpaceCardPayload {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.id === "string" &&
+    typeof v.space_id === "string" &&
+    typeof v.type === "string" &&
+    typeof v.status === "string"
+  );
+}
+
+/**
+ * Subscribe to real-time space card UPDATE events (vote changes, resolution).
+ */
+export function subscribeToSpaceCards(
+  spaceId: string,
+  onUpdate: (card: SpaceCardPayload) => void,
+): RealtimeChannel {
+  const supabase = createClient();
+
+  const channel = supabase
+    .channel(`space-cards:${spaceId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "space_cards",
+        filter: `space_id=eq.${spaceId}`,
+      },
+      (payload) => {
+        if (isSpaceCard(payload.new)) {
+          onUpdate(payload.new);
+        } else {
+          console.warn(
+            "[Realtime] Unexpected space card payload shape:",
+            payload.new,
+          );
+        }
+      },
+    )
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        console.log(
+          `[Realtime] Subscribed to space cards for space ${spaceId}`,
+        );
+      } else if (status === "CHANNEL_ERROR") {
+        console.error(
+          `[Realtime] Error subscribing to space cards for space ${spaceId}`,
+        );
+      }
+    });
+
+  return channel;
+}
+
+// ---------------------------------------------------------------------------
 // Space member changes subscription (for badge/unread updates)
 // ---------------------------------------------------------------------------
 
@@ -717,9 +903,7 @@ function isSpaceMemberChange(
 ): value is SpaceMemberChangePayload {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
-  return (
-    typeof v.space_id === "string" && typeof v.user_id === "string"
-  );
+  return typeof v.space_id === "string" && typeof v.user_id === "string";
 }
 
 /**
