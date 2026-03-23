@@ -560,7 +560,9 @@ function isSpaceCard(value: unknown): value is SpaceCardPayload {
 }
 
 /**
- * Subscribe to real-time space card UPDATE events (vote changes, resolution).
+ * Subscribe to real-time space card changes (INSERT + UPDATE).
+ * INSERT events ensure new cards appear for other users immediately;
+ * UPDATE events cover vote changes, resolution, and cancellation.
  */
 export function subscribeToSpaceCards(
   spaceId: string,
@@ -568,8 +570,29 @@ export function subscribeToSpaceCards(
 ): RealtimeChannel {
   const supabase = createClient();
 
+  const handler = (payload: { new: unknown }) => {
+    if (isSpaceCard(payload.new)) {
+      onUpdate(payload.new);
+    } else {
+      console.warn(
+        "[Realtime] Unexpected space card payload shape:",
+        payload.new,
+      );
+    }
+  };
+
   const channel = supabase
     .channel(`space-cards:${spaceId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "space_cards",
+        filter: `space_id=eq.${spaceId}`,
+      },
+      handler,
+    )
     .on(
       "postgres_changes",
       {
@@ -578,16 +601,7 @@ export function subscribeToSpaceCards(
         table: "space_cards",
         filter: `space_id=eq.${spaceId}`,
       },
-      (payload) => {
-        if (isSpaceCard(payload.new)) {
-          onUpdate(payload.new);
-        } else {
-          console.warn(
-            "[Realtime] Unexpected space card payload shape:",
-            payload.new,
-          );
-        }
-      },
+      handler,
     )
     .subscribe((status) => {
       if (status === "SUBSCRIBED") {
