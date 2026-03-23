@@ -2,8 +2,10 @@
 
 import { useState, useCallback } from "react";
 import { useSWRConfig } from "swr";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { cacheKeys } from "@/lib/swr/keys";
+import { labels } from "@/lib/labels";
 import type {
   SpaceMessageType,
   SpacePostingInsert,
@@ -109,6 +111,7 @@ export function useSendSpaceMessage({
 
           if (error) {
             console.error("[SendSpaceMessage] Error:", error);
+            toast.error(labels.toasts.messageError);
             // Revalidate to remove optimistic message
             mutate(messagesKey);
             setIsSending(false);
@@ -142,6 +145,7 @@ export function useSendSpaceMessage({
 
           if (postingError) {
             console.error("[SendSpaceMessage] Posting error:", postingError);
+            toast.error(labels.toasts.messageError);
             setIsSending(false);
             return false;
           }
@@ -159,6 +163,7 @@ export function useSendSpaceMessage({
 
           if (msgError) {
             console.error("[SendSpaceMessage] Message error:", msgError);
+            toast.error(labels.toasts.messageError);
             setIsSending(false);
             return false;
           }
@@ -173,6 +178,7 @@ export function useSendSpaceMessage({
         return true;
       } catch (err) {
         console.error("[SendSpaceMessage] Unexpected error:", err);
+        toast.error(labels.toasts.messageError);
         setIsSending(false);
         return false;
       }

@@ -2,7 +2,9 @@
 
 import { useEffect, useCallback } from "react";
 import useSWR from "swr";
+import { toast } from "sonner";
 import { cacheKeys } from "@/lib/swr/keys";
+import { labels } from "@/lib/labels";
 import {
   subscribeToSpaceCards,
   unsubscribeChannel,
@@ -103,6 +105,7 @@ export function useSpaceCards(spaceId: string | null, userId?: string | null) {
       });
       if (!res.ok) {
         console.error("[useSpaceCards] Vote error:", await res.text());
+        toast.error(labels.toasts.voteError);
         // Rollback: refetch server state
         mutate();
         return null;
@@ -132,6 +135,7 @@ export function useSpaceCards(spaceId: string | null, userId?: string | null) {
       });
       if (!res.ok) {
         console.error("[useSpaceCards] Resolve error:", await res.text());
+        toast.error(labels.toasts.cardError);
         mutate();
         return null;
       }
@@ -153,6 +157,7 @@ export function useSpaceCards(spaceId: string | null, userId?: string | null) {
       });
       if (!res.ok) {
         console.error("[useSpaceCards] Cancel error:", await res.text());
+        toast.error(labels.toasts.cardError);
       }
       mutate();
     },
@@ -173,6 +178,7 @@ export function useSpaceCards(spaceId: string | null, userId?: string | null) {
       });
       if (!res.ok) {
         console.error("[useSpaceCards] Create error:", await res.text());
+        toast.error(labels.toasts.cardError);
         return null;
       }
       const json = await res.json();
@@ -196,6 +202,7 @@ export function useSpaceCards(spaceId: string | null, userId?: string | null) {
       );
       if (!res.ok) {
         console.error("[useSpaceCards] Opt-out error:", await res.text());
+        toast.error(labels.toasts.cardError);
       }
       mutate();
     },
@@ -211,6 +218,7 @@ export function useSpaceCards(spaceId: string | null, userId?: string | null) {
       );
       if (!res.ok) {
         console.error("[useSpaceCards] Undo opt-out error:", await res.text());
+        toast.error(labels.toasts.cardError);
       }
       mutate();
     },
@@ -230,6 +238,7 @@ export function useSpaceCards(spaceId: string | null, userId?: string | null) {
       });
       if (!res.ok) {
         console.error("[useSpaceCards] Commit error:", await res.text());
+        toast.error(labels.toasts.cardError);
       }
       mutate();
     },

@@ -2,8 +2,10 @@
 
 import { useEffect, useCallback, useRef } from "react";
 import useSWR from "swr";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { cacheKeys } from "@/lib/swr/keys";
+import { labels } from "@/lib/labels";
 import {
   subscribeToActivityCards,
   unsubscribeChannel,
@@ -196,6 +198,7 @@ export function useActivityFeed() {
 
       if (updateError) {
         console.error("[ActivityFeed] Error updating card:", updateError);
+        toast.error(labels.toasts.activityError);
         // Revalidate to restore correct state
         mutate();
         return false;
@@ -207,6 +210,7 @@ export function useActivityFeed() {
           await dispatchSideEffect(card, status);
         } catch (err) {
           console.error("[ActivityFeed] Side-effect error:", err);
+          toast.error(labels.toasts.activityError);
           // Revalidate to restore correct state on failure
           mutate();
         }

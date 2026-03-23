@@ -2,8 +2,10 @@
 
 import { useState, useCallback } from "react";
 import useSWR from "swr";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { cacheKeys } from "@/lib/swr/keys";
+import { labels } from "@/lib/labels";
 import type { SpaceJoinRequest, JoinRequestStatus } from "@/lib/supabase/types";
 
 // ---------------------------------------------------------------------------
@@ -82,6 +84,7 @@ export function useSpaceJoinRequest(postingId: string | null) {
 
       if (insertError) {
         console.error("[SpaceJoinRequest] Error submitting:", insertError);
+        toast.error(labels.toasts.joinRequestError);
         setIsSubmitting(false);
         return false;
       }
@@ -96,6 +99,7 @@ export function useSpaceJoinRequest(postingId: string | null) {
       return true;
     } catch (err) {
       console.error("[SpaceJoinRequest] Unexpected error:", err);
+      toast.error(labels.toasts.joinRequestError);
       setIsSubmitting(false);
       return false;
     }
@@ -115,6 +119,7 @@ export function useSpaceJoinRequest(postingId: string | null) {
 
       if (updateError) {
         console.error("[SpaceJoinRequest] Error withdrawing:", updateError);
+        toast.error(labels.toasts.joinWithdrawError);
         return false;
       }
 
@@ -123,6 +128,7 @@ export function useSpaceJoinRequest(postingId: string | null) {
       return true;
     } catch (err) {
       console.error("[SpaceJoinRequest] Unexpected error:", err);
+      toast.error(labels.toasts.joinWithdrawError);
       return false;
     }
   }, [data, mutate]);

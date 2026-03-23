@@ -68,11 +68,28 @@ Before presenting the summary, check if any issues were recently resolved:
 
 Before presenting the summary, look across all open issues for patterns. This is the most valuable part of triage — individual bugs are cheap to fix, but recurring classes of bugs are expensive to ignore.
 
-For each cluster of related issues (or for notable individual ones), ask:
+For each cluster of related issues (or for notable individual ones), work through these questions:
+
+### Pattern detection
 
 - **Is this an architectural issue?** Does the bug point to a design gap — a missing validation layer, an API that's too easy to misuse, a component doing too many things? Name it if so.
 - **Does this point to deeper issues?** If multiple feedback items or Sentry errors share a root cause (same component, same data flow, same user journey), call that out. Three "small" bugs from the same source are one medium-sized design problem.
-- **Would an AI agent repeat this mistake?** If the bug was likely introduced by an AI agent working in an independent session (e.g., it missed a convention, duplicated logic, or didn't check for an existing utility), flag it. The fix might include updating `.AGENTS.md` or `CLAUDE.md` to prevent the same class of mistake in future sessions.
+
+### Enforcement gap analysis
+
+- **Convention vs enforcement**: Check whether a convention in `.AGENTS.md` already covers this class of bug. If yes, is it enforced by lint, types, or tests — or is it prose-only? Prose-only conventions are the highest-risk for agent-introduced bugs. Call out the gap explicitly.
+- **Split-responsibility patterns**: Look for cases where one layer (hook/utility) signals an error and a different layer (component/caller) is responsible for surfacing it to the user. These are fragile — grep for the pattern (e.g. `return false` without toast, thrown errors without catch) and flag when the boundary contract isn't enforced.
+- **Propose structural fixes**: When the fix is "move responsibility to a single owner" (e.g., hooks own their error toasts instead of relying on each caller), say so explicitly — don't just describe the bug, propose the architectural change that prevents the class of bug.
+
+### Would an AI agent repeat this mistake?
+
+- If the bug was likely introduced by an AI agent in an independent session (missed a convention, duplicated logic, didn't check for an existing utility), flag it. The fix might include updating `.AGENTS.md` or `CLAUDE.md`.
+- Specifically ask: if a new agent wrote similar code tomorrow, what would prevent them from making the same mistake? If the answer is "nothing but prose", that's a finding worth surfacing.
+
+### Would a test catch this?
+
+- For each issue, assess: could a unit test, integration test, or E2E test have caught this before a user hit it? If not, why — is it a gap in test methodology, or is the bug inherently hard to test?
+- If only an E2E failure-path test would catch it, note that — failure-path E2E coverage is typically thin and worth calling out as a systematic gap.
 
 Include this analysis in the summary. It's fine to say "no patterns found" if there genuinely aren't any.
 

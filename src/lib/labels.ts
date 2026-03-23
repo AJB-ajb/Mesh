@@ -2087,6 +2087,16 @@ export const labels = {
     matchAccepted: "Match accepted",
     matchDeclined: "Match declined",
     matchError: "Could not update match",
+    // Join requests
+    joinRequestError: "Could not submit join request",
+    joinWithdrawError: "Could not withdraw request",
+    // Messages
+    messageError: "Could not send message",
+    // Cards
+    voteError: "Could not record vote",
+    cardError: "Could not update card",
+    // Activity
+    activityError: "Could not complete action",
     // General
     genericError: "Something went wrong",
     copied: "Copied to clipboard",
