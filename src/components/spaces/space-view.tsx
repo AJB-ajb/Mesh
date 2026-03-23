@@ -7,9 +7,7 @@ import type { SpaceDetail } from "@/lib/hooks/use-space";
 import type { CardSuggestion } from "@/lib/ai/card-suggest";
 import { useSpaceMessages } from "@/lib/hooks/use-space-messages";
 import { useSpacePostings } from "@/lib/hooks/use-space-postings";
-import { useSpacePresence } from "@/lib/hooks/use-space-presence";
-import { useSpaceCards } from "@/lib/hooks/use-space-cards";
-import { SpaceErrorBoundary } from "@/components/shared/space-error-boundary";
+import { useAcceptedPostingIds } from "@/lib/hooks/use-accepted-posting-ids";
 import { SpaceHeader } from "./space-header";
 import { StateTextBanner } from "./state-text-banner";
 import { ConversationTimeline } from "./conversation-timeline";
@@ -99,6 +97,8 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
       }
     : null;
 
+  const { acceptedPostingIds } = useAcceptedPostingIds(space.id);
+
   // Mark as read when entering the space
   useEffect(() => {
     if (currentMember && currentMember.unread_count > 0) {
@@ -117,11 +117,25 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
           currentMember={currentMember}
         />
 
-        <StateTextBanner stateText={space.state_text} canEdit={canEdit} />
+      <StateTextBanner
+        stateText={space.state_text}
+        canEdit={canEdit}
+        revealHidden={true}
+      />
 
-        {isPostingOnly ? (
-          <>
-            <PostingBrowser
+      {isPostingOnly ? (
+        <>
+          <PostingBrowser
+            spaceId={space.id}
+            postings={postingsList}
+            isLoading={postingsLoading}
+            matchingEnabled={space.settings?.matching_enabled ?? false}
+            userId={userId}
+            acceptedPostingIds={acceptedPostingIds}
+            className="flex-1"
+          />
+          {currentMember && userId && (
+            <ComposeArea
               spaceId={space.id}
               postings={postingsList}
               isLoading={postingsLoading}
@@ -130,30 +144,22 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
               isAdmin={isAdmin}
               className="flex-1"
             />
-            {currentMember && userId && (
-              <ComposeArea
-                spaceId={space.id}
-                senderId={userId}
-                senderName={
-                  space.members.find((m) => m.user_id === userId)?.profiles
-                    ?.full_name ?? null
-                }
-                postingOnly={true}
-                onTyping={sendTyping}
-                onStopTyping={stopTyping}
-              />
-            )}
-          </>
-        ) : (
-          <>
-            <ConversationTimeline
-              messages={messages}
-              userId={userId}
-              hasMore={hasMore}
-              isLoading={messagesLoading}
-              onLoadMore={loadMore}
-              postings={postingsMap}
-              cards={cardsMap}
+          )}
+        </>
+      ) : (
+        <>
+          <ConversationTimeline
+            messages={messages}
+            userId={userId}
+            hasMore={hasMore}
+            isLoading={messagesLoading}
+            onLoadMore={loadMore}
+            postings={postingsMap}
+            acceptedPostingIds={acceptedPostingIds}
+          />
+
+          {currentMember && userId && (
+            <ComposeArea
               spaceId={space.id}
               isAdmin={isAdmin}
               typingUsers={typingUsers}

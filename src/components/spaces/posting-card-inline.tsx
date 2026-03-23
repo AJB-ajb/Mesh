@@ -25,7 +25,6 @@ import { ClientDate } from "@/components/ui/client-date";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { formatTimeAgoShort } from "@/lib/format";
 import { labels } from "@/lib/labels";
-import { cacheKeys } from "@/lib/swr/keys";
 import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { cn } from "@/lib/utils";
 import type { SpacePosting, SpacePostingStatus } from "@/lib/supabase/types";
@@ -38,9 +37,7 @@ interface PostingCardInlineProps {
   creatorName: string;
   createdAt: string;
   isOwn: boolean;
-  spaceId?: string;
-  isAdmin?: boolean;
-  replyCount?: number;
+  revealHidden?: boolean;
   onJoin?: () => void;
 }
 
@@ -60,9 +57,7 @@ export function PostingCardInline({
   creatorName,
   createdAt,
   isOwn,
-  spaceId,
-  isAdmin,
-  replyCount,
+  revealHidden,
 }: PostingCardInlineProps) {
   const router = useRouter();
   const { mutate } = useSWRConfig();
@@ -126,12 +121,13 @@ export function PostingCardInline({
                 <RelativeTime date={createdAt} formatter={formatTimeAgoShort} />
               </Group>
 
-              {/* Posting text */}
-              <MarkdownRenderer
-                content={posting.text}
-                className="text-sm"
-                clamp={3}
-              />
+            {/* Posting text */}
+            <MarkdownRenderer
+              content={posting.text}
+              className="text-sm"
+              clamp={3}
+              revealHidden={revealHidden}
+            />
 
               {/* Meta row: tags, capacity, deadline */}
               <Group wrap gap="sm" className="text-xs text-muted-foreground">

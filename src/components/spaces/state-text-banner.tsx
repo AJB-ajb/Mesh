@@ -11,12 +11,14 @@ import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 interface StateTextBannerProps {
   stateText: string | null;
   canEdit: boolean;
+  revealHidden?: boolean;
   onEdit?: () => void;
 }
 
 export function StateTextBanner({
   stateText,
   canEdit,
+  revealHidden,
   onEdit,
 }: StateTextBannerProps) {
   const [expanded, setExpanded] = useState(false);
@@ -50,7 +52,11 @@ export function StateTextBanner({
 
       {expanded && (
         <div className="px-4 pb-3">
-          <MarkdownRenderer content={stateText} className="text-sm" />
+          <MarkdownRenderer
+            content={stateText}
+            className="text-sm"
+            revealHidden={revealHidden}
+          />
           {canEdit && (
             <Button
               variant="ghost"

@@ -19,7 +19,7 @@ interface PostingBrowserProps {
   isLoading: boolean;
   matchingEnabled: boolean;
   userId: string | null;
-  isAdmin?: boolean;
+  acceptedPostingIds?: Set<string>;
   className?: string;
 }
 
@@ -124,7 +124,7 @@ export function PostingBrowser({
   isLoading,
   matchingEnabled,
   userId,
-  isAdmin,
+  acceptedPostingIds,
   className,
 }: PostingBrowserProps) {
   const [search, setSearch] = useState("");
@@ -250,8 +250,10 @@ export function PostingBrowser({
               key={posting.id}
               posting={posting}
               userId={userId}
-              spaceId={spaceId}
-              isAdmin={isAdmin}
+              revealHidden={
+                userId === posting.created_by ||
+                acceptedPostingIds?.has(posting.id) === true
+              }
             />
           ))
         ) : postings.length === 0 ? (

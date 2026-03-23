@@ -46,11 +46,8 @@ export const cacheKeys = {
     `/api/spaces/${spaceId}/postings` as const,
   spaceJoinRequests: (postingId: string) =>
     `space-join-requests/${postingId}` as const,
-  spaceSearch: (spaceId: string, query: string) =>
-    `/api/spaces/${spaceId}/search?q=${encodeURIComponent(query)}` as const,
-
-  // Space cards
-  spaceCards: (spaceId: string) => `/api/spaces/${spaceId}/cards` as const,
+  acceptedPostingIds: (spaceId: string) =>
+    `accepted-posting-ids/${spaceId}` as const,
 
   // Activity
   activityCards: () => "/api/activity" as const,

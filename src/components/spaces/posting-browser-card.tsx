@@ -21,7 +21,7 @@ import { RelativeTime } from "@/components/ui/relative-time";
 import { formatTimeAgoShort } from "@/lib/format";
 import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import { labels } from "@/lib/labels";
-import { cacheKeys } from "@/lib/swr/keys";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import type {
   SpacePostingWithCreator,
   SpacePostingStatus,
@@ -58,15 +58,13 @@ function statusBadgeVariant(
 interface PostingBrowserCardProps {
   posting: SpacePostingWithCreator;
   userId: string | null;
-  spaceId?: string;
-  isAdmin?: boolean;
+  revealHidden?: boolean;
 }
 
 export function PostingBrowserCard({
   posting,
   userId,
-  spaceId,
-  isAdmin,
+  revealHidden,
 }: PostingBrowserCardProps) {
   const { mutate } = useSWRConfig();
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
@@ -122,6 +120,7 @@ export function PostingBrowserCard({
           content={posting.text}
           className="text-sm"
           clamp={3}
+          revealHidden={revealHidden}
         />
 
         {/* Tags */}
