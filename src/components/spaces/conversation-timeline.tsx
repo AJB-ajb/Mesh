@@ -119,6 +119,15 @@ export function ConversationTimeline({
               />
             );
           }
+          // Card data not yet in cache (realtime race) — show placeholder
+          return (
+            <div
+              key={msg.id}
+              className="flex justify-center py-2 text-xs text-muted-foreground animate-pulse"
+            >
+              Loading card…
+            </div>
+          );
         }
 
         const isOwn = msg.sender_id === userId;

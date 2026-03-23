@@ -1250,3 +1250,71 @@ test.describe("Member notes edge cases", () => {
     expect(data.member_notes).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Cross-user card rendering via realtime
+// ---------------------------------------------------------------------------
+
+test.describe("Cross-user card rendering", () => {
+  let spaceId: string;
+
+  test.beforeEach(async ({ ownerUser, developerUser }) => {
+    spaceId = await seedSpaceWithMembers(
+      ownerUser.id,
+      developerUser.id,
+      "E2E Cross-User Card Test",
+    );
+  });
+
+  test.afterEach(async () => {
+    if (spaceId) await cleanupSpace(spaceId);
+  });
+
+  test("card created by owner renders for developer", async ({
+    ownerPage,
+    developerPage,
+  }) => {
+    // Developer opens the space first (before the card exists)
+    await goToSpace(developerPage, spaceId);
+
+    // Owner creates an RSVP card via the API (exercises the real creation flow)
+    const response = await createCardViaApi(ownerPage, spaceId, "rsvp", {
+      title: "Dinner at 19:00?",
+      options: [
+        { label: "Yes", votes: [] },
+        { label: "No", votes: [] },
+      ],
+      threshold: 2,
+    });
+    expect(response.ok()).toBeTruthy();
+
+    // Developer should see the card rendered in the timeline.
+    // The card title appears inside the inline card component.
+    await expect(developerPage.locator("text=Dinner at 19:00?")).toBeVisible({
+      timeout: 15000,
+    });
+  });
+
+  test("poll card created by owner renders for developer", async ({
+    ownerPage,
+    developerPage,
+  }) => {
+    // Developer opens the space first
+    await goToSpace(developerPage, spaceId);
+
+    // Owner creates a poll card
+    const response = await createCardViaApi(ownerPage, spaceId, "poll", {
+      question: "Where should we meet?",
+      options: [
+        { label: "Coffee shop", votes: [] },
+        { label: "Park", votes: [] },
+      ],
+    });
+    expect(response.ok()).toBeTruthy();
+
+    // Developer should see the poll rendered
+    await expect(
+      developerPage.locator("text=Where should we meet?"),
+    ).toBeVisible({ timeout: 15000 });
+  });
+});
