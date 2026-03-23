@@ -180,9 +180,28 @@ export function ComposeArea({
   // ---------------------------------------------------------------------------
   // Trigger A: Debounce compose text (500ms). setState in setTimeout callback
   // is fine — the lint rule only flags synchronous setState in effect body.
+  // When text is cleared (e.g. after send), update debouncedText immediately
+  // so chips disappear — unless trigger B just set it to the sent text.
   // ---------------------------------------------------------------------------
+  const sentTextRef = useRef<string | null>(null);
   useEffect(() => {
     if (effectiveMode !== "M") return;
+    const trimmed = text.trim();
+
+    // Text cleared — clear quickly unless trigger B is active
+    if (!trimmed) {
+      if (sentTextRef.current) {
+        // Trigger B just set debouncedText to sent text; don't clear it
+        sentTextRef.current = null;
+        return;
+      }
+      // Use minimal timeout so lint doesn't flag synchronous setState in effect
+      const timer = setTimeout(() => {
+        setDebouncedText("");
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+
     const timer = setTimeout(() => {
       setDebouncedText(text);
     }, 500);
@@ -250,8 +269,11 @@ export function ComposeArea({
       if (!postingOnly) setMode("M");
       editorRef.current?.focus();
 
-      // Trigger B: set debounced text to sent message so useMemo picks up intent
+      // Trigger B: set debounced text to sent message so useMemo picks up intent.
+      // Mark sentTextRef so the debounce effect doesn't immediately clear it
+      // when it sees text changed to "".
       if (effectiveMode === "M") {
+        sentTextRef.current = trimmed;
         setDebouncedText(trimmed);
       }
     }

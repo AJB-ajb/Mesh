@@ -85,7 +85,7 @@ export function CardTypeChips({
       <Button
         variant="ghost"
         size="icon"
-        className="size-6 shrink-0"
+        className="size-8 shrink-0"
         onClick={onDismiss}
         aria-label={labels.cards.suggestionChipDismiss}
       >
