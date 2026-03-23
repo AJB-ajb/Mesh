@@ -8,6 +8,7 @@
 
 import { SchemaType, type ObjectSchema } from "@google/generative-ai";
 import { generateStructuredJSON } from "./gemini";
+import type { SpaceCardType } from "@/lib/supabase/types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -328,7 +329,67 @@ function parseMemberNotes(
 }
 
 // ---------------------------------------------------------------------------
-// Main function
+// Generation system prompt (for user-chosen card type)
+// ---------------------------------------------------------------------------
+
+function buildGenerationSystemPrompt(
+  cardType: SpaceCardType,
+  hasCalendarData: boolean,
+): string {
+  const calendarInstructions = hasCalendarData
+    ? `
+TIME SLOT GENERATION:
+When generating time_proposal or rsvp data, generate 2-5 slots from the CALENDAR OVERLAP provided.
+- Infer duration from activity type (coffee → 30-45 min, dinner → 2h, call → 15-30 min, study → 2-3h)
+- Apply scheduling preferences (from ||hidden|| profile text) as soft constraints
+- Context-aware filtering (no early morning tennis, no late-night hiking)
+- Distribute slots across different days/times when overlap is wide
+- Round to 15-minute boundaries
+- Use the exact ISO format from the overlap windows for start/end
+
+MEMBER NOTES:
+For each member with non-obvious constraints, generate a one-line private note.
+Read their scheduling preferences and calendar context. Examples:
+- "Your meeting ends at 18:30, ~30 min buffer → ready by 19:00"
+- "You're free all afternoon ✓"
+- "~40 min commute from Garching → arrive by 19:40"
+Only generate notes when there's something useful to say. Skip if no constraints.
+
+SPECIFIC TIME DETECTION:
+If the message specifies an exact time (e.g. "at 2pm", "tomorrow at 3"):
+- If all members' calendars show they're free at that time: set is_specific_time=true, return single slot
+- If some members have conflicts: set is_specific_time=false, return the specific time PLUS 2-3 alternatives`
+    : `
+TIME SLOTS:
+No calendar data available. You MUST still generate 2-4 slots for time_proposal or rsvp suggestions:
+- If the message mentions a specific day/time, use that as the first slot and add 2-3 alternatives nearby
+- If the message is vague ("tomorrow", "this week"), generate reasonable slots (afternoon/evening, next few days)
+- Infer duration from activity type (coffee → 30-45 min, dinner → 2h, call → 15-30 min, study → 2-3h)
+- Use the CURRENT TIME to generate future slots only
+- Round to 15-minute boundaries
+Set is_specific_time=true if an exact time is specified.`;
+
+  return `You are generating prefilled data for a ${cardType} card in a group chat.
+
+The user has already chosen this card type. Your job is to generate the best possible prefill data from the conversation context.
+
+The user's compose text should be used as the card description. Extract options, times, roles etc. from the text.
+${calendarInstructions}
+
+RSVP THRESHOLD:
+For RSVPs, set suggested_threshold to ceil(member_count * 0.6).
+
+GENERAL RULES:
+- Put ALL analysis and reasoning in the "thinking" field — it is not shown to users
+- ALL other fields (title, reason, options, description, slot labels) are shown directly to users — keep them clean and concise
+- Title must be ONLY the event name (e.g. "Coffee tomorrow?" not "Coffee tomorrow (13:00-15:00 requested...)")
+- Reason must be 2-4 words (e.g. "Schedule a meeting", not a sentence with analysis)
+- For time_proposal and rsvp, you MUST populate the slots array with at least 2 slots
+- Pre-fill as much as possible from the conversation context`;
+}
+
+// ---------------------------------------------------------------------------
+// Main functions
 // ---------------------------------------------------------------------------
 
 export async function detectAndSuggest(
@@ -404,6 +465,95 @@ export async function detectAndSuggest(
       question: cleanTitle, // polls use question, time/rsvp use title
       options: cleanOptions,
       description: cleanDescription,
+      slots: cleanSlots,
+      duration_minutes: raw.duration_minutes,
+      is_specific_time: raw.is_specific_time,
+      suggested_threshold: raw.suggested_threshold,
+      member_notes: parseMemberNotes(raw.member_notes_json),
+    },
+  };
+}
+
+/**
+ * Generate prefilled card data for a user-chosen card type.
+ * The user already picked the type via the cheap detector — the LLM just generates content.
+ */
+export async function generateCardPrefill(
+  cardType: SpaceCardType,
+  messages: { sender_name: string; content: string }[],
+  members: MemberContext[],
+  overlap: OverlapWindow[] | null,
+  composeText?: string,
+): Promise<CardSuggestion> {
+  const hasCalendarData = overlap !== null && overlap.length > 0;
+
+  const userPromptParts: string[] = [];
+
+  if (composeText) {
+    userPromptParts.push(
+      `The user wrote: ${composeText}. Use this as the card description and extract structured data from it.\n`,
+    );
+  }
+
+  userPromptParts.push(
+    buildUserPrompt(messages, members, overlap, new Date().toISOString()),
+  );
+
+  const raw = await generateStructuredJSON<{
+    suggested_type: string;
+    confidence: number;
+    reason: string;
+    thinking?: string;
+    title?: string;
+    options?: string[];
+    description?: string;
+    slots?: Array<{ label: string; start: string; end: string }>;
+    duration_minutes?: number;
+    is_specific_time?: boolean;
+    suggested_threshold?: number;
+    member_notes_json?: string;
+  }>({
+    systemPrompt: buildGenerationSystemPrompt(cardType, hasCalendarData),
+    userPrompt: userPromptParts.join("\n"),
+    schema: suggestSchema(),
+    tier: "fast",
+  });
+
+  // Sanitize title: strip any parenthetical reasoning the LLM may have leaked
+  const cleanTitle = raw.title ? sanitizeTitle(raw.title) : raw.title;
+
+  // Guard: if time_proposal/rsvp has no slots, downgrade to null
+  const needsSlots = cardType === "time_proposal" || cardType === "rsvp";
+  const hasSlots = raw.slots && raw.slots.length > 0;
+  if (needsSlots && !hasSlots) {
+    return {
+      suggested_type: null,
+      confidence: 0,
+      reason: "no_slots_generated",
+      prefill: {},
+    };
+  }
+
+  // Sanitize all user-facing text fields
+  const cleanReason = sanitizeLLMText(raw.reason, 60) || raw.reason;
+  const cleanDescription = raw.description
+    ? sanitizeLLMText(raw.description)
+    : raw.description;
+  const cleanOptions = raw.options?.map((o) => sanitizeLLMText(o, 100));
+  const cleanSlots = raw.slots?.map((s) => ({
+    ...s,
+    label: sanitizeLLMText(s.label, 80) || s.label,
+  }));
+
+  return {
+    suggested_type: cardType,
+    confidence: 1.0,
+    reason: cleanReason,
+    prefill: {
+      title: cleanTitle,
+      question: cleanTitle,
+      options: cleanOptions,
+      description: cleanDescription ?? composeText,
       slots: cleanSlots,
       duration_minutes: raw.duration_minutes,
       is_specific_time: raw.is_specific_time,

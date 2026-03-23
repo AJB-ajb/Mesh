@@ -89,6 +89,16 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
     userId,
   );
 
+  // Latest message for trigger C (detect intent on incoming messages)
+  const latestMsg = messages.length > 0 ? messages[messages.length - 1] : null;
+  const latestMessage = latestMsg
+    ? {
+        sender_id: latestMsg.sender_id,
+        content: latestMsg.content,
+        type: latestMsg.type,
+      }
+    : null;
+
   // Mark as read when entering the space
   useEffect(() => {
     if (currentMember && currentMember.unread_count > 0) {
@@ -166,6 +176,7 @@ export function SpaceView({ space, currentMember }: SpaceViewProps) {
                 onStopTyping={stopTyping}
                 followUpSuggestion={followUpSuggestion}
                 onClearFollowUp={() => setFollowUpSuggestion(null)}
+                latestMessage={latestMessage}
               />
             )}
           </>
