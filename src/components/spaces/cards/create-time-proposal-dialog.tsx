@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Plus, X, Clock, Loader2 } from "lucide-react";
 
 import { labels } from "@/lib/labels";
@@ -55,6 +55,27 @@ export function CreateTimeProposalDialog({
     return ["", ""];
   };
   const [options, setOptions] = useState<string[]>(deriveOptions);
+
+  // Sync suggested props when they arrive after dialog is already open
+  const [prevSuggestedTitle, setPrevSuggestedTitle] = useState(suggestedTitle);
+  if (suggestedTitle !== prevSuggestedTitle) {
+    setPrevSuggestedTitle(suggestedTitle);
+    if (suggestedTitle && !title) setTitle(suggestedTitle);
+  }
+  const [prevSuggestedSlots, setPrevSuggestedSlots] = useState(suggestedSlots);
+  if (suggestedSlots !== prevSuggestedSlots) {
+    setPrevSuggestedSlots(suggestedSlots);
+    if (suggestedSlots && suggestedSlots.length > 0) {
+      setOptions(
+        suggestedSlots.length >= MIN_OPTIONS
+          ? [...suggestedSlots]
+          : [
+              ...suggestedSlots,
+              ...Array(MIN_OPTIONS - suggestedSlots.length).fill(""),
+            ],
+      );
+    }
+  }
 
   const handleAddOption = useCallback(() => {
     if (options.length < MAX_OPTIONS) {

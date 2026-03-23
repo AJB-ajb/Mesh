@@ -389,61 +389,50 @@ export function ComposeArea({
     }
   }, []);
 
-  const handleSelectCardType = useCallback(
-    async (cardType: SpaceCardType) => {
+  const fetchPrefillInBackground = useCallback(
+    (cardType: SpaceCardType, composeText?: string) => {
       // Cancel any in-flight request
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
 
       setLoadingCardType(cardType);
-      const composeText = text.trim() || undefined;
 
-      // Fetch prefill data, then open dialog with results
-      const prefillData = await fetchPrefill(
-        spaceId,
-        cardType,
-        composeText,
-        controller.signal,
+      // Fetch in background — dialog is already open
+      fetchPrefill(spaceId, cardType, composeText, controller.signal).then(
+        (prefillData) => {
+          if (controller.signal.aborted) return;
+          setPrefill(prefillData ?? {});
+          setLoadingCardType(null);
+        },
       );
+    },
+    [spaceId],
+  );
 
-      if (controller.signal.aborted) return;
-
-      setPrefill(prefillData ?? {});
-      setLoadingCardType(null);
+  const handleSelectCardType = useCallback(
+    (cardType: SpaceCardType) => {
+      const composeText = text.trim() || undefined;
+      // Open dialog immediately, fetch prefill in background
+      setPrefill(null);
       setDebouncedText(""); // Clear chips after selection
       openDialogForType(cardType);
+      fetchPrefillInBackground(cardType, composeText);
     },
-    [spaceId, text, openDialogForType],
+    [text, openDialogForType, fetchPrefillInBackground],
   );
 
   // ---------------------------------------------------------------------------
-  // Handle manual "+" menu: auto-fill from conversation context
+  // Handle manual "+" menu: open dialog immediately, auto-fill in background
   // ---------------------------------------------------------------------------
   const handleManualCreate = useCallback(
-    async (cardType: SpaceCardType) => {
-      // Cancel any in-flight request
-      abortRef.current?.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
-
-      setLoadingCardType(cardType);
-
-      // Fetch prefill from conversation context before opening dialog
-      const prefillData = await fetchPrefill(
-        spaceId,
-        cardType,
-        undefined,
-        controller.signal,
-      );
-
-      if (controller.signal.aborted) return;
-
-      setPrefill(prefillData ?? {});
-      setLoadingCardType(null);
+    (cardType: SpaceCardType) => {
+      // Open dialog immediately so user can start filling manually
+      setPrefill(null);
       openDialogForType(cardType);
+      fetchPrefillInBackground(cardType);
     },
-    [spaceId, openDialogForType],
+    [openDialogForType, fetchPrefillInBackground],
   );
 
   const editorContext = effectiveMode === "M" ? "message" : "posting";

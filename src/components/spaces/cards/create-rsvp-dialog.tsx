@@ -33,6 +33,18 @@ export function CreateRsvpDialog({
   const [title, setTitle] = useState(suggestedTitle ?? "");
   const [threshold, setThreshold] = useState(suggestedThreshold ?? 2);
 
+  // Sync suggested props when they arrive after dialog is already open
+  const [prevTitle, setPrevTitle] = useState(suggestedTitle);
+  if (suggestedTitle !== prevTitle) {
+    setPrevTitle(suggestedTitle);
+    if (suggestedTitle && !title) setTitle(suggestedTitle);
+  }
+  const [prevThreshold, setPrevThreshold] = useState(suggestedThreshold);
+  if (suggestedThreshold !== prevThreshold) {
+    setPrevThreshold(suggestedThreshold);
+    if (suggestedThreshold) setThreshold(suggestedThreshold);
+  }
+
   const canSubmit = title.trim().length > 0;
 
   const handleSubmit = useCallback(() => {

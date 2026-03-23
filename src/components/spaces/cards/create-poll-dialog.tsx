@@ -40,6 +40,20 @@ export function CreatePollDialog({
       : ["", ""],
   );
 
+  // Sync suggested props when they arrive after dialog is already open
+  const [prevQuestion, setPrevQuestion] = useState(suggestedQuestion);
+  if (suggestedQuestion !== prevQuestion) {
+    setPrevQuestion(suggestedQuestion);
+    if (suggestedQuestion && !question) setQuestion(suggestedQuestion);
+  }
+  const [prevOptions, setPrevOptions] = useState(suggestedOptions);
+  if (suggestedOptions !== prevOptions) {
+    setPrevOptions(suggestedOptions);
+    if (suggestedOptions && suggestedOptions.length >= MIN_OPTIONS) {
+      setOptions(suggestedOptions);
+    }
+  }
+
   const handleAddOption = useCallback(() => {
     if (options.length < MAX_OPTIONS) {
       setOptions((prev) => [...prev, ""]);

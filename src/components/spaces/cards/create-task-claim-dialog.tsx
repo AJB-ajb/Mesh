@@ -30,6 +30,14 @@ export function CreateTaskClaimDialog({
 }: CreateTaskClaimDialogProps) {
   const [description, setDescription] = useState(suggestedDescription ?? "");
 
+  // Sync suggested props when they arrive after dialog is already open
+  const [prevDesc, setPrevDesc] = useState(suggestedDescription);
+  if (suggestedDescription !== prevDesc) {
+    setPrevDesc(suggestedDescription);
+    if (suggestedDescription && !description)
+      setDescription(suggestedDescription);
+  }
+
   const canSubmit = description.trim().length > 0;
 
   const handleSubmit = useCallback(() => {
