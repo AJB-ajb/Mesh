@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  Check,
-  X,
-  Clock,
-  Users,
-  Lock,
-  MoreHorizontal,
-  Calendar,
-} from "lucide-react";
+import { Check, X, Clock, Users, Lock, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
@@ -21,6 +13,8 @@ import {
 import type { SpaceCard, TimeProposalData } from "@/lib/supabase/types";
 import { CardDeadlineBadge } from "./card-deadline-badge";
 import { CalendarContextStrip } from "./calendar-context-strip";
+import { AddToCalendar } from "./add-to-calendar";
+import type { CalendarEventParams } from "@/lib/calendar/event-links";
 import type { SpaceMemberWithProfile } from "@/lib/hooks/use-space";
 
 interface TimeProposalCardProps {
@@ -303,6 +297,36 @@ export function TimeProposalCard({
   );
 }
 
+/** Parse the resolved slot into CalendarEventParams for the AddToCalendar component. */
+function parseResolvedEvent(
+  data: TimeProposalData,
+): CalendarEventParams | null {
+  const resolvedSlot = data.resolved_slot;
+  if (!resolvedSlot) return null;
+
+  let start: Date | null = null;
+  let end: Date | null = null;
+
+  // Try structured slot_times first
+  if (data.slot_times) {
+    const slotIndex = data.options.findIndex((o) => o.label === resolvedSlot);
+    if (slotIndex >= 0 && data.slot_times[slotIndex]) {
+      start = new Date(data.slot_times[slotIndex].start);
+      end = new Date(data.slot_times[slotIndex].end);
+    }
+  }
+
+  // Fall back to parsing the label
+  if (!start) {
+    const parsed = new Date(resolvedSlot);
+    if (isNaN(parsed.getTime())) return null;
+    start = parsed;
+    end = new Date(start.getTime() + (data.duration_minutes ?? 60) * 60 * 1000);
+  }
+
+  return { title: data.title ?? "Meeting", start, end: end! };
+}
+
 /** Post-resolution commitment strip — shown below the winning slot on resolved cards. */
 function CommitmentStrip({
   card,
@@ -344,15 +368,20 @@ function CommitmentStrip({
     ([uid]) => uid !== userId,
   );
 
+  const calendarEvent = parseResolvedEvent(data);
+
   return (
     <div className="mb-3 space-y-2">
-      {/* User committed as attending */}
+      {/* User committed as attending — show Add to Calendar */}
       {effectiveCommitment === "attending" && (
         <div className="flex items-center justify-between text-xs p-2 rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-          <span className="flex items-center gap-1.5 text-green-700 dark:text-green-400">
-            <Calendar className="size-3" />
-            {labels.cards.addedToCalendar}
-          </span>
+          {calendarEvent ? (
+            <AddToCalendar event={calendarEvent} />
+          ) : (
+            <span className="text-green-700 dark:text-green-400">
+              {labels.cards.attending}
+            </span>
+          )}
           {!userCommitment && votedForWinner && onCommit && (
             <button
               type="button"
@@ -365,11 +394,14 @@ function CommitmentStrip({
         </div>
       )}
 
-      {/* User committed as maybe */}
+      {/* User committed as maybe — show Add to Calendar */}
       {effectiveCommitment === "maybe" && (
-        <div className="flex items-center gap-1.5 text-xs p-2 rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400">
-          <Calendar className="size-3" />
-          {labels.cards.maybeTentative}
+        <div className="flex items-center justify-between text-xs p-2 rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400">
+          {calendarEvent ? (
+            <AddToCalendar event={calendarEvent} />
+          ) : (
+            <span>{labels.cards.maybeTentative}</span>
+          )}
         </div>
       )}
 
@@ -389,7 +421,6 @@ function CommitmentStrip({
             className="h-7 text-xs flex-1"
             onClick={() => onCommit(card.id, "attending")}
           >
-            <Calendar className="size-3 mr-1" />
             {labels.cards.addToCalendar}
           </Button>
           <Button

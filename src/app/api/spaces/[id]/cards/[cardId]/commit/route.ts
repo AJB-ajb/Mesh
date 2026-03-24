@@ -1,8 +1,6 @@
 import { withAuth } from "@/lib/api/with-auth";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import { verifySpaceMembership } from "@/lib/api/space-guards";
-import type { SpaceCard } from "@/lib/supabase/types";
-import { createEventForUser } from "@/lib/cards/calendar-integration";
 
 /**
  * POST /api/spaces/[id]/cards/[cardId]/commit
@@ -38,27 +36,6 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
 
   if (error) {
     throw new AppError("INTERNAL", `Failed to commit: ${error.message}`, 500);
-  }
-
-  // Fire-and-forget: create calendar event for attending/maybe
-  if (body.commitment === "attending" || body.commitment === "maybe") {
-    // Re-fetch the card for calendar integration (needs full data)
-    const { data: card } = await supabase
-      .from("space_cards")
-      .select("*")
-      .eq("id", cardId)
-      .single();
-
-    if (card) {
-      createEventForUser(
-        card as SpaceCard,
-        spaceId,
-        user.id,
-        body.commitment === "maybe",
-      ).catch((err) =>
-        console.error("[commit] Calendar event creation failed:", err),
-      );
-    }
   }
 
   return apiSuccess({ commitment: body.commitment, data });

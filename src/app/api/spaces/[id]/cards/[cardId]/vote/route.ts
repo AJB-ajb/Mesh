@@ -2,7 +2,6 @@ import { withAuth } from "@/lib/api/with-auth";
 import { apiSuccess, AppError, parseBody } from "@/lib/errors";
 import { verifySpaceMembership } from "@/lib/api/space-guards";
 import { checkAutoResolve } from "@/lib/cards/auto-resolve";
-import { createEventsForResolvedCard } from "@/lib/cards/calendar-integration";
 import { detectAndSuggest } from "@/lib/ai/card-suggest";
 import type { SpaceCard, RsvpData } from "@/lib/supabase/types";
 
@@ -57,18 +56,6 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
         .from("space_cards")
         .update({ status: "resolved", data: newData })
         .eq("id", cardId);
-
-      // Fire-and-forget calendar event creation for time proposals
-      if (card.type === "time_proposal" && resolvedData?.resolved_slot) {
-        const resolvedCard = {
-          ...card,
-          data: newData,
-          status: "resolved" as const,
-        };
-        createEventsForResolvedCard(resolvedCard, spaceId).catch((err) =>
-          console.error("[vote/auto-resolve] Calendar creation failed:", err),
-        );
-      }
     }
   }
 

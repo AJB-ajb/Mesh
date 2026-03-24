@@ -1284,6 +1284,7 @@ export const labels = {
     addToCalendar: "Add to calendar",
     maybe: "Maybe",
     cantMakeIt: "Can\u2019t make it",
+    attending: "Attending",
     addedToCalendar: "Added to your calendar.",
     undoCalendarAdd: "Undo",
     maybeTentative: "Maybe — added as tentative",
