@@ -321,10 +321,11 @@ function parseResolvedEvent(
     const parsed = new Date(resolvedSlot);
     if (isNaN(parsed.getTime())) return null;
     start = parsed;
-    end = new Date(start.getTime() + (data.duration_minutes ?? 60) * 60 * 1000);
+    end = new Date(start.getTime() + (data.duration_minutes || 60) * 60 * 1000);
   }
 
-  return { title: data.title ?? "Meeting", start, end: end! };
+  if (!start || !end) return null;
+  return { title: data.title ?? "Meeting", start, end };
 }
 
 /** Post-resolution commitment strip — shown below the winning slot on resolved cards. */

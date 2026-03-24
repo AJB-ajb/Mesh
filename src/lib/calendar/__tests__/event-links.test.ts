@@ -5,6 +5,16 @@ import {
   generateIcsBlob,
 } from "../event-links";
 
+/** Read blob content as text (works in jsdom where Blob.text() may not exist). */
+async function blobToText(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsText(blob);
+  });
+}
+
 const event = {
   title: "Friday Dinner",
   start: new Date("2026-03-27T19:00:00Z"),
@@ -36,26 +46,20 @@ describe("buildGoogleCalendarUrl", () => {
 });
 
 describe("buildOutlookCalendarUrl", () => {
-  it("returns a valid Outlook URL", () => {
+  it("returns a valid Outlook URL with all params", () => {
     const url = buildOutlookCalendarUrl(event);
     expect(url).toContain("outlook.live.com/calendar");
-    expect(url).toContain("subject=Friday+Dinner");
     expect(url).toContain("rru=addevent");
+    expect(url).toContain("subject=Friday+Dinner");
+    expect(url).toContain("startdt=2026-03-27T19%3A00%3A00%2B00%3A00");
+    expect(url).toContain("enddt=2026-03-27T21%3A00%3A00%2B00%3A00");
+    expect(url).toContain("location=Cafe");
+    expect(url).toContain("body=Casual+dinner");
   });
 });
 
-/** Read blob content as text (works in jsdom where Blob.text() may not exist). */
-async function blobToText(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsText(blob);
-  });
-}
-
 describe("generateIcsBlob", () => {
-  it("produces a valid ICS blob", async () => {
+  it("produces a valid ICS blob with required fields", async () => {
     const blob = generateIcsBlob(event);
     expect(blob.type).toBe("text/calendar;charset=utf-8");
 
@@ -66,8 +70,15 @@ describe("generateIcsBlob", () => {
     expect(text).toContain("DTSTART:20260327T190000Z");
     expect(text).toContain("DTEND:20260327T210000Z");
     expect(text).toContain("DESCRIPTION:Casual dinner");
+    expect(text).toContain("LOCATION:Cafe");
     expect(text).toContain("END:VEVENT");
     expect(text).toContain("END:VCALENDAR");
+  });
+
+  it("ends with trailing CRLF (RFC 5545 §3.1)", async () => {
+    const blob = generateIcsBlob(event);
+    const text = await blobToText(blob);
+    expect(text).toMatch(/\r\n$/);
   });
 
   it("omits optional fields when not provided", async () => {
@@ -80,5 +91,32 @@ describe("generateIcsBlob", () => {
     expect(text).toContain("SUMMARY:Quick call");
     expect(text).not.toContain("LOCATION:");
     expect(text).not.toContain("DESCRIPTION:");
+  });
+
+  it("escapes special ICS characters (semicolons, commas, backslashes)", async () => {
+    const blob = generateIcsBlob({
+      title: "Meet; discuss, plan\\prep",
+      start: event.start,
+      end: event.end,
+      location: "Room A; Floor 2",
+    });
+    const text = await blobToText(blob);
+    expect(text).toContain("SUMMARY:Meet\\; discuss\\, plan\\\\prep");
+    expect(text).toContain("LOCATION:Room A\\; Floor 2");
+  });
+
+  it("folds long lines at 75 octets (RFC 5545 §3.1)", async () => {
+    const longTitle = "A".repeat(100);
+    const blob = generateIcsBlob({
+      title: longTitle,
+      start: event.start,
+      end: event.end,
+    });
+    const text = await blobToText(blob);
+    // The SUMMARY line should be folded — no single line should exceed 75 chars
+    const lines = text.split("\r\n");
+    for (const line of lines) {
+      expect(line.length).toBeLessThanOrEqual(75);
+    }
   });
 });

@@ -11,8 +11,8 @@ export interface CalendarEventParams {
   location?: string;
 }
 
-/** Format a Date as YYYYMMDDTHHmmssZ for Google Calendar URLs. */
-function toGoogleDateFormat(date: Date): string {
+/** Format a Date as YYYYMMDDTHHmmssZ (compact UTC). */
+function toCompactUtc(date: Date): string {
   return date
     .toISOString()
     .replace(/[-:]/g, "")
@@ -24,21 +24,29 @@ function toOutlookDateFormat(date: Date): string {
   return date.toISOString().replace(/\.\d{3}Z$/, "+00:00");
 }
 
-/** Format a Date as ICS DTSTART/DTEND value (UTC). */
-function toIcsDateFormat(date: Date): string {
-  return date
-    .toISOString()
-    .replace(/[-:]/g, "")
-    .replace(/\.\d{3}/, "");
-}
-
-/** Escape text for ICS format (fold long lines, escape special chars). */
+/** Escape text for ICS format (RFC 5545 §3.3.11). */
 function escapeIcs(text: string): string {
   return text
     .replace(/\\/g, "\\\\")
     .replace(/;/g, "\\;")
     .replace(/,/g, "\\,")
     .replace(/\n/g, "\\n");
+}
+
+/**
+ * Fold an ICS content line to comply with RFC 5545 §3.1 (max 75 octets).
+ * Long lines are split by inserting CRLF + space.
+ */
+function foldIcsLine(line: string): string {
+  if (line.length <= 75) return line;
+  const parts: string[] = [line.slice(0, 75)];
+  let i = 75;
+  while (i < line.length) {
+    // Continuation lines start with a space, so effective max is 74 chars of content
+    parts.push(" " + line.slice(i, i + 74));
+    i += 74;
+  }
+  return parts.join("\r\n");
 }
 
 /**
@@ -49,7 +57,7 @@ export function buildGoogleCalendarUrl(event: CalendarEventParams): string {
   const params = new URLSearchParams({
     action: "TEMPLATE",
     text: event.title,
-    dates: `${toGoogleDateFormat(event.start)}/${toGoogleDateFormat(event.end)}`,
+    dates: `${toCompactUtc(event.start)}/${toCompactUtc(event.end)}`,
   });
   if (event.location) params.set("location", event.location);
   if (event.description) params.set("details", event.description);
@@ -75,12 +83,12 @@ export function buildOutlookCalendarUrl(event: CalendarEventParams): string {
 }
 
 /**
- * Generate an ICS file as a Blob.
+ * Generate an ICS file as a Blob (RFC 5545 compliant).
  * Works with all calendar apps: Apple Calendar, Google, Outlook desktop, Thunderbird, etc.
  */
 export function generateIcsBlob(event: CalendarEventParams): Blob {
   const uid = `${Date.now()}-${Math.random().toString(36).slice(2)}@mesh`;
-  const now = toIcsDateFormat(new Date());
+  const now = toCompactUtc(new Date());
 
   const lines = [
     "BEGIN:VCALENDAR",
@@ -91,21 +99,22 @@ export function generateIcsBlob(event: CalendarEventParams): Blob {
     "BEGIN:VEVENT",
     `UID:${uid}`,
     `DTSTAMP:${now}`,
-    `DTSTART:${toIcsDateFormat(event.start)}`,
-    `DTEND:${toIcsDateFormat(event.end)}`,
-    `SUMMARY:${escapeIcs(event.title)}`,
+    `DTSTART:${toCompactUtc(event.start)}`,
+    `DTEND:${toCompactUtc(event.end)}`,
+    foldIcsLine(`SUMMARY:${escapeIcs(event.title)}`),
   ];
 
   if (event.description) {
-    lines.push(`DESCRIPTION:${escapeIcs(event.description)}`);
+    lines.push(foldIcsLine(`DESCRIPTION:${escapeIcs(event.description)}`));
   }
   if (event.location) {
-    lines.push(`LOCATION:${escapeIcs(event.location)}`);
+    lines.push(foldIcsLine(`LOCATION:${escapeIcs(event.location)}`));
   }
 
   lines.push("END:VEVENT", "END:VCALENDAR");
 
-  return new Blob([lines.join("\r\n")], {
+  // Trailing CRLF required by RFC 5545 §3.1
+  return new Blob([lines.join("\r\n") + "\r\n"], {
     type: "text/calendar;charset=utf-8",
   });
 }
@@ -116,10 +125,11 @@ export function downloadIcs(event: CalendarEventParams): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${event.title
+  const sanitized = event.title
     .replace(/[^a-zA-Z0-9 ]/g, "")
     .trim()
-    .replace(/\s+/g, "-")}.ics`;
+    .replace(/\s+/g, "-");
+  a.download = `${sanitized || "event"}.ics`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

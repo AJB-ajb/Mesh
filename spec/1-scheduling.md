@@ -308,7 +308,24 @@ For group postings, invites go out simultaneously (parallel) but responses arriv
   📅 Friday 19:30
 ```
 
-When all confirm, posting goes active and calendar events are created for everyone simultaneously.
+When all confirm, posting goes active and participants can add the event to their calendar.
+
+### Calendar event creation — link-based approach
+
+Calendar events are **not** created server-side. Instead, resolved time proposals show an "Add to calendar" button with three options:
+
+1. **Google Calendar** — opens `calendar.google.com/calendar/render?action=TEMPLATE&...` with pre-filled event details. No API scope needed.
+2. **Outlook** — opens `outlook.live.com/calendar/0/action/compose?...` with pre-filled event details.
+3. **Download .ics** — generates a standards-compliant ICS file (RFC 5545) client-side. On mobile, this opens the native calendar app directly (iOS/Android). On desktop, it downloads a file the user opens with their preferred calendar app.
+
+**Why links instead of API?**
+
+- **No write scope needed.** The OAuth consent only requests `calendar.freebusy` (non-sensitive, no Google verification required). The `calendar.events` scope would be sensitive, requiring Google's verification process and broader permissions than necessary.
+- **Works with any calendar.** Google Calendar links, Outlook links, and ICS files collectively cover all major calendar providers. Server-side API creation only worked for Google Calendar users.
+- **User stays in control.** Users explicitly add events to their calendar with one click, which matches the expectation of approving what enters their calendar.
+- **Simpler implementation.** No token management, no refresh token handling, no server-side API calls for event creation. The entire flow is client-side.
+
+**Future: Outlook freebusy integration.** The same link-based approach for event creation will apply — only the availability reading (freebusy) would use server-side API access. This keeps write permissions client-side across all calendar providers.
 
 ---
 

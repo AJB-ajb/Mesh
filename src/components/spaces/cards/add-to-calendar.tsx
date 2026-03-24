@@ -1,6 +1,8 @@
 "use client";
 
 import { Calendar, Download } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { labels } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -36,10 +38,10 @@ export function AddToCalendar({ event, className }: AddToCalendarProps) {
         <Button
           variant="outline"
           size="sm"
-          className={`h-7 text-xs ${className ?? ""}`}
+          className={cn("h-7 text-xs", className)}
         >
           <Calendar className="size-3 mr-1" />
-          Add to calendar
+          {labels.cards.addToCalendar}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
