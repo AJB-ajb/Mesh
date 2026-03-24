@@ -14,6 +14,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import type { RsvpData } from "@/lib/supabase/types";
+import { useSyncedSuggestion } from "@/lib/hooks/use-synced-suggestion";
 
 interface CreateRsvpDialogProps {
   open: boolean;
@@ -32,21 +33,17 @@ export function CreateRsvpDialog({
   suggestedThreshold,
   isLoadingPrefill,
 }: CreateRsvpDialogProps) {
-  const [title, setTitle] = useState(suggestedTitle ?? "");
-  const [threshold, setThreshold] = useState(suggestedThreshold ?? 2);
   const [userTouched, setUserTouched] = useState(false);
-
-  // Sync suggested props when they arrive after dialog is already open
-  const [prevTitle, setPrevTitle] = useState(suggestedTitle);
-  if (suggestedTitle !== prevTitle) {
-    setPrevTitle(suggestedTitle);
-    if (suggestedTitle && !userTouched) setTitle(suggestedTitle);
-  }
-  const [prevThreshold, setPrevThreshold] = useState(suggestedThreshold);
-  if (suggestedThreshold !== prevThreshold) {
-    setPrevThreshold(suggestedThreshold);
-    if (suggestedThreshold && !userTouched) setThreshold(suggestedThreshold);
-  }
+  const [title, setTitle] = useSyncedSuggestion(
+    suggestedTitle,
+    userTouched,
+    "",
+  );
+  const [threshold, setThreshold] = useSyncedSuggestion(
+    suggestedThreshold,
+    userTouched,
+    2,
+  );
 
   const canSubmit = title.trim().length > 0;
 
@@ -65,7 +62,15 @@ export function CreateRsvpDialog({
     setTitle("");
     setThreshold(2);
     onOpenChange(false);
-  }, [canSubmit, title, threshold, onSubmit, onOpenChange]);
+  }, [
+    canSubmit,
+    title,
+    threshold,
+    onSubmit,
+    onOpenChange,
+    setTitle,
+    setThreshold,
+  ]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

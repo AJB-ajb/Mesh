@@ -14,6 +14,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import type { PollData } from "@/lib/supabase/types";
+import { useSyncedSuggestion } from "@/lib/hooks/use-synced-suggestion";
 
 interface CreatePollDialogProps {
   open: boolean;
@@ -35,20 +36,19 @@ export function CreatePollDialog({
   suggestedOptions,
   isLoadingPrefill,
 }: CreatePollDialogProps) {
-  const [question, setQuestion] = useState(suggestedQuestion ?? "");
+  const [userTouched, setUserTouched] = useState(false);
+  const [question, setQuestion] = useSyncedSuggestion(
+    suggestedQuestion,
+    userTouched,
+    "",
+  );
   const [options, setOptions] = useState(
     suggestedOptions && suggestedOptions.length >= MIN_OPTIONS
       ? suggestedOptions
       : ["", ""],
   );
-  const [userTouched, setUserTouched] = useState(false);
 
-  // Sync suggested props when they arrive after dialog is already open
-  const [prevQuestion, setPrevQuestion] = useState(suggestedQuestion);
-  if (suggestedQuestion !== prevQuestion) {
-    setPrevQuestion(suggestedQuestion);
-    if (suggestedQuestion && !userTouched) setQuestion(suggestedQuestion);
-  }
+  // Sync suggested options when they arrive after dialog is already open
   const [prevOptions, setPrevOptions] = useState(suggestedOptions);
   if (suggestedOptions !== prevOptions) {
     setPrevOptions(suggestedOptions);
@@ -97,7 +97,7 @@ export function CreatePollDialog({
     setQuestion("");
     setOptions(["", ""]);
     onOpenChange(false);
-  }, [canSubmit, question, options, onSubmit, onOpenChange]);
+  }, [canSubmit, question, options, onSubmit, onOpenChange, setQuestion]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

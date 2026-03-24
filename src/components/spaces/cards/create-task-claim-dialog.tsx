@@ -14,6 +14,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import type { TaskClaimData } from "@/lib/supabase/types";
+import { useSyncedSuggestion } from "@/lib/hooks/use-synced-suggestion";
 
 interface CreateTaskClaimDialogProps {
   open: boolean;
@@ -30,16 +31,12 @@ export function CreateTaskClaimDialog({
   suggestedDescription,
   isLoadingPrefill,
 }: CreateTaskClaimDialogProps) {
-  const [description, setDescription] = useState(suggestedDescription ?? "");
   const [userTouched, setUserTouched] = useState(false);
-
-  // Sync suggested props when they arrive after dialog is already open
-  const [prevDesc, setPrevDesc] = useState(suggestedDescription);
-  if (suggestedDescription !== prevDesc) {
-    setPrevDesc(suggestedDescription);
-    if (suggestedDescription && !userTouched)
-      setDescription(suggestedDescription);
-  }
+  const [description, setDescription] = useSyncedSuggestion(
+    suggestedDescription,
+    userTouched,
+    "",
+  );
 
   const canSubmit = description.trim().length > 0;
 
@@ -53,7 +50,7 @@ export function CreateTaskClaimDialog({
     onSubmit(taskData);
     setDescription("");
     onOpenChange(false);
-  }, [canSubmit, description, onSubmit, onOpenChange]);
+  }, [canSubmit, description, onSubmit, onOpenChange, setDescription]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

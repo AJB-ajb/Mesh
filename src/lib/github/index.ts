@@ -17,7 +17,7 @@ export type {
   GitHubProfileData,
   GitHubProfileRow,
   GitHubProfileInsert,
-} from './types';
+} from "./types";
 
 // API Client
 export {
@@ -32,7 +32,7 @@ export {
   checkTokenScopes,
   getRateLimitStatus,
   GitHubAPIError,
-} from './api';
+} from "./api";
 
 // Extraction
 export {
@@ -41,22 +41,21 @@ export {
   calculateActivityLevel,
   estimateExperienceFromMetrics,
   prepareAnalysisInput,
-} from './extraction';
+} from "./extraction";
 
 // Analysis
 export {
   analyzeGitHubProfile,
   analyzeGitHubProfileQuick,
   validateAnalysisOutput,
-} from './analysis';
+} from "./analysis";
 
 // Merger
 export {
   buildGitHubProfileData,
-  mergeWithExistingProfile,
   shouldUpdateProfile,
   getProfileSuggestions,
-} from './merger';
+} from "./merger";
 
 // Database
 export {
@@ -64,6 +63,5 @@ export {
   getGitHubProfile,
   updateSyncStatus,
   isSyncNeeded,
-  updateUserProfile,
   getUserProfile,
-} from './db';
+} from "./db";

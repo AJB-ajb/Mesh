@@ -7,7 +7,7 @@
  * Best-effort: failures are logged but don't block the resolve flow.
  */
 
-import type { SpaceCard } from "@/lib/supabase/types";
+import type { SpaceCard, TimeProposalData } from "@/lib/supabase/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -31,6 +31,37 @@ export function parseResolvedSlot(
 }
 
 /**
+ * Parse the resolved slot from a time proposal card's data.
+ * Tries structured slot_times first, falls back to label parsing + duration.
+ */
+function parseCardSlotTime(
+  data: TimeProposalData,
+): { start: Date; end: Date } | null {
+  const resolvedSlot = data.resolved_slot;
+  if (!resolvedSlot) return null;
+
+  // Try structured slot_times first
+  if (data.slot_times) {
+    const slotIndex = data.options.findIndex((o) => o.label === resolvedSlot);
+    if (slotIndex >= 0 && data.slot_times[slotIndex]) {
+      return {
+        start: new Date(data.slot_times[slotIndex].start),
+        end: new Date(data.slot_times[slotIndex].end),
+      };
+    }
+  }
+
+  // Fall back to parsing the label + duration_minutes
+  const parsed = parseResolvedSlot(resolvedSlot);
+  if (parsed && data.duration_minutes) {
+    parsed.end = new Date(
+      parsed.start.getTime() + data.duration_minutes * 60 * 1000,
+    );
+  }
+  return parsed;
+}
+
+/**
  * Create calendar events for all connected users who voted for
  * the winning time slot. Fire-and-forget — errors are logged.
  *
@@ -40,48 +71,19 @@ export async function createEventsForResolvedCard(
   card: SpaceCard,
   spaceId: string,
 ): Promise<void> {
-  const data = card.data as unknown as Record<string, unknown>;
-  const resolvedSlot = data.resolved_slot as string | undefined;
-  if (!resolvedSlot) return;
-
-  // Try structured slot_times first (Phase A), fall back to label parsing
-  let parsed: { start: Date; end: Date } | null = null;
-  const slotTimes = data.slot_times as
-    | Array<{ start: string; end: string }>
-    | undefined;
-  const options = (data.options ?? []) as {
-    label: string;
-    votes: string[];
-  }[];
-  if (slotTimes) {
-    const slotIndex = options.findIndex((o) => o.label === resolvedSlot);
-    if (slotIndex >= 0 && slotTimes[slotIndex]) {
-      parsed = {
-        start: new Date(slotTimes[slotIndex].start),
-        end: new Date(slotTimes[slotIndex].end),
-      };
-    }
-  }
-
-  // Fall back to parsing the label + duration_minutes
-  if (!parsed) {
-    parsed = parseResolvedSlot(resolvedSlot);
-    if (parsed && data.duration_minutes) {
-      parsed.end = new Date(
-        parsed.start.getTime() + (data.duration_minutes as number) * 60 * 1000,
-      );
-    }
-  }
-
+  const data = card.data as TimeProposalData;
+  const parsed = parseCardSlotTime(data);
   if (!parsed) {
     console.log(
-      `[calendar-integration] Could not parse slot "${resolvedSlot}" — skipping calendar creation`,
+      `[calendar-integration] Could not parse slot "${data.resolved_slot}" — skipping calendar creation`,
     );
     return;
   }
 
   // Find voters for the winning option
-  const winningOption = options.find((o) => o.label === resolvedSlot);
+  const winningOption = data.options.find(
+    (o) => o.label === data.resolved_slot,
+  );
   const voterIds = winningOption?.votes ?? [];
   if (voterIds.length === 0) return;
 
@@ -95,10 +97,9 @@ export async function createEventsForResolvedCard(
     .eq("id", spaceId)
     .single();
 
-  const summary = `${(data.title as string) ?? "Meeting"} — ${space?.name ?? "Mesh"}`;
+  const summary = `${data.title ?? "Meeting"} — ${space?.name ?? "Mesh"}`;
 
   // Fetch connected Google Calendar tokens for voters
-  // Table uses profile_id (= user_id) and encrypted token columns
   const { data: connections } = await admin
     .from("calendar_connections")
     .select(
@@ -121,7 +122,7 @@ export async function createEventsForResolvedCard(
         summary,
         startTime: parsed.start,
         endTime: parsed.end,
-        description: `Auto-created by Mesh when "${(data.title as string) ?? "time proposal"}" was resolved.`,
+        description: `Auto-created by Mesh when "${data.title ?? "time proposal"}" was resolved.`,
       });
       created++;
     }),
@@ -153,39 +154,8 @@ export async function createEventForUser(
   userId: string,
   tentative: boolean = false,
 ): Promise<void> {
-  const data = card.data as unknown as Record<string, unknown>;
-  const resolvedSlot = data.resolved_slot as string | undefined;
-  if (!resolvedSlot) return;
-
-  // Parse time — same logic as createEventsForResolvedCard
-  let parsed: { start: Date; end: Date } | null = null;
-  const slotTimes = data.slot_times as
-    | Array<{ start: string; end: string }>
-    | undefined;
-  const options = (data.options ?? []) as {
-    label: string;
-    votes: string[];
-  }[];
-
-  if (slotTimes) {
-    const slotIndex = options.findIndex((o) => o.label === resolvedSlot);
-    if (slotIndex >= 0 && slotTimes[slotIndex]) {
-      parsed = {
-        start: new Date(slotTimes[slotIndex].start),
-        end: new Date(slotTimes[slotIndex].end),
-      };
-    }
-  }
-
-  if (!parsed) {
-    parsed = parseResolvedSlot(resolvedSlot);
-    if (parsed && data.duration_minutes) {
-      parsed.end = new Date(
-        parsed.start.getTime() + (data.duration_minutes as number) * 60 * 1000,
-      );
-    }
-  }
-
+  const data = card.data as TimeProposalData;
+  const parsed = parseCardSlotTime(data);
   if (!parsed) return;
 
   const admin = createAdminClient();
@@ -196,7 +166,7 @@ export async function createEventForUser(
     .eq("id", spaceId)
     .single();
 
-  const summary = `${(data.title as string) ?? "Meeting"} — ${space?.name ?? "Mesh"}`;
+  const summary = `${data.title ?? "Meeting"} — ${space?.name ?? "Mesh"}`;
 
   const { data: connections } = await admin
     .from("calendar_connections")
@@ -217,7 +187,7 @@ export async function createEventForUser(
     summary,
     startTime: parsed.start,
     endTime: parsed.end,
-    description: `Auto-created by Mesh when "${(data.title as string) ?? "time proposal"}" was resolved.${tentative ? " (tentative)" : ""}`,
+    description: `Auto-created by Mesh when "${data.title ?? "time proposal"}" was resolved.${tentative ? " (tentative)" : ""}`,
   });
 
   console.log(

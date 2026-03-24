@@ -1,10 +1,12 @@
 import { useState, useCallback } from "react";
+import { toast } from "sonner";
 import type { PostingFilters } from "@/lib/types/filters";
 import {
   filtersToFilterPills,
   removeFilterByKey,
 } from "@/lib/filters/format-filters";
 import type { FilterPill } from "@/lib/filters/format-filters";
+import { labels } from "@/lib/labels";
 
 export interface UseNlFilterOptions {
   onCategoryChange?: (category: string | undefined) => void;
@@ -67,7 +69,7 @@ export function useNlFilter(
           }
         }
       } catch {
-        // Fall back silently on failure
+        toast.error(labels.toasts.filterError);
       } finally {
         setIsTranslating(false);
       }

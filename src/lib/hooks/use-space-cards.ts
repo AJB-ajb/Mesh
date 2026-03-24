@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
 import { cacheKeys } from "@/lib/swr/keys";
 import { labels } from "@/lib/labels";
-import {
-  subscribeToSpaceCards,
-  unsubscribeChannel,
-} from "@/lib/supabase/realtime";
+import { subscribeToSpaceCards } from "@/lib/supabase/realtime";
 import type { SpaceCard, CardOption } from "@/lib/supabase/types";
 import type { CardSuggestion } from "@/lib/ai/card-suggest";
+import { useRealtimeSubscription } from "./use-realtime-subscription";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -53,19 +51,7 @@ export function useSpaceCards(spaceId: string | null, userId?: string | null) {
   const key = spaceId ? cacheKeys.spaceCards(spaceId) : null;
   const { data: cards = [], mutate, isLoading } = useSWR(key, fetcher);
 
-  // Subscribe to realtime card updates
-  useEffect(() => {
-    if (!spaceId) return;
-
-    const channel = subscribeToSpaceCards(spaceId, () => {
-      // Revalidate on any card update (votes, resolution)
-      mutate();
-    });
-
-    return () => {
-      unsubscribeChannel(channel);
-    };
-  }, [spaceId, mutate]);
+  useRealtimeSubscription(spaceId, subscribeToSpaceCards, mutate);
 
   const vote = useCallback(
     async (

@@ -58,10 +58,9 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 
     return embedding;
   } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error(`Failed to generate embedding: ${String(error)}`);
+    throw error instanceof Error
+      ? error
+      : new Error(`Failed to generate embedding: ${String(error)}`);
   }
 }
 

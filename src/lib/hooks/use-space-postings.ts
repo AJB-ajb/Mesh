@@ -1,14 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { cacheKeys } from "@/lib/swr/keys";
-import {
-  subscribeToSpacePostings,
-  unsubscribeChannel,
-} from "@/lib/supabase/realtime";
+import { subscribeToSpacePostings } from "@/lib/supabase/realtime";
 import type { SpacePostingWithCreator } from "@/lib/supabase/types";
+import { useRealtimeSubscription } from "./use-realtime-subscription";
 
 // ---------------------------------------------------------------------------
 // Fetcher
@@ -69,23 +66,7 @@ export function useSpacePostings(spaceId: string | null) {
     keepPreviousData: true,
   });
 
-  const mutateRef = useRef(mutate);
-  useEffect(() => {
-    mutateRef.current = mutate;
-  }, [mutate]);
-
-  // Subscribe to realtime posting changes
-  useEffect(() => {
-    if (!spaceId) return;
-
-    const channel = subscribeToSpacePostings(spaceId, () => {
-      mutateRef.current();
-    });
-
-    return () => {
-      unsubscribeChannel(channel);
-    };
-  }, [spaceId]);
+  useRealtimeSubscription(spaceId, subscribeToSpacePostings, mutate);
 
   return {
     postings: data ?? [],
