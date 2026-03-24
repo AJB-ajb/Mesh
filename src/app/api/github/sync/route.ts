@@ -16,12 +16,10 @@ import {
   prepareAnalysisInput,
   analyzeGitHubProfile,
   buildGitHubProfileData,
-  mergeWithExistingProfile,
   getProfileSuggestions,
   saveGitHubProfile,
   getGitHubProfile,
   updateSyncStatus,
-  updateUserProfile,
   getUserProfile,
 } from "@/lib/github";
 
@@ -93,22 +91,14 @@ export const POST = withAuth(async (req: Request, ctx: AuthContext) => {
     await saveGitHubProfile(user.id, githubProfileData);
     console.log(`[GitHub Sync] Saved GitHub profile to database`);
 
-    // Get existing user profile
+    // Get existing user profile for suggestion generation
     const existingProfile = await getUserProfile(user.id);
 
-    // Get suggestions for user review
+    // Get suggestions for user review (user applies these manually)
     const suggestions = getProfileSuggestions(
       existingProfile,
       githubProfileData,
     );
-
-    // Merge with existing profile (auto-update non-conflicting fields)
-    const profileUpdate = mergeWithExistingProfile(
-      existingProfile,
-      githubProfileData,
-    );
-    await updateUserProfile(user.id, profileUpdate);
-    console.log(`[GitHub Sync] Updated user profile with merged data`);
 
     // Update sync status to 'completed'
     await updateSyncStatus(user.id, "completed");
@@ -130,7 +120,7 @@ export const POST = withAuth(async (req: Request, ctx: AuthContext) => {
         suggestedSkills: suggestions.suggestedSkills,
         suggestedInterests: suggestions.suggestedInterests,
       },
-      profileUpdated: true,
+      profileUpdated: false,
     });
   } catch (error) {
     // Try to update sync status to failed

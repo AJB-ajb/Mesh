@@ -2097,6 +2097,8 @@ export const labels = {
     cardError: "Could not update card",
     // Activity
     activityError: "Could not complete action",
+    // Filters
+    filterError: "Could not apply filters",
     // General
     genericError: "Something went wrong",
     copied: "Copied to clipboard",

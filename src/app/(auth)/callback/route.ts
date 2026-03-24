@@ -5,26 +5,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { labels } from "@/lib/labels";
 import { ROUTES } from "@/lib/routes";
 
-/**
- * Trigger async GitHub profile sync
- * Fires and forgets - doesn't block the OAuth flow
- */
-async function triggerGitHubSync(origin: string): Promise<void> {
-  try {
-    // Fire and forget - don't await
-    fetch(`${origin}/api/github/sync`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }).catch((err) => {
-      console.error("[OAuth Callback] GitHub sync trigger failed:", err);
-    });
-  } catch (err) {
-    console.error("[OAuth Callback] Failed to trigger GitHub sync:", err);
-  }
-}
-
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
@@ -44,17 +24,6 @@ export async function GET(request: Request) {
         return NextResponse.redirect(
           `${origin}/login?error=Authentication%20failed`,
         );
-      }
-
-      // Check if any identity is GitHub - trigger async profile sync
-      const identities = user.identities || [];
-      const hasGithubIdentity = identities.some(
-        (identity: { provider: string }) => identity.provider === "github",
-      );
-
-      if (hasGithubIdentity) {
-        // Trigger GitHub profile extraction in background (async)
-        triggerGitHubSync(origin);
       }
 
       // --- Duplicate account detection ---

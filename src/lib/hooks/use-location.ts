@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { reverseGeocode, type GeocodingResult } from "@/lib/geocoding";
 import type { ProfileFormState } from "@/lib/types/profile";
 import { LOCATION } from "@/lib/constants";
@@ -12,6 +12,13 @@ export function useLocation(
   const [isGeolocating, setIsGeolocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const handleUseCurrentLocation = useCallback(async () => {
     setIsGeolocating(true);
@@ -30,6 +37,7 @@ export function useLocation(
 
         try {
           const result = await reverseGeocode(lat, lng);
+          if (!isMountedRef.current) return;
 
           setForm((prev) => ({
             ...prev,
@@ -41,13 +49,15 @@ export function useLocation(
           setShowAutocomplete(false);
           setSuccess(false);
         } catch (err) {
+          if (!isMountedRef.current) return;
           setGeoError("Failed to get address from coordinates");
           console.error("Reverse geocoding error:", err);
         } finally {
-          setIsGeolocating(false);
+          if (isMountedRef.current) setIsGeolocating(false);
         }
       },
       (error) => {
+        if (!isMountedRef.current) return;
         let errorMessage = "Failed to get your location";
         switch (error.code) {
           case error.PERMISSION_DENIED:

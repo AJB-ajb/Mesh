@@ -50,6 +50,11 @@ export function useRealtimePresence({
 
   const presenceChannelRef = useRef<RealtimeChannel | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingContextIdRef = useRef(typingContextId);
+
+  useEffect(() => {
+    typingContextIdRef.current = typingContextId;
+  }, [typingContextId]);
 
   const handlePresenceSync = useCallback(
     (state: RealtimePresenceState<PresenceState>) => {
@@ -117,7 +122,7 @@ export function useRealtimePresence({
         updateTypingStatus(
           presenceChannelRef.current,
           currentUserId,
-          typingContextId,
+          typingContextIdRef.current,
         );
 
         typingTimeoutRef.current = setTimeout(() => {
@@ -129,7 +134,7 @@ export function useRealtimePresence({
         updateTypingStatus(presenceChannelRef.current, currentUserId, null);
       }
     },
-    [typingContextId, currentUserId],
+    [currentUserId],
   );
 
   return {

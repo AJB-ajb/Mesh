@@ -22,21 +22,30 @@ export function useAutoSave({ saveFn, delay = 1500 }: UseAutoSaveOptions) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveFnRef = useRef(saveFn);
+  const isMountedRef = useRef(true);
+
   useEffect(() => {
     saveFnRef.current = saveFn;
   }, [saveFn]);
 
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const doSave = useCallback(async () => {
-    queueMicrotask(() => setSaveStatus("saving"));
+    if (isMountedRef.current) setSaveStatus("saving");
     try {
       await saveFnRef.current();
-      queueMicrotask(() => setSaveStatus("saved"));
-      // Reset to idle after a short display period
-      setTimeout(() => {
-        queueMicrotask(() => setSaveStatus("idle"));
-      }, 2000);
+      if (isMountedRef.current) {
+        setSaveStatus("saved");
+        setTimeout(() => {
+          if (isMountedRef.current) setSaveStatus("idle");
+        }, 2000);
+      }
     } catch {
-      queueMicrotask(() => setSaveStatus("error"));
+      if (isMountedRef.current) setSaveStatus("error");
     }
   }, []);
 
@@ -56,11 +65,11 @@ export function useAutoSave({ saveFn, delay = 1500 }: UseAutoSaveOptions) {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
-        // Fire-and-forget flush
-        doSave();
+        // Fire-and-forget flush — isMountedRef is already false so status won't update
+        saveFnRef.current().catch(() => {});
       }
     };
-  }, [doSave]);
+  }, []);
 
   return { saveStatus, triggerSave };
 }

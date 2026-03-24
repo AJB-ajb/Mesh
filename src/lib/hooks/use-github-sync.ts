@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { toast } from "sonner";
 import type { GitHubSyncStatus, ProfileFormState } from "@/lib/types/profile";
 import { parseList } from "@/lib/types/profile";
+import { labels } from "@/lib/labels";
 
 export function useGithubSync(
   setForm: React.Dispatch<React.SetStateAction<ProfileFormState>>,
-  setIsEditing: (editing: boolean) => void
+  setIsEditing: (editing: boolean) => void,
 ) {
   const [githubSync, setGithubSync] = useState<GitHubSyncStatus | null>(null);
   const [isGithubSyncing, setIsGithubSyncing] = useState(false);
@@ -45,8 +47,12 @@ export function useGithubSync(
         return;
       }
 
-      await fetchGithubSyncStatus();
-      window.location.reload();
+      try {
+        await fetchGithubSyncStatus();
+        window.location.reload();
+      } catch {
+        toast.error(labels.toasts.genericError);
+      }
     } catch (err) {
       console.error("GitHub sync error:", err);
       const errorMessage =
@@ -72,7 +78,7 @@ export function useGithubSync(
       }
       setIsEditing(true);
     },
-    [setForm, setIsEditing]
+    [setForm, setIsEditing],
   );
 
   return {

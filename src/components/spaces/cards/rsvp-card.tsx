@@ -1,11 +1,10 @@
 "use client";
 
-import { Check, X, UserCheck } from "lucide-react";
+import { UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { labels } from "@/lib/labels";
-import { Button } from "@/components/ui/button";
 import type { SpaceCard, RsvpData } from "@/lib/supabase/types";
-import { CardDeadlineBadge } from "./card-deadline-badge";
+import { CardHeader, CardFooter } from "./card-layout";
 
 interface RsvpCardProps {
   card: SpaceCard;
@@ -24,7 +23,6 @@ export function RsvpCard({
 }: RsvpCardProps) {
   const data = card.data as RsvpData;
   const isActive = card.status === "active";
-  const isCreator = card.created_by === userId;
 
   // RSVP options are typically [Yes, No, Maybe]
   const yesCount = data.options[0]?.votes.length ?? 0;
@@ -37,32 +35,11 @@ export function RsvpCard({
 
   return (
     <div className="mx-auto w-full max-w-md rounded-lg border border-border bg-card p-4 shadow-sm">
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-3">
-        <UserCheck className="size-4 text-primary" />
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          {labels.cards.rsvp}
-        </span>
-        {isActive && card.deadline && (
-          <span className="ml-auto">
-            <CardDeadlineBadge deadline={card.deadline} />
-          </span>
-        )}
-        {!isActive && (
-          <span
-            className={cn(
-              "ml-auto text-xs font-medium px-2 py-0.5 rounded-full",
-              card.status === "resolved"
-                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                : "bg-muted text-muted-foreground",
-            )}
-          >
-            {card.status === "resolved"
-              ? labels.cards.resolved
-              : labels.cards.cancelled}
-          </span>
-        )}
-      </div>
+      <CardHeader
+        icon={<UserCheck className="size-4 text-primary" />}
+        label={labels.cards.rsvp}
+        card={card}
+      />
 
       {/* Title */}
       <p className="font-medium text-sm mb-3">{data.title}</p>
@@ -121,31 +98,12 @@ export function RsvpCard({
         })}
       </div>
 
-      {/* Footer */}
-      <div className="flex items-center justify-end mt-3 pt-2 border-t border-border">
-        {isActive && isCreator && (
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => onCancel(card.id)}
-            >
-              <X className="size-3 mr-1" />
-              {labels.cards.cancelCard}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => onResolve(card.id)}
-            >
-              <Check className="size-3 mr-1" />
-              {labels.cards.resolveCard}
-            </Button>
-          </div>
-        )}
-      </div>
+      <CardFooter
+        card={card}
+        userId={userId}
+        onResolve={onResolve}
+        onCancel={onCancel}
+      />
     </div>
   );
 }
