@@ -54,6 +54,7 @@ Every conversation context in Mesh is a Space. The same layout works at every si
 | ---------------------- | ------------ | -------------- | --------------------- | ------------------ |
 | Regular messages       | yes          | yes            | yes (can be disabled) | admin-configurable |
 | Posting-messages       | yes          | yes            | yes                   | yes                |
+| Shared Calendar tab    | yes          | yes            | no                    | no                 |
 | Sub-Space browsing     | n/a          | optional       | useful                | primary navigation |
 | Matching on sub-Spaces | no           | no             | optional              | yes                |
 | Notification default   | all activity | all activity   | muted for most        | digest             |
@@ -378,7 +379,57 @@ Mesh is a coordination tool — the goal is getting people to the right place at
 
 ---
 
-## 8. Membership
+## 8. Shared Calendar Tab
+
+A visual scheduling surface within the Space view, available for small Spaces (≤10 members). Complements the LLM-driven card suggestion flow with a manual, visual approach to finding times and tracking group commitments.
+
+### Two layers
+
+| Layer               | What it shows                                                                         | Privacy                                                               |
+| ------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| **Overlap heatmap** | Aggregate free/busy from connected calendars. "3/4 free here" — not who is busy where | Preserves privacy: no individual schedules exposed, only group signal |
+| **Space events**    | Resolved cards (time proposals, RSVPs) rendered as calendar blocks                    | Already public to the group — resolved in conversation                |
+
+The overlap layer answers "when _could_ we meet?" The events layer answers "what have we already committed to?"
+
+### Partial calendar data
+
+Not all members will have connected calendars. The view shows what's known honestly:
+
+- Header indicator: "2 of 4 calendars connected"
+- Overlap computed from connected calendars only — partial but useful
+- Members without calendars treated as fully available (same as existing overlap logic)
+
+### View modes
+
+- **Week view** (default, desktop): 7-day view reusing the existing `calendar-week-view` layout
+- **3-day view** (mobile): paginated (Mon–Wed, Thu–Sat, Sun) — same pattern as existing availability editor
+
+### Drag-to-create
+
+Dragging a time range on the calendar opens a card creation dialog (time proposal or RSVP) pre-filled with the selected slot. Same card pipeline as text-triggered suggestions — the calendar is a visual entry point, not a separate system. The LLM still enriches with private constraint notes once the card exists.
+
+### Scoping
+
+- Available for 2-person and small Spaces (≤10 members) — computation and visual complexity scale with member count
+- Not shown for medium/large Spaces — N-way overlap gets expensive and the heatmap becomes unreadable
+- Renders as a tab alongside the conversation (one tap to switch)
+
+### What it doesn't replace
+
+The LLM-driven suggestion flow (type a message → get smart slots) remains the primary path. The calendar tab is for when the user wants to _look_ rather than _ask_ — browsing for a good slot, seeing what's already scheduled, or quickly creating a card from a visual selection.
+
+### Integration
+
+- **Overlap data**: reuses `intersectAvailability()` and `subtractBusyBlocks()` from `lib/availability/overlap.ts`
+- **Busy blocks**: reuses `calendar_busy_blocks` infrastructure and `useCalendarBusyBlocks` hook
+- **Calendar UI**: extends the existing `calendar-week-view` component family (drag interaction, block rendering, mobile pagination)
+- **Card creation**: drag-to-create feeds into the same card creation dialog used by suggestion chips and the manual "+" menu
+- **Space events**: queries resolved `space_cards` (time_proposal, rsvp) for the Space and renders winning slots as calendar blocks
+
+---
+
+## 9. Membership
 
 ### Joining
 
@@ -416,7 +467,7 @@ The Global Space sets `is_global = true` (at most one Space). RLS policies treat
 
 ---
 
-## 9. Privileges
+## 10. Privileges
 
 ### Posting-only mode
 
@@ -448,7 +499,7 @@ A posting in a small Space can be promoted to Explore as a new posting-message t
 
 ---
 
-## 10. Key Design Decisions
+## 11. Key Design Decisions
 
 Numbered for cross-reference. Full rationale in [designs/spaces-rewrite.md](designs/spaces-rewrite.md) Section 15.
 
@@ -463,12 +514,12 @@ Numbered for cross-reference. Full rationale in [designs/spaces-rewrite.md](desi
 
 ---
 
-## 11. Integration Points
+## 12. Integration Points
 
 | Spec                                                   | Integration                                                                                                                              |
 | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | [1-matching.md](1-matching.md)                         | Candidate pool scoped by Space. Deep match receives parent state text as context.                                                        |
-| [1-scheduling.md](1-scheduling.md)                     | Slot generation inherits Space context. Calendar overlap scoped to Space members.                                                        |
+| [1-scheduling.md](1-scheduling.md)                     | Slot generation inherits Space context. Calendar overlap scoped to Space members. Shared Calendar tab reuses overlap + busy block infra. |
 | [1-text-first.md](1-text-first.md)                     | Same editor everywhere. Slash commands work in all Spaces. `mesh:` syntax, `\|\|hidden\|\|`, `\|\|?\|\|` in state text and messages.     |
 | [1-terminology.md](1-terminology.md)                   | "Space" (internal: Coordination Space), "Explore" (Global Space), "Posting" (posting-message). See terminology spec for canonical terms. |
 | [1-ux.md](1-ux.md)                                     | Three-tab navigation (Spaces, Activity, Profile). Space list as main screen. Activity tab for personal cards.                            |
@@ -478,7 +529,7 @@ Numbered for cross-reference. Full rationale in [designs/spaces-rewrite.md](desi
 
 ---
 
-## 12. Current Deviations
+## 13. Current Deviations
 
 - **Inherited → independent transition**: `inherits_members` flag exists but no auto-transition when outsiders join via matching/invite. → v0.9
 - **Old table cleanup**: Legacy `conversations`, `messages`, `group_messages`, `group_message_reads` dropped. Old `postings` table still exists (FK dependents need separate analysis). Active code migrated off old tables to `space_postings`/`space_members`. → partial, `postings` drop deferred
@@ -490,3 +541,4 @@ Numbered for cross-reference. Full rationale in [designs/spaces-rewrite.md](desi
 - **Opt-out voting menu**: No "Can't make any" / "Pass" options on cards. Non-voters are ambiguous (unseen vs. opted out). → v0.9
 - **Deadline input field**: Deadlines are hardcoded defaults (12h/24h). Creator cannot set a custom deadline at creation time. → v0.9
 - **Quorum**: No minimum attendee concept. Cards auto-resolve regardless of participation count. → v0.9
+- **Shared Calendar tab**: Not yet implemented. → v0.9

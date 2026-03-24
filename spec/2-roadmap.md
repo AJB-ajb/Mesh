@@ -249,6 +249,17 @@ Consolidates remaining items from v0.7–v0.8 that were deferred when those mile
 | Card invalidation Phase 2a | Medium | Explicit actions only — buttons on cards (supersede, update).                                                                                                                     |
 | Auto-archive (30-day)      | Small  | Cron-based auto-archive after 30 days of no messages. Infrastructure exists (manual archive shipped in v0.8).                                                                     |
 
+#### Shared Calendar tab
+
+See [1-spaces.md](1-spaces.md) §8.
+
+| Feature                    | Effort | Description                                                                                                                                                                           |
+| -------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Overlap heatmap            | Medium | Aggregate free/busy visualization for Space members (≤10). Reuses `intersectAvailability()`, `subtractBusyBlocks()`, `useCalendarBusyBlocks`. "N of M calendars connected" indicator. |
+| Space events layer         | Small  | Query resolved `space_cards` (time_proposal, rsvp) and render winning slots as calendar blocks on the week/3-day view.                                                                |
+| Drag-to-create             | Medium | Drag time range on calendar → opens card creation dialog (time proposal / RSVP) pre-filled with selected slot. Extends existing `use-calendar-drag` hook.                             |
+| Calendar tab in Space view | Small  | New tab alongside conversation for small Spaces (≤10 members). Week view (desktop), 3-day paginated view (mobile). Reuses `calendar-week-view` component family.                      |
+
 #### UX & integration gaps
 
 | Feature                                | Effort     | Description                                                                                                                            |
