@@ -122,6 +122,37 @@ async function fetchSpaces(): Promise<SpaceListData> {
     } as SpaceListItem;
   });
 
+  // Fetch other member's profile for DM spaces (those with 2 members)
+  const dmSpaces = enriched.filter((s) => s.type === "dm");
+  if (dmSpaces.length > 0) {
+    const dmSpaceIds = dmSpaces.map((s) => s.id);
+    const { data: dmMembers } = await supabase
+      .from("space_members")
+      .select("space_id, user_id, profiles(user_id, full_name)")
+      .in("space_id", dmSpaceIds)
+      .neq("user_id", user.id);
+
+    const dmProfileMap = new Map<
+      string,
+      { user_id: string; full_name: string | null }
+    >();
+    for (const m of dmMembers ?? []) {
+      // profiles is a single joined object (space_members.user_id → profiles.user_id)
+      const raw = m.profiles as unknown;
+      const profile = raw as {
+        user_id: string;
+        full_name: string | null;
+      } | null;
+      if (profile?.user_id) dmProfileMap.set(m.space_id, profile);
+    }
+
+    for (const space of enriched) {
+      if (space.type === "dm") {
+        space.other_member_profile = dmProfileMap.get(space.id) ?? null;
+      }
+    }
+  }
+
   // Sort: Global Space first, then pinned, then by last activity
   enriched.sort((a, b) => {
     // Global space always first

@@ -80,6 +80,10 @@ export function SpaceListItemRow({
   const isMuted = membership?.muted ?? false;
   const unreadCount = membership?.unread_count ?? 0;
 
+  const displayName =
+    space.type === "dm"
+      ? space.other_member_profile?.full_name || space.name
+      : space.name;
   const lastMessageTime = space.last_message?.created_at ?? space.updated_at;
   const preview = buildPreview(space, currentUserId);
   const isSystem = space.last_message?.type === "system";
@@ -95,7 +99,7 @@ export function SpaceListItemRow({
           <AvatarFallback
             className={cn(isGlobal && "bg-primary text-primary-foreground")}
           >
-            {isGlobal ? <Globe className="size-5" /> : getInitials(space.name)}
+            {isGlobal ? <Globe className="size-5" /> : getInitials(displayName)}
           </AvatarFallback>
         </Avatar>
         {/* Online indicator for DMs — placeholder for presence */}
@@ -119,7 +123,7 @@ export function SpaceListItemRow({
               unreadCount > 0 && !isMuted && "text-foreground",
             )}
           >
-            {isGlobal ? labels.spaces.explore : space.name}
+            {isGlobal ? labels.spaces.explore : displayName}
           </span>
           {(space.type === "large" || isGlobal) && space.member_count && (
             <span className="text-xs text-muted-foreground shrink-0">
