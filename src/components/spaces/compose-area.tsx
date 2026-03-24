@@ -76,6 +76,10 @@ interface ComposeAreaProps {
   onClearFollowUp?: () => void;
   /** Latest message in the conversation — used for trigger C (detect intent on incoming messages) */
   latestMessage?: LatestMessage | null;
+  /** Pre-filled slot from shared calendar drag-to-create */
+  calendarPrefill?: { start: string; end: string } | null;
+  /** Called when the calendar prefill has been consumed */
+  onClearCalendarPrefill?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -117,6 +121,8 @@ export function ComposeArea({
   followUpSuggestion,
   onClearFollowUp,
   latestMessage,
+  calendarPrefill,
+  onClearCalendarPrefill,
 }: ComposeAreaProps) {
   const [text, setText] = useState("");
   const [mode, setMode] = useState<"M" | "P">(postingOnly ? "P" : "M");
@@ -149,6 +155,44 @@ export function ComposeArea({
   const abortRef = useRef<AbortController | null>(null);
   // Track dismissed trigger C messages to avoid reappearing chips
   const [dismissedMsg, setDismissedMsg] = useState<string | null>(null);
+
+  // Calendar drag-to-create: open time proposal dialog with pre-filled slot.
+  // Uses the React-recommended "derive state from props" pattern:
+  // track the previous calendarPrefill value in state and update when it changes.
+  const [prevCalendarPrefill, setPrevCalendarPrefill] =
+    useState(calendarPrefill);
+  if (calendarPrefill && calendarPrefill !== prevCalendarPrefill) {
+    setPrevCalendarPrefill(calendarPrefill);
+    const startDt = new Date(calendarPrefill.start);
+    const endDt = new Date(calendarPrefill.end);
+    const label =
+      startDt.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        timeZone: "UTC",
+      }) +
+      ", " +
+      startDt.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "UTC",
+      });
+    setPrefill({
+      slots: [
+        { label, start: calendarPrefill.start, end: calendarPrefill.end },
+      ],
+      title: "",
+      duration_minutes: Math.round(
+        (endDt.getTime() - startDt.getTime()) / 60000,
+      ),
+    });
+    setDialogKey((k) => k + 1);
+    setShowTimeProposalDialog(true);
+  } else if (!calendarPrefill && prevCalendarPrefill) {
+    setPrevCalendarPrefill(null);
+  }
 
   // Displayed suggestion: follow-up prop takes precedence over local
   const suggestion = followUpSuggestion?.suggested_type
@@ -592,7 +636,10 @@ export function ComposeArea({
       <CreateTimeProposalDialog
         key={`time-${dialogKey}`}
         open={showTimeProposalDialog}
-        onOpenChange={setShowTimeProposalDialog}
+        onOpenChange={(open) => {
+          setShowTimeProposalDialog(open);
+          if (!open) onClearCalendarPrefill?.();
+        }}
         onSubmit={handleCreateTimeProposal}
         suggestedSlots={prefill?.slots?.map((s) => s.label) ?? prefill?.options}
         suggestedTitle={prefill?.title}

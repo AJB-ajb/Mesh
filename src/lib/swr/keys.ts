@@ -39,6 +39,8 @@ export const cacheKeys = {
 
   // Space cards
   spaceCards: (spaceId: string) => `/api/spaces/${spaceId}/cards` as const,
+  spaceCalendar: (spaceId: string) =>
+    `/api/spaces/${spaceId}/calendar` as const,
 
   // Activity
   activityCards: () => "/api/activity" as const,

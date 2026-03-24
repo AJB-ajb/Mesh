@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { RecurringWindow } from "@/lib/types/availability";
 import { DAY_MAP_REVERSE } from "@/lib/types/availability";
 import { DAY_LABELS } from "@/lib/types/profile";
 import { labels } from "@/lib/labels";
+import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 import { CalendarWeekViewBlock } from "./calendar-week-view-block";
 import { CalendarWeekViewBusyBlock } from "./calendar-week-view-busy-block";
 import { useCalendarDrag } from "./use-calendar-drag";
@@ -22,24 +23,6 @@ const MOBILE_PAGES = [
   [3, 4, 5], // Thu, Fri, Sat
   [6], // Sun
 ] as const;
-
-/**
- * SSR-safe mobile detection. Defaults to `false` (desktop) on the server;
- * client updates via queueMicrotask on mount. This matches the pattern used
- * in global-search.tsx. The 639px breakpoint aligns with Tailwind's sm:640px
- * — at 640px both CSS (sm: applies) and JS (not mobile) agree.
- */
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const mql = window.matchMedia("(max-width: 639px)");
-    queueMicrotask(() => setIsMobile(mql.matches));
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mql.addEventListener("change", handler);
-    return () => mql.removeEventListener("change", handler);
-  }, []);
-  return isMobile;
-}
 
 type CalendarWeekViewProps = {
   windows: RecurringWindow[];

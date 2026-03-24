@@ -7,6 +7,7 @@ import { Search, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { labels } from "@/lib/labels";
+import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 import { useSearch } from "@/lib/hooks/use-search";
 import type { SearchResult } from "@/lib/hooks/use-search";
 import { createActions } from "@/lib/command-palette/actions";
@@ -22,18 +23,6 @@ function useIsMac() {
     queueMicrotask(() => setIsMac(navigator.platform.startsWith("Mac")));
   }, []);
   return isMac;
-}
-
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const mql = window.matchMedia("(max-width: 639px)");
-    queueMicrotask(() => setIsMobile(mql.matches));
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mql.addEventListener("change", handler);
-    return () => mql.removeEventListener("change", handler);
-  }, []);
-  return isMobile;
 }
 
 export function GlobalSearch() {
