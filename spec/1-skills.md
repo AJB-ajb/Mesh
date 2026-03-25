@@ -22,12 +22,12 @@ Cross-cutting skills (e.g., Next.js implies both React and Node.js) exist, but a
 
 The tree's main advantage: **LLM placement is unambiguous**. "Pick the single most important parent" is a clearer instruction than "decide how many parents this skill should have."
 
-## Motivation
+## What the Tree Provides
 
-- **No normalization today**: "React", "react", "ReactJS" used to be all separate skills. Users type free-form text, leading to inconsistency and poor filterability.
-- **No hierarchy**: Searching "Programming" doesn't surface Python or Next.js postings. Users can only match on exact skill strings.
-- **Coarse skill levels**: Postings have one `skill_level_min` for the whole posting. "Needs Advanced Python but Beginner Docker is fine" can't be expressed.
-- **Diverse domains**: Mesh serves music, theater, programming, social activities, etc. A flat list doesn't scale across these domains.
+- **Normalization**: all skill names resolve to a canonical node — "React", "react", "ReactJS" map to the same skill.
+- **Hierarchical filtering**: searching "Programming" surfaces Python, Next.js, etc. via ancestor-descendant relationships.
+- **Per-skill level requirements**: postings can require "Advanced Python but Beginner Docker is fine" — one level per skill, not one level per posting.
+- **Cross-domain taxonomy**: Mesh serves music, theater, programming, social activities — the tree scales across domains with consistent structure.
 
 ## Design Principles
 
@@ -329,17 +329,11 @@ Culinary *
 
 ---
 
-## Integration with Existing Systems
+## Data Integration
 
 ### Profile Skills
 
-Currently: `skills: text[]` (free-form) + `skill_levels: jsonb` (domain → 0-10)
-
-**Migration:**
-
-- `skills` array entries are mapped to tree node IDs via LLM normalization
-- `skill_levels` domain names are mapped to tree node IDs
-- A new `profile_skills` join table replaces the denormalized arrays:
+`profile_skills` join table linking profiles to tree nodes with optional levels:
 
 | Field        | Type            | Description               |
 | ------------ | --------------- | ------------------------- |
@@ -347,16 +341,9 @@ Currently: `skills: text[]` (free-form) + `skill_levels: jsonb` (domain → 0-10
 | `skill_id`   | uuid            | FK → skill_nodes.id       |
 | `level`      | integer \| null | 0-10, null if unspecified |
 
-This enables per-skill levels on profiles (already the case with `skill_levels`, but now normalized).
-
 ### Posting Skills
 
-Currently: `skills: text[]` + `skill_level_min: integer`
-
-**Migration:**
-
-- `skills` entries mapped to tree node IDs
-- Per-skill level requirements replace the single `skill_level_min`:
+`posting_skills` join table with per-skill level requirements:
 
 | Field        | Type            | Description                            |
 | ------------ | --------------- | -------------------------------------- |
@@ -437,20 +424,6 @@ Different domains use different evidence for skill level:
 - Academic: publications, courses completed
 
 These are **not in scope for the initial implementation** but the data model supports them — each skill node could later have a `proxy_template` field describing what evidence is relevant for that domain. The existing GitHub integration already serves as a proxy for programming skills.
-
----
-
-## Migration Plan
-
-1. **Create skill_nodes table** and seed the initial taxonomy
-2. **Build LLM auto-adding pipeline** — normalize existing free-form skills to tree nodes
-3. **Migrate existing data** — batch-process all profile and posting skills through the normalization pipeline, create join table entries
-4. **Build skill picker UI** — replace free-form inputs
-5. **Update filtering** — tree-aware descendant matching
-6. **Update matching scoring** — per-skill level comparison
-7. **Deprecate old columns** — remove `skills: text[]` and `skill_level_min: integer` after migration is verified
-
-Steps 1-3 can be done without UI changes (backward compatible). Steps 4-7 are the user-facing rollout.
 
 ---
 

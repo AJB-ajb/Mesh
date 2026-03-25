@@ -105,19 +105,6 @@ Collapsible sidebar with navigation sections matching the bottom tab bar: Spaces
 | Profile         | `/profile`         | Text-first profile editor with slash commands, extracted metadata, availability + calendar |
 | Settings        | `/settings`        | Connected accounts, notification preferences, sign out, danger zone (delete account)       |
 
-### Removed/Changed pages
-
-| Old page                          | Disposition                                                                                           |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Discover (`/discover`)            | Replaced by the Global Space ("Explore"), pinned at the top of the Space list                         |
-| Posts (`/posts`)                  | Removed. Active postings live within their Spaces as posting-messages                                 |
-| Connections (`/connections`)      | DMs are 2-person Spaces in the Space list. Connection management moves to Profile                     |
-| My Postings (`/my-postings`)      | Removed. User's own postings are visible in the Spaces they belong to                                 |
-| Active (`/active`)                | Removed. All active Spaces with recent coordination are in the Space list                             |
-| Posting detail (`/postings/[id]`) | Posting is a message within a Space conversation. Detail accessed by tapping the posting-message card |
-| Create posting (`/postings/new`)  | Posting creation is inline via the compose area within a Space view (Message/Posting toggle)          |
-| Notifications bell                | Replaced by the Activity tab for actionable items. Unread badges on Spaces for messages               |
-
 ### Navigation structure
 
 - **Bottom tab bar (mobile):** Spaces, Activity, Profile

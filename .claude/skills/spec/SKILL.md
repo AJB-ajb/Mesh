@@ -35,22 +35,23 @@ All specs live in `spec/`. Read `spec/README.md` first for the full index and lo
 
 ### Key Files
 
-| File                   | When to read                                                        |
-| ---------------------- | ------------------------------------------------------------------- |
-| `0-vision.md`          | Unsure about product direction, need guiding principles             |
-| `0-use-cases.md`       | Need concrete scenarios to guide design decisions                   |
-| `1-mesh.md`            | Product overview, scope, monetization                               |
-| `1-text-first.md`      | Text-first philosophy, `mesh:` syntax, `\|\|hidden\|\|`, data model |
-| `1-ux.md`              | Layout, pages, interaction patterns, voice & tone                   |
-| `1-matching.md`        | Matching dimensions, scoring, deep match pipeline                   |
-| `1-scheduling.md`      | Scheduling intelligence, time slot generation                       |
-| `1-skills.md`          | Skill tree, taxonomy, LLM auto-adding                               |
-| `1-availability.md`    | Calendar sync, availability windows, overlap                        |
-| `1-nested-postings.md` | Nesting model, groups, channels, context inheritance                |
-| `1-posting-access.md`  | Composable access model (discover/invite/link/context)              |
-| `1-terminology.md`     | Canonical terms — check here before inventing labels                |
-| `2-roadmap.md`         | Implementation status, milestones, version tracking                 |
-| `3-architecture.md`    | Tech stack, key libraries                                           |
+| File                   | When to read                                                            |
+| ---------------------- | ----------------------------------------------------------------------- |
+| `0-foundations.md`     | Coordination theory — definitions, patterns, compressions, social norms |
+| `0-vision.md`          | Unsure about product direction, need guiding principles                 |
+| `0-use-cases.md`       | Need concrete scenarios to guide design decisions                       |
+| `1-mesh.md`            | Product overview, scope, monetization                                   |
+| `1-text-first.md`      | Text-first philosophy, `mesh:` syntax, `\|\|hidden\|\|`, data model     |
+| `1-ux.md`              | Layout, pages, interaction patterns, voice & tone                       |
+| `1-matching.md`        | Matching dimensions, scoring, deep match pipeline                       |
+| `1-scheduling.md`      | Scheduling intelligence, time slot generation                           |
+| `1-skills.md`          | Skill tree, taxonomy, LLM auto-adding                                   |
+| `1-availability.md`    | Calendar sync, availability windows, overlap                            |
+| `1-nested-postings.md` | Nesting model, groups, channels, context inheritance                    |
+| `1-posting-access.md`  | Composable access model (discover/invite/link/context)                  |
+| `1-terminology.md`     | Canonical terms — check here before inventing labels                    |
+| `2-roadmap.md`         | Implementation status, milestones, version tracking                     |
+| `3-architecture.md`    | Tech stack, key libraries                                               |
 
 ## Workflow
 
@@ -96,7 +97,7 @@ All specs live in `spec/`. Read `spec/README.md` first for the full index and lo
 
 ### Content shapes (not rigid templates)
 
-**Shape A — Insight-driven** (text-first, nested-postings, posting-access, matching, skills):
+**Shape A — Insight-driven** (text-first, posting-access, matching, skills, spaces):
 
 - Lead with "why" / the problem / the insight
 - Then "how" — the target design
@@ -114,16 +115,40 @@ All specs live in `spec/`. Read `spec/README.md` first for the full index and lo
 - Narrative: insights, scenarios, arguments
 - No Current Deviations section — these describe the target world
 
+**Shape D — Analytical** (foundations):
+
+- Definitions, principles, analytical results
+- Grounded in brief examples (not full UX walkthroughs)
+- No deviations — these describe the problem space, not the implementation
+
+### Writing principles — how to add to specs
+
+**State principles, not history.** When a design decision is made, extract the underlying principle and state it directly. Do NOT document the decision process ("we used to do X, now we do Y because Z"). Instead: "Principle: Y. Example: ..."
+
+**No before/after tables.** These document a transition, not a target state. Once the transition is complete, the "before" column is dead weight. If the new design has a principle worth stating, state the principle.
+
+**No "not X" justifications in definitions.** "Posting (not Project)" is useful once when deciding. After that, the canonical term is just "Posting." Move reasoning to a compressed footnote or delete it. The terminology file should be a lookup table, not a debate transcript.
+
+**Separate semantic models from UX detail.** A spec file's first sections should define the _model_ (what things are, how they compose, what rules govern them). UX detail (wireframes, context bar layouts, form field mappings) goes in a clearly separated lower section or in `1-ux.md`. An agent loading the file for a data model question shouldn't wade through ASCII wireframes.
+
+**One canonical definition per concept.** If `||hidden||` is defined in `1-text-first.md`, other files link to it — they don't re-explain it. A one-line pointer ("see `1-text-first.md` §Hidden Content") replaces re-explanation.
+
+**No Integration Points sections.** The README index and cross-references within sections handle this. A standalone "Integration Points" section at the end of every file is redundant boilerplate.
+
+**Implementation phases belong in Layer 2.** Layer 1 describes target behavior. Implementation sequencing belongs in `2-roadmap.md`. Don't add "Phase 1 / Phase 2 / Phase 3" tables to Layer 1 files.
+
+**Analytical results go in Layer 0.** If you discover a general insight about coordination, social norms, or communication patterns, it belongs in `0-foundations.md` — not embedded in a Layer 1 behavior spec. Layer 1 files can reference foundations ("see §3 Overhead Sources").
+
 ### Deviations format
 
 ```markdown
 ## Current Deviations
 
-- **[Gap name]**: Currently X. Target: Y. -> v0.N
-- **[Feature name]**: Not yet implemented. -> v0.N
+- **[Gap name]**: Currently X. Target: Y. → v0.N
+- **[Feature name]**: Not yet implemented. → v0.N
 ```
 
-Each entry links to a roadmap milestone. When that milestone ships, delete the entry.
+One line per deviation. Each links to a roadmap milestone. When that milestone ships, delete the entry.
 
 ## Docs Directory
 

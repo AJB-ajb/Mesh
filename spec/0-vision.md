@@ -10,15 +10,6 @@ The root cause: **messaging apps treat everything as a message.** They don't kno
 
 Mesh treats the **Space** as the fundamental unit — a conversation context with members, state text, and coordination tools. Conversation is the primary interface: people coordinate through messages, as they naturally would. When structure is needed, a **posting-message** adds it within the conversation — carrying coordination properties like matching, capacity, lifecycle, and deadlines. Rich interactive cards replace back-and-forth negotiation with structured actions. The Space's state text gives the system a machine-readable summary to match and act on.
 
-### Isn't this going back to messaging?
-
-The problem was never conversation itself — it was conversation _without structure_. Messaging apps have conversation and nothing else: the app has no understanding of what's being coordinated, so every negotiation is back-and-forth text. Spaces keep conversation as the natural interface while embedding the coordination intelligence that plain messaging lacks. Posting-messages carry the structured properties that let the platform act: skip unavailable people, match on relevant dimensions, manage group formation, send invites in your preferred order. The vision's core argument — structured mechanisms replace negotiation rounds — is preserved; only the surface changes from "fill out a posting form" to "write in a conversation."
-
-This serves two scenarios:
-
-- **Finding new people** (matching): post in a Space (or the global Explore surface), get matched with compatible people based on skills, availability, and interests.
-- **Coordinating with people you know** (invites): post within your group Space, invite connections in order — the platform handles the asking, waiting, and fallback automatically.
-
 ## Coordination as Negotiation Substitution
 
 Every activity involves multi-dimensional negotiation: who should come, when to meet, where, what exactly to do, how many people. In messaging apps, each dimension is a round of back-and-forth — and the dimensions interact (a different "when" might change "who" can come, which changes "what" you can do together).

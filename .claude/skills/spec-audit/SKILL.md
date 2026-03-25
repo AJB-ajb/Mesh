@@ -80,6 +80,17 @@ Prioritize by **user impact** — which broken use cases affect the most common 
 
 Look for cases where the code does something different from what the spec describes, even if both are "working." These are the trickiest bugs — the feature exists but behaves incorrectly per spec.
 
+### E. Spec Quality
+
+Check each spec file for writing quality issues (see `/spec` § Writing principles):
+
+- **Design archaeology**: before/after tables, "not X" justifications, "we used to" history. These should be replaced with the principle they encode, or deleted.
+- **UX mixed into semantic models**: wireframes, context bar layouts, form field migration tables in the same section as data model or access model definitions. These should be separated.
+- **Duplicated concepts**: the same concept explained in multiple files instead of one canonical definition + cross-references.
+- **Integration Points boilerplate**: standalone "Integration Points" sections that just list cross-references — redundant with the README index.
+- **Implementation phases in Layer 1**: phase tables that belong in `2-roadmap.md`, not in behavior specs.
+- **Missing foundations references**: insights about coordination, social norms, or communication patterns buried in Layer 1 files that should be in or reference `0-foundations.md`.
+
 ## 4. Report
 
 Present findings in this structure:
@@ -133,6 +144,11 @@ Spec targets not yet met that lack a deviation entry.
 | ---------- | ------- | ---------------- | --- | ------ | --- | ---------------------------- |
 | Coffee Now | Partial | No `             |     | hidden |     | `, no calendar pre-filtering |
 | ...        | ...     | ...              |
+
+## Spec Quality Issues
+
+| File | Issue type | Description | Suggested fix |
+| ---- | ---------- | ----------- | ------------- |
 ```
 
 ## 5. Apply Updates

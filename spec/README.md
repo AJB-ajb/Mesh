@@ -17,24 +17,25 @@ Layer 3: concise reference for agents.
 
 ## File Index
 
-| File                  | Layer | Description                                                          |
-| --------------------- | ----- | -------------------------------------------------------------------- |
-| `0-vision.md`         | 0     | Philosophy, core insights, target audiences                          |
-| `0-use-cases.md`      | 0     | Canonical scenarios — flat, nested, and case studies                 |
-| `1-mesh.md`           | 1     | Product overview hub — scope, approach, monetization                 |
-| `1-ux.md`             | 1     | UX principles, layout, voice & tone, mobile-first                    |
-| `1-text-first.md`     | 1     | Text-first philosophy, data model, `mesh:` syntax                    |
-| `1-matching.md`       | 1     | Matching dimensions, scoring, deep match                             |
-| `1-scheduling.md`     | 1     | Scheduling intelligence (3 layers)                                   |
-| `1-skills.md`         | 1     | Skill tree, taxonomy, LLM maintenance                                |
-| `1-availability.md`   | 1     | Calendar sync, availability windows, overlap                         |
-| `1-spaces.md`         | 1     | Spaces model, conversation, posting-messages, sub-Spaces, membership |
-| `1-posting-access.md` | 1     | Composable access model (discover/invite/link/context)               |
-| `1-terminology.md`    | 1     | Canonical terms with reasoning                                       |
-| `1-testing.md`        | 1     | Testing philosophy and guidelines                                    |
-| `2-roadmap.md`        | 2     | Milestones, status, versioning                                       |
-| `3-architecture.md`   | 3     | Tech stack, key libraries, deployment                                |
-| `designs/`            | —     | Active per-milestone design documents                                |
+| File                  | Layer | Description                                                             |
+| --------------------- | ----- | ----------------------------------------------------------------------- |
+| `0-foundations.md`    | 0     | Coordination theory — definitions, patterns, compressions, social norms |
+| `0-vision.md`         | 0     | Philosophy, core insights, target audiences                             |
+| `0-use-cases.md`      | 0     | Canonical scenarios — flat, nested, and case studies                    |
+| `1-mesh.md`           | 1     | Product overview hub — scope, approach, monetization                    |
+| `1-ux.md`             | 1     | UX principles, layout, voice & tone, mobile-first                       |
+| `1-text-first.md`     | 1     | Text-first philosophy, data model, `mesh:` syntax                       |
+| `1-matching.md`       | 1     | Matching dimensions, scoring, deep match                                |
+| `1-scheduling.md`     | 1     | Scheduling intelligence (3 layers)                                      |
+| `1-skills.md`         | 1     | Skill tree, taxonomy, LLM maintenance                                   |
+| `1-availability.md`   | 1     | Calendar sync, availability windows, overlap                            |
+| `1-spaces.md`         | 1     | Spaces model, conversation, posting-messages, sub-Spaces, membership    |
+| `1-posting-access.md` | 1     | Composable access model (discover/invite/link/context)                  |
+| `1-terminology.md`    | 1     | Canonical terms with reasoning                                          |
+| `1-testing.md`        | 1     | Testing philosophy and guidelines                                       |
+| `2-roadmap.md`        | 2     | Milestones, status, versioning                                          |
+| `3-architecture.md`   | 3     | Tech stack, key libraries, deployment                                   |
+| `designs/`            | —     | Active per-milestone design documents                                   |
 
 ## Loading Guidance
 
@@ -48,6 +49,7 @@ Read the minimum set of files for your task:
 | Space model question           | `1-spaces.md`                                                              |
 | Architecture question          | `3-architecture.md`                                                        |
 | Unsure about product direction | `0-vision.md` + `0-use-cases.md`                                           |
+| Why does Mesh work this way?   | `0-foundations.md` — coordination theory, compressions, social norms       |
 | Need canonical term            | `1-terminology.md`                                                         |
 | Tech stack check               | `3-architecture.md`                                                        |
 | Card suggestions / prefill     | `designs/intelligent-prefill.md` + `1-spaces.md` §7 + `0-use-cases.md`     |

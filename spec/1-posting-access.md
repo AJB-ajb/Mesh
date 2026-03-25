@@ -4,19 +4,7 @@
 
 ---
 
-## 1. The Problem With Enums
-
-The current visibility model (`public | private`) is too rigid:
-
-- It conflates "who can discover this" with "who can access this."
-- It can't express "visible to my connections but not strangers" or "visible to group members plus one outside mentor."
-- It forces users to think in abstract categories rather than answering the natural question: "who is this for?"
-
-A richer enum (`public | connections | context | private`) would be more expressive but still inflexible — every new scope requires a new enum value, and combinations (group + some outsiders) remain impossible.
-
----
-
-## 2. Composable Access Model
+## 1. Composable Access Model
 
 Instead of a single visibility field, a posting's audience is composed from independent building blocks:
 
@@ -71,20 +59,9 @@ posting_invites:
 - `link_token` not null -> accessible via `/p/{link_token}`
 - Invitees always have access regardless of other settings
 
-### Replacing `visibility`
-
-The old `visibility: public | private` maps to:
-
-| Old                      | New                                 |
-| ------------------------ | ----------------------------------- |
-| `visibility = 'public'`  | `in_discover = true`                |
-| `visibility = 'private'` | `in_discover = false`, has invitees |
-
-The `visibility` column can be migrated via expand-contract: write both during transition, then drop `visibility`.
-
 ---
 
-## 3. Defaults By Composition Context
+## 2. Defaults By Composition Context
 
 The system sets sensible defaults based on where the user starts composing:
 
@@ -104,7 +81,7 @@ The compose context bar includes a Space search. Users don't need to navigate in
 
 ---
 
-## 4. Composition UX: The Context Bar
+## 3. Composition UX: The Context Bar
 
 The posting form reduces to three elements:
 
@@ -161,7 +138,7 @@ All settings can also be set via slash commands. The commands are "stateful" —
 
 ---
 
-## 5. Links
+## 4. Links
 
 ### Invite links vs discovery links
 
@@ -188,45 +165,7 @@ Technically identical — a URL containing the `link_token`. The posting's accep
 
 ---
 
-## 6. Form Field Removal
-
-The current posting form has 6 sub-forms with ~20 fields. With the text-first model and composable access, most fields move to text extraction or the context bar:
-
-### Fields removed from the form
-
-| Old field                                    | Where it goes                                                       |
-| -------------------------------------------- | ------------------------------------------------------------------- |
-| Title                                        | Auto-extracted from first line of text                              |
-| Tags                                         | Extracted from text by LLM                                          |
-| Estimated time                               | Extracted from text by LLM                                          |
-| Category                                     | Extracted from text by LLM                                          |
-| Context identifier                           | Replaced by Space context (space_id) in context bar                 |
-| Skills (picker)                              | Extracted from text, or `/skills` command                           |
-| Location (mode, name, lat/lng, max distance) | Plain text or `/location` command -> mesh:location link             |
-| Availability (mode, windows)                 | Calendar integration replaces this (see scheduling-intelligence.md) |
-| Visibility toggle                            | Replaced by composable access in context bar                        |
-
-### Fields that remain (in collapsed settings)
-
-| Field               | Why it stays                                          |
-| ------------------- | ----------------------------------------------------- |
-| Team size (min/max) | Not naturally part of text; controls posting behavior |
-| Expiry              | Behavioral setting                                    |
-| Auto-accept         | Behavioral setting                                    |
-| N-sequential count  | Behavioral setting                                    |
-
-### The end state
-
-The posting creation UI becomes:
-
-1. Text editor (with speech input, slash commands, mesh: links)
-2. Context bar (context, invitees, link, discover toggle)
-3. Collapsed settings row (team size, expire, accept mode, N-sequential)
-4. Post button
-
----
-
-## 7. Matching: Qualitative Direction
+## 5. Matching: Qualitative Direction
 
 ### Fast matching = hard filtering
 
@@ -268,7 +207,7 @@ The numeric match score still exists internally for ranking, but is not shown to
 
 ---
 
-## 8. Use Cases
+## 6. Use Cases
 
 These use cases test the access model from the user's perspective. Each describes what the user does, what they see, and what the expected behavior is.
 
@@ -371,17 +310,6 @@ These use cases test the access model from the user's perspective. Each describe
 **Context bar shows**: `DS Study Group (3 members)` (immediate parent Space displayed)
 
 **Expected**: The 3 Space members see it. The LLM reads up the Space hierarchy (study group -> course -> university) for richer context when processing the posting. Visibility is scoped to the immediate Space's members.
-
----
-
-## 9. Integration Points
-
-- **`spec/terminology.md`**: "Visibility" is deprecated as a binary concept. The new model uses composable access paths. The `visibility` column is replaced by `in_discover` + `link_token` + invitees + Space membership.
-- **`spec/ux.md`**: The posting form is replaced by text editor + context bar + collapsed settings. Composition UX adapts to context.
-- **`spec/matching.md`**: Fast matching remains for hard filtering. Deep matching shifts to qualitative explanations with coarse confidence levels. Numeric scores are internal-only for ranking.
-- **[1-spaces.md](1-spaces.md)**: Context inheritance and visibility inheritance are covered by the Spaces model. A posting in a Space inherits `in_discover = false` by default; it is visible to the Space's members via membership, not via a visibility setting.
-- **`spec/roadmap.md`**: Form removal and access model implementation are added to the milestone plan.
-- **[1-text-first.md](1-text-first.md)**: The composition UX described here is the implementation of the text-first compose flow. The context bar is the "envelope" that complements the text editor.
 
 ---
 

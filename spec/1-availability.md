@@ -100,18 +100,6 @@ Reference points: morning=06:00-12:00, afternoon=12:00-18:00, evening=18:00-24:0
 
 ---
 
-## Implementation Phases
-
-| Phase | Scope                                                                                          | Target                                                                                                                                                    |
-| ----- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | Data model + migration. Quick mode reads/writes new format. Posting `availability_mode`.       | ✅ v0.2                                                                                                                                                   |
-| 2     | Detailed calendar week view. Posting availability input. Overlap scoring + hard filter.        | ✅ v0.2                                                                                                                                                   |
-| 3     | Google Calendar OAuth + FreeBusy sync. Busy block overlay. Effective availability in matching. | Partial (OAuth + sync + busy blocks done; DB scoring function `compute_availability_score` exists but integration into live matching pipeline unverified) |
-| 4     | iCal sync. Calendar settings UI. AI extraction from text.                                      | v1.0                                                                                                                                                      |
-| 5     | Team scheduling: common windows, proposals, calendar export.                                   | v1.0+                                                                                                                                                     |
-
----
-
 ## Open Questions
 
 - **Multiple calendars**: Initial design syncs primary only. Multi-calendar support later.

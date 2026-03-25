@@ -194,7 +194,7 @@ Users can adjust weights to reflect their priorities.
 - Embeddings stored for: posting descriptions, tags, natural language criteria
 - Fast filtering via PostgreSQL indexes, semantic matching via pgvector cosine similarity
 
-### Stage 2: Deep Match — LLM Evaluation (v0.5)
+### Stage 2: Deep Match — LLM Evaluation
 
 > See [1-text-first.md](1-text-first.md) for the text-first matching philosophy.
 
@@ -219,7 +219,7 @@ For the top ~10–20 candidates from Stages 1–2, an LLM evaluates the full tex
 
 ### AI Input Processing
 
-With the text-first rewrite, matching inputs are now primarily **derived from user text** via LLM extraction, rather than manually entered through forms. The extraction pipeline runs in the background after posting and produces the same structured metadata used by Stages 1–2. Users can correct extraction errors, but the text is never modified by the system.
+Matching inputs are primarily **derived from user text** via LLM extraction (see [1-text-first.md](1-text-first.md)). The extraction pipeline runs in the background after posting and produces the same structured metadata used by Stages 1–2. Users can correct extraction errors, but the text is never modified by the system.
 
 - LLM extracts structured values from posting/profile text (skills, time, location, category, team size)
 - Embeddings generated for semantic fields and stored in pgvector

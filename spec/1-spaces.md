@@ -6,32 +6,9 @@
 
 ## 1. Core Concept
 
-The current posting-centric model treats the activity posting as the fundamental unit, bolting conversation on as a feature inside it. In practice, people coordinate through conversation -- messages are the natural medium for working out what to do, who's in, and when to meet.
+A Space is a conversation context where coordination happens through messages. When structure is needed -- matching, invites, lifecycle management -- a **posting-message** adds it within the conversation. Conversation is the natural interface; the system understands the structure within it.
 
-The Spaces model inverts this: **conversation is the medium, but the system understands the structure within it.** A Space is a conversation context. Coordination happens through messages. When structure is needed -- matching, invites, lifecycle management -- a posting-message adds it within the conversation.
-
-This is not "going back to messaging." The problem was never conversation itself -- it was conversation _without structure_. Messaging apps have no understanding of what's being coordinated. Spaces keep conversation as the natural interface while embedding coordination intelligence: posting-messages carry matching, capacity, and lifecycle; rich interactive cards replace back-and-forth with structured actions; the state text gives the system a machine-readable summary.
-
-### What stays the same
-
-- Text-first philosophy -- text is the primary input, structure is extracted ([1-text-first.md](1-text-first.md))
-- Matching pipeline -- fast filter + deep LLM match ([1-matching.md](1-matching.md))
-- Negotiation substitution -- who/when/where/what/how many resolved by mechanisms, not back-and-forth
-- `mesh:` link syntax, `||hidden||`, `||?||`
-- Sequential/parallel invites
-- Calendar overlap and scheduling intelligence ([1-scheduling.md](1-scheduling.md))
-- Skills system and profile text
-
-### What changes
-
-| Before                                        | After                                            |
-| --------------------------------------------- | ------------------------------------------------ |
-| Posting is the primary unit                   | Space (conversation context) is the primary unit |
-| Feed of postings                              | List of Spaces (messenger-like)                  |
-| Group chat and coordination are separate tabs | Unified conversation timeline                    |
-| Standalone posting creation flow              | Posting-message type within a Space              |
-| DMs as a separate feature                     | 2-person Spaces                                  |
-| Discover page                                 | The Global Space (Explore)                       |
+The key distinction from plain messaging: messaging apps have no understanding of what's being coordinated (see [0-foundations.md](0-foundations.md) §3 Overhead Sources). Spaces embed coordination intelligence: posting-messages carry matching, capacity, and lifecycle; rich interactive cards replace back-and-forth with structured actions; the state text gives the system a machine-readable summary.
 
 ---
 
@@ -179,7 +156,7 @@ Typically one level: Space -> sub-Space. No artificial depth limit, but the UX i
 
 ---
 
-## 7. Rich Interactive Cards (Phase 2)
+## 7. Rich Interactive Cards
 
 Coordination happens through **rich interactive cards** -- structured messages embedded in the conversation that members interact with via taps instead of writing messages.
 
@@ -514,22 +491,7 @@ Numbered for cross-reference. Full rationale in [designs/spaces-rewrite.md](desi
 
 ---
 
-## 12. Integration Points
-
-| Spec                                                   | Integration                                                                                                                              |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| [1-matching.md](1-matching.md)                         | Candidate pool scoped by Space. Deep match receives parent state text as context.                                                        |
-| [1-scheduling.md](1-scheduling.md)                     | Slot generation inherits Space context. Calendar overlap scoped to Space members. Shared Calendar tab reuses overlap + busy block infra. |
-| [1-text-first.md](1-text-first.md)                     | Same editor everywhere. Slash commands work in all Spaces. `mesh:` syntax, `\|\|hidden\|\|`, `\|\|?\|\|` in state text and messages.     |
-| [1-terminology.md](1-terminology.md)                   | "Space" (internal: Coordination Space), "Explore" (Global Space), "Posting" (posting-message). See terminology spec for canonical terms. |
-| [1-ux.md](1-ux.md)                                     | Three-tab navigation (Spaces, Activity, Profile). Space list as main screen. Activity tab for personal cards.                            |
-| [1-posting-access.md](1-posting-access.md)             | Composable access model applies to Space visibility and posting-message access.                                                          |
-| [0-use-cases.md](0-use-cases.md)                       | All scenarios (Coffee Now, Hackathon, Recurring Practice, Course Project, Friday Dinner) traced through Spaces model.                    |
-| [designs/spaces-rewrite.md](designs/spaces-rewrite.md) | Full data model, SQL schemas, RLS policies, migration path, implementation phases.                                                       |
-
----
-
-## 13. Current Deviations
+## 12. Current Deviations
 
 - **Inherited → independent transition**: `inherits_members` flag exists but no auto-transition when outsiders join via matching/invite. → v0.9
 - **Old table cleanup**: Legacy `conversations`, `messages`, `group_messages`, `group_message_reads` dropped. Old `postings` table still exists (FK dependents need separate analysis). Active code migrated off old tables to `space_postings`/`space_members`. → partial, `postings` drop deferred

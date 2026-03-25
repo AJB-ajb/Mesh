@@ -19,17 +19,6 @@ Structured forms (title, description, category, skill picker, location, time, te
 - **LLMs are good at text.** Extraction improves over time; betting on text means betting on an improving capability.
 - **Text is portable.** A markdown posting can be copy-pasted to Slack, Discord, email. Form data can't.
 
-### What Changes
-
-| Aspect               | Form-First                    | Text-First                                                 |
-| -------------------- | ----------------------------- | ---------------------------------------------------------- |
-| **Primary input**    | Multi-step form               | Single text field                                          |
-| **Text**             | Secondary description field   | The posting _is_ the text                                  |
-| **Structured data**  | User enters via form fields   | Auto-extracted from text in background                     |
-| **Skills**           | Skill tree picker with levels | Free text, extracted to skill tags                         |
-| **Profile creation** | Fill out form fields          | Write/paste a description, or guided prompts               |
-| **Matching basis**   | Structured field comparison   | Fast filter on extracted data, then LLM deep match on text |
-
 ---
 
 ## Data Model: Text + Metadata
@@ -257,21 +246,6 @@ Some information is inherently non-textual. Handled as metadata alongside text:
 ## Data Philosophy
 
 Mesh does not use end-to-end encryption for posting/profile content, because LLM integration requires server-side access to text. The app establishes a different communication norm: user-generated text is processed by the platform to provide matching, extraction, and coordination features. Standard encryption is used for transport and private user data, but content is processed server-side.
-
----
-
-## What Stays the Same
-
-The text-first design changes the _input paradigm and matching approach_. The coordination core is unaffected:
-
-- **Posting -> invite -> coordinate flow**: The core loop. Text-first makes _creating_ the posting faster; coordination after posting is unchanged.
-- **Page structure**: Spaces, Activity, Profile (see [1-ux.md](1-ux.md))
-- **Posting lifecycle**: draft -> open -> active (min team reached) -> closed
-- **Waitlist**: Automatic waitlisting when postings are filled
-- **Connections & messaging**: Real-time messaging within Spaces (DMs and group conversations)
-- **Notifications**: Activity tab for actionable items, badges on Spaces for messages
-- **OAuth & onboarding**: One-click login, 30-second onboarding target
-- **Verification**: LinkedIn/GitHub profile linking and badges
 
 ---
 

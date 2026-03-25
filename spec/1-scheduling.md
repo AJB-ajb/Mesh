@@ -421,28 +421,7 @@ If a participant's calendar changes after accepting (new meeting added):
 
 ---
 
-## 6. Implementation Phases
-
-| Phase | Scope                                                                                           | Depends on                                                      |
-| ----- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| 1     | `\|\|hidden\|\|` profile syntax + `/hidden` slash command. LLM reads hidden text at query time. | `\|\|hidden\|\|` rendering ([1-text-first.md](1-text-first.md)) |
-| 2     | 1-on-1 slot generation: overlap computation + LLM slot suggestion with intelligent pre-fill.    | Calendar sync (availability-calendar Phase 3)                   |
-| 3     | Group scheduling: N-way overlap, pre-fill recommendation, per-person private constraint notes.  | Phase 2                                                         |
-| 4     | Travel time estimation from profile/posting locations (deterministic, no transit API).          | Phase 2                                                         |
-| 5     | Conflict detection: post-acceptance calendar change notifications.                              | Phase 2, calendar webhooks                                      |
-
----
-
-## 7. Integration Points
-
-- **`spec/availability-calendar.md`**: Provides the calendar data (sync, free/busy, overlap scoring). This spec adds the intelligence layer on top.
-- **[1-text-first.md](1-text-first.md)**: `||hidden||` syntax in profile text is the data source for scheduling preferences. The acceptance card is part of the text-first flow. This spec defines how time slots are generated for that card.
-- **Matching ([1-matching.md](1-matching.md))**: `||hidden||` profile text is readable by the deep match LLM, so "nothing before 10am" naturally influences match scores for early-morning postings. This is emergent, not a separate mechanism.
-- **Spaces ([1-spaces.md](1-spaces.md))**: Scheduling intelligence works the same within Spaces. A posting-message "meet Thursday?" within a Space auto-scopes to the Space's members for calendar overlap. Rich interactive cards (time proposal cards, RSVP cards) embed scheduling intelligence directly into the conversation timeline. Card Principles (§7) define how scheduling intelligence surfaces through Intelligent Pre-fill and Private Constraints. The Shared Calendar tab (§8) provides a visual complement — aggregate overlap heatmap + Space events — with drag-to-create as an alternative card creation entry point.
-
----
-
-## 8. Current Deviations
+## 6. Current Deviations
 
 - **Scheduling preferences onboarding**: No dedicated profile setup prompt for scheduling preferences ("Anything we should know when scheduling?"). Users can add `||hidden||` text manually but aren't guided to do so. → v0.9
 - **Travel time estimation**: Not implemented. → backlog
