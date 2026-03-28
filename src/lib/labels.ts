@@ -871,6 +871,11 @@ export const labels = {
       "Use the buttons below to auto-fill your location, or type manually.",
     gettingLocation: "Getting location...",
     useCurrentLocation: "Use current location",
+    locationPermissionDenied:
+      "Location permission denied. Please allow it in your browser settings.",
+    locationUnavailable: "Could not get your location. Try searching instead.",
+    locationReverseGeocodeFailed:
+      "Could not determine your address. Try searching instead.",
     manualEntry: "Manual entry",
     searchLocation: "Search location",
     languagesLabel: "Spoken languages (comma-separated)",
@@ -2013,6 +2018,16 @@ export const labels = {
     undoButton: "Undo",
     appliedFormat: "Formatted!",
     appliedClean: "Cleaned!",
+  },
+
+  // ---------------------------------------------------------------------------
+  // Speech input
+  // ---------------------------------------------------------------------------
+  speechInput: {
+    micPermissionDenied:
+      "Microphone access denied. Please allow it in your browser settings.",
+    micUnavailable: "Voice input isn't available in this browser.",
+    transcriptionFailed: "Failed to transcribe audio. Please try again.",
   },
 
   // ---------------------------------------------------------------------------

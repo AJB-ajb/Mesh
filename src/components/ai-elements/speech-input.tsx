@@ -1,7 +1,9 @@
 "use client";
 
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { labels } from "@/lib/labels";
 import { LoaderIcon, MicIcon, SquareIcon } from "lucide-react";
 import {
   type ComponentProps,
@@ -173,6 +175,9 @@ export const SpeechInput = ({
 
     speechRecognition.onerror = (event) => {
       console.error("Speech recognition error:", event.error);
+      if (event.error === "not-allowed") {
+        toast.error(labels.speechInput.micPermissionDenied);
+      }
       setIsListening(false);
     };
 
@@ -225,6 +230,7 @@ export const SpeechInput = ({
             }
           } catch (error) {
             console.error("Transcription error:", error);
+            toast.error(labels.speechInput.transcriptionFailed);
           } finally {
             setIsProcessing(false);
           }
@@ -245,6 +251,11 @@ export const SpeechInput = ({
       setIsListening(true);
     } catch (error) {
       console.error("Failed to start MediaRecorder:", error);
+      if (error instanceof DOMException && error.name === "NotAllowedError") {
+        toast.error(labels.speechInput.micPermissionDenied);
+      } else {
+        toast.error(labels.speechInput.micUnavailable);
+      }
       setIsListening(false);
     }
   }, [onAudioRecorded, onTranscriptionChange]);
