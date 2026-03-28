@@ -60,7 +60,7 @@ export interface UseComposeEditorReturn {
 function buildExtensions(
   context: EditorContext,
   slashExtension: Extension,
-  onSubmitRef: React.MutableRefObject<(() => void) | undefined>,
+  onSubmit: () => void,
 ): Extension[] {
   const exts: Extension[] = [slashExtension];
 
@@ -69,7 +69,7 @@ function buildExtensions(
   }
 
   if (context === "message") {
-    exts.push(enterToSend(onSubmitRef), autoGrow(150));
+    exts.push(enterToSend(onSubmit), autoGrow(150));
   }
 
   return exts;
@@ -88,23 +88,17 @@ export function useComposeEditor(
   const [editorFocused, setEditorFocused] = useState(false);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
 
-  // Stable ref for onSubmit (used by enterToSend extension)
-  const onSubmitRef = useRef<(() => void) | undefined>(onSubmit);
-  onSubmitRef.current = onSubmit;
-
   // Slash commands
   const slash = useEditorSlashCommands({
     context,
     onImmediateCommand,
   });
 
-  // Build extensions once
+  // Rebuild extensions when context, slash extension, or onSubmit changes.
+  // enterToSend uses a Facet so CM picks up the new callback via reconfigure.
   const extensions = useMemo(
-    () => buildExtensions(context, slash.slashExtension, onSubmitRef),
-    // We intentionally depend only on context — slashExtension is already
-    // stable for a given context via the hook's own useMemo.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [context],
+    () => buildExtensions(context, slash.slashExtension, onSubmit),
+    [context, slash.slashExtension, onSubmit],
   );
 
   const handleEditorReady = useCallback((view: EditorView) => {
@@ -121,7 +115,9 @@ export function useComposeEditor(
 
   // Route overlay opens — notify parent for context-specific overlays
   const onContextOverlayRef = useRef(onContextOverlay);
-  onContextOverlayRef.current = onContextOverlay;
+  useEffect(() => {
+    onContextOverlayRef.current = onContextOverlay;
+  }, [onContextOverlay]);
 
   useEffect(() => {
     if (activeOverlay && !SHARED_OVERLAYS.has(activeOverlay)) {

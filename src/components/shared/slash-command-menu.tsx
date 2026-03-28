@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   Clock,
@@ -15,6 +15,10 @@ import {
   UserPlus,
   Sparkles,
   Eraser,
+  HelpCircle,
+  CalendarDays,
+  RefreshCw,
+  Pencil,
 } from "lucide-react";
 import type { SlashCommand } from "@/lib/slash-commands/registry";
 
@@ -31,12 +35,17 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   UserPlus,
   Sparkles,
   Eraser,
+  HelpCircle,
+  CalendarDays,
+  RefreshCw,
+  Pencil,
 };
 
 interface SlashCommandMenuProps {
   commands: SlashCommand[];
   selectedIndex: number;
-  position: { top: number; left: number };
+  /** Cursor coordinates — menu flips above when insufficient space below */
+  anchor: { top: number; bottom: number; left: number };
   onSelect: (command: SlashCommand) => void;
   onClose?: () => void;
 }
@@ -44,11 +53,15 @@ interface SlashCommandMenuProps {
 export function SlashCommandMenu({
   commands,
   selectedIndex,
-  position,
+  anchor,
   onSelect,
   onClose,
 }: SlashCommandMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const [placement, setPlacement] = useState<{ top: number; left: number }>({
+    top: anchor.bottom + 4,
+    left: anchor.left,
+  });
 
   // Auto-close on outside click (pointerdown for touch + mouse)
   useEffect(() => {
@@ -62,6 +75,20 @@ export function SlashCommandMenu({
     return () =>
       document.removeEventListener("pointerdown", handleClickOutside);
   }, [onClose]);
+
+  // Measure menu and flip above cursor when insufficient space below
+  useLayoutEffect(() => {
+    const menu = menuRef.current;
+    if (!menu) return;
+    const rect = menu.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - anchor.bottom - 8;
+    if (rect.height > spaceBelow && anchor.top > rect.height + 8) {
+      // Flip above: position bottom edge at cursor top
+      setPlacement({ top: anchor.top - rect.height - 4, left: anchor.left });
+    } else {
+      setPlacement({ top: anchor.bottom + 4, left: anchor.left });
+    }
+  }, [anchor, commands.length]);
 
   // Scroll selected item into view
   useEffect(() => {
@@ -79,8 +106,8 @@ export function SlashCommandMenu({
     <div
       ref={menuRef}
       role="listbox"
-      className="fixed z-50 w-64 rounded-lg border bg-popover p-1 shadow-lg"
-      style={{ top: position.top, left: position.left }}
+      className="fixed z-50 w-64 max-h-[min(400px,50vh)] overflow-y-auto rounded-lg border bg-popover p-1 shadow-lg"
+      style={{ top: placement.top, left: placement.left }}
     >
       {commands.map((command, index) => {
         const Icon = ICON_MAP[command.icon];

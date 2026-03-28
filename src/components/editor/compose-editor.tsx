@@ -237,12 +237,16 @@ export const ComposeEditor = forwardRef<
           <SlashCommandMenu
             commands={editor.slash.menuState.commands}
             selectedIndex={editor.slash.menuState.selectedIndex}
-            position={(() => {
+            anchor={(() => {
               const coords = editor.editorRef.current!.coordsAtPos(
                 editor.slash.menuState.from,
               );
-              if (!coords) return { top: 0, left: 0 };
-              return { top: coords.bottom + 4, left: coords.left };
+              if (!coords) return { top: 0, bottom: 0, left: 0 };
+              return {
+                top: coords.top,
+                bottom: coords.bottom,
+                left: coords.left,
+              };
             })()}
             onSelect={(cmd) =>
               editor.slash.selectCommand(editor.editorRef.current!, cmd)
@@ -291,7 +295,11 @@ export const ComposeEditor = forwardRef<
       {/* Mobile command sheet + trigger */}
       {config.mobileSheet && (
         <>
-          <SlashTriggerButton onClick={() => editor.setMobileSheetOpen(true)} />
+          {keyboardVisible && editor.editorFocused && (
+            <SlashTriggerButton
+              onClick={() => editor.setMobileSheetOpen(true)}
+            />
+          )}
           <MobileCommandSheet
             open={editor.mobileSheetOpen}
             commands={editor.slash.contextCommands}

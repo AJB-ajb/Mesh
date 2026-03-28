@@ -34,7 +34,7 @@ const mockCommands: SlashCommand[] = [
 const defaultProps = {
   commands: mockCommands,
   selectedIndex: 0,
-  position: { top: 200, left: 100 },
+  anchor: { top: 180, bottom: 200, left: 100 },
   onSelect: vi.fn(),
   onClose: vi.fn(),
 };
@@ -95,11 +95,12 @@ describe("SlashCommandMenu", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("renders with correct position styling", () => {
+  it("renders with position styling from anchor", () => {
     render(<SlashCommandMenu {...defaultProps} />);
 
     const menu = screen.getByRole("listbox");
-    expect(menu.style.top).toBe("200px");
+    // Default placement is below anchor (bottom + 4)
+    expect(menu.style.top).toBe("204px");
     expect(menu.style.left).toBe("100px");
   });
 });

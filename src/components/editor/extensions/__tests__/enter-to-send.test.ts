@@ -3,18 +3,14 @@ import { EditorView } from "@codemirror/view";
 import { EditorState } from "@codemirror/state";
 import { enterToSend } from "../enter-to-send";
 import { slashCommandPlugin, slashMenuState } from "../slash-command-plugin";
-import type { MutableRefObject } from "react";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function createEditor(
-  onSubmitRef: MutableRefObject<(() => void) | undefined>,
-  options?: { withSlash?: boolean },
-) {
+function createEditor(onSubmit: () => void, options?: { withSlash?: boolean }) {
   const parent = document.createElement("div");
-  const extensions = [enterToSend(onSubmitRef)];
+  const extensions = [enterToSend(onSubmit)];
 
   if (options?.withSlash) {
     extensions.push(
@@ -51,14 +47,12 @@ function pressKey(view: EditorView, key: string, shift = false): void {
 // ---------------------------------------------------------------------------
 
 describe("enter-to-send", () => {
-  let onSubmit: ReturnType<typeof vi.fn>;
-  let onSubmitRef: MutableRefObject<(() => void) | undefined>;
+  let onSubmit: ReturnType<typeof vi.fn<() => void>>;
   let view: EditorView;
 
   beforeEach(() => {
-    onSubmit = vi.fn();
-    onSubmitRef = { current: onSubmit as unknown as () => void };
-    view = createEditor(onSubmitRef);
+    onSubmit = vi.fn<() => void>();
+    view = createEditor(onSubmit);
   });
 
   it("calls onSubmit when Enter is pressed", () => {
@@ -84,7 +78,7 @@ describe("enter-to-send", () => {
   });
 
   it("does not call onSubmit when slash menu is open", () => {
-    const viewWithSlash = createEditor(onSubmitRef, { withSlash: true });
+    const viewWithSlash = createEditor(onSubmit, { withSlash: true });
     insertText(viewWithSlash, "/");
 
     const menu = viewWithSlash.state.field(slashMenuState);
@@ -95,18 +89,5 @@ describe("enter-to-send", () => {
     // The slash plugin should have consumed Enter, not enterToSend
     // onSubmit should not be called
     expect(onSubmit).not.toHaveBeenCalled();
-  });
-
-  it("uses current ref value (not stale closure)", () => {
-    const newSubmit = vi.fn();
-    onSubmitRef.current = newSubmit;
-
-    insertText(view, "hello");
-    pressKey(view, "Enter");
-
-    if (newSubmit.mock.calls.length > 0) {
-      expect(newSubmit).toHaveBeenCalledTimes(1);
-      expect(onSubmit).not.toHaveBeenCalled();
-    }
   });
 });
