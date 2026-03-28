@@ -4,7 +4,7 @@ Run only the specs whose trigger areas overlap with your changes.
 
 | Spec file                            | Run when you change…                                                              |
 | ------------------------------------ | --------------------------------------------------------------------------------- |
-| `e2e/hydration.spec.ts`              | SWR/Suspense data loading, server/client component boundaries, SWRFallback usage  |
+| `e2e/hydration.spec.ts`              | SWR/Suspense data loading, server/client component boundaries, SWRFallback usage. **If you add or modify a page/route, add it to `AUTHED_PAGES` in this spec.** |
 | `e2e/layout.spec.ts`                 | Layout components, responsive styling, viewport-dependent rendering               |
 | `e2e/auth-feature.spec.ts`           | Auth pages, login/signup flow, middleware, session handling, Supabase auth config |
 | `e2e/cross-user-visibility.spec.ts`  | RLS policies, profile/posting visibility, Supabase queries with joins             |

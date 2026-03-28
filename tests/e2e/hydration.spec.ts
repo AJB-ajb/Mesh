@@ -11,10 +11,14 @@ import { test, expect } from "@playwright/test";
 
 const hasAuth = !!process.env.TEST_USER_PASSWORD;
 
+// Static (dashboard) routes. Dynamic routes (/spaces/[id], /profile/[userId])
+// aren't tested here — they need valid IDs. Add new pages as they're created.
 const AUTHED_PAGES = [
   { path: "/spaces", name: "Spaces" },
   { path: "/activity", name: "Activity" },
   { path: "/profile", name: "Profile" },
+  { path: "/settings", name: "Settings" },
+  { path: "/settings?success=test", name: "Settings (query param redirect)" },
 ];
 
 const HYDRATION_PATTERNS = [
