@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import {
   slashCommandPlugin,
   selectSlashCommand,
@@ -68,6 +68,14 @@ export function useEditorSlashCommands(
   });
   const [activeOverlay, setActiveOverlay] = useState<string | null>(null);
 
+  // Stable ref for onImmediateCommand — read in handleSelect (an event
+  // callback), never during render. Keeps handleSelect and slashExtension
+  // identity stable so MeshEditor won't recreate the CM view.
+  const onImmediateCommandRef = useRef(onImmediateCommand);
+  useEffect(() => {
+    onImmediateCommandRef.current = onImmediateCommand;
+  }, [onImmediateCommand]);
+
   const handleSelect = useCallback(
     (command: SlashCommand, view?: EditorView) => {
       setMenuState((prev) => ({ ...prev, isOpen: false }));
@@ -76,7 +84,8 @@ export function useEditorSlashCommands(
       } else if (command.type === "setting") {
         setActiveOverlay(command.name);
       } else if (command.type === "immediate") {
-        onImmediateCommand?.(command.name);
+         
+        onImmediateCommandRef.current?.(command.name);
       } else if (command.type === "content" && view) {
         const insert = CONTENT_INSERTS[command.name];
         if (insert) {
@@ -89,7 +98,7 @@ export function useEditorSlashCommands(
         }
       }
     },
-    [onImmediateCommand],
+    [],
   );
 
   const handleStateChange = useCallback((state: SlashMenuState) => {
@@ -101,6 +110,7 @@ export function useEditorSlashCommands(
     [context],
   );
 
+  /* eslint-disable react-hooks/refs -- handleSelect captures a ref but only reads .current in event callbacks, not during render */
   const slashExtension = useMemo(
     () =>
       slashCommandPlugin({
@@ -110,6 +120,7 @@ export function useEditorSlashCommands(
       }),
     [handleStateChange, handleSelect, contextCommands],
   );
+  /* eslint-enable react-hooks/refs */
 
   const closeOverlay = useCallback(() => {
     setActiveOverlay(null);

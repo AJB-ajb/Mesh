@@ -1,15 +1,7 @@
 import { keymap } from "@codemirror/view";
-import { Facet, Prec, type Extension } from "@codemirror/state";
+import { Prec, type Extension } from "@codemirror/state";
 import { slashMenuState } from "./slash-command-plugin";
-
-/**
- * Facet that holds the current onSubmit callback. Updating the facet value
- * (via EditorView.dispatch with reconfigure) keeps the callback fresh without
- * rebuilding the entire extension array.
- */
-const submitCallbackFacet = Facet.define<() => void, (() => void) | null>({
-  combine: (values) => values[0] ?? null,
-});
+import type { MutableRefObject } from "react";
 
 /**
  * CodeMirror extension for chat-style Enter-to-send.
@@ -19,36 +11,37 @@ const submitCallbackFacet = Facet.define<() => void, (() => void) | null>({
  *
  * Uses `Prec.high` so the slash plugin's `Prec.highest` Enter handler
  * runs first when the slash menu is open.
+ *
+ * Takes a ref rather than a plain callback so the extension identity stays
+ * stable — changing the callback doesn't recreate the CM editor.
  */
-export function enterToSend(onSubmit: () => void): Extension {
-  return [
-    submitCallbackFacet.of(onSubmit),
-    Prec.high(
-      keymap.of([
-        {
-          key: "Enter",
-          run(view) {
-            // Let the slash plugin handle Enter when the menu is open
-            const menu = view.state.field(slashMenuState, false);
-            if (menu?.isOpen) return false;
+export function enterToSend(
+  onSubmitRef: MutableRefObject<(() => void) | undefined>,
+): Extension {
+  return Prec.high(
+    keymap.of([
+      {
+        key: "Enter",
+        run(view) {
+          // Let the slash plugin handle Enter when the menu is open
+          const menu = view.state.field(slashMenuState, false);
+          if (menu?.isOpen) return false;
 
-            const cb = view.state.facet(submitCallbackFacet);
-            cb?.();
-            return true;
-          },
+          onSubmitRef.current?.();
+          return true;
         },
-        {
-          key: "Shift-Enter",
-          run(view) {
-            const pos = view.state.selection.main.head;
-            view.dispatch({
-              changes: { from: pos, to: pos, insert: "\n" },
-              selection: { anchor: pos + 1 },
-            });
-            return true;
-          },
+      },
+      {
+        key: "Shift-Enter",
+        run(view) {
+          const pos = view.state.selection.main.head;
+          view.dispatch({
+            changes: { from: pos, to: pos, insert: "\n" },
+            selection: { anchor: pos + 1 },
+          });
+          return true;
         },
-      ]),
-    ),
-  ];
+      },
+    ]),
+  );
 }

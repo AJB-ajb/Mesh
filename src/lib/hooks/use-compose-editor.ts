@@ -60,7 +60,7 @@ export interface UseComposeEditorReturn {
 function buildExtensions(
   context: EditorContext,
   slashExtension: Extension,
-  onSubmit: () => void,
+  onSubmitRef: React.MutableRefObject<(() => void) | undefined>,
 ): Extension[] {
   const exts: Extension[] = [slashExtension];
 
@@ -69,7 +69,7 @@ function buildExtensions(
   }
 
   if (context === "message") {
-    exts.push(enterToSend(onSubmit), autoGrow(150));
+    exts.push(enterToSend(onSubmitRef), autoGrow(150));
   }
 
   return exts;
@@ -88,18 +88,27 @@ export function useComposeEditor(
   const [editorFocused, setEditorFocused] = useState(false);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
 
+  // Stable ref for onSubmit — enterToSend reads .current in the keymap handler
+  // (never during render), so the extension identity stays stable.
+  const onSubmitRef = useRef<(() => void) | undefined>(onSubmit);
+  useEffect(() => {
+    onSubmitRef.current = onSubmit;
+  }, [onSubmit]);
+
   // Slash commands
   const slash = useEditorSlashCommands({
     context,
     onImmediateCommand,
   });
 
-  // Rebuild extensions when context, slash extension, or onSubmit changes.
-  // enterToSend uses a Facet so CM picks up the new callback via reconfigure.
+  // Build extensions once per context. All dynamic callbacks use refs so
+  // the extension identity is stable and MeshEditor won't recreate the view.
+  /* eslint-disable react-hooks/refs -- refs are only read in CM keymap/event handlers, not during render */
   const extensions = useMemo(
-    () => buildExtensions(context, slash.slashExtension, onSubmit),
-    [context, slash.slashExtension, onSubmit],
+    () => buildExtensions(context, slash.slashExtension, onSubmitRef),
+    [context, slash.slashExtension],
   );
+  /* eslint-enable react-hooks/refs */
 
   const handleEditorReady = useCallback((view: EditorView) => {
     editorRef.current = view;
