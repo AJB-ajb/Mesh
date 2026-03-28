@@ -32,15 +32,6 @@ const SLOT_MAP: Record<string, { start: number; end: number }> = {
   evening: { start: 1080, end: 1440 },
 };
 
-/**
- * Compute the intersection of multiple members' availability grids.
- *
- * @param memberSlots - Array of per-member availability maps. Null/undefined entries
- *   are treated as "fully available" (they don't constrain the intersection).
- * @returns Windows that ALL members with availability data share.
- *   Returns empty array when no profiles have availability data,
- *   or when there is no overlap.
- */
 // ---------------------------------------------------------------------------
 // Busy-block subtraction
 // ---------------------------------------------------------------------------

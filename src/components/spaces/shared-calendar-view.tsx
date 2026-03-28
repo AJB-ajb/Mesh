@@ -79,9 +79,9 @@ function formatSlotLabel(slot: { start: string; end: string }): string {
 function isToday(date: Date): boolean {
   const now = new Date();
   return (
-    date.getUTCFullYear() === now.getFullYear() &&
-    date.getUTCMonth() === now.getMonth() &&
-    date.getUTCDate() === now.getDate()
+    date.getUTCFullYear() === now.getUTCFullYear() &&
+    date.getUTCMonth() === now.getUTCMonth() &&
+    date.getUTCDate() === now.getUTCDate()
   );
 }
 
@@ -224,6 +224,9 @@ function DragPreviewBlock({
 // Main component
 // ---------------------------------------------------------------------------
 
+/** Stable empty array for useCalendarDrag (shared calendar is read-only). */
+const EMPTY_WINDOWS: RecurringWindow[] = [];
+
 interface SharedCalendarViewProps {
   spaceId: string;
   memberCount: number;
@@ -311,7 +314,6 @@ export function SharedCalendarView({
 
   // Drag-to-create: capture drag ranges, show confirmation bar instead of
   // immediately calling onCreateCard
-  const dummyWindows: RecurringWindow[] = [];
   const handleDragChange = (newWindows: RecurringWindow[]) => {
     if (!onCreateCard || newWindows.length === 0) return;
     const w = newWindows[newWindows.length - 1];
@@ -338,7 +340,7 @@ export function SharedCalendarView({
     handlePointerMove,
     handlePointerUp,
     previewWindow,
-  } = useCalendarDrag(dummyWindows, handleDragChange);
+  } = useCalendarDrag(EMPTY_WINDOWS, handleDragChange);
 
   const onColumnPointerDown = (e: React.PointerEvent, dayIndex: number) => {
     if (!onCreateCard) return;
@@ -357,14 +359,17 @@ export function SharedCalendarView({
   const goThisWeek = () => {
     setWeekStart(getWeekStart(new Date()));
     setMobilePageIndex(0);
+    setPendingSlot(null);
   };
   const goPrev = () => {
     setWeekStart((w) => addDays(w, -7));
     setMobilePageIndex(0);
+    setPendingSlot(null);
   };
   const goNext = () => {
     setWeekStart((w) => addDays(w, 7));
     setMobilePageIndex(0);
+    setPendingSlot(null);
   };
 
   const colCount = visibleIndices.length;

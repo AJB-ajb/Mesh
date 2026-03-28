@@ -35,9 +35,9 @@ export function windowsToConcreteDates(
 
   for (let d = 0; d < days; d++) {
     const date = new Date(fromDate);
-    date.setDate(date.getDate() + d);
+    date.setUTCDate(date.getUTCDate() + d);
 
-    const jsDow = date.getDay();
+    const jsDow = date.getUTCDay();
 
     for (const window of windows) {
       const targetJsDow = dbDowToJsDow(window.day_of_week);
@@ -49,10 +49,10 @@ export function windowsToConcreteDates(
       const endMin = window.end_minutes % 60;
 
       const start = new Date(date);
-      start.setHours(startHour, startMin, 0, 0);
+      start.setUTCHours(startHour, startMin, 0, 0);
 
       const end = new Date(date);
-      end.setHours(endHour, endMin, 0, 0);
+      end.setUTCHours(endHour, endMin, 0, 0);
 
       // Skip slots in the past
       if (start <= fromDate) continue;
