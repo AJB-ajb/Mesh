@@ -12,9 +12,12 @@ import { parseHiddenBlocks } from "@/lib/hidden-syntax";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { windowsToConcreteDates } from "@/lib/calendar/overlap-to-slots";
 import {
-  intersectAvailability,
+  intersectRecurringWindows,
+  legacySlotsToWindows,
   subtractBusyBlocks,
   type BusyPeriod,
+  type RecurringWindowInput,
+  type AvailabilitySlotsMap,
 } from "@/lib/availability/overlap";
 
 /**
@@ -143,7 +146,15 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
   const memberIds = (memberRows ?? []).map((m) => m.user_id);
   const admin = createAdminClient();
 
-  const [profilesResult, busyBlocksResult] = await Promise.all([
+  const now = new Date();
+  const horizon = new Date(Date.now() + 14 * 86400000);
+
+  const [windowsResult, profilesResult, busyBlocksResult] = await Promise.all([
+    admin
+      .from("availability_windows")
+      .select("profile_id, day_of_week, start_minutes, end_minutes")
+      .in("profile_id", memberIds)
+      .eq("window_type", "recurring"),
     admin
       .from("profiles")
       .select("user_id, full_name, source_text, availability_slots, timezone")
@@ -154,8 +165,8 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
       .in("profile_id", memberIds)
       .not("start_time", "is", null)
       .not("end_time", "is", null)
-      .gte("end_time", new Date().toISOString())
-      .lte("start_time", new Date(Date.now() + 14 * 86400000).toISOString()),
+      .gte("end_time", now.toISOString())
+      .lte("start_time", horizon.toISOString()),
   ]);
 
   const profiles = profilesResult.data ?? [];
@@ -197,13 +208,44 @@ export const POST = withAuth(async (req, { user, supabase, params }) => {
   // -------------------------------------------------------------------------
   let overlap: OverlapWindow[] | null = null;
 
-  const memberSlots = profiles.map(
-    (p) => p.availability_slots as Record<string, string[]> | null,
+  // Build per-member availability windows (new table + legacy fallback)
+  const windowsByMember = new Map<string, RecurringWindowInput[]>();
+  for (const row of windowsResult.data ?? []) {
+    if (
+      !row.profile_id ||
+      row.day_of_week == null ||
+      row.start_minutes == null ||
+      row.end_minutes == null
+    )
+      continue;
+    let list = windowsByMember.get(row.profile_id);
+    if (!list) {
+      list = [];
+      windowsByMember.set(row.profile_id, list);
+    }
+    list.push({
+      day_of_week: row.day_of_week,
+      start_minutes: row.start_minutes,
+      end_minutes: row.end_minutes,
+    });
+  }
+
+  const memberWindowsArray: (RecurringWindowInput[] | null)[] = memberIds.map(
+    (id) => {
+      const windows = windowsByMember.get(id);
+      if (windows && windows.length > 0) return windows;
+      const slots = profiles.find((p) => p.user_id === id)
+        ?.availability_slots as AvailabilitySlotsMap | null;
+      if (slots && Object.keys(slots).length > 0)
+        return legacySlotsToWindows(slots);
+      return null;
+    },
   );
-  const intersectedWindows = intersectAvailability(memberSlots);
+
+  const intersectedWindows = intersectRecurringWindows(memberWindowsArray);
 
   if (intersectedWindows.length > 0) {
-    const rawSlots = windowsToConcreteDates(intersectedWindows, new Date(), 14);
+    const rawSlots = windowsToConcreteDates(intersectedWindows, now, 14);
 
     // Subtract actual calendar busy blocks from the availability windows
     const concreteSlots = subtractBusyBlocks(rawSlots, busyByMember);
