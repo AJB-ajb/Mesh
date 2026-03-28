@@ -871,6 +871,11 @@ export const labels = {
       "Use the buttons below to auto-fill your location, or type manually.",
     gettingLocation: "Getting location...",
     useCurrentLocation: "Use current location",
+    locationPermissionDenied:
+      "Location permission denied. Please allow it in your browser settings.",
+    locationUnavailable: "Could not get your location. Try searching instead.",
+    locationReverseGeocodeFailed:
+      "Could not determine your address. Try searching instead.",
     manualEntry: "Manual entry",
     searchLocation: "Search location",
     languagesLabel: "Spoken languages (comma-separated)",

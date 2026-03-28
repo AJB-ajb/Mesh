@@ -11,6 +11,7 @@ import {
   type GeocodingResult,
 } from "@/lib/geocoding";
 import { LOCATION } from "@/lib/constants";
+import { labels } from "@/lib/labels";
 
 interface LocationAutocompleteProps {
   value: string;
@@ -80,9 +81,7 @@ export function LocationAutocomplete({
           onChange(result.displayName);
           setShowDropdown(false);
         } catch {
-          toast.error(
-            "Could not determine your address. Try searching instead.",
-          );
+          toast.error(labels.profileForm.locationReverseGeocodeFailed);
         } finally {
           setIsGeolocating(false);
         }
@@ -90,11 +89,9 @@ export function LocationAutocomplete({
       (error) => {
         setIsGeolocating(false);
         if (error.code === error.PERMISSION_DENIED) {
-          toast.error(
-            "Location permission denied. Please allow it in your browser settings.",
-          );
+          toast.error(labels.profileForm.locationPermissionDenied);
         } else {
-          toast.error("Could not get your location. Try searching instead.");
+          toast.error(labels.profileForm.locationUnavailable);
         }
       },
       {
@@ -218,7 +215,9 @@ export function LocationAutocomplete({
           ) : (
             <LocateFixed className="size-3" />
           )}
-          {isGeolocating ? "Locating..." : "Use my location"}
+          {isGeolocating
+            ? labels.profileForm.gettingLocation
+            : labels.profileForm.useCurrentLocation}
         </Button>
       )}
 
