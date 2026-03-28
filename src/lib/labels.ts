@@ -2016,6 +2016,16 @@ export const labels = {
   },
 
   // ---------------------------------------------------------------------------
+  // Speech input
+  // ---------------------------------------------------------------------------
+  speechInput: {
+    micPermissionDenied:
+      "Microphone access denied. Please allow it in your browser settings.",
+    micUnavailable: "Voice input isn't available in this browser.",
+    transcriptionFailed: "Failed to transcribe audio. Please try again.",
+  },
+
+  // ---------------------------------------------------------------------------
   // Suggestion chips
   // ---------------------------------------------------------------------------
   suggestions: {

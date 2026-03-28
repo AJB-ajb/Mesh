@@ -40,7 +40,6 @@ function ProfilePageContent() {
     profileId,
     form,
     isLoading,
-    isSaving,
     error,
     success,
     userEmail,
@@ -58,12 +57,16 @@ function ProfilePageContent() {
   const composeRef = useRef<ComposeEditorHandle>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [editorInitialized, setEditorInitialized] = useState(false);
+  const [localSaving, setLocalSaving] = useState(false);
+  const [lastSavedText, setLastSavedText] = useState("");
 
   // Initialize editor text from source_text or bio (one-time sync from async data)
   useEffect(() => {
     if (!editorInitialized && !isLoading) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional one-time init from async profile data
-      setEditorText(sourceText ?? form.bio ?? "");
+       
+      const initial = sourceText ?? form.bio ?? "";
+      setEditorText(initial);
+      setLastSavedText(initial);
       setEditorInitialized(true);
     }
   }, [isLoading, sourceText, form.bio, editorInitialized]);
@@ -110,6 +113,7 @@ function ProfilePageContent() {
 
   // Auto-save on blur (debounced)
   const saveProfile = useCallback(async () => {
+    setLocalSaving(true);
     try {
       const res = await fetch("/api/profiles", {
         method: "PATCH",
@@ -122,11 +126,14 @@ function ProfilePageContent() {
         }),
       });
       if (res.ok) {
+        setLastSavedText(editorText);
         toast.success(labels.profileEditor.saved);
         await mutate();
       }
     } catch {
       // Silent — save errors shown on next explicit save
+    } finally {
+      setLocalSaving(false);
     }
   }, [form, editorText, availabilityWindows, mutate]);
 
@@ -279,11 +286,11 @@ function ProfilePageContent() {
         <TextTools text={editorText} onTextChange={setEditorText} />
         <Button
           onClick={handleExplicitSave}
-          disabled={isSaving}
+          disabled={localSaving || editorText === lastSavedText}
           size="lg"
           className="shrink-0"
         >
-          {isSaving
+          {localSaving
             ? labels.profileEditor.saving
             : labels.profileEditor.saveButton}
         </Button>

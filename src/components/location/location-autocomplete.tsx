@@ -1,9 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, Loader2, MapPin } from "lucide-react";
+import { Search, Loader2, MapPin, LocateFixed } from "lucide-react";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { searchLocations, type GeocodingResult } from "@/lib/geocoding";
+import { Button } from "@/components/ui/button";
+import {
+  searchLocations,
+  reverseGeocode,
+  type GeocodingResult,
+} from "@/lib/geocoding";
+import { LOCATION } from "@/lib/constants";
 
 interface LocationAutocompleteProps {
   value: string;
@@ -25,6 +32,10 @@ export function LocationAutocomplete({
   const [showDropdown, setShowDropdown] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+
+  const [isGeolocating, setIsGeolocating] = useState(false);
+  const supportsGeolocation =
+    typeof navigator !== "undefined" && "geolocation" in navigator;
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -54,6 +65,45 @@ export function LocationAutocomplete({
       setIsSearching(false);
     }
   }, []);
+
+  // Use device GPS
+  const handleUseCurrentLocation = useCallback(() => {
+    setIsGeolocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const result = await reverseGeocode(
+            position.coords.latitude,
+            position.coords.longitude,
+          );
+          onSelect(result);
+          onChange(result.displayName);
+          setShowDropdown(false);
+        } catch {
+          toast.error(
+            "Could not determine your address. Try searching instead.",
+          );
+        } finally {
+          setIsGeolocating(false);
+        }
+      },
+      (error) => {
+        setIsGeolocating(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          toast.error(
+            "Location permission denied. Please allow it in your browser settings.",
+          );
+        } else {
+          toast.error("Could not get your location. Try searching instead.");
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: LOCATION.GEOLOCATION_TIMEOUT_MS,
+        maximumAge: 0,
+      },
+    );
+  }, [onSelect, onChange]);
 
   // Handle input change with debouncing
   const handleInputChange = (newValue: string) => {
@@ -152,6 +202,25 @@ export function LocationAutocomplete({
           <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
         )}
       </div>
+
+      {/* Use current location */}
+      {supportsGeolocation && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={isGeolocating || disabled}
+          onClick={handleUseCurrentLocation}
+          className="mt-1 h-auto gap-1.5 px-1 py-0.5 text-xs text-muted-foreground hover:text-foreground"
+        >
+          {isGeolocating ? (
+            <Loader2 className="size-3 animate-spin" />
+          ) : (
+            <LocateFixed className="size-3" />
+          )}
+          {isGeolocating ? "Locating..." : "Use my location"}
+        </Button>
+      )}
 
       {/* Error message */}
       {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
