@@ -1,10 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
   intersectAvailability,
+  intersectRecurringWindows,
+  legacySlotsToWindows,
   subtractBusyBlocks,
   type AvailabilitySlotsMap,
   type BusyPeriod,
   type ConcreteSlot,
+  type RecurringWindowInput,
 } from "../overlap";
 
 describe("intersectAvailability", () => {
@@ -151,6 +154,107 @@ describe("intersectAvailability", () => {
       start_minutes: 1080,
       end_minutes: 1440,
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// intersectRecurringWindows (minute-level precision)
+// ---------------------------------------------------------------------------
+
+describe("intersectRecurringWindows", () => {
+  function win(day: number, start: number, end: number): RecurringWindowInput {
+    return { day_of_week: day, start_minutes: start, end_minutes: end };
+  }
+
+  it("returns overlap when two members partially overlap on the same day", () => {
+    const a = [win(0, 540, 720)]; // Mon 9:00-12:00
+    const b = [win(0, 600, 780)]; // Mon 10:00-13:00
+    const result = intersectRecurringWindows([a, b]);
+    expect(result).toEqual([
+      { day_of_week: 0, start_minutes: 600, end_minutes: 720 },
+    ]);
+  });
+
+  it("returns empty when no overlap", () => {
+    const a = [win(0, 540, 600)]; // Mon 9:00-10:00
+    const b = [win(0, 720, 780)]; // Mon 12:00-13:00
+    expect(intersectRecurringWindows([a, b])).toEqual([]);
+  });
+
+  it("treats null/empty member as non-blocking", () => {
+    const a = [win(1, 540, 720)]; // Tue 9:00-12:00
+    expect(intersectRecurringWindows([a, null, undefined, []])).toEqual([
+      { day_of_week: 1, start_minutes: 540, end_minutes: 720 },
+    ]);
+  });
+
+  it("returns empty when all members are null", () => {
+    expect(intersectRecurringWindows([null, undefined])).toEqual([]);
+  });
+
+  it("handles multiple days", () => {
+    const a = [win(0, 540, 720), win(2, 900, 1080)];
+    const b = [win(0, 600, 780), win(2, 960, 1140)];
+    expect(intersectRecurringWindows([a, b])).toEqual([
+      { day_of_week: 0, start_minutes: 600, end_minutes: 720 },
+      { day_of_week: 2, start_minutes: 960, end_minutes: 1080 },
+    ]);
+  });
+
+  it("narrows across three members", () => {
+    const a = [win(0, 480, 900)]; // Mon 8:00-15:00
+    const b = [win(0, 540, 840)]; // Mon 9:00-14:00
+    const c = [win(0, 600, 780)]; // Mon 10:00-13:00
+    expect(intersectRecurringWindows([a, b, c])).toEqual([
+      { day_of_week: 0, start_minutes: 600, end_minutes: 780 },
+    ]);
+  });
+
+  it("merges overlapping windows within a single member before intersecting", () => {
+    // Member A has two overlapping windows that together cover 9:00-14:00
+    const a = [win(0, 540, 720), win(0, 660, 840)];
+    const b = [win(0, 600, 780)]; // Mon 10:00-13:00
+    expect(intersectRecurringWindows([a, b])).toEqual([
+      { day_of_week: 0, start_minutes: 600, end_minutes: 780 },
+    ]);
+  });
+
+  it("returns empty when one member has no data for a day the other has", () => {
+    const a = [win(0, 540, 720)]; // Mon only
+    const b = [win(1, 540, 720)]; // Tue only
+    expect(intersectRecurringWindows([a, b])).toEqual([]);
+  });
+
+  it("returns all windows for a single member", () => {
+    const a = [win(0, 540, 720), win(3, 900, 1080)];
+    expect(intersectRecurringWindows([a])).toEqual([
+      { day_of_week: 0, start_minutes: 540, end_minutes: 720 },
+      { day_of_week: 3, start_minutes: 900, end_minutes: 1080 },
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// legacySlotsToWindows
+// ---------------------------------------------------------------------------
+
+describe("legacySlotsToWindows", () => {
+  it("converts a slots map to RecurringWindowInput[]", () => {
+    const slots: AvailabilitySlotsMap = { mon: ["morning", "afternoon"] };
+    const result = legacySlotsToWindows(slots);
+    expect(result).toEqual([
+      { day_of_week: 0, start_minutes: 360, end_minutes: 720 },
+      { day_of_week: 0, start_minutes: 720, end_minutes: 1080 },
+    ]);
+  });
+
+  it("ignores unknown days and periods", () => {
+    const slots: AvailabilitySlotsMap = { xyz: ["morning"], mon: ["midnight"] };
+    expect(legacySlotsToWindows(slots)).toEqual([]);
+  });
+
+  it("returns empty for empty input", () => {
+    expect(legacySlotsToWindows({})).toEqual([]);
   });
 });
 

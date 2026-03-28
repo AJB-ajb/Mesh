@@ -150,6 +150,8 @@ export function useCalendarDrag(
     ) => {
       const state = dragRef.current;
       if (!state) return;
+      e.preventDefault();
+      e.stopPropagation();
 
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
@@ -216,6 +218,8 @@ export function useCalendarDrag(
     (e: React.PointerEvent) => {
       const state = dragRef.current;
       if (!state) return;
+      e.preventDefault();
+      e.stopPropagation();
 
       // Release pointer capture on the same element that called setPointerCapture
       try {

@@ -4,17 +4,21 @@ import { verifySpaceMembership } from "@/lib/api/space-guards";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { windowsToConcreteDates } from "@/lib/calendar/overlap-to-slots";
 import {
-  intersectAvailability,
+  intersectRecurringWindows,
+  legacySlotsToWindows,
   subtractBusyBlocks,
   type BusyPeriod,
+  type RecurringWindowInput,
+  type AvailabilitySlotsMap,
 } from "@/lib/availability/overlap";
 import type { SpaceCard, TimeProposalData } from "@/lib/supabase/types";
 
 /**
  * GET /api/spaces/[id]/calendar
  *
- * Returns aggregate free-slot overlap and resolved Space events
- * for the Shared Calendar Tab. Scoped to small Spaces (≤10 members).
+ * Returns aggregate free-slot overlap, resolved Space events, and the
+ * requesting user's busy blocks for the Shared Calendar Tab.
+ * Scoped to small Spaces (≤10 members).
  */
 export const GET = withAuth(async (_req, { user, supabase, params }) => {
   const spaceId = params.id;
@@ -41,42 +45,89 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
   }
 
   // -----------------------------------------------------------------------
-  // 2. Fetch profiles + busy blocks in parallel
+  // 2. Fetch availability windows, legacy slots, busy blocks, cards
   // -----------------------------------------------------------------------
   const admin = createAdminClient();
   const now = new Date();
   const horizon = new Date(Date.now() + 14 * 86400000);
 
-  const [profilesResult, busyBlocksResult, cardsResult] = await Promise.all([
-    admin
-      .from("profiles")
-      .select("user_id, availability_slots")
-      .in("user_id", memberIds),
-    admin
-      .from("calendar_busy_blocks")
-      .select("profile_id, start_time, end_time")
-      .in("profile_id", memberIds)
-      .not("start_time", "is", null)
-      .not("end_time", "is", null)
-      .gte("end_time", now.toISOString())
-      .lte("start_time", horizon.toISOString()),
-    // 3. Fetch resolved time-bearing cards for Space events layer
-    supabase
-      .from("space_cards")
-      .select("id, type, data, status")
-      .eq("space_id", spaceId)
-      .eq("status", "resolved")
-      .in("type", ["time_proposal", "rsvp"]),
-  ]);
-
-  const profiles = profilesResult.data ?? [];
-  const busyBlocks = busyBlocksResult.data ?? [];
+  const [windowsResult, profilesResult, busyBlocksResult, cardsResult] =
+    await Promise.all([
+      admin
+        .from("availability_windows")
+        .select("profile_id, day_of_week, start_minutes, end_minutes")
+        .in("profile_id", memberIds)
+        .eq("window_type", "recurring"),
+      admin
+        .from("profiles")
+        .select("user_id, availability_slots")
+        .in("user_id", memberIds),
+      admin
+        .from("calendar_busy_blocks")
+        .select("profile_id, start_time, end_time")
+        .in("profile_id", memberIds)
+        .not("start_time", "is", null)
+        .not("end_time", "is", null)
+        .gte("end_time", now.toISOString())
+        .lte("start_time", horizon.toISOString()),
+      supabase
+        .from("space_cards")
+        .select("id, type, data, status")
+        .eq("space_id", spaceId)
+        .eq("status", "resolved")
+        .in("type", ["time_proposal", "rsvp"]),
+    ]);
 
   // -----------------------------------------------------------------------
-  // 3. Compute aggregate overlap
+  // 3. Build per-member availability windows (new table + legacy fallback)
+  // -----------------------------------------------------------------------
+  const windowsByMember = new Map<string, RecurringWindowInput[]>();
+  for (const row of windowsResult.data ?? []) {
+    if (
+      !row.profile_id ||
+      row.day_of_week == null ||
+      row.start_minutes == null ||
+      row.end_minutes == null
+    )
+      continue;
+    let list = windowsByMember.get(row.profile_id);
+    if (!list) {
+      list = [];
+      windowsByMember.set(row.profile_id, list);
+    }
+    list.push({
+      day_of_week: row.day_of_week,
+      start_minutes: row.start_minutes,
+      end_minutes: row.end_minutes,
+    });
+  }
+
+  // Fallback: for members without availability_windows rows, try legacy slots
+  const profiles = profilesResult.data ?? [];
+  const legacyByUser = new Map<string, AvailabilitySlotsMap>();
+  for (const p of profiles) {
+    const slots = p.availability_slots as Record<string, string[]> | null;
+    if (slots && Object.keys(slots).length > 0) {
+      legacyByUser.set(p.user_id, slots);
+    }
+  }
+
+  // Build the array for intersection — one entry per member
+  const memberWindowsArray: (RecurringWindowInput[] | null)[] = memberIds.map(
+    (id) => {
+      const windows = windowsByMember.get(id);
+      if (windows && windows.length > 0) return windows;
+      const legacy = legacyByUser.get(id);
+      if (legacy) return legacySlotsToWindows(legacy);
+      return null;
+    },
+  );
+
+  // -----------------------------------------------------------------------
+  // 4. Compute aggregate overlap
   // -----------------------------------------------------------------------
   const busyByMember = new Map<string, BusyPeriod[]>();
-  for (const block of busyBlocks) {
+  for (const block of busyBlocksResult.data ?? []) {
     if (!block.profile_id || !block.start_time || !block.end_time) continue;
     let list = busyByMember.get(block.profile_id);
     if (!list) {
@@ -92,19 +143,12 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
   // Count members with calendar data
   const membersWithCalendar = new Set<string>();
   for (const pid of busyByMember.keys()) membersWithCalendar.add(pid);
-  for (const p of profiles) {
-    const slots = p.availability_slots as Record<string, string[]> | null;
-    if (slots && Object.keys(slots).length > 0) {
-      membersWithCalendar.add(p.user_id);
-    }
-  }
+  for (const id of windowsByMember.keys()) membersWithCalendar.add(id);
+  for (const id of legacyByUser.keys()) membersWithCalendar.add(id);
 
   let freeSlots: Array<{ start: string; end: string; label: string }> = [];
 
-  const memberSlots = profiles.map(
-    (p) => p.availability_slots as Record<string, string[]> | null,
-  );
-  const intersectedWindows = intersectAvailability(memberSlots);
+  const intersectedWindows = intersectRecurringWindows(memberWindowsArray);
 
   if (intersectedWindows.length > 0) {
     const rawSlots = windowsToConcreteDates(intersectedWindows, now, 14);
@@ -141,7 +185,7 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
   }
 
   // -----------------------------------------------------------------------
-  // 4. Extract events from resolved cards
+  // 5. Extract events from resolved cards
   // -----------------------------------------------------------------------
   const events: Array<{
     id: string;
@@ -155,7 +199,6 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
     const data = card.data as TimeProposalData;
 
     if (card.type === "time_proposal" && data.slot_times && data.options) {
-      // Find the winning slot index
       const resolvedLabel = data.resolved_slot;
       const winnerIdx = resolvedLabel
         ? data.options.findIndex((o) => o.label === resolvedLabel)
@@ -182,9 +225,18 @@ export const GET = withAuth(async (_req, { user, supabase, params }) => {
     }
   }
 
+  // -----------------------------------------------------------------------
+  // 6. Current user's busy blocks (for display on client)
+  // -----------------------------------------------------------------------
+  const myBusyBlocks = (busyByMember.get(user.id) ?? []).map((b) => ({
+    start: b.start.toISOString(),
+    end: b.end.toISOString(),
+  }));
+
   return apiSuccess({
     freeSlots,
     events,
+    myBusyBlocks,
     connectedCalendars: membersWithCalendar.size,
     totalMembers,
   });

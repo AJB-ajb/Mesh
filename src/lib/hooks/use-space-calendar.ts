@@ -17,9 +17,15 @@ export interface CalendarEvent {
   type: string;
 }
 
+export interface CalendarBusyBlock {
+  start: string;
+  end: string;
+}
+
 interface SpaceCalendarData {
   freeSlots: CalendarFreeSlot[];
   events: CalendarEvent[];
+  myBusyBlocks: CalendarBusyBlock[];
   connectedCalendars: number;
   totalMembers: number;
 }
@@ -36,6 +42,7 @@ export function useSpaceCalendar(
   return {
     freeSlots: data?.freeSlots ?? [],
     events: data?.events ?? [],
+    myBusyBlocks: data?.myBusyBlocks ?? [],
     connectedCalendars: data?.connectedCalendars ?? 0,
     totalMembers: data?.totalMembers ?? 0,
     isLoading,
