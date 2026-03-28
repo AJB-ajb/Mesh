@@ -134,7 +134,140 @@ export function subtractBusyBlocks(
 }
 
 // ---------------------------------------------------------------------------
-// Weekly availability intersection
+// Recurring-window intersection (minute-level precision)
+// ---------------------------------------------------------------------------
+
+type Interval = { start: number; end: number };
+
+/** Merge overlapping/adjacent intervals into a sorted, non-overlapping list. */
+function mergeIntervals(intervals: Interval[]): Interval[] {
+  if (intervals.length === 0) return [];
+  const sorted = [...intervals].sort((a, b) => a.start - b.start);
+  const merged: Interval[] = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    const last = merged[merged.length - 1];
+    if (sorted[i].start <= last.end) {
+      last.end = Math.max(last.end, sorted[i].end);
+    } else {
+      merged.push({ ...sorted[i] });
+    }
+  }
+  return merged;
+}
+
+/** Intersect two sorted, non-overlapping interval lists. */
+function intersectIntervalLists(a: Interval[], b: Interval[]): Interval[] {
+  const result: Interval[] = [];
+  let i = 0,
+    j = 0;
+  while (i < a.length && j < b.length) {
+    const start = Math.max(a[i].start, b[j].start);
+    const end = Math.min(a[i].end, b[j].end);
+    if (start < end) result.push({ start, end });
+    if (a[i].end < b[j].end) i++;
+    else j++;
+  }
+  return result;
+}
+
+export interface RecurringWindowInput {
+  day_of_week: number;
+  start_minutes: number;
+  end_minutes: number;
+}
+
+/**
+ * Intersect multiple members' RecurringWindow arrays with minute-level precision.
+ *
+ * Members with null/undefined/empty windows are excluded (not blocking).
+ * Returns IntersectedWindow[] — the time ranges where ALL data-bearing members overlap.
+ */
+export function intersectRecurringWindows(
+  memberWindows: (RecurringWindowInput[] | null | undefined)[],
+): IntersectedWindow[] {
+  const withData = memberWindows.filter(
+    (ws): ws is RecurringWindowInput[] => ws != null && ws.length > 0,
+  );
+  if (withData.length === 0) return [];
+
+  // Build per-member intervals grouped by day
+  const perMemberByDay: Map<number, Interval[]>[] = withData.map((ws) => {
+    const byDay = new Map<number, Interval[]>();
+    for (const w of ws) {
+      let list = byDay.get(w.day_of_week);
+      if (!list) {
+        list = [];
+        byDay.set(w.day_of_week, list);
+      }
+      list.push({ start: w.start_minutes, end: w.end_minutes });
+    }
+    // Merge each day's intervals
+    for (const [day, intervals] of byDay) {
+      byDay.set(day, mergeIntervals(intervals));
+    }
+    return byDay;
+  });
+
+  const result: IntersectedWindow[] = [];
+
+  // For each day 0-6, intersect across all members
+  for (let day = 0; day < 7; day++) {
+    let current: Interval[] | null = null;
+    for (const memberByDay of perMemberByDay) {
+      const dayIntervals = memberByDay.get(day);
+      if (!dayIntervals || dayIntervals.length === 0) {
+        // This member has no availability on this day → intersection is empty
+        current = [];
+        break;
+      }
+      if (current === null) {
+        current = dayIntervals;
+      } else {
+        current = intersectIntervalLists(current, dayIntervals);
+        if (current.length === 0) break;
+      }
+    }
+    if (current) {
+      for (const iv of current) {
+        result.push({
+          day_of_week: day,
+          start_minutes: iv.start,
+          end_minutes: iv.end,
+        });
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Convert legacy AvailabilitySlotsMap to RecurringWindowInput[].
+ * Used as a fallback for members who haven't migrated to availability_windows.
+ */
+export function legacySlotsToWindows(
+  slots: AvailabilitySlotsMap,
+): RecurringWindowInput[] {
+  const windows: RecurringWindowInput[] = [];
+  for (const [day, periods] of Object.entries(slots)) {
+    const dow = DAY_MAP[day];
+    if (dow === undefined) continue;
+    for (const period of periods) {
+      const range = SLOT_MAP[period];
+      if (range) {
+        windows.push({
+          day_of_week: dow,
+          start_minutes: range.start,
+          end_minutes: range.end,
+        });
+      }
+    }
+  }
+  return windows;
+}
+
+// ---------------------------------------------------------------------------
+// Legacy weekly availability intersection (coarse slots)
 // ---------------------------------------------------------------------------
 
 export function intersectAvailability(

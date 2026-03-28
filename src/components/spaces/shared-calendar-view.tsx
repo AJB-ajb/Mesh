@@ -1,15 +1,17 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
-import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { Calendar, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 import { useSpaceCalendar } from "@/lib/hooks/use-space-calendar";
 import type {
   CalendarFreeSlot,
   CalendarEvent,
+  CalendarBusyBlock,
 } from "@/lib/hooks/use-space-calendar";
 import { useCalendarDrag } from "@/components/availability/use-calendar-drag";
 import type { RecurringWindow } from "@/lib/types/availability";
+import { Button } from "@/components/ui/button";
 
 // ---------------------------------------------------------------------------
 // Constants (match calendar-week-view.tsx)
@@ -57,6 +59,21 @@ function formatTime(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+}
+
+function formatSlotLabel(slot: { start: string; end: string }): string {
+  const s = new Date(slot.start);
+  const e = new Date(slot.end);
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const day = dayNames[s.getUTCDay()];
+  const date = s.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+  const startTime = `${s.getUTCHours().toString().padStart(2, "0")}:${s.getUTCMinutes().toString().padStart(2, "0")}`;
+  const endTime = `${e.getUTCHours().toString().padStart(2, "0")}:${e.getUTCMinutes().toString().padStart(2, "0")}`;
+  return `${day} ${date}, ${startTime}–${endTime}`;
 }
 
 function isToday(date: Date): boolean {
@@ -107,6 +124,36 @@ function FreeSlotBlock({
       className="absolute left-0.5 right-0.5 rounded-sm border border-emerald-500/30 bg-emerald-500/10 pointer-events-none"
       style={{ top: `${top}px`, height: `${Math.max(height, 4)}px` }}
     />
+  );
+}
+
+function BusyBlock({
+  startMinutes,
+  endMinutes,
+}: {
+  startMinutes: number;
+  endMinutes: number;
+}) {
+  const clampedStart = Math.max(startMinutes, START_HOUR * 60);
+  const clampedEnd = Math.min(endMinutes, END_HOUR * 60);
+  if (clampedEnd <= clampedStart) return null;
+
+  const top = ((clampedStart - START_HOUR * 60) / 60) * HOUR_HEIGHT;
+  const height = ((clampedEnd - clampedStart) / 60) * HOUR_HEIGHT;
+
+  return (
+    <div
+      className="absolute left-0.5 right-0.5 rounded-sm border border-blue-500/30 bg-blue-500/10 pointer-events-none overflow-hidden"
+      style={{ top: `${top}px`, height: `${Math.max(height, 4)}px` }}
+    >
+      {height >= 16 && (
+        <div className="px-1 pt-0.5">
+          <span className="text-[9px] text-blue-600/70 dark:text-blue-400/70 block">
+            Busy
+          </span>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -185,7 +232,7 @@ interface SharedCalendarViewProps {
 
 export function SharedCalendarView({
   spaceId,
-  memberCount,
+  memberCount: _memberCount,
   onCreateCard,
 }: SharedCalendarViewProps) {
   const isMobile = useIsMobile();
@@ -193,9 +240,19 @@ export function SharedCalendarView({
 
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
   const [mobilePageIndex, setMobilePageIndex] = useState(0);
+  const [pendingSlot, setPendingSlot] = useState<{
+    start: string;
+    end: string;
+  } | null>(null);
 
-  const { freeSlots, events, connectedCalendars, totalMembers, isLoading } =
-    useSpaceCalendar(spaceId, true);
+  const {
+    freeSlots,
+    events,
+    myBusyBlocks,
+    connectedCalendars,
+    totalMembers,
+    isLoading,
+  } = useSpaceCalendar(spaceId, true);
 
   // Build the 7 dates for the current week
   const weekDates = useMemo(
@@ -209,7 +266,7 @@ export function SharedCalendarView({
     ? [...MOBILE_PAGES[mobilePageIndex]]
     : [0, 1, 2, 3, 4, 5, 6];
 
-  // Index free slots and events by date for fast lookup
+  // Index free slots, events, and busy blocks by date for fast lookup
   const slotsByDate = useMemo(() => {
     const map = new Map<string, CalendarFreeSlot[]>();
     for (const slot of freeSlots) {
@@ -238,33 +295,43 @@ export function SharedCalendarView({
     return map;
   }, [events]);
 
-  // Drag-to-create: use the existing hook with an empty windows array (read-only calendar)
-  // We only care about the "create" mode to capture drag ranges.
+  const busyByDate = useMemo(() => {
+    const map = new Map<string, CalendarBusyBlock[]>();
+    for (const block of myBusyBlocks) {
+      const key = block.start.slice(0, 10);
+      let list = map.get(key);
+      if (!list) {
+        list = [];
+        map.set(key, list);
+      }
+      list.push(block);
+    }
+    return map;
+  }, [myBusyBlocks]);
+
+  // Drag-to-create: capture drag ranges, show confirmation bar instead of
+  // immediately calling onCreateCard
   const dummyWindows: RecurringWindow[] = [];
-  const handleDragChange = useCallback(
-    (newWindows: RecurringWindow[]) => {
-      if (!onCreateCard || newWindows.length === 0) return;
-      // The new window is the drag result — convert to an ISO slot
-      const w = newWindows[newWindows.length - 1];
-      const dayIndex = w.day_of_week; // 0–6 maps to our weekDates index
-      const date = weekDates[dayIndex];
-      if (!date) return;
+  const handleDragChange = (newWindows: RecurringWindow[]) => {
+    if (!onCreateCard || newWindows.length === 0) return;
+    const w = newWindows[newWindows.length - 1];
+    const dayIndex = w.day_of_week;
+    const date = weekDates[dayIndex];
+    if (!date) return;
 
-      const startDate = new Date(date);
-      startDate.setUTCHours(0, 0, 0, 0);
-      startDate.setUTCMinutes(w.start_minutes);
+    const startDate = new Date(date);
+    startDate.setUTCHours(0, 0, 0, 0);
+    startDate.setUTCMinutes(w.start_minutes);
 
-      const endDate = new Date(date);
-      endDate.setUTCHours(0, 0, 0, 0);
-      endDate.setUTCMinutes(w.end_minutes);
+    const endDate = new Date(date);
+    endDate.setUTCHours(0, 0, 0, 0);
+    endDate.setUTCMinutes(w.end_minutes);
 
-      onCreateCard({
-        start: startDate.toISOString(),
-        end: endDate.toISOString(),
-      });
-    },
-    [onCreateCard, weekDates],
-  );
+    setPendingSlot({
+      start: startDate.toISOString(),
+      end: endDate.toISOString(),
+    });
+  };
 
   const {
     handlePointerDown,
@@ -275,7 +342,15 @@ export function SharedCalendarView({
 
   const onColumnPointerDown = (e: React.PointerEvent, dayIndex: number) => {
     if (!onCreateCard) return;
+    setPendingSlot(null); // dismiss any existing pending slot
     handlePointerDown(e, dayIndex, containerRef, START_HOUR);
+  };
+
+  const handleConfirmProposal = () => {
+    if (pendingSlot && onCreateCard) {
+      onCreateCard(pendingSlot);
+      setPendingSlot(null);
+    }
   };
 
   // Week navigation
@@ -365,7 +440,7 @@ export function SharedCalendarView({
 
       {/* Calendar grid */}
       {!isLoading && (
-        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
           {/* Day headers */}
           <div
             className="grid border-b border-border sticky top-0 z-10 bg-background"
@@ -427,6 +502,7 @@ export function SharedCalendarView({
               const dateKey = date.toISOString().slice(0, 10);
               const dayFreeSlots = slotsByDate.get(dateKey) ?? [];
               const dayEvents = eventsByDate.get(dateKey) ?? [];
+              const dayBusyBlocks = busyByDate.get(dateKey) ?? [];
               const previewForDay =
                 previewWindow?.day_of_week === dayIdx ? previewWindow : null;
 
@@ -456,6 +532,17 @@ export function SharedCalendarView({
                       />
                     ))}
 
+                  {/* My busy blocks (from Google Calendar / iCal) */}
+                  {dayBusyBlocks
+                    .filter((b) => isSameUTCDate(b.start, date))
+                    .map((block, idx) => (
+                      <BusyBlock
+                        key={`busy-${idx}`}
+                        startMinutes={isoToMinutes(block.start)}
+                        endMinutes={isoToMinutes(block.end)}
+                      />
+                    ))}
+
                   {/* Resolved event blocks */}
                   {dayEvents
                     .filter((ev) => isSameUTCDate(ev.start, date))
@@ -478,6 +565,28 @@ export function SharedCalendarView({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Floating confirmation bar for drag-to-create */}
+      {pendingSlot && (
+        <div className="border-t border-border bg-background/95 backdrop-blur px-4 py-2.5 flex items-center justify-between gap-3 shrink-0">
+          <div className="text-sm text-foreground truncate min-w-0">
+            {formatSlotLabel(pendingSlot)}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPendingSlot(null)}
+            >
+              <X className="size-3.5 mr-1" />
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleConfirmProposal}>
+              Propose Meeting
+            </Button>
           </div>
         </div>
       )}
